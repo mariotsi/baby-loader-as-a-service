@@ -1,0 +1,21 @@
+{
+  "root": true,
+  "extends": "next/core-web-vitals",
+  "rules": {
+    "curly": ["error", "all"],
+    "no-trailing-spaces": "error",
+    "eol-last": ["error", "always"]
+  },
+  "overrides": [
+    {
+      "files": ["public/sw.js"],
+      "env": { "serviceworker": true, "browser": true },
+      "parserOptions": { "ecmaVersion": 2021, "sourceType": "script" }
+    },
+    {
+      "files": ["scripts/**/*.js"],
+      "env": { "node": true },
+      "parserOptions": { "ecmaVersion": 2021, "sourceType": "script" }
+    }
+  ]
+}
