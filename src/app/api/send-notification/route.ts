@@ -3,6 +3,7 @@ import { getSessionUserId } from '@/lib/auth';
 import { getTenantBySlug } from '@/lib/tenant';
 import { listSubscriptionsByTenant, countSubscriptionsByTenant, deleteSubscriptionByEndpoint } from '@/lib/subscription';
 import { ensureVapid, webpush } from '@/lib/webpush';
+import { tenantPublicPath } from '@/lib/tenantUrl';
 
 async function requireOwnedTenant(req: NextRequest, slug: string) {
   const userId = getSessionUserId(req);
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
   if (!messageBody) {
     return NextResponse.json({ error: 'Message body is required.' }, { status: 400 });
   }
-  const url = typeof body?.url === 'string' && body.url ? body.url : '/';
+  const url = typeof body?.url === 'string' && body.url ? body.url : tenantPublicPath(result.tenant.slug);
 
   const subscriptions = await listSubscriptionsByTenant(result.tenant._id);
   const payload = JSON.stringify({ title, body: messageBody, url, tag: `tenant-${result.tenant.slug}` });

@@ -4,8 +4,7 @@ import Link from 'next/link';
 import { ObjectId } from 'mongodb';
 import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth';
 import { listTenantsByOwner } from '@/lib/tenant';
-
-const ROOT_DOMAIN = process.env.ROOT_DOMAIN || 'localhost';
+import { tenantPublicUrl } from '@/lib/tenantUrl';
 
 export default async function AdminPage() {
   const token = (await cookies()).get(SESSION_COOKIE)?.value;
@@ -33,12 +32,10 @@ export default async function AdminPage() {
             <div className="card row" key={tenant.slug} style={{ justifyContent: 'space-between' }}>
               <div>
                 <strong>{tenant.babyName}</strong>
-                <div className="muted">
-                  {tenant.slug}.{ROOT_DOMAIN}
-                </div>
+                <div className="muted">{tenantPublicUrl(tenant.slug).replace(/^https?:\/\//, '')}</div>
               </div>
               <div className="row">
-                <a className="btn-secondary" href={`http://${tenant.slug}.${ROOT_DOMAIN}`} target="_blank" rel="noreferrer">
+                <a className="btn-secondary" href={tenantPublicUrl(tenant.slug)} target="_blank" rel="noreferrer">
                   View
                 </a>
                 <Link className="btn" href={`/admin/${tenant.slug}`}>
