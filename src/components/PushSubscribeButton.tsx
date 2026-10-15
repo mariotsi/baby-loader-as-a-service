@@ -2,27 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import { decodeVapidKey, VapidKeyError } from '@/lib/vapid';
-import type { Messages } from '@/lib/messages';
+import type { PushButtonMessages } from '@/lib/messages';
 
 interface Props {
   tenantSlug: string;
   vapidPublicKey: string | undefined;
   born: boolean;
-  t: Pick<
-    Messages,
-    | 'checking'
-    | 'subscribedBorn'
-    | 'subscribedWaiting'
-    | 'unsubscribe'
-    | 'subscribeBorn'
-    | 'subscribeWaiting'
-    | 'subscribing'
-    | 'subscribeOk'
-    | 'unsubscribeOk'
-    | 'errorGeneric'
-    | 'errorUnsupported'
-    | 'errorDenied'
-  >;
+  t: PushButtonMessages;
 }
 
 type Status = 'checking' | 'unsupported' | 'denied' | 'subscribed' | 'unsubscribed';

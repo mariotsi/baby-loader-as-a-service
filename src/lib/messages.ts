@@ -74,3 +74,29 @@ const it: Messages = {
 };
 
 export const messages: Record<Lang, Messages> = { it, en };
+
+const pushButtonKeys = [
+  'checking',
+  'subscribedBorn',
+  'subscribedWaiting',
+  'unsubscribe',
+  'subscribeBorn',
+  'subscribeWaiting',
+  'subscribing',
+  'subscribeOk',
+  'unsubscribeOk',
+  'errorGeneric',
+  'errorUnsupported',
+  'errorDenied',
+] as const;
+
+export type PushButtonMessages = Pick<Messages, (typeof pushButtonKeys)[number]>;
+
+/**
+ * The copy PushSubscribeButton needs, and nothing else. Passing the whole
+ * Messages object to that Client Component makes the page throw: React
+ * cannot serialize the function entries (daysLeft, bornOn, ...).
+ */
+export function pushButtonMessages(t: Messages): PushButtonMessages {
+  return Object.fromEntries(pushButtonKeys.map((key) => [key, t[key]])) as PushButtonMessages;
+}

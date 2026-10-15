@@ -3,7 +3,7 @@ import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { getTenantBySlug } from '@/lib/tenant';
 import { themeStyle, googleFontsHref } from '@/lib/theme';
-import { messages } from '@/lib/messages';
+import { messages, pushButtonMessages } from '@/lib/messages';
 import { negotiateLang, LANG_COOKIE, type Lang } from '@/lib/i18n';
 import { daysUntil } from '@/lib/countdown';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
@@ -82,7 +82,7 @@ export default async function TenantPage({ params }: { params: Promise<{ slug: s
               tenantSlug={tenant.slug}
               vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY}
               born={born}
-              t={t}
+              t={pushButtonMessages(t)}
             />
           </div>
 
