@@ -32,6 +32,10 @@ _Avoid_: App, SaaS, root site
 One baby's waiting page together with everything the Owner configured for it.
 _Avoid_: Tenant, waiting page, account, project
 
+**Site settings**:
+Everything an Owner configures for a Site: the baby's name and Sex, Due date, Birth details, Milestones, Theme, Privacy settings and Language mode. The Slug is chosen once, at creation, and is not a Site setting.
+_Avoid_: Tenant settings, configuration, preferences
+
 **Slug**:
 The short, unique, lowercase name a Site is known by, from which its Address is formed.
 _Avoid_: Subdomain, handle, username, site address

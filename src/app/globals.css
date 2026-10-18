@@ -187,3 +187,8 @@ button {
   background: #facc15;
   color: #1f2937;
 }
+
+.env-ribbon-development {
+  background: #15fa4a;
+  color: #1f2937;
+}
