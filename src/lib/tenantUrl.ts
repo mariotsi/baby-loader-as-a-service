@@ -1,4 +1,9 @@
-const ROOT_DOMAIN = (process.env.ROOT_DOMAIN || 'localhost').toLowerCase();
+/**
+ * The host the Platform is served on, with each Site's Address under it.
+ * A Vercel preview deployment leaves ROOT_DOMAIN unset and uses its branch
+ * URL, a vercel.app host, so the preview serves Sites by path.
+ */
+export const ROOT_DOMAIN = (process.env.ROOT_DOMAIN || process.env.VERCEL_BRANCH_URL || 'localhost').toLowerCase();
 
 /**
  * Vercel never serves wildcard subdomains under vercel.app, so on such a root

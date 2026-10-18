@@ -1,4 +1,6 @@
 import { MongoClient, type Db } from 'mongodb';
+import { databaseName } from './dbName';
+import { ensureIndexes } from './indexes';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -8,12 +10,13 @@ declare global {
 let clientPromise: Promise<MongoClient> | undefined;
 
 /**
- * Database name for this product. Deliberately distinct from baby-loader's
- * "pushnotify" database — even if the two apps ever pointed at the same
- * MongoDB cluster (they shouldn't; see README), they would still never read
- * or write each other's collections.
+ * This deployment's database (see databaseName). Every name it can produce
+ * differs from baby-loader's "pushnotify", so the two apps never share
+ * collections even on one cluster.
  */
-export const DB_NAME = process.env.MONGODB_DB_NAME || 'waitingpages';
+export const DB_NAME = databaseName(process.env);
+
+let indexesReady: Promise<void> | undefined;
 
 /**
  * Lazy connection: a missing MONGODB_URI must fail on the first query, not on
@@ -42,7 +45,17 @@ export function getMongoClient(): Promise<MongoClient> {
   return clientPromise;
 }
 
+/**
+ * The first call in each process creates any missing index, so a preview
+ * deployment's brand-new database is ready on its first request. A failure is
+ * logged and requests go on without the missing indexes.
+ */
 export async function getDb(): Promise<Db> {
   const client = await getMongoClient();
-  return client.db(DB_NAME);
+  const db = client.db(DB_NAME);
+  indexesReady ??= ensureIndexes(db).catch((err) => {
+    console.error(`Creating indexes on ${DB_NAME} failed`, err);
+  });
+  await indexesReady;
+  return db;
 }

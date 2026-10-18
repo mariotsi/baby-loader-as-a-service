@@ -94,3 +94,32 @@ per-tenant-custom-domain pattern this app is built around. Before relying on
 custom domains for real customers, confirm current Vercel pricing/limits for
 programmatic domain management against expected tenant volume — this was
 flagged as a cost item to verify, not yet done.
+
+## Environments
+
+| Environment | Vercel project | Addresses | MongoDB |
+|---|---|---|---|
+| Production | `baby-loader-as-a-service`, branch `main` | `loading.baby`, Sites at `<slug>.loading.baby` | production cluster, database `waitingpages` |
+| Staging | `baby-loader-staging`, branch `staging` | `staging.loading.baby`, Sites at `<slug>.staging.loading.baby` | non-production cluster, database `waitingpages-staging` |
+| Preview | `baby-loader-as-a-service`, every other branch | the branch's `*.vercel.app` URL, Sites at `/sites/<slug>` | non-production cluster, database `waitingpages-<branch>` |
+
+- **Database per branch** (`src/lib/dbName.ts`): a preview deployment with no
+  `MONGODB_DB_NAME` uses `waitingpages-<branch>`. MongoDB creates it on its
+  first write, and the first request of each process creates the indexes
+  (`src/lib/indexes.ts`), so a new branch needs no setup. The workflow
+  `.github/workflows/drop-preview-db.yml` drops the database when the pull
+  request closes or the branch is deleted, using the repository secret
+  `PREVIEW_MONGODB_URI`.
+- **Root domain fallback** (`src/lib/tenantUrl.ts`): a preview deployment
+  leaves `ROOT_DOMAIN` unset and uses its branch URL, so Sites are served by
+  path. Subdomain routing is exercised on staging.
+- **Credentials**: preview deployments run unreviewed branch code, so the
+  production `MONGODB_URI` is set only in the Production scope of the
+  production project, and Preview uses the non-production cluster. Staging and
+  Preview each have their own `SESSION_SECRET` and VAPID keypair; within an
+  environment every Site shares that one keypair (ADR-0002).
+- **Staging builds only `staging`**: its project's Ignored Build Step is set to
+  "Only build production", with `staging` as its production branch, so a pull
+  request is not deployed twice.
+- **Reserved slug**: `staging` is a Reserved slug, since `staging.loading.baby`
+  serves the staging Platform.

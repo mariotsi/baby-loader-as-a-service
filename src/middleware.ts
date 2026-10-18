@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { ROOT_DOMAIN } from '@/lib/tenantUrl';
 
 /**
  * Resolves which tenant (if any) a request's Host header maps to, and
@@ -13,8 +14,6 @@ import { NextRequest, NextResponse } from 'next/server';
  * runtime question for the MongoDB driver — middleware here stays a pure
  * string operation.
  */
-
-const ROOT_DOMAIN = (process.env.ROOT_DOMAIN || 'localhost').toLowerCase();
 
 function stripPort(host: string): string {
   return host.split(':')[0];

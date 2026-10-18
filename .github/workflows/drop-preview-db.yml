@@ -1,0 +1,30 @@
+name: Drop preview database
+
+# A branch's preview deployments write to their own database on the
+# non-production cluster (see src/lib/dbName.ts). This drops it once the pull
+# request closes or the branch is deleted; when both happen, the second run
+# finds nothing to drop.
+
+on:
+  pull_request:
+    types: [closed]
+  delete:
+
+jobs:
+  drop:
+    if: github.event_name == 'pull_request' || github.event.ref_type == 'branch'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Drop the branch's preview database
+        env:
+          MONGODB_URI: ${{ secrets.PREVIEW_MONGODB_URI }}
+          # Passed through the environment, never interpolated into the
+          # script: a branch name is user-controlled input.
+          BRANCH: ${{ github.event_name == 'pull_request' && github.head_ref || github.event.ref }}
+        run: node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/drop-preview-db.mjs "$BRANCH"
