@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import './globals.css';
+import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
 
 export const metadata: Metadata = {
   title: 'Waiting Pages',
@@ -9,7 +10,10 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en">
-      <body>{children}</body>
+      <body>
+        {children}
+        <EnvironmentRibbon />
+      </body>
     </html>
   );
 }
