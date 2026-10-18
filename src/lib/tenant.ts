@@ -73,7 +73,7 @@ export function toTenantDTO(tenant: Tenant): TenantDTO {
 const RESERVED_SLUGS = new Set([
   'www', 'api', 'admin', 'app', 'mail', 'ftp', 'root', 'support', 'help',
   'blog', 'status', 'docs', 'assets', 'static', 'cdn', 'signup', 'login',
-  'onboarding', 'billing', 'account',
+  'onboarding', 'billing', 'account', 'staging',
 ]);
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?$/;
