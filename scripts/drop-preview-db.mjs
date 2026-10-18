@@ -5,7 +5,7 @@
 // pull request closes or a branch is deleted.
 
 import { MongoClient } from 'mongodb';
-import { previewDbName } from '../src/lib/dbName.ts';
+import { isPreviewDbName, previewDbName } from '../src/lib/dbName.ts';
 
 // Their deployments use MONGODB_DB_NAME, never a preview database, and
 // previewDbName('staging') is the staging database's name.
@@ -26,6 +26,11 @@ async function main() {
   }
 
   const dbName = previewDbName(branch);
+  // Last check before the irreversible drop: whatever previewDbName returns,
+  // a name outside the preview namespace, production's included, is never dropped.
+  if (!isPreviewDbName(dbName)) {
+    throw new Error(`Refusing to drop ${dbName}: not a preview database`);
+  }
   const client = await new MongoClient(uri).connect();
   try {
     await client.db(dbName).dropDatabase();

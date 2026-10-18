@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { databaseName, previewDbName, DEFAULT_DB_NAME } from './dbName.ts';
+import { databaseName, isPreviewDbName, previewDbName, DEFAULT_DB_NAME } from './dbName.ts';
 
 test('previewDbName lowercases the branch and replaces separators', () => {
   assert.equal(previewDbName('Feat/Staging_Env'), 'waitingpages-feat-staging-env');
@@ -32,4 +32,12 @@ test('databaseName derives a preview deployment database from its branch', () =>
 test('databaseName falls back to the default in production and locally', () => {
   assert.equal(databaseName({ VERCEL_ENV: 'production', VERCEL_GIT_COMMIT_REF: 'main' }), DEFAULT_DB_NAME);
   assert.equal(databaseName({}), DEFAULT_DB_NAME);
+});
+
+test('isPreviewDbName rejects the production database and accepts preview names', () => {
+  assert.equal(isPreviewDbName(DEFAULT_DB_NAME), false);
+  assert.equal(isPreviewDbName(`${DEFAULT_DB_NAME}-`), false);
+  assert.equal(isPreviewDbName('pushnotify'), false);
+  assert.equal(isPreviewDbName(previewDbName('feat/x')), true);
+  assert.equal(isPreviewDbName(previewDbName(`feature/${'x'.repeat(80)}`)), true);
 });

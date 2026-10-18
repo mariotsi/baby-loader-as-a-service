@@ -31,6 +31,15 @@ export function previewDbName(branch: string): string {
 }
 
 /**
+ * Whether a name belongs to a preview deployment: the prefix followed by a
+ * non-empty branch part. DEFAULT_DB_NAME, the production database, never
+ * matches.
+ */
+export function isPreviewDbName(name: string): boolean {
+  return name.startsWith(PREVIEW_PREFIX) && name.length > PREVIEW_PREFIX.length;
+}
+
+/**
  * The database a deployment uses: MONGODB_DB_NAME when set, the branch's
  * previewDbName on a Vercel preview deployment, DEFAULT_DB_NAME otherwise.
  * MongoDB creates a database on its first write, so a new branch needs no
