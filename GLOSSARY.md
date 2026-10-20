@@ -79,7 +79,7 @@ The whole number of days until the Due date, or the days late once it has passed
 _Avoid_: Timer, days left
 
 **Birth details**:
-The birth date and time, weight, length, and Birth message that the Public page shows in the Born state.
+The birth date and time, weight, length, and Birth message that the Public page shows in the Born state. They exist only while the baby is marked as born: removing the mark discards them.
 _Avoid_: Birth stats, birth info
 
 **Birth message**:
