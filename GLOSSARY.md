@@ -63,11 +63,11 @@ _Avoid_: Admin, backoffice, console
 ### The baby
 
 **Waiting state**:
-A Site's state before the birth is recorded; its Public page leads with the Countdown.
+A Site's state until the Owner marks the baby as born; its Public page leads with the Countdown.
 _Avoid_: Pregnancy, pre-birth, expecting mode
 
 **Born state**:
-A Site's state once the Owner has recorded the birth; its Public page leads with the Birth details.
+A Site's state once the Owner marks the baby as born; its Public page leads with the Birth details.
 _Avoid_: Announcement mode, arrived
 
 **Due date**:
@@ -79,7 +79,7 @@ The whole number of days until the Due date, or the days late once it has passed
 _Avoid_: Timer, days left
 
 **Birth details**:
-The birth date and time, weight, length, and Birth message, recorded when a Site enters the Born state.
+The birth date and time, weight, length, and Birth message that the Public page shows in the Born state.
 _Avoid_: Birth stats, birth info
 
 **Birth message**:
