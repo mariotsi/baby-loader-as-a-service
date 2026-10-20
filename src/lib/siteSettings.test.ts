@@ -92,6 +92,9 @@ test('the birth date and time is a real instant, never after now', () => {
   assert.deepEqual(errorsOf(settings({ ...named, birth: born({ datetime: 'yesterday' }) })), [
     { path: 'birth.details.datetime', code: 'invalidDate' },
   ]);
+  assert.deepEqual(errorsOf(settings({ ...named, birth: born({ datetime: '' }) })), [
+    { path: 'birth.details.datetime', code: 'required' },
+  ]);
   assert.deepEqual(errorsOf(settings({ ...named, birth: born({ datetime: '2026-10-20T12:00:01.000Z' }) })), [
     { path: 'birth.details.datetime', code: 'inFuture' },
   ]);
@@ -119,6 +122,9 @@ test('Milestones need a label and a real date, at most 50 of them', () => {
   assert.deepEqual(errorsOf(settings({ milestones: [{ label: '  ', date: '2026-13-01' }] })), [
     { path: 'milestones.0.label', code: 'required' },
     { path: 'milestones.0.date', code: 'invalidDate' },
+  ]);
+  assert.deepEqual(errorsOf(settings({ milestones: [{ label: 'Scan', date: '' }] })), [
+    { path: 'milestones.0.date', code: 'required' },
   ]);
   const many = Array.from({ length: 51 }, () => ({ label: 'Scan', date: '2026-05-01' }));
   assert.deepEqual(errorsOf(settings({ milestones: many })), [{ path: 'milestones', code: 'tooLong', params: { max: 50 } }]);

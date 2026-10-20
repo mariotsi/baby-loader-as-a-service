@@ -53,8 +53,11 @@ function isIsoDatetime(value: string): boolean {
 
 const invalidDate = { params: { code: 'invalidDate' } };
 
-const calendarDate = z.string().check(z.refine(isCalendarDate, invalidDate));
-const isoDatetime = z.string().check(z.refine(isIsoDatetime, invalidDate));
+/** An empty date is a missing one, reported as `required` and not also as `invalidDate`. */
+const nonEmpty = () => z.minLength(1, { abort: true });
+
+const calendarDate = z.string().check(nonEmpty(), z.refine(isCalendarDate, invalidDate));
+const isoDatetime = z.string().check(nonEmpty(), z.refine(isIsoDatetime, invalidDate));
 const message = z.string().check(z.maxLength(1000));
 
 const birthSchema = z.discriminatedUnion('born', [
