@@ -23,7 +23,7 @@ test.describe('Public page', () => {
   test('hides the name and Sex when Privacy settings say so', async ({ page, addressOf }) => {
     await page.goto(await addressOf('e2e-private'));
 
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for');
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for someone');
     await expect(page.getByText('Priscilla')).toHaveCount(0);
     await expect(page.getByText('It’s a girl')).toHaveCount(0);
   });

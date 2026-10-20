@@ -1,21 +1,9 @@
-import { cookies } from 'next/headers';
-import { redirect, notFound } from 'next/navigation';
-import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth';
-import { getTenantBySlug } from '@/lib/tenant';
+import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { listSubscriptionsByTenant } from '@/lib/subscription';
 
 export default async function SubscriptionsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  const userId = verifySessionToken(token);
-  if (!userId) {
-    redirect('/login');
-  }
-
-  const tenant = await getTenantBySlug(slug);
-  if (!tenant || tenant.ownerId.toHexString() !== userId) {
-    notFound();
-  }
+  const { site: tenant } = await pageOwnedSite(slug);
 
   const subscriptions = await listSubscriptionsByTenant(tenant._id);
 

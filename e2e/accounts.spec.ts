@@ -33,9 +33,9 @@ test('a new User signs up and creates several Sites', async ({ page }, testInfo)
   await expect(page).toHaveURL(new RegExp(`/admin/${second}$`));
 
   await createSite(page, first, 'Copycat');
-  await expect(page.getByText('This slug is already taken.')).toBeVisible();
+  await expect(page.getByText('Site address is already taken.')).toBeVisible();
   await createSite(page, 'staging', 'Sneaky');
-  await expect(page.getByText('This slug is reserved.')).toBeVisible();
+  await expect(page.getByText('Site address is reserved.')).toBeVisible();
 
   await page.goto('/admin');
   await expect(page.getByText('Ada', { exact: true })).toBeVisible();

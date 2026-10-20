@@ -33,7 +33,8 @@ export type SiteSpec = {
   bornDaysAgo?: number;
   weight?: number;
   lengthCm?: number;
-  birthMessage?: string;
+  /** The Birth message in each language that has one. */
+  birthMessage?: { it?: string; en?: string };
   milestones?: { label: string; inDays: number }[];
 };
 
@@ -58,7 +59,7 @@ const sharedFixtureSites: SiteSpec[] = [
     bornDaysAgo: 2,
     weight: 3250,
     lengthCm: 50,
-    birthMessage: 'Everyone is doing well.',
+    birthMessage: { en: 'Everyone is doing well.' },
   },
   { ...waiting, slug: 'e2e-private', owner: 'a', babyName: 'Priscilla', showName: false, showSex: false },
   { ...waiting, slug: 'e2e-both', owner: 'a', babyName: 'Bianca', language: 'both' },
@@ -122,7 +123,7 @@ export const DEMO_SITES: SiteSpec[] = [
     bornDaysAgo: 4,
     weight: 3480,
     lengthCm: 52,
-    birthMessage: 'Mamma e bimbo stanno bene!',
+    birthMessage: { it: 'Mamma e bimbo stanno bene!' },
   },
   { ...waiting, slug: 'demo-sofia', owner: 'a', babyName: 'Sofia', showName: false, showSex: false, dueInDays: 80 },
   { ...waiting, slug: 'demo-nina', owner: 'b', babyName: 'Nina', dueInDays: 12 },

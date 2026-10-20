@@ -1,6 +1,6 @@
 import { MongoClient, type Db } from 'mongodb';
-import { databaseName } from './dbName';
-import { ensureIndexes } from './indexes';
+import { databaseName } from './dbName.ts';
+import { ensureIndexes } from './indexes.ts';
 
 declare global {
   // eslint-disable-next-line no-var

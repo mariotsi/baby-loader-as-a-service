@@ -14,6 +14,7 @@
 import { MongoClient, ObjectId } from 'mongodb';
 import { databaseName, testDataPolicy } from '../src/lib/dbName.ts';
 import { hashPassword } from '../src/lib/password.ts';
+import { parseNewSite } from '../src/lib/siteSettings.ts';
 import {
   DEMO_OWNERS,
   DEMO_SITES,
@@ -37,27 +38,49 @@ function isoDate(daysFromNow, now) {
   return new Date(now.getTime() + daysFromNow * DAY_MS).toISOString().slice(0, 10);
 }
 
-/** A Site document as createTenant and updateTenant (src/lib/tenant.ts) leave it. */
+/**
+ * A Site document as createSite (src/lib/tenant.ts) stores it, its Site
+ * settings validated by the same parseNewSite the app runs, so a fixture can
+ * never hold settings the app would refuse.
+ */
 function siteDoc(spec, ownerId, now) {
   const born = spec.bornDaysAgo !== undefined;
+  const parsed = parseNewSite(
+    {
+      slug: spec.slug,
+      settings: {
+        babyName: spec.babyName,
+        sex: spec.sex,
+        dueDate: spec.dueInDays === null ? null : isoDate(spec.dueInDays, now),
+        birth: born
+          ? {
+              born: true,
+              details: {
+                datetime: new Date(now.getTime() - spec.bornDaysAgo * DAY_MS).toISOString(),
+                weightGrams: spec.weight ?? null,
+                lengthCm: spec.lengthCm ?? null,
+                message: spec.birthMessage ?? {},
+              },
+            }
+          : { born: false, details: null },
+        milestones: (spec.milestones ?? []).map((m) => ({ label: m.label, date: isoDate(m.inDays, now) })),
+        language: spec.language,
+        theme: { palette: 'blush', font: 'inter' },
+        privacy: { showName: spec.showName, showSex: spec.showSex },
+      },
+    },
+    now
+  );
+  if (!parsed.ok) {
+    throw new Error(`Fixture Site ${spec.slug} has invalid Site settings: ${JSON.stringify(parsed.errors)}`);
+  }
   return {
+    ...parsed.value.settings,
     _id: new ObjectId(),
-    slug: spec.slug,
+    slug: parsed.value.slug,
     ownerId,
     createdAt: now,
     updatedAt: now,
-    babyName: spec.babyName,
-    sex: spec.sex,
-    dueDate: spec.dueInDays === null ? null : isoDate(spec.dueInDays, now),
-    birthDatetime: born ? new Date(now.getTime() - spec.bornDaysAgo * DAY_MS).toISOString() : null,
-    weight: born ? (spec.weight ?? null) : null,
-    lengthCm: born ? (spec.lengthCm ?? null) : null,
-    birthMessage: born ? (spec.birthMessage ?? '') : '',
-    birthMessageEn: '',
-    milestones: (spec.milestones ?? []).map((m) => ({ label: m.label, date: isoDate(m.inDays, now) })),
-    language: spec.language,
-    theme: { palette: 'blush', font: 'inter' },
-    privacy: { showName: spec.showName, showSex: spec.showSex },
     customDomain: null,
     customDomainVerified: false,
   };

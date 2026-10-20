@@ -28,10 +28,12 @@ export default async function TenantPage({ params }: { params: Promise<{ slug: s
 
   const lang = await resolveLang(tenant.language);
   const t = messages[lang];
-  const born = !!tenant.birthDatetime;
+  const { birth } = tenant;
+  const born = birth.born;
   const dateLocale = lang === 'it' ? 'it-IT' : 'en-US';
 
-  const showName = tenant.privacy.showName;
+  const name = tenant.privacy.showName && tenant.babyName ? tenant.babyName : null;
+  const title = born ? [t.bornTitle, name].filter(Boolean).join(' ') : `${t.waitingTitle} ${name ?? t.someone}`;
   const showSex = tenant.privacy.showSex && tenant.sex !== 'unknown';
 
   return (
@@ -41,10 +43,7 @@ export default async function TenantPage({ params }: { params: Promise<{ slug: s
       <div className="container">
         <div className="tenant-hero">
           <p className="tenant-tagline">{born ? t.bornTagline : t.waitingTagline}</p>
-          <h1 className="tenant-title">
-            {born ? t.bornTitle : t.waitingTitle}
-            {showName ? ` ${tenant.babyName}` : ''}
-          </h1>
+          <h1 className="tenant-title">{title}</h1>
 
           {showSex && <p className="muted">{tenant.sex === 'female' ? t.sexFemale : t.sexMale}</p>}
 
@@ -57,19 +56,19 @@ export default async function TenantPage({ params }: { params: Promise<{ slug: s
             </div>
           )}
 
-          {born && tenant.birthDatetime && (
+          {birth.born && (
             <div className="stack" style={{ alignItems: 'center', marginTop: '1.5rem' }}>
-              <p>{t.bornOn(new Date(tenant.birthDatetime).toLocaleString(dateLocale, { dateStyle: 'long', timeStyle: 'short' }))}</p>
-              {(tenant.weight || tenant.lengthCm) && (
+              <p>{t.bornOn(new Date(birth.details.datetime).toLocaleString(dateLocale, { dateStyle: 'long', timeStyle: 'short' }))}</p>
+              {(birth.details.weightGrams || birth.details.lengthCm) && (
                 <div className="row" style={{ justifyContent: 'center' }}>
-                  {tenant.weight ? (
+                  {birth.details.weightGrams ? (
                     <span className="muted">
-                      {t.weightLabel}: {tenant.weight} g
+                      {t.weightLabel}: {birth.details.weightGrams} g
                     </span>
                   ) : null}
-                  {tenant.lengthCm ? (
+                  {birth.details.lengthCm ? (
                     <span className="muted">
-                      {t.lengthLabel}: {tenant.lengthCm} cm
+                      {t.lengthLabel}: {birth.details.lengthCm} cm
                     </span>
                   ) : null}
                 </div>

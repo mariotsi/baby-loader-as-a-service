@@ -1,4 +1,5 @@
 import { request as playwrightRequest, type APIRequestContext } from '@playwright/test';
+import { defaultSiteSettings } from '../src/lib/siteSettings.ts';
 import { BASE_URL, bypassHeaders, ownerStatePath } from './support/env.ts';
 import { expect, test } from './support/test.ts';
 
@@ -18,7 +19,7 @@ test.describe('Owner B, logged in', () => {
   });
 
   for (const path of [`/admin/${A_SITE}`, `/admin/${A_SITE}/subscriptions`, `/admin/${A_SITE}/send`]) {
-    test(`gets 404 for ${path.replace(A_SITE, '<A’s Site>')}`, async ({ page }) => {
+    test(`gets the 404 page for ${path.replace(A_SITE, '<A’s Site>')}`, async ({ page }) => {
       const response = await page.goto(path);
       expect(response?.status()).toBe(404);
     });
@@ -35,15 +36,17 @@ test.describe('Owner B, logged in', () => {
     });
     test.afterAll(async () => api.dispose());
 
+    // Another Owner's Site answers as if it did not exist: 404, never 403.
     test('cannot read or change Owner A’s Site settings', async () => {
-      expect((await api.get(`/api/tenants/${A_SITE}`)).status()).toBe(403);
-      expect((await api.patch(`/api/tenants/${A_SITE}`, { data: { babyName: 'Taken over' } })).status()).toBe(403);
+      expect((await api.get(`/api/tenants/${A_SITE}`)).status()).toBe(404);
+      const put = await api.put(`/api/tenants/${A_SITE}`, { data: { ...defaultSiteSettings, babyName: 'Taken over' } });
+      expect(put.status()).toBe(404);
     });
 
     test('cannot count or notify Owner A’s Subscribers', async () => {
-      expect((await api.get(`/api/send-notification?tenantSlug=${A_SITE}`)).status()).toBe(403);
+      expect((await api.get(`/api/send-notification?tenantSlug=${A_SITE}`)).status()).toBe(404);
       const send = await api.post('/api/send-notification', { data: { tenantSlug: A_SITE, body: 'Hello from B' } });
-      expect(send.status()).toBe(403);
+      expect(send.status()).toBe(404);
     });
   });
 });
