@@ -163,8 +163,8 @@ button {
 /* Environment ribbon (src/components/EnvironmentRibbon.tsx) */
 .env-ribbon {
   position: fixed;
-  top: 26px;
-  right: -44px;
+  top: 36px;
+  right: -36px;
   z-index: 1000;
   width: 170px;
   padding: 6px 0;
