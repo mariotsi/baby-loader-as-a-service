@@ -1,13 +1,14 @@
 #!/usr/bin/env node
-// Waits until a deployment serves a given commit, then prints the URL to test
+// Finds where a deployment serves a given commit and prints the URL to test
 // it on, as a GitHub Actions environment line: E2E_BASE_URL=https://<rootDomain>.
 //
 //   DEPLOYMENT_URL=https://... COMMIT=<sha> node scripts/wait-for-deployment.mjs >> "$GITHUB_ENV"
 //
-// A preview deployment reports its branch URL as rootDomain: the Dashboard
-// builds Addresses on that host, so tests run there rather than on the
-// deployment's own URL, and the branch URL is polled too until it points at
-// the commit. Staging is polled because a push starts its deployment.
+// DEPLOYMENT_URL is the deployment's own vercel.app URL, from Vercel's
+// deployment event. The Dashboard builds Addresses on rootDomain instead (a
+// preview's branch URL, or staging.loading.baby), so tests run there, once
+// that host has been pointed at the commit: Vercel moves the alias right
+// after reporting the deployment ready.
 
 const TIMEOUT_MS = 15 * 60 * 1000;
 const INTERVAL_MS = 10 * 1000;

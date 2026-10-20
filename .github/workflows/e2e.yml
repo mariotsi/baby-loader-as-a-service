@@ -1,28 +1,26 @@
 name: E2E
 
-# Runs the Playwright suite (e2e/) against a live deployment:
-# - every preview deployment of this repository's Vercel project, once Vercel
-#   reports it ready, which puts the check on the pull request's commit;
-# - staging, on every push to the `staging` branch, once staging serves it.
-# Production is never tested: the suite refuses a deployment that reports it
-# (e2e/global-setup.ts).
+# Runs the Playwright suite (e2e/) against every deployment of the Vercel
+# project baby-loader-staging once Vercel reports it ready: its previews,
+# whose check lands on the pull request's commit, and staging, its
+# production branch. The production project, baby-loader-as-a-service, is
+# never tested: the job filters it out, and the suite refuses a deployment
+# that reports production (e2e/global-setup.ts).
 
 on:
   deployment_status:
-  push:
-    branches: [staging]
 
-# Staging runs one at a time, the newest push winning. Vercel's deployment
-# events carry no branch, so preview runs are grouped per commit.
+# Vercel's deployment events carry no branch: staging runs one at a time,
+# the newest deployment winning, and previews are grouped per commit.
 concurrency:
-  group: e2e-${{ github.event_name == 'push' && 'staging' || github.sha }}
+  group: e2e-${{ startsWith(github.event.deployment.environment, 'Production') && 'staging' || github.sha }}
   cancel-in-progress: true
 
 jobs:
   e2e:
     if: >-
-      github.event_name == 'push' ||
-      (github.event.deployment_status.state == 'success' && github.event.deployment.environment == 'Preview')
+      github.event.deployment_status.state == 'success' &&
+      endsWith(github.event.deployment.environment, 'baby-loader-staging')
     runs-on: ubuntu-latest
     timeout-minutes: 30
     env:
@@ -30,8 +28,9 @@ jobs:
       # Staging and preview databases both live on the non-production cluster.
       E2E_MONGODB_URI: ${{ secrets.PREVIEW_MONGODB_URI }}
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
-      # Only preview deployments sit behind Vercel's Deployment Protection.
-      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ github.event_name == 'deployment_status' && secrets.VERCEL_AUTOMATION_BYPASS_SECRET || '' }}
+      # baby-loader-staging's Protection Bypass for Automation: its vercel.app
+      # URLs sit behind Deployment Protection, staging.loading.baby does not.
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -40,9 +39,9 @@ jobs:
           cache: npm
       - run: npm ci
 
-      - name: Wait until the deployment serves this commit
+      - name: Find where the deployment serves this commit
         env:
-          DEPLOYMENT_URL: ${{ github.event_name == 'push' && 'https://staging.loading.baby' || github.event.deployment_status.environment_url }}
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.environment_url }}
           COMMIT: ${{ github.sha }}
         run: node scripts/wait-for-deployment.mjs >> "$GITHUB_ENV"
 

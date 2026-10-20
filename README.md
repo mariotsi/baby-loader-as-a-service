@@ -113,12 +113,15 @@ Before a run the suite asks the deployment which environment it is
 deployment's database; afterwards it deletes what it created. ADR-0006 has
 the data rules.
 
-In CI, `.github/workflows/e2e.yml` runs the suite on every preview
-deployment, once Vercel reports it ready, and on every push to `staging`,
-once staging serves it. It needs three repository secrets:
+In CI, `.github/workflows/e2e.yml` runs the suite on every deployment of
+the `baby-loader-staging` project once Vercel reports it to GitHub as ready:
+each preview, whose check shows on the pull request, and staging. Both
+Vercel projects create GitHub Deployments; the workflow ignores the
+production project's. It needs three repository secrets:
 `PREVIEW_MONGODB_URI` (non-production cluster), `E2E_PASSWORD` (fixture
-Owners) and `VERCEL_AUTOMATION_BYPASS_SECRET` (Vercel's Protection Bypass
-for Automation, to get past Deployment Protection on previews).
+Owners) and `VERCEL_AUTOMATION_BYPASS_SECRET` (the staging project's
+Protection Bypass for Automation, to get past Deployment Protection on its
+`vercel.app` URLs).
 
 ## Hosting
 
