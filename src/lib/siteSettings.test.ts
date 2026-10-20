@@ -1,6 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { defaultSiteSettings, parseNewSite, parseSiteSettings, type SiteSettingsInput } from './siteSettings.ts';
+import {
+  defaultNotificationTitle,
+  defaultSiteSettings,
+  parseNewSite,
+  parseSiteSettings,
+  type SiteSettingsInput,
+} from './siteSettings.ts';
 
 const NOW = new Date('2026-10-20T12:00:00Z');
 
@@ -146,4 +152,12 @@ test('a new Site lowercases its Slug and rejects bad or Reserved ones', () => {
     code: 'outOfRange',
     params: { min: '2025-12-20', max: '2027-08-20' },
   });
+});
+
+test('a Notification defaults to the name, hidden by Privacy settings only while Waiting', () => {
+  const hidden = { showName: false, showSex: false };
+  assert.equal(defaultNotificationTitle({ babyName: 'Emma', birth: { born: false, details: null }, privacy: hidden }), undefined);
+  assert.equal(defaultNotificationTitle({ ...settings({ babyName: 'Emma' }), birth: { born: false, details: null } }), 'Emma');
+  assert.equal(defaultNotificationTitle({ babyName: 'Emma', birth: born(), privacy: hidden }), 'Emma');
+  assert.equal(defaultNotificationTitle({ babyName: '', birth: born(), privacy: hidden }), undefined);
 });

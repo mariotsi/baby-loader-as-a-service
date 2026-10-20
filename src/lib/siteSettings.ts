@@ -129,6 +129,16 @@ export const defaultSiteSettings: SiteSettingsInput = {
   privacy: { showName: true, showSex: true },
 };
 
+/**
+ * The title of a Notification sent without one: the baby's name, which
+ * Privacy settings hide only in the Waiting state. Undefined leaves the
+ * service worker's generic title.
+ */
+export function defaultNotificationTitle(settings: Pick<SiteSettings, 'babyName' | 'birth' | 'privacy'>): string | undefined {
+  const nameShown = settings.birth.born || settings.privacy.showName;
+  return nameShown && settings.babyName ? settings.babyName : undefined;
+}
+
 /** The value at `path` in the raw input, to tell a missing field from one of the wrong type. */
 function rawAt(input: unknown, path: readonly PropertyKey[]): unknown {
   let value: unknown = input;
