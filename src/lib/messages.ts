@@ -10,6 +10,8 @@ import type { Lang } from './i18n';
 const en = {
   waitingTagline: 'Expecting',
   waitingTitle: 'We are waiting for',
+  /** Stands in for the name when there is none or Privacy settings hide it. */
+  someone: 'someone',
   duePrefix: 'Due date:',
   daysLeft: (n: number): string => (n === 1 ? 'day to go' : 'days to go'),
   daysLate: (n: number): string => (n === 1 ? 'day late' : 'days late'),
@@ -44,6 +46,7 @@ export type Messages = typeof en;
 const it: Messages = {
   waitingTagline: 'In attesa',
   waitingTitle: 'Stiamo aspettando',
+  someone: 'qualcuno',
   duePrefix: 'Arrivo previsto:',
   daysLeft: (n: number): string => (n === 1 ? 'giorno rimanente' : 'giorni rimanenti'),
   daysLate: (n: number): string => (n === 1 ? 'giorno in ritardo' : 'giorni in ritardo'),

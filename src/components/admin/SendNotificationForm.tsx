@@ -30,7 +30,7 @@ export function SendNotificationForm({ tenantSlug }: { tenantSlug: string }) {
   return (
     <form onSubmit={onSubmit} className="card stack">
       <div className="field">
-        <label>Title (optional, defaults to the baby&apos;s name)</label>
+        <label>Title (optional, defaults to the baby&apos;s name unless Privacy settings hide it before the birth)</label>
         <input value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
       <div className="field">
