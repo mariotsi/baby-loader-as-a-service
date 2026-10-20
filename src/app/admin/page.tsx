@@ -1,19 +1,10 @@
-import { cookies } from 'next/headers';
-import { redirect } from 'next/navigation';
 import Link from 'next/link';
-import { ObjectId } from 'mongodb';
-import { SESSION_COOKIE, verifySessionToken } from '@/lib/auth';
+import { pageUser } from '@/lib/ownerAccessNext';
 import { listTenantsByOwner } from '@/lib/tenant';
 import { tenantPublicUrl } from '@/lib/tenantUrl';
 
 export default async function AdminPage() {
-  const token = (await cookies()).get(SESSION_COOKIE)?.value;
-  const userId = verifySessionToken(token);
-  if (!userId) {
-    redirect('/login');
-  }
-
-  const tenants = await listTenantsByOwner(new ObjectId(userId));
+  const tenants = await listTenantsByOwner(await pageUser());
 
   return (
     <div className="container">
@@ -31,7 +22,7 @@ export default async function AdminPage() {
           {tenants.map((tenant) => (
             <div className="card row" key={tenant.slug} style={{ justifyContent: 'space-between' }}>
               <div>
-                <strong>{tenant.babyName}</strong>
+                <strong>{tenant.babyName || tenant.slug}</strong>
                 <div className="muted">{tenantPublicUrl(tenant.slug).replace(/^https?:\/\//, '')}</div>
               </div>
               <div className="row">

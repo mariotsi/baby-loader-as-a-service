@@ -2,8 +2,8 @@ import { createHmac, randomBytes, scrypt, timingSafeEqual, type ScryptOptions } 
 import { promisify } from 'util';
 import type { NextRequest } from 'next/server';
 import { ObjectId } from 'mongodb';
-import { getDb } from './mongodb';
-import { rateLimit } from './rateLimit';
+import { getDb } from './mongodb.ts';
+import { rateLimit } from './rateLimit.ts';
 
 export const SESSION_COOKIE = 'session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -146,19 +146,6 @@ export function sessionCookieOptions(maxAge = SESSION_TTL_MS / 1000) {
     path: '/',
     maxAge,
   };
-}
-
-/** Reads and validates the session cookie from a request; returns the user id or null. */
-export function getSessionUserId(req: NextRequest): string | null {
-  return verifySessionToken(req.cookies.get(SESSION_COOKIE)?.value);
-}
-
-export async function getSessionUser(req: NextRequest): Promise<User | null> {
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return null;
-  }
-  return getUserById(userId);
 }
 
 export function clientIp(req: NextRequest): string {

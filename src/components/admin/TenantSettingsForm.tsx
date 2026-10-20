@@ -2,19 +2,26 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { format, parseISO } from 'date-fns';
 import { PALETTES, FONTS } from '@/lib/theme';
+import type { Lang } from '@/lib/i18n';
+import type { BirthDetails, SiteSettingsInput } from '@/lib/siteSettings';
 import type { TenantDTO, Milestone } from '@/lib/tenant';
+import { describeSiteSettingsErrors } from './siteSettingsErrorText';
+
+const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
 
 export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
   const router = useRouter();
   const [babyName, setBabyName] = useState(tenant.babyName);
   const [sex, setSex] = useState(tenant.sex);
   const [dueDate, setDueDate] = useState(tenant.dueDate?.slice(0, 10) ?? '');
-  const [born, setBorn] = useState(!!tenant.birthDatetime);
-  const [birthDatetime, setBirthDatetime] = useState(tenant.birthDatetime?.slice(0, 16) ?? '');
-  const [weight, setWeight] = useState(tenant.weight?.toString() ?? '');
-  const [lengthCm, setLengthCm] = useState(tenant.lengthCm?.toString() ?? '');
-  const [birthMessage, setBirthMessage] = useState(tenant.birthMessage);
+  const details = tenant.birth.details;
+  const [born, setBorn] = useState(tenant.birth.born);
+  const [birthDatetime, setBirthDatetime] = useState(details ? format(parseISO(details.datetime), LOCAL_DATETIME) : '');
+  const [weight, setWeight] = useState(details?.weightGrams?.toString() ?? '');
+  const [lengthCm, setLengthCm] = useState(details?.lengthCm?.toString() ?? '');
+  const [birthMessage, setBirthMessage] = useState<BirthDetails['message']>(details?.message ?? {});
   const [language, setLanguage] = useState(tenant.language);
   const [palette, setPalette] = useState(tenant.theme.palette);
   const [font, setFont] = useState(tenant.theme.font);
@@ -34,25 +41,35 @@ export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
     setMilestones(milestones.filter((_, idx) => idx !== i));
   }
 
+  const messageLangs: Lang[] = language === 'both' ? ['it', 'en'] : [language];
+
   async function save() {
     setSaving(true);
     setMessage(null);
+    const settings: SiteSettingsInput = {
+      babyName,
+      sex,
+      dueDate: dueDate || null,
+      birth: born
+        ? {
+            born: true,
+            details: {
+              datetime: birthDatetime ? parseISO(birthDatetime).toISOString() : '',
+              weightGrams: weight ? Number(weight) : null,
+              lengthCm: lengthCm ? Number(lengthCm) : null,
+              message: Object.fromEntries(messageLangs.filter((lang) => birthMessage[lang]).map((lang) => [lang, birthMessage[lang]])),
+            },
+          }
+        : { born: false, details: null },
+      milestones: milestones.filter((m) => m.label && m.date),
+      language,
+      theme: { palette, font },
+      privacy: { showName, showSex },
+    };
     const res = await fetch(`/api/tenants/${tenant.slug}`, {
-      method: 'PATCH',
+      method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        babyName,
-        sex,
-        dueDate: dueDate || null,
-        birthDatetime: born && birthDatetime ? new Date(birthDatetime).toISOString() : null,
-        weight: weight ? Number(weight) : null,
-        lengthCm: lengthCm ? Number(lengthCm) : null,
-        birthMessage,
-        language,
-        theme: { palette, font },
-        privacy: { showName, showSex },
-        milestones: milestones.filter((m) => m.label && m.date),
-      }),
+      body: JSON.stringify(settings),
     });
     setSaving(false);
     if (res.ok) {
@@ -60,7 +77,7 @@ export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
       router.refresh();
     } else {
       const data = await res.json().catch(() => null);
-      setMessage(data?.error || 'Something went wrong.');
+      setMessage(data?.errors ? describeSiteSettingsErrors(data.errors) : data?.error || 'Something went wrong.');
     }
   }
 
@@ -104,10 +121,16 @@ export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
                 <input type="number" value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} />
               </div>
             </div>
-            <div className="field">
-              <label>Message</label>
-              <textarea value={birthMessage} onChange={(e) => setBirthMessage(e.target.value)} rows={3} />
-            </div>
+            {messageLangs.map((lang) => (
+              <div className="field" key={lang}>
+                <label>Message{messageLangs.length > 1 ? (lang === 'it' ? ' (Italian)' : ' (English)') : ''}</label>
+                <textarea
+                  value={birthMessage[lang] ?? ''}
+                  onChange={(e) => setBirthMessage({ ...birthMessage, [lang]: e.target.value })}
+                  rows={3}
+                />
+              </div>
+            ))}
           </>
         )}
       </div>

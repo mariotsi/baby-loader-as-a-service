@@ -3,6 +3,8 @@
 import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
 import { PALETTES, FONTS, DEFAULT_PALETTE, DEFAULT_FONT } from '@/lib/theme';
+import { defaultSiteSettings } from '@/lib/siteSettings';
+import { describeSiteSettingsErrors } from '@/components/admin/siteSettingsErrorText';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -27,16 +29,19 @@ export default function OnboardingPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           slug,
-          babyName,
-          dueDate: dueDate || null,
-          language,
-          theme: { palette, font },
-          privacy: { showName, showSex },
+          settings: {
+            ...defaultSiteSettings,
+            babyName,
+            dueDate: dueDate || null,
+            language,
+            theme: { palette, font },
+            privacy: { showName, showSex },
+          },
         }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Something went wrong.');
+        setError(data.errors ? describeSiteSettingsErrors(data.errors) : data.error || 'Something went wrong.');
         return;
       }
       router.push(`/admin/${data.tenant.slug}`);
