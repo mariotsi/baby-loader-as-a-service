@@ -57,7 +57,8 @@ export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
               datetime: birthDatetime ? parseISO(birthDatetime).toISOString() : '',
               weightGrams: weight ? Number(weight) : null,
               lengthCm: lengthCm ? Number(lengthCm) : null,
-              message: Object.fromEntries(messageLangs.filter((lang) => birthMessage[lang]).map((lang) => [lang, birthMessage[lang]])),
+              // Every message written is kept, also one the current Language mode does not show.
+              message: Object.fromEntries(Object.entries(birthMessage).filter(([, text]) => text)),
             },
           }
         : { born: false, details: null },
