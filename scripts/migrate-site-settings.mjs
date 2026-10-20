@@ -26,10 +26,12 @@ function birthFrom(doc) {
   if (doc.birthMessageEn) {
     message.en = doc.birthMessageEn;
   }
+  // An unparseable date stays as it is, so the parse below lists the Site for a manual fix.
+  const datetime = new Date(doc.birthDatetime);
   return {
     born: true,
     details: {
-      datetime: new Date(doc.birthDatetime).toISOString(),
+      datetime: Number.isNaN(datetime.getTime()) ? String(doc.birthDatetime) : datetime.toISOString(),
       weightGrams: typeof doc.weight === 'number' ? Math.round(doc.weight) : null,
       lengthCm: typeof doc.lengthCm === 'number' ? doc.lengthCm : null,
       message,
