@@ -7,9 +7,9 @@ const LABELS: Partial<Record<AppEnv, string>> = {
 };
 
 /**
- * Corner ribbon naming the environment on staging (blue) and preview
- * (yellow) deployments, on every page; production and local development
- * render nothing. It ignores pointer events, so it never covers a control.
+ * Corner ribbon naming the environment on every page: staging (blue),
+ * preview (yellow) and local development (green); production renders
+ * nothing. It ignores pointer events, so it never covers a control.
  */
 export function EnvironmentRibbon() {
   const env = appEnv(process.env);
