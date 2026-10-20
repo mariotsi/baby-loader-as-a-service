@@ -57,7 +57,7 @@ function problem({ code, params, path }: SiteSettingsError): string {
     case 'slugReserved':
       return 'is reserved';
     case 'invalidType':
-      return 'has the wrong type';
+      return path.endsWith('weightGrams') ? 'must be a whole number of grams' : 'has the wrong type';
   }
 }
 
