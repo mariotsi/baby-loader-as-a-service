@@ -73,19 +73,52 @@ Deliberately not yet built (see the original planning discussion):
 
 ## Local development
 
+Needs Docker (on macOS, [Colima](https://github.com/abiosoft/colima) works:
+`brew install colima docker docker-compose && colima start`).
+
 ```bash
 npm install
-cp .env.local.example .env.local   # fill in MONGODB_URI, SESSION_SECRET, VAPID keys
+npm run db:up                       # MongoDB in Docker, data kept in a volume
+cp .env.local.example .env.local    # then fill in SESSION_SECRET and the VAPID keys
 npm run generate-vapid              # prints VAPID keys to paste into .env.local
+npm run seed                        # optional: demo Owners and Sites
 npm run dev
 ```
 
-In dev, `localhost:3000` serves the marketing/account/admin app. Tenant
-subdomains need a resolvable `ROOT_DOMAIN` — most browsers resolve
-`*.localhost` locally, so you can test a tenant at `slugname.localhost:3000`
-once `ROOT_DOMAIN=localhost` is set. In production, set `ROOT_DOMAIN` to your
-real domain (e.g. `example.com`) and point a wildcard DNS record
-(`*.example.com`) at your deployment.
+`localhost:3000` serves the Platform, and each Site its Address at
+`<slug>.localhost:3000` (browsers resolve `*.localhost` to this machine).
+`npm run seed` creates `demo-owner-a@waitingpages.test` and
+`demo-owner-b@waitingpages.test`, password `waiting-pages-demo`.
+
+`npm run dev:staging` runs the local app on staging's database instead, with
+the credentials in `.env.staging.local` (see `.env.staging.local.example`).
+No local setup reaches production's database.
+
+## End-to-end tests
+
+Playwright tests in `e2e/` cover signup and Site creation, login, the Public
+page in each state, Privacy settings and Language mode, Site settings,
+Subscribers and Notifications, and that an Owner cannot reach another
+Owner's Sites. They run in Chromium (desktop) and WebKit (iPhone).
+
+```bash
+npm run db:up
+npm run e2e              # builds and starts the app on :3100, database waitingpages-e2e
+npm run e2e:staging      # against staging.loading.baby, needs .env.staging.local
+npm run e2e:report       # opens the last HTML report
+```
+
+Before a run the suite asks the deployment which environment it is
+(`/api/version`), refuses production, and resets its fixtures in that
+deployment's database; afterwards it deletes what it created. ADR-0006 has
+the data rules.
+
+In CI, `.github/workflows/e2e.yml` runs the suite on every preview
+deployment, once Vercel reports it ready, and on every push to `staging`,
+once staging serves it. It needs three repository secrets:
+`PREVIEW_MONGODB_URI` (non-production cluster), `E2E_PASSWORD` (fixture
+Owners) and `VERCEL_AUTOMATION_BYPASS_SECRET` (Vercel's Protection Bypass
+for Automation, to get past Deployment Protection on previews).
 
 ## Hosting
 
@@ -104,7 +137,9 @@ flagged as a cost item to verify, not yet done.
 | Preview | `baby-loader-as-a-service`, every other branch | the branch's `*.vercel.app` URL, Sites at `/sites/<slug>` | non-production cluster, database `waitingpages-<branch>` |
 
 - **Database per branch** (`src/lib/dbName.ts`): a preview deployment with no
-  `MONGODB_DB_NAME` uses `waitingpages-<branch>`. MongoDB creates it on its
+  `MONGODB_DB_NAME` uses `waitingpages-<branch>`. Production must set
+  `MONGODB_DB_NAME` or refuses to start; anywhere else an unset name falls
+  back to `waitingpages-staging`, never to production's. MongoDB creates it on its
   first write, and the first request of each process creates the indexes
   (`src/lib/indexes.ts`), so a new branch needs no setup. The workflow
   `.github/workflows/drop-preview-db.yml` drops the database when the pull

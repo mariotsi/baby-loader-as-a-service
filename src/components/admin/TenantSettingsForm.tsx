@@ -69,20 +69,20 @@ export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
       <div className="card stack">
         <h2>Baby details</h2>
         <div className="field">
-          <label>Name</label>
-          <input value={babyName} onChange={(e) => setBabyName(e.target.value)} />
+          <label htmlFor="settings-name">Name</label>
+          <input id="settings-name" value={babyName} onChange={(e) => setBabyName(e.target.value)} />
         </div>
         <div className="field">
-          <label>Sex</label>
-          <select value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
+          <label htmlFor="settings-sex">Sex</label>
+          <select id="settings-sex" value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
             <option value="unknown">Prefer not to say</option>
             <option value="female">Girl</option>
             <option value="male">Boy</option>
           </select>
         </div>
         <div className="field">
-          <label>Due date</label>
-          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+          <label htmlFor="settings-due-date">Due date</label>
+          <input id="settings-due-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
         </div>
         <label className="row" style={{ gap: '0.5rem' }}>
           <input type="checkbox" checked={born} onChange={(e) => setBorn(e.target.checked)} />
@@ -91,22 +91,22 @@ export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
         {born && (
           <>
             <div className="field">
-              <label>Birth date &amp; time</label>
-              <input type="datetime-local" value={birthDatetime} onChange={(e) => setBirthDatetime(e.target.value)} />
+              <label htmlFor="settings-birth-datetime">Birth date &amp; time</label>
+              <input id="settings-birth-datetime" type="datetime-local" value={birthDatetime} onChange={(e) => setBirthDatetime(e.target.value)} />
             </div>
             <div className="row">
               <div className="field">
-                <label>Weight (g)</label>
-                <input type="number" value={weight} onChange={(e) => setWeight(e.target.value)} />
+                <label htmlFor="settings-weight">Weight (g)</label>
+                <input id="settings-weight" type="number" value={weight} onChange={(e) => setWeight(e.target.value)} />
               </div>
               <div className="field">
-                <label>Length (cm)</label>
-                <input type="number" value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} />
+                <label htmlFor="settings-length">Length (cm)</label>
+                <input id="settings-length" type="number" value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} />
               </div>
             </div>
             <div className="field">
-              <label>Message</label>
-              <textarea value={birthMessage} onChange={(e) => setBirthMessage(e.target.value)} rows={3} />
+              <label htmlFor="settings-birth-message">Message</label>
+              <textarea id="settings-birth-message" value={birthMessage} onChange={(e) => setBirthMessage(e.target.value)} rows={3} />
             </div>
           </>
         )}
@@ -118,12 +118,18 @@ export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
           <div className="row" key={i}>
             <input
               placeholder="Label"
+              aria-label={`Milestone ${i + 1} label`}
               value={m.label}
               onChange={(e) => updateMilestone(i, { label: e.target.value })}
               style={{ flex: 1 }}
             />
-            <input type="date" value={m.date} onChange={(e) => updateMilestone(i, { date: e.target.value })} />
-            <button type="button" className="btn-secondary" onClick={() => removeMilestone(i)}>
+            <input type="date" aria-label={`Milestone ${i + 1} date`} value={m.date} onChange={(e) => updateMilestone(i, { date: e.target.value })} />
+            <button
+              type="button"
+              className="btn-secondary"
+              onClick={() => removeMilestone(i)}
+              aria-label={`Remove milestone ${i + 1}`}
+            >
               Remove
             </button>
           </div>
@@ -151,8 +157,8 @@ export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
           </div>
         </div>
         <div className="field">
-          <label>Font</label>
-          <select value={font} onChange={(e) => setFont(e.target.value)}>
+          <label htmlFor="settings-font">Font</label>
+          <select id="settings-font" value={font} onChange={(e) => setFont(e.target.value)}>
             {FONTS.map((f) => (
               <option key={f.id} value={f.id}>
                 {f.name}
@@ -161,8 +167,8 @@ export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
           </select>
         </div>
         <div className="field">
-          <label>Language</label>
-          <select value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>
+          <label htmlFor="settings-language">Language</label>
+          <select id="settings-language" value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>
             <option value="en">English only</option>
             <option value="it">Italiano only</option>
             <option value="both">Both (visitor picks)</option>

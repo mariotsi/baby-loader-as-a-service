@@ -30,12 +30,12 @@ export function SendNotificationForm({ tenantSlug }: { tenantSlug: string }) {
   return (
     <form onSubmit={onSubmit} className="card stack">
       <div className="field">
-        <label>Title (optional, defaults to the baby&apos;s name)</label>
-        <input value={title} onChange={(e) => setTitle(e.target.value)} />
+        <label htmlFor="notification-title">Title (optional, defaults to the baby&apos;s name)</label>
+        <input id="notification-title" value={title} onChange={(e) => setTitle(e.target.value)} />
       </div>
       <div className="field">
-        <label>Message</label>
-        <textarea required rows={3} value={body} onChange={(e) => setBody(e.target.value)} />
+        <label htmlFor="notification-message">Message</label>
+        <textarea id="notification-message" required rows={3} value={body} onChange={(e) => setBody(e.target.value)} />
       </div>
       {result && <p className="muted">{result}</p>}
       <button className="btn" type="submit" disabled={sending} style={{ alignSelf: 'flex-start' }}>

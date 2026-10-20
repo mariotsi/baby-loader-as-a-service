@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ROOT_DOMAIN } from '@/lib/tenantUrl';
+import { ROOT_HOSTNAME } from '@/lib/tenantUrl';
 
 /**
  * Resolves which tenant (if any) a request's Host header maps to, and
@@ -22,12 +22,12 @@ function stripPort(host: string): string {
 function resolveSlug(host: string): string | null {
   const hostname = stripPort(host.toLowerCase());
 
-  if (hostname === ROOT_DOMAIN || hostname === `www.${ROOT_DOMAIN}` || hostname === 'localhost') {
+  if (hostname === ROOT_HOSTNAME || hostname === `www.${ROOT_HOSTNAME}` || hostname === 'localhost') {
     return null;
   }
 
-  if (hostname.endsWith(`.${ROOT_DOMAIN}`)) {
-    const sub = hostname.slice(0, -(`.${ROOT_DOMAIN}`.length));
+  if (hostname.endsWith(`.${ROOT_HOSTNAME}`)) {
+    const sub = hostname.slice(0, -(`.${ROOT_HOSTNAME}`.length));
     // Only a single level of subdomain is a tenant slug; anything else
     // (unexpected multi-level host) falls through to the root app.
     return sub && !sub.includes('.') ? sub : null;
