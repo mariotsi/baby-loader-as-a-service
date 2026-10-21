@@ -14,6 +14,28 @@ test.describe('Dashboard', () => {
     expect(await dashboardAddress(page, 'e2e-waiting')).toMatch(/e2e-waiting/);
   });
 
+  test('onboarding shows the Address while the Owner types the Slug', async ({ page, addressOf }) => {
+    const known = await addressOf('e2e-waiting');
+    await page.goto('/onboarding');
+    const slugField = page.getByLabel('Site address');
+
+    await slugField.fill('e2e-new-baby');
+    // The fixture reads a link's resolved href, which ends in "/" at a host's root; the page writes the Address without it.
+    const expected = known.replace('e2e-waiting', 'e2e-new-baby').replace(/\/$/, '');
+    await expect(page.getByText(/^Your page will be at /)).toHaveText(`Your page will be at ${expected}`);
+    await slugField.fill('-bad');
+    await expect(page.getByText(/^Use 3-32 lowercase letters/)).toBeVisible();
+    await slugField.fill('staging');
+    await expect(page.getByText('This address is reserved.')).toBeVisible();
+  });
+
+  test('links a Site’s Address on its page', async ({ page, addressOf }) => {
+    const address = await addressOf('e2e-waiting');
+    await page.goto('/admin/e2e-waiting');
+    const link = page.getByRole('link', { name: address.replace(/^https?:\/\//, '').replace(/\/$/, '') });
+    expect(await link.evaluate((a) => (a as HTMLAnchorElement).href)).toBe(address);
+  });
+
   test('saves Site settings and marks the baby as born', async ({ page, project }) => {
     const slug = perProjectSlug('e2e-edit', project);
     await page.goto(`/admin/${slug}`);

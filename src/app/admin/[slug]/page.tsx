@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import { SiteSettingsForm } from '@/components/admin/SiteSettingsForm';
+import { siteAddress } from '@/lib/address';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { toSiteDTO } from '@/lib/site';
 
 export default async function AdminSitePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { site } = await pageOwnedSite(slug);
+  const address = siteAddress(site.slug);
 
   return (
     <div className="container">
@@ -20,6 +22,12 @@ export default async function AdminSitePage({ params }: { params: Promise<{ slug
           </Link>
         </div>
       </div>
+      <p className="muted">
+        Address (the Slug is fixed once the Site exists):{' '}
+        <a href={address} target="_blank" rel="noreferrer">
+          {address.replace(/^https?:\/\//, '')}
+        </a>
+      </p>
       <SiteSettingsForm site={toSiteDTO(site)} timeZones={Intl.supportedValuesOf('timeZone')} />
     </div>
   );
