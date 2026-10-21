@@ -118,11 +118,15 @@ the `baby-loader-staging` project once Vercel reports it to GitHub as ready:
 each preview, whose check shows on the pull request, and staging, where a
 pass promotes the commit to production (see "Environments"). Both Vercel
 projects create GitHub Deployments; the workflow ignores the production
-project's. The suite needs three repository secrets:
-`PREVIEW_MONGODB_URI` (non-production cluster), `E2E_PASSWORD` (fixture
-Owners) and `VERCEL_AUTOMATION_BYPASS_SECRET` (the staging project's
-Protection Bypass for Automation, to get past Deployment Protection on its
-`vercel.app` URLs).
+project's. Each run writes its test data where the deployment under test
+reads it, so the suite needs four repository secrets: `STAGING_MONGODB_URI`
+(the staging project's Production-scope `MONGODB_URI`, for staging runs),
+`PREVIEW_MONGODB_URI` (its Preview-scope `MONGODB_URI`, for preview runs),
+`E2E_PASSWORD` (fixture Owners) and `VERCEL_AUTOMATION_BYPASS_SECRET` (the
+staging project's Protection Bypass for Automation, to get past Deployment
+Protection on its `vercel.app` URLs). On staging the test data goes to
+`waitingpages-staging`, which must be the staging project's Production-scope
+`MONGODB_DB_NAME`.
 
 The job runs in Playwright's Docker image
 (`mcr.microsoft.com/playwright:v<version>-noble`), which ships the browsers
@@ -160,10 +164,10 @@ receives the exact commit that passed the E2E suite on staging.
   every other push.
 - **Credentials**: preview deployments run unreviewed branch code, so
   production's `MONGODB_URI`, `SESSION_SECRET` and VAPID keypair exist only in
-  the production project, Production scope. The staging project holds the
-  non-production cluster's `MONGODB_URI`, a `SESSION_SECRET` and a VAPID
-  keypair for its Production and Preview scopes; within a deployment every
-  Site shares one keypair (ADR-0002).
+  the production project, Production scope. The staging project holds a
+  non-production `MONGODB_URI`, a `SESSION_SECRET` and a VAPID keypair in
+  each of its scopes: Production for staging, Preview for pull requests'
+  previews. Within a deployment every Site shares one keypair (ADR-0002).
 - **Database per deployment** (`src/lib/dbName.ts`): production and staging
   set `MONGODB_DB_NAME`; a preview, which does not, uses
   `waitingpages-<branch>`. Production refuses to start without

@@ -41,8 +41,6 @@ jobs:
       options: --user 1001
     env:
       CI: true
-      # Staging and preview databases both live on the non-production cluster.
-      E2E_MONGODB_URI: ${{ secrets.PREVIEW_MONGODB_URI }}
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
       # baby-loader-staging's Protection Bypass for Automation: its vercel.app
       # URLs sit behind Deployment Protection, staging.loading.baby does not.
@@ -55,6 +53,25 @@ jobs:
           path: ~/.npm
           key: npm-playwright-${{ hashFiles('package-lock.json') }}
       - run: npm ci
+
+      # The run's test data goes to the database the deployment under test
+      # uses: staging's from the Production scope of baby-loader-staging, a
+      # preview's from its Preview scope.
+      - name: Pick the database of the deployment under test
+        env:
+          ENVIRONMENT: ${{ github.event.deployment.environment }}
+          STAGING_MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
+          PREVIEW_MONGODB_URI: ${{ secrets.PREVIEW_MONGODB_URI }}
+        run: |
+          case "$ENVIRONMENT" in
+            Production*) secret=STAGING_MONGODB_URI uri=$STAGING_MONGODB_URI ;;
+            *) secret=PREVIEW_MONGODB_URI uri=$PREVIEW_MONGODB_URI ;;
+          esac
+          if [ -z "$uri" ]; then
+            echo "::error::Set the repository secret $secret"
+            exit 1
+          fi
+          echo "E2E_MONGODB_URI=$uri" >> "$GITHUB_ENV"
 
       - name: Find where the deployment serves this commit
         env:
