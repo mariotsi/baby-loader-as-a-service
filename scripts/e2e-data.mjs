@@ -12,18 +12,12 @@
 // nothing on production, fixtures only on staging.
 
 import { MongoClient, ObjectId } from 'mongodb';
+import { DEMO_OWNERS, DEMO_SITES, FIXTURE_OWNERS, FIXTURE_SITES, RUN_PREFIX } from '../e2e/support/data.ts';
 import { databaseName, testDataPolicy } from '../src/lib/dbName.ts';
 import { applyMigrations } from '../src/lib/migrations.ts';
 import { hashPassword } from '../src/lib/password.ts';
-import { MIGRATIONS } from '../src/migrations/index.ts';
 import { parseNewSite } from '../src/lib/siteSettings.ts';
-import {
-  DEMO_OWNERS,
-  DEMO_SITES,
-  FIXTURE_OWNERS,
-  FIXTURE_SITES,
-  RUN_PREFIX,
-} from '../e2e/support/data.ts';
+import { MIGRATIONS } from '../src/migrations/index.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -95,7 +89,10 @@ function siteDoc(spec, ownerId, now) {
 async function resetData(db, owners, sites, password) {
   const emails = Object.values(owners);
   const slugs = sites.map((s) => s.slug);
-  const old = await db.collection('sites').find({ slug: { $in: slugs } }, { projection: { _id: 1 } }).toArray();
+  const old = await db
+    .collection('sites')
+    .find({ slug: { $in: slugs } }, { projection: { _id: 1 } })
+    .toArray();
   await db.collection('subscriptions').deleteMany({ siteId: { $in: old.map((t) => t._id) } });
   await db.collection('sites').deleteMany({ slug: { $in: slugs } });
   await db.collection('users').deleteMany({ email: { $in: emails } });
@@ -120,9 +117,14 @@ async function cleanup(db, runId) {
   const anyRun = `^${RUN_PREFIX}`;
   const stale = new Date(Date.now() - DAY_MS);
   const siteFilter = { $or: [{ slug: { $regex: thisRun } }, { slug: { $regex: anyRun }, createdAt: { $lt: stale } }] };
-  const userFilter = { $or: [{ email: { $regex: thisRun } }, { email: { $regex: anyRun }, createdAt: { $lt: stale } }] };
+  const userFilter = {
+    $or: [{ email: { $regex: thisRun } }, { email: { $regex: anyRun }, createdAt: { $lt: stale } }],
+  };
 
-  const found = await db.collection('sites').find(siteFilter, { projection: { _id: 1 } }).toArray();
+  const found = await db
+    .collection('sites')
+    .find(siteFilter, { projection: { _id: 1 } })
+    .toArray();
   const subs = await db.collection('subscriptions').deleteMany({ siteId: { $in: found.map((s) => s._id) } });
   const sites = await db.collection('sites').deleteMany(siteFilter);
   const users = await db.collection('users').deleteMany(userFilter);

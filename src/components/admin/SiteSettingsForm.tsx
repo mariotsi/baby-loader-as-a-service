@@ -1,12 +1,12 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { format, parseISO } from 'date-fns';
-import { PALETTES, FONTS } from '@/lib/theme';
+import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import type { Lang } from '@/lib/i18n';
+import type { Milestone, SiteDTO } from '@/lib/site';
 import type { BirthDetails, SiteSettingsInput } from '@/lib/siteSettings';
-import type { SiteDTO, Milestone } from '@/lib/site';
+import { FONTS, PALETTES } from '@/lib/theme';
 import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
@@ -111,7 +111,12 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
           <>
             <div className="field">
               <label htmlFor="settings-birth-datetime">Birth date &amp; time</label>
-              <input id="settings-birth-datetime" type="datetime-local" value={birthDatetime} onChange={(e) => setBirthDatetime(e.target.value)} />
+              <input
+                id="settings-birth-datetime"
+                type="datetime-local"
+                value={birthDatetime}
+                onChange={(e) => setBirthDatetime(e.target.value)}
+              />
             </div>
             <div className="row">
               <div className="field">
@@ -120,7 +125,12 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
               </div>
               <div className="field">
                 <label htmlFor="settings-length">Length (cm)</label>
-                <input id="settings-length" type="number" value={lengthCm} onChange={(e) => setLengthCm(e.target.value)} />
+                <input
+                  id="settings-length"
+                  type="number"
+                  value={lengthCm}
+                  onChange={(e) => setLengthCm(e.target.value)}
+                />
               </div>
             </div>
             {messageLangs.map((lang) => (
@@ -152,7 +162,12 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
               onChange={(e) => updateMilestone(i, { label: e.target.value })}
               style={{ flex: 1 }}
             />
-            <input type="date" aria-label={`Milestone ${i + 1} date`} value={m.date} onChange={(e) => updateMilestone(i, { date: e.target.value })} />
+            <input
+              type="date"
+              aria-label={`Milestone ${i + 1} date`}
+              value={m.date}
+              onChange={(e) => updateMilestone(i, { date: e.target.value })}
+            />
             <button
               type="button"
               className="btn-secondary"
@@ -174,16 +189,16 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
           <fieldset className="swatches">
             <legend className="field-label">Palette</legend>
             <div className="row">
-            {PALETTES.map((p) => (
-              <button
-                type="button"
-                key={p.id}
-                onClick={() => setPalette(p.id)}
-                className={`swatch${palette === p.id ? ' selected' : ''}`}
-                style={{ background: p.vars['--accent'] }}
-                title={p.name}
-              />
-            ))}
+              {PALETTES.map((p) => (
+                <button
+                  type="button"
+                  key={p.id}
+                  onClick={() => setPalette(p.id)}
+                  className={`swatch${palette === p.id ? ' selected' : ''}`}
+                  style={{ background: p.vars['--accent'] }}
+                  title={p.name}
+                />
+              ))}
             </div>
           </fieldset>
         </div>
@@ -199,7 +214,11 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
         </div>
         <div className="field">
           <label htmlFor="settings-language">Language</label>
-          <select id="settings-language" value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>
+          <select
+            id="settings-language"
+            value={language}
+            onChange={(e) => setLanguage(e.target.value as typeof language)}
+          >
             <option value="en">English only</option>
             <option value="it">Italiano only</option>
             <option value="both">Both (visitor picks)</option>

@@ -1,8 +1,8 @@
-import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, before, test } from 'node:test';
 import type { Db } from 'mongodb';
-import { getMongoClient } from './mongodb.ts';
 import { applyMigrations, MIGRATIONS_COLLECTION, type Migration } from './migrations.ts';
+import { getMongoClient } from './mongodb.ts';
 import { startTestDb } from './testDb.ts';
 
 let stopDb: () => Promise<void>;

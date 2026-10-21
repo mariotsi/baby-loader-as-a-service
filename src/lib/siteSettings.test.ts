@@ -1,5 +1,5 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import {
   defaultNotificationTitle,
   defaultSiteSettings,
@@ -88,9 +88,10 @@ test('Birth details exist only in the Born state', () => {
   assert.deepEqual(errorsOf(settings({ birth: { born: false, details: born().details } as never })), [
     { path: 'birth.details', code: 'invalidType' },
   ]);
-  assert.deepEqual(errorsOf(settings({ babyName: 'Emma', sex: 'male', birth: { born: true, details: null } as never })), [
-    { path: 'birth.details', code: 'required' },
-  ]);
+  assert.deepEqual(
+    errorsOf(settings({ babyName: 'Emma', sex: 'male', birth: { born: true, details: null } as never })),
+    [{ path: 'birth.details', code: 'required' }]
+  );
 });
 
 test('the birth date and time is a real instant, never after now', () => {
@@ -113,8 +114,14 @@ test('weight and length stay within their ranges, weight in whole grams', () => 
     { path: 'birth.details.weightGrams', code: 'outOfRange', params: { max: 8000 } },
     { path: 'birth.details.lengthCm', code: 'outOfRange', params: { min: 20 } },
   ]);
-  assert.deepEqual(errorsOf(settings({ ...named, birth: born({ weightGrams: 3400.5 }) }))[0].path, 'birth.details.weightGrams');
-  assert.equal(parseSiteSettings(settings({ ...named, birth: born({ weightGrams: null, lengthCm: null }) }), NOW).ok, true);
+  assert.deepEqual(
+    errorsOf(settings({ ...named, birth: born({ weightGrams: 3400.5 }) }))[0].path,
+    'birth.details.weightGrams'
+  );
+  assert.equal(
+    parseSiteSettings(settings({ ...named, birth: born({ weightGrams: null, lengthCm: null }) }), NOW).ok,
+    true
+  );
 });
 
 test('the Birth message is capped per language', () => {
@@ -133,7 +140,9 @@ test('Milestones need a label and a real date, at most 50 of them', () => {
     { path: 'milestones.0.date', code: 'required' },
   ]);
   const many = Array.from({ length: 51 }, () => ({ label: 'Scan', date: '2026-05-01' }));
-  assert.deepEqual(errorsOf(settings({ milestones: many })), [{ path: 'milestones', code: 'tooLong', params: { max: 50 } }]);
+  assert.deepEqual(errorsOf(settings({ milestones: many })), [
+    { path: 'milestones', code: 'tooLong', params: { max: 50 } },
+  ]);
 });
 
 test('a new Site lowercases its Slug and rejects bad or Reserved ones', () => {
@@ -156,8 +165,14 @@ test('a new Site lowercases its Slug and rejects bad or Reserved ones', () => {
 
 test('a Notification defaults to the name, hidden by Privacy settings only while Waiting', () => {
   const hidden = { showName: false, showSex: false };
-  assert.equal(defaultNotificationTitle({ babyName: 'Emma', birth: { born: false, details: null }, privacy: hidden }), undefined);
-  assert.equal(defaultNotificationTitle({ ...settings({ babyName: 'Emma' }), birth: { born: false, details: null } }), 'Emma');
+  assert.equal(
+    defaultNotificationTitle({ babyName: 'Emma', birth: { born: false, details: null }, privacy: hidden }),
+    undefined
+  );
+  assert.equal(
+    defaultNotificationTitle({ ...settings({ babyName: 'Emma' }), birth: { born: false, details: null } }),
+    'Emma'
+  );
   assert.equal(defaultNotificationTitle({ babyName: 'Emma', birth: born(), privacy: hidden }), 'Emma');
   assert.equal(defaultNotificationTitle({ babyName: '', birth: born(), privacy: hidden }), undefined);
 });

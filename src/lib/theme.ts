@@ -165,9 +165,7 @@ export function themeStyle(theme: { palette: string; font: string }): Record<str
 
 /** Builds the Google Fonts stylesheet URL for the fonts actually in use. */
 export function googleFontsHref(fontIds: string[]): string {
-  const families = fontIds
-    .map((id) => FONTS.find((f) => f.id === id)?.googleFamily)
-    .filter((v): v is string => !!v);
+  const families = fontIds.map((id) => FONTS.find((f) => f.id === id)?.googleFamily).filter((v): v is string => !!v);
   const unique = Array.from(new Set(families));
   return `https://fonts.googleapis.com/css2?${unique.map((f) => `family=${f}`).join('&')}&display=swap`;
 }

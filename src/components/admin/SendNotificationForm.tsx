@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
+import { type FormEvent, useState } from 'react';
 
 export function SendNotificationForm({ slug }: { slug: string }) {
   const [title, setTitle] = useState('');

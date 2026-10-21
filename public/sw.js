@@ -61,21 +61,19 @@ self.addEventListener('notificationclick', (event) => {
   const urlToOpen = new URL(event.notification.data?.url || '/', self.location.origin).href;
 
   event.waitUntil(
-    clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((windowClients) => {
-        for (const client of windowClients) {
-          if (client.url === urlToOpen && 'focus' in client) {
-            return client.focus();
-          }
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
         }
-        // Fall back to focusing any open window and navigating it.
-        const [first] = windowClients;
-        if (first && 'navigate' in first && 'focus' in first) {
-          return first.navigate(urlToOpen).then((c) => (c || first).focus());
-        }
-        return clients.openWindow(urlToOpen);
-      })
+      }
+      // Fall back to focusing any open window and navigating it.
+      const [first] = windowClients;
+      if (first && 'navigate' in first && 'focus' in first) {
+        return first.navigate(urlToOpen).then((c) => (c || first).focus());
+      }
+      return clients.openWindow(urlToOpen);
+    })
   );
 });
 

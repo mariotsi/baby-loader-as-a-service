@@ -21,10 +21,7 @@ export function isLang(value: unknown): value is Lang {
  * checked first. Otherwise the Accept-Language entries are ranked by their q
  * weight and the first supported one wins.
  */
-export function negotiateLang(
-  acceptLanguage: string | null | undefined,
-  cookie?: string | null
-): Lang {
+export function negotiateLang(acceptLanguage: string | null | undefined, cookie?: string | null): Lang {
   if (isLang(cookie)) {
     return cookie;
   }

@@ -1,8 +1,8 @@
-import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { ObjectId, type Db } from 'mongodb';
-import { getMongoClient } from '../lib/mongodb.ts';
+import { after, before, test } from 'node:test';
+import { type Db, ObjectId } from 'mongodb';
 import { ensureIndexes } from '../lib/indexes.ts';
+import { getMongoClient } from '../lib/mongodb.ts';
 import { startTestDb } from '../lib/testDb.ts';
 import { renameTenantsToSites } from './0001-rename-tenants-to-sites.ts';
 
@@ -29,16 +29,20 @@ async function legacyDb(): Promise<{ db: Db; siteId: ObjectId }> {
     { tenantId: siteId, endpoint: 'https://push.example/a' },
     { tenantId: siteId, endpoint: 'https://push.example/b' },
   ]);
-  await db.collection('subscriptions').createIndexes([
-    { key: { tenantId: 1, endpoint: 1 }, unique: true },
-    { key: { tenantId: 1, createdAt: -1 } },
-    { key: { endpoint: 1 } },
-  ]);
+  await db
+    .collection('subscriptions')
+    .createIndexes([
+      { key: { tenantId: 1, endpoint: 1 }, unique: true },
+      { key: { tenantId: 1, createdAt: -1 } },
+      { key: { endpoint: 1 } },
+    ]);
   return { db, siteId };
 }
 
 async function collectionNames(db: Db): Promise<string[]> {
-  return (await db.listCollections({}, { nameOnly: true }).toArray()).map((c) => c.name).sort((a, b) => a.localeCompare(b));
+  return (await db.listCollections({}, { nameOnly: true }).toArray())
+    .map((c) => c.name)
+    .sort((a, b) => a.localeCompare(b));
 }
 
 test('moves Sites to `sites` with their indexes, and subscriptions to `siteId`', async () => {
@@ -52,7 +56,9 @@ test('moves Sites to `sites` with their indexes, and subscriptions to `siteId`',
   const subscriptions = await db.collection('subscriptions').find().toArray();
   assert.ok(subscriptions.every((s) => s.siteId?.equals(siteId) && !('tenantId' in s)));
   assert.deepEqual(
-    (await db.collection('subscriptions').indexes()).map((index) => index.name ?? '').sort((a, b) => a.localeCompare(b)),
+    (await db.collection('subscriptions').indexes())
+      .map((index) => index.name ?? '')
+      .sort((a, b) => a.localeCompare(b)),
     ['_id_', 'endpoint_1']
   );
 });

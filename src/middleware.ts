@@ -27,7 +27,7 @@ function resolveSlug(host: string): string | null {
   }
 
   if (hostname.endsWith(`.${ROOT_HOSTNAME}`)) {
-    const sub = hostname.slice(0, -(`.${ROOT_HOSTNAME}`.length));
+    const sub = hostname.slice(0, -`.${ROOT_HOSTNAME}`.length);
     // Only a single level of subdomain is a Slug; anything else
     // (unexpected multi-level host) falls through to the root app.
     return sub && !sub.includes('.') ? sub : null;

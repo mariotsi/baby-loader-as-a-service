@@ -1,9 +1,9 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { siteAddressPath } from '@/lib/address';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
 import { defaultNotificationTitle } from '@/lib/siteSettings';
-import { listSubscriptionsBySite, countSubscriptionsBySite, deleteSubscriptionByEndpoint } from '@/lib/subscription';
+import { countSubscriptionsBySite, deleteSubscriptionByEndpoint, listSubscriptionsBySite } from '@/lib/subscription';
 import { ensureVapid, webpush } from '@/lib/webpush';
-import { siteAddressPath } from '@/lib/address';
 
 export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get('slug') || '';
@@ -28,7 +28,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: 'VAPID keys are not configured on the server.' }, { status: 500 });
   }
 
-  const title = typeof body?.title === 'string' && body.title.trim() ? body.title.trim() : defaultNotificationTitle(site);
+  const title =
+    typeof body?.title === 'string' && body.title.trim() ? body.title.trim() : defaultNotificationTitle(site);
   const messageBody = typeof body?.body === 'string' ? body.body.trim() : '';
   if (!messageBody) {
     return NextResponse.json({ error: 'Message body is required.' }, { status: 400 });

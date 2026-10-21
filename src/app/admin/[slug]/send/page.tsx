@@ -1,5 +1,5 @@
-import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { SendNotificationForm } from '@/components/admin/SendNotificationForm';
+import { pageOwnedSite } from '@/lib/ownerAccessNext';
 
 export default async function SendPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

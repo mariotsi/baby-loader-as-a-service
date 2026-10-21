@@ -7,7 +7,7 @@
   --card-bg: #ffffff;
   --accent: #e8869f;
   --accent-contrast: #ffffff;
-  --font-body: 'Inter', system-ui, sans-serif;
+  --font-body: "Inter", system-ui, sans-serif;
 }
 
 * {

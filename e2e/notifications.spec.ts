@@ -1,7 +1,12 @@
 import { perProjectSlug } from './support/data.ts';
 import { expect, fakePushService, test } from './support/test.ts';
 
-test('a Visitor subscribes and the Owner sends them a Notification', async ({ page, project, addressOf, ownerPage }) => {
+test('a Visitor subscribes and the Owner sends them a Notification', async ({
+  page,
+  project,
+  addressOf,
+  ownerPage,
+}) => {
   const slug = perProjectSlug('e2e-notify', project);
 
   await fakePushService(page);

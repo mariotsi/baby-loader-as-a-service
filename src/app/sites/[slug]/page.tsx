@@ -1,13 +1,13 @@
-import type { CSSProperties } from 'react';
 import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { getSiteBySlug } from '@/lib/site';
-import { themeStyle, googleFontsHref } from '@/lib/theme';
-import { messages, pushButtonMessages } from '@/lib/messages';
-import { negotiateLang, LANG_COOKIE, type Lang } from '@/lib/i18n';
-import { daysUntil } from '@/lib/countdown';
+import type { CSSProperties } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PushSubscribeButton } from '@/components/PushSubscribeButton';
+import { daysUntil } from '@/lib/countdown';
+import { LANG_COOKIE, type Lang, negotiateLang } from '@/lib/i18n';
+import { messages, pushButtonMessages } from '@/lib/messages';
+import { getSiteBySlug } from '@/lib/site';
+import { googleFontsHref, themeStyle } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -57,7 +57,11 @@ export default async function SitePage({ params }: { params: Promise<{ slug: str
 
           {birth.born ? (
             <div className="stack" style={{ alignItems: 'center', marginTop: '1.5rem' }}>
-              <p>{t.bornOn(new Date(birth.details.datetime).toLocaleString(dateLocale, { dateStyle: 'long', timeStyle: 'short' }))}</p>
+              <p>
+                {t.bornOn(
+                  new Date(birth.details.datetime).toLocaleString(dateLocale, { dateStyle: 'long', timeStyle: 'short' })
+                )}
+              </p>
               {birth.details.weightGrams || birth.details.lengthCm ? (
                 <div className="row" style={{ justifyContent: 'center' }}>
                   {birth.details.weightGrams ? (

@@ -1,5 +1,5 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { buildDeviceInfo, type DeviceInfo } from './deviceInfo.ts';
 
 const UA = {
@@ -58,7 +58,10 @@ test('Chrome on iPhone is not frozen: only Safari hides the iOS version', () => 
 });
 
 test('macOS 10.15 is a placeholder for every browser; only Safari 26+ gives an estimate', () => {
-  assert.equal(buildDeviceInfo(UA.macSafari17, {}).label, 'Apple Macintosh · Mac OS (version hidden by Apple) · Safari 17.4');
+  assert.equal(
+    buildDeviceInfo(UA.macSafari17, {}).label,
+    'Apple Macintosh · Mac OS (version hidden by Apple) · Safari 17.4'
+  );
   assert.equal(buildDeviceInfo(UA.macSafari26, {}).label, 'Apple Macintosh · Mac OS 26+ (estimated) · Safari 26.0');
   const chrome = buildDeviceInfo(UA.macChrome, {});
   assert.deepEqual(chrome.os, { name: 'Mac OS', version: null });

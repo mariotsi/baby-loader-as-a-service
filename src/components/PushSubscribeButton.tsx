@@ -1,8 +1,8 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { decodeVapidKey, VapidKeyError } from '@/lib/vapid';
 import type { PushButtonMessages } from '@/lib/messages';
+import { decodeVapidKey, VapidKeyError } from '@/lib/vapid';
 
 interface Props {
   slug: string;

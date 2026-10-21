@@ -1,4 +1,4 @@
-import { appEnv, type AppEnv } from '@/lib/appEnv';
+import { type AppEnv, appEnv } from '@/lib/appEnv';
 
 const LABELS: Partial<Record<AppEnv, string>> = {
   staging: 'Staging',

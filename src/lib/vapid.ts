@@ -14,7 +14,10 @@ export class VapidKeyError extends Error {}
  */
 export function decodeVapidKey(raw: string | undefined): ArrayBuffer {
   // Tolerate values pasted with surrounding quotes or trailing newlines.
-  const normalized = (raw ?? '').trim().replace(/^["']|["']$/g, '').trim();
+  const normalized = (raw ?? '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .trim();
 
   if (!normalized) {
     throw new VapidKeyError(

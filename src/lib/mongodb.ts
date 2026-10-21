@@ -1,8 +1,8 @@
-import { MongoClient, type Db } from 'mongodb';
+import { type Db, MongoClient } from 'mongodb';
+import { MIGRATIONS } from '../migrations/index.ts';
 import { databaseName } from './dbName.ts';
 import { ensureIndexes } from './indexes.ts';
 import { applyMigrations } from './migrations.ts';
-import { MIGRATIONS } from '../migrations/index.ts';
 
 declare global {
   var _mongoClientPromise: Promise<MongoClient> | undefined;

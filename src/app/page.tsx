@@ -7,8 +7,8 @@ export default function MarketingPage() {
         <p className="site-tagline">Waiting Pages</p>
         <h1 className="site-title">A page for the wait, made yours</h1>
         <p className="muted">
-          Create a customizable countdown &amp; announcement page for your baby — pick your colors, your font,
-          what to show, and share it on your own link.
+          Create a customizable countdown &amp; announcement page for your baby — pick your colors, your font, what to
+          show, and share it on your own link.
         </p>
         <div className="row" style={{ justifyContent: 'center', marginTop: '1.5rem' }}>
           <Link className="btn" href="/signup">

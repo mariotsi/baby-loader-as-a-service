@@ -36,7 +36,9 @@ function problem({ code, params, path }: SiteSettingsError): string {
     case 'required':
       return 'is required';
     case 'tooLong':
-      return path.endsWith('milestones') ? `can have at most ${params?.max}` : `must be at most ${params?.max} characters`;
+      return path.endsWith('milestones')
+        ? `can have at most ${params?.max}`
+        : `must be at most ${params?.max} characters`;
     case 'outOfRange':
       if (params?.min !== undefined && params?.max !== undefined) {
         return `must be between ${params.min} and ${params.max}`;

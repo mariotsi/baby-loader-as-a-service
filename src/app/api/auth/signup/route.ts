@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { createUser, issueSessionToken, sessionCookieOptions, authRateLimit } from '@/lib/auth';
+import { authRateLimit, createUser, issueSessionToken, sessionCookieOptions } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {
   if (!authRateLimit(req)) {

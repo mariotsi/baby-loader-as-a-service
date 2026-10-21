@@ -31,9 +31,27 @@ export interface SiteSettingsError {
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; errors: SiteSettingsError[] };
 
 const RESERVED_SLUGS = new Set([
-  'www', 'api', 'admin', 'app', 'mail', 'ftp', 'root', 'support', 'help',
-  'blog', 'status', 'docs', 'assets', 'static', 'cdn', 'signup', 'login',
-  'onboarding', 'billing', 'account', 'staging',
+  'www',
+  'api',
+  'admin',
+  'app',
+  'mail',
+  'ftp',
+  'root',
+  'support',
+  'help',
+  'blog',
+  'status',
+  'docs',
+  'assets',
+  'static',
+  'cdn',
+  'signup',
+  'login',
+  'onboarding',
+  'billing',
+  'account',
+  'staging',
 ]);
 
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?$/;
@@ -90,14 +108,12 @@ const siteSettingsSchema = z.strictObject({
 });
 
 const newSiteSchema = z.strictObject({
-  slug: z
-    .string()
-    .check(
-      z.trim(),
-      z.toLowerCase(),
-      z.regex(SLUG_PATTERN),
-      z.refine((slug) => !RESERVED_SLUGS.has(slug), { params: { code: 'slugReserved' } })
-    ),
+  slug: z.string().check(
+    z.trim(),
+    z.toLowerCase(),
+    z.regex(SLUG_PATTERN),
+    z.refine((slug) => !RESERVED_SLUGS.has(slug), { params: { code: 'slugReserved' } })
+  ),
   settings: siteSettingsSchema,
 });
 
@@ -115,7 +131,11 @@ declare const validNewSite: unique symbol;
 export type ValidSiteSettings = SiteSettings & { readonly [validSettings]: true };
 
 /** A Slug and Site settings that passed every rule. Only parseNewSite produces one. */
-export type ValidNewSite = { readonly slug: string; readonly settings: ValidSiteSettings; readonly [validNewSite]: true };
+export type ValidNewSite = {
+  readonly slug: string;
+  readonly settings: ValidSiteSettings;
+  readonly [validNewSite]: true;
+};
 
 /** Where onboarding and the editor start from. */
 export const defaultSiteSettings: SiteSettingsInput = {
@@ -134,7 +154,9 @@ export const defaultSiteSettings: SiteSettingsInput = {
  * Privacy settings hide only in the Waiting state. Undefined leaves the
  * service worker's generic title.
  */
-export function defaultNotificationTitle(settings: Pick<SiteSettings, 'babyName' | 'birth' | 'privacy'>): string | undefined {
+export function defaultNotificationTitle(
+  settings: Pick<SiteSettings, 'babyName' | 'birth' | 'privacy'>
+): string | undefined {
   const nameShown = settings.birth.born || settings.privacy.showName;
   return nameShown && settings.babyName ? settings.babyName : undefined;
 }

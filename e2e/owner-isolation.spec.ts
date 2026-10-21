@@ -1,4 +1,4 @@
-import { request as playwrightRequest, type APIRequestContext } from '@playwright/test';
+import { type APIRequestContext, request as playwrightRequest } from '@playwright/test';
 import { defaultSiteSettings } from '../src/lib/siteSettings.ts';
 import { BASE_URL, bypassHeaders, ownerStatePath } from './support/env.ts';
 import { expect, test } from './support/test.ts';

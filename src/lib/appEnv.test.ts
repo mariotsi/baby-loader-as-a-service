@@ -1,5 +1,5 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import { appEnv } from './appEnv.ts';
 
 test('appEnv recognizes a production deployment of main', () => {

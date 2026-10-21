@@ -27,7 +27,10 @@ export function authenticate(sessionToken: string | undefined): AuthenticatedUse
   return { id: new ObjectId(userId) } as AuthenticatedUser;
 }
 
-export async function accessOwnedSite(sessionToken: string | undefined, slug: string): Promise<OwnedSite | AccessDenial> {
+export async function accessOwnedSite(
+  sessionToken: string | undefined,
+  slug: string
+): Promise<OwnedSite | AccessDenial> {
   const owner = authenticate(sessionToken);
   if (!owner) {
     return 'unauthenticated';
