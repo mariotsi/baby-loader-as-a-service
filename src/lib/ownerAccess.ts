@@ -1,6 +1,6 @@
 import { ObjectId } from 'mongodb';
 import { verifySessionToken } from './auth.ts';
-import { getTenantBySlug, type Tenant } from './tenant.ts';
+import { getSiteBySlug, type Site } from './site.ts';
 
 /**
  * The one place that turns a session cookie into a User, and a User plus a
@@ -14,7 +14,7 @@ declare const authenticated: unique symbol;
 declare const owned: unique symbol;
 
 export type AuthenticatedUser = { readonly id: ObjectId; readonly [authenticated]: true };
-export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Tenant; readonly [owned]: true };
+export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Site; readonly [owned]: true };
 
 /** A missing Site and another Owner's Site are the same denial: neither is yours. */
 export type AccessDenial = 'unauthenticated' | 'notFound';
@@ -32,7 +32,7 @@ export async function accessOwnedSite(sessionToken: string | undefined, slug: st
   if (!owner) {
     return 'unauthenticated';
   }
-  const site = await getTenantBySlug(slug);
+  const site = await getSiteBySlug(slug);
   if (!site || !site.ownerId.equals(owner.id)) {
     return 'notFound';
   }

@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 import { startTestDb } from './testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import { accessOwnedSite, authenticate, type AuthenticatedUser } from './ownerAccess.ts';
-import { createSite } from './tenant.ts';
+import { createSite } from './site.ts';
 import { defaultSiteSettings, parseNewSite } from './siteSettings.ts';
 
 let stopDb: () => Promise<void>;

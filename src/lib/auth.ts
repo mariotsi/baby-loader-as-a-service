@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 import { getDb } from './mongodb.ts';
 import { rateLimit } from './rateLimit.ts';
 import { hashPassword, verifyPassword } from './password.ts';
-import { ROOT_HOSTNAME } from './tenantUrl.ts';
+import { ROOT_HOSTNAME } from './address.ts';
 
 export { hashPassword, verifyPassword };
 

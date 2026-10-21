@@ -1,6 +1,6 @@
 # One VAPID keypair for the whole Platform
 
-Every Site sends Notifications with the same VAPID keypair, and Subscribers are scoped to one Site by `tenantId` on each subscription document. One keypair keeps key management to a single set of environment variables and lets the service worker and subscribe flow stay identical on every Site; separate keypairs per Site would add per-Site secrets for no isolation the Subscriber scoping does not already give.
+Every Site sends Notifications with the same VAPID keypair, and Subscribers are scoped to one Site by `siteId` on each subscription document. One keypair keeps key management to a single set of environment variables and lets the service worker and subscribe flow stay identical on every Site; separate keypairs per Site would add per-Site secrets for no isolation the Subscriber scoping does not already give.
 
 ## Consequences
 

@@ -6,7 +6,7 @@ import type { SiteSettings, SiteSettingsError, ValidNewSite, ValidSiteSettings }
 export type { Milestone } from './siteSettings.ts';
 
 /** One Site's document: its Site settings plus what the Owner never edits directly. */
-export type Tenant = SiteSettings & {
+export type Site = SiteSettings & {
   _id: ObjectId;
   slug: string;
   ownerId: ObjectId;
@@ -19,15 +19,15 @@ export type Tenant = SiteSettings & {
 };
 
 /** Serializable form, safe to send to the client (ids/dates as strings). */
-export type TenantDTO = Omit<Tenant, '_id' | 'ownerId' | 'createdAt' | 'updatedAt'> & {
+export type SiteDTO = Omit<Site, '_id' | 'ownerId' | 'createdAt' | 'updatedAt'> & {
   id: string;
   ownerId: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export function toTenantDTO(tenant: Tenant): TenantDTO {
-  const { _id, ownerId, createdAt, updatedAt, ...rest } = tenant;
+export function toSiteDTO(site: Site): SiteDTO {
+  const { _id, ownerId, createdAt, updatedAt, ...rest } = site;
   return {
     ...rest,
     id: _id.toHexString(),
@@ -39,20 +39,20 @@ export function toTenantDTO(tenant: Tenant): TenantDTO {
 
 async function collection() {
   const db = await getDb();
-  return db.collection<Tenant>('tenants');
+  return db.collection<Site>('sites');
 }
 
-export async function getTenantBySlug(slug: string): Promise<Tenant | null> {
+export async function getSiteBySlug(slug: string): Promise<Site | null> {
   const col = await collection();
   return col.findOne({ slug: slug.toLowerCase() });
 }
 
-export async function getTenantByCustomDomain(domain: string): Promise<Tenant | null> {
+export async function getSiteByCustomDomain(domain: string): Promise<Site | null> {
   const col = await collection();
   return col.findOne({ customDomain: domain.toLowerCase(), customDomainVerified: true });
 }
 
-export async function getTenantById(id: string): Promise<Tenant | null> {
+export async function getSiteById(id: string): Promise<Site | null> {
   if (!ObjectId.isValid(id)) {
     return null;
   }
@@ -60,17 +60,17 @@ export async function getTenantById(id: string): Promise<Tenant | null> {
   return col.findOne({ _id: new ObjectId(id) });
 }
 
-export async function listTenantsByOwner(owner: AuthenticatedUser): Promise<Tenant[]> {
+export async function listSitesByOwner(owner: AuthenticatedUser): Promise<Site[]> {
   const col = await collection();
   return col.find({ ownerId: owner.id }).sort({ createdAt: -1 }).toArray();
 }
 
-export type CreateSiteResult = { ok: true; site: Tenant } | { ok: false; errors: SiteSettingsError[] };
+export type CreateSiteResult = { ok: true; site: Site } | { ok: false; errors: SiteSettingsError[] };
 
 /** The unique index on `slug` (see indexes.ts) decides whether a Slug is taken. */
 export async function createSite(owner: AuthenticatedUser, newSite: ValidNewSite): Promise<CreateSiteResult> {
   const now = new Date();
-  const site: Tenant = {
+  const site: Site = {
     ...newSite.settings,
     _id: new ObjectId(),
     slug: newSite.slug,
@@ -93,7 +93,7 @@ export async function createSite(owner: AuthenticatedUser, newSite: ValidNewSite
 }
 
 /** Replaces every Site setting at once. Null when the Site no longer exists. */
-export async function saveSiteSettings(owned: OwnedSite, settings: ValidSiteSettings): Promise<Tenant | null> {
+export async function saveSiteSettings(owned: OwnedSite, settings: ValidSiteSettings): Promise<Site | null> {
   const col = await collection();
   return col.findOneAndUpdate(
     { _id: owned.site._id, ownerId: owned.owner.id },

@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
 import { defaultNotificationTitle } from '@/lib/siteSettings';
-import { listSubscriptionsByTenant, countSubscriptionsByTenant, deleteSubscriptionByEndpoint } from '@/lib/subscription';
+import { listSubscriptionsBySite, countSubscriptionsBySite, deleteSubscriptionByEndpoint } from '@/lib/subscription';
 import { ensureVapid, webpush } from '@/lib/webpush';
-import { tenantPublicPath } from '@/lib/tenantUrl';
+import { siteAddressPath } from '@/lib/address';
 
 export async function GET(req: NextRequest) {
-  const slug = req.nextUrl.searchParams.get('tenantSlug') || '';
+  const slug = req.nextUrl.searchParams.get('slug') || '';
   const access = await requireOwnedSite(req, slug);
   if ('error' in access) {
     return access.error;
   }
-  const count = await countSubscriptionsByTenant(access.owned.site._id);
+  const count = await countSubscriptionsBySite(access.owned.site._id);
   return NextResponse.json({ count });
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  const tenantSlug = typeof body?.tenantSlug === 'string' ? body.tenantSlug : '';
-  const access = await requireOwnedSite(req, tenantSlug);
+  const slug = typeof body?.slug === 'string' ? body.slug : '';
+  const access = await requireOwnedSite(req, slug);
   if ('error' in access) {
     return access.error;
   }
@@ -33,10 +33,10 @@ export async function POST(req: NextRequest) {
   if (!messageBody) {
     return NextResponse.json({ error: 'Message body is required.' }, { status: 400 });
   }
-  const url = typeof body?.url === 'string' && body.url ? body.url : tenantPublicPath(site.slug);
+  const url = typeof body?.url === 'string' && body.url ? body.url : siteAddressPath(site.slug);
 
-  const subscriptions = await listSubscriptionsByTenant(site._id);
-  const payload = JSON.stringify({ title, body: messageBody, url, tag: `tenant-${site.slug}` });
+  const subscriptions = await listSubscriptionsBySite(site._id);
+  const payload = JSON.stringify({ title, body: messageBody, url, tag: `site-${site.slug}` });
 
   let sent = 0;
   let removed = 0;

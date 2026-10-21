@@ -8,15 +8,15 @@ import type { Db, IndexDescription } from 'mongodb';
  */
 export const INDEXES: Record<string, IndexDescription[]> = {
   users: [{ key: { email: 1 }, unique: true }],
-  tenants: [
+  sites: [
     { key: { slug: 1 }, unique: true },
     { key: { ownerId: 1, createdAt: -1 } },
     // Most Sites have customDomain: null, so uniqueness applies only to set values.
     { key: { customDomain: 1 }, unique: true, partialFilterExpression: { customDomain: { $type: 'string' } } },
   ],
   subscriptions: [
-    { key: { tenantId: 1, endpoint: 1 }, unique: true },
-    { key: { tenantId: 1, createdAt: -1 } },
+    { key: { siteId: 1, endpoint: 1 }, unique: true },
+    { key: { siteId: 1, createdAt: -1 } },
     { key: { endpoint: 1 } },
   ],
 };

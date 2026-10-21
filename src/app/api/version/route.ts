@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { appEnv } from '@/lib/appEnv';
-import { ROOT_DOMAIN } from '@/lib/tenantUrl';
+import { ROOT_DOMAIN } from '@/lib/address';
 
 /**
  * Which build this deployment runs and where: the E2E suite reads it to pick

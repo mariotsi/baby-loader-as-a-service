@@ -5,7 +5,7 @@ import { decodeVapidKey, VapidKeyError } from '@/lib/vapid';
 import type { PushButtonMessages } from '@/lib/messages';
 
 interface Props {
-  tenantSlug: string;
+  slug: string;
   vapidPublicKey: string | undefined;
   born: boolean;
   t: PushButtonMessages;
@@ -27,7 +27,7 @@ function clientDeviceHints() {
   };
 }
 
-export function PushSubscribeButton({ tenantSlug, vapidPublicKey, born, t }: Props) {
+export function PushSubscribeButton({ slug, vapidPublicKey, born, t }: Props) {
   const [status, setStatus] = useState<Status>('checking');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -75,7 +75,7 @@ export function PushSubscribeButton({ tenantSlug, vapidPublicKey, born, t }: Pro
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ tenantSlug, subscription: sub.toJSON(), deviceHints: clientDeviceHints() }),
+        body: JSON.stringify({ slug, subscription: sub.toJSON(), deviceHints: clientDeviceHints() }),
       });
       if (!res.ok) {
         throw new Error('server');
@@ -105,7 +105,7 @@ export function PushSubscribeButton({ tenantSlug, vapidPublicKey, born, t }: Pro
         await fetch('/api/subscribe', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ tenantSlug, endpoint: sub.endpoint }),
+          body: JSON.stringify({ slug, endpoint: sub.endpoint }),
         });
         await sub.unsubscribe();
       }
