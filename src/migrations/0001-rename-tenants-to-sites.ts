@@ -13,6 +13,7 @@ import type { Migration } from '../lib/migrations.ts';
  */
 export const renameTenantsToSites: Migration = {
   id: '0001-rename-tenants-to-sites',
+  // biome-ignore lint/complexity/noExcessiveCognitiveComplexity: applied migrations keep the code they ran with.
   async up(db) {
     const collections = new Set((await db.listCollections({}, { nameOnly: true }).toArray()).map((c) => c.name));
 

@@ -39,7 +39,7 @@ export function SendNotificationForm({ slug }: { slug: string }) {
         <label htmlFor="notification-message">Message</label>
         <textarea id="notification-message" required rows={3} value={body} onChange={(e) => setBody(e.target.value)} />
       </div>
-      {result && <p className="muted">{result}</p>}
+      {result ? <p className="muted">{result}</p> : null}
       <button className="btn" type="submit" disabled={sending} style={{ alignSelf: 'flex-start' }}>
         {sending ? 'Sending…' : 'Send notification'}
       </button>

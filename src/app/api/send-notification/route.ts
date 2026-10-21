@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
 import { defaultNotificationTitle } from '@/lib/siteSettings';
 import { listSubscriptionsBySite, countSubscriptionsBySite, deleteSubscriptionByEndpoint } from '@/lib/subscription';
@@ -46,7 +46,7 @@ export async function POST(req: NextRequest) {
         await webpush.sendNotification({ endpoint: sub.endpoint, keys: sub.keys }, payload);
         sent += 1;
       } catch (err: unknown) {
-        const statusCode = (err as { statusCode?: number })?.statusCode;
+        const statusCode = (err as { statusCode?: number } | null)?.statusCode;
         if (statusCode === 404 || statusCode === 410) {
           await deleteSubscriptionByEndpoint(sub.endpoint);
           removed += 1;

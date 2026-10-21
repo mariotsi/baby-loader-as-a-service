@@ -5,7 +5,6 @@ import { applyMigrations } from './migrations.ts';
 import { MIGRATIONS } from '../migrations/index.ts';
 
 declare global {
-  // eslint-disable-next-line no-var
   var _mongoClientPromise: Promise<MongoClient> | undefined;
 }
 

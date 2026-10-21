@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getSiteBySlug } from '@/lib/site';
 import { upsertSubscription, deleteSubscription } from '@/lib/subscription';
 import { buildDeviceInfo } from '@/lib/deviceInfo';

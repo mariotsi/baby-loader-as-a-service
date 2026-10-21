@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { getUserByEmail, verifyPassword, issueSessionToken, sessionCookieOptions, authRateLimit } from '@/lib/auth';
 
 export async function POST(req: NextRequest) {

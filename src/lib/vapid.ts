@@ -28,9 +28,10 @@ export function decodeVapidKey(raw: string | undefined): ArrayBuffer {
   let binary: string;
   try {
     binary = atob(base64);
-  } catch {
+  } catch (err) {
     throw new VapidKeyError(
-      'Invalid VAPID public key: not a base64url string. Regenerate it with `npm run generate-vapid`.'
+      'Invalid VAPID public key: not a base64url string. Regenerate it with `npm run generate-vapid`.',
+      { cause: err }
     );
   }
 

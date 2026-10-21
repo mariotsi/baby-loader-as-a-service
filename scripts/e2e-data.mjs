@@ -129,15 +129,11 @@ async function cleanup(db, runId) {
   return { users: users.deletedCount, sites: sites.deletedCount, subscribers: subs.deletedCount };
 }
 
-async function main() {
-  const [command, arg] = process.argv.slice(2);
-  const { uri, dbName, policy } = target();
+/** Validates the command line against what the target database allows; returns whether demo data is wanted. */
+function checkCommand(command, arg, dbName, policy) {
   const withDemo = command === 'demo' || (command === 'reset' && arg === '--demo');
-
-  if (command === 'reset' || command === 'cleanup') {
-    if (!policy.fixtures) {
-      throw new Error(`Refusing to write test data to ${dbName}`);
-    }
+  if ((command === 'reset' || command === 'cleanup') && !policy.fixtures) {
+    throw new Error(`Refusing to write test data to ${dbName}`);
   }
   if (withDemo && !policy.demo) {
     throw new Error(`Refusing to write demo data to ${dbName}`);
@@ -148,28 +144,38 @@ async function main() {
   if (!['reset', 'demo', 'cleanup'].includes(command)) {
     throw new Error('Usage: node scripts/e2e-data.mjs reset [--demo] | demo | cleanup <runId>');
   }
+  return withDemo;
+}
+
+async function run(db, dbName, { command, arg, withDemo }) {
+  // The data below is written in the current shape, so the database must
+  // reach it first, as the app does on its first request.
+  const applied = await applyMigrations(db, MIGRATIONS);
+  if (applied.length > 0) {
+    console.log(`Applied migrations to ${dbName}: ${applied.join(', ')}`);
+  }
+  if (command === 'reset') {
+    await resetData(db, FIXTURE_OWNERS, FIXTURE_SITES, e2ePassword());
+    console.log(`E2E fixtures reset in ${dbName}: ${FIXTURE_SITES.length} Sites.`);
+  }
+  if (withDemo) {
+    await resetData(db, DEMO_OWNERS, DEMO_SITES, process.env.DEMO_PASSWORD || 'waiting-pages-demo');
+    console.log(`Demo data reset in ${dbName}: ${DEMO_SITES.length} Sites.`);
+  }
+  if (command === 'cleanup') {
+    const removed = await cleanup(db, arg);
+    console.log(`Run ${arg} cleaned up in ${dbName}:`, removed);
+  }
+}
+
+async function main() {
+  const [command, arg] = process.argv.slice(2);
+  const { uri, dbName, policy } = target();
+  const withDemo = checkCommand(command, arg, dbName, policy);
 
   const client = await new MongoClient(uri).connect();
   try {
-    const db = client.db(dbName);
-    // The data below is written in the current shape, so the database must
-    // reach it first, as the app does on its first request.
-    const applied = await applyMigrations(db, MIGRATIONS);
-    if (applied.length) {
-      console.log(`Applied migrations to ${dbName}: ${applied.join(', ')}`);
-    }
-    if (command === 'reset') {
-      await resetData(db, FIXTURE_OWNERS, FIXTURE_SITES, e2ePassword());
-      console.log(`E2E fixtures reset in ${dbName}: ${FIXTURE_SITES.length} Sites.`);
-    }
-    if (withDemo) {
-      await resetData(db, DEMO_OWNERS, DEMO_SITES, process.env.DEMO_PASSWORD || 'waiting-pages-demo');
-      console.log(`Demo data reset in ${dbName}: ${DEMO_SITES.length} Sites.`);
-    }
-    if (command === 'cleanup') {
-      const removed = await cleanup(db, arg);
-      console.log(`Run ${arg} cleaned up in ${dbName}:`, removed);
-    }
+    await run(client.db(dbName), dbName, { command, arg, withDemo });
   } finally {
     await client.close();
   }

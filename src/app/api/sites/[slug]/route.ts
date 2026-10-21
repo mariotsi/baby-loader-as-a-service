@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { type NextRequest, NextResponse } from 'next/server';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
 import { parseSiteSettings } from '@/lib/siteSettings';
 import { saveSiteSettings, toSiteDTO } from '@/lib/site';

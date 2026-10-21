@@ -7,6 +7,7 @@ export function LanguageSwitcher({ current }: { current: Lang }) {
   const router = useRouter();
 
   function setLang(lang: Lang) {
+    // biome-ignore lint/suspicious/noDocumentCookie: the Cookie Store API is missing from Safari before 18.4, which Visitors still use.
     document.cookie = `${LANG_COOKIE}=${lang}; path=/; max-age=31536000; samesite=lax`;
     router.refresh();
   }
@@ -15,6 +16,7 @@ export function LanguageSwitcher({ current }: { current: Lang }) {
     <div className="row" style={{ justifyContent: 'center' }}>
       {LANGS.map((lang) => (
         <button
+          type="button"
           key={lang}
           className="btn-secondary"
           style={{

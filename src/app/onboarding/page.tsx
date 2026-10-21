@@ -85,8 +85,9 @@ export default function OnboardingPage() {
             </select>
           </div>
           <div className="field">
-            <label>Color palette</label>
-            <div className="row">
+            <fieldset className="swatches">
+              <legend className="field-label">Color palette</legend>
+              <div className="row">
               {PALETTES.map((p) => (
                 <button
                   type="button"
@@ -97,7 +98,8 @@ export default function OnboardingPage() {
                   title={p.name}
                 />
               ))}
-            </div>
+              </div>
+            </fieldset>
           </div>
           <div className="field">
             <label htmlFor="font">Font</label>
@@ -119,7 +121,7 @@ export default function OnboardingPage() {
               Show sex
             </label>
           </div>
-          {error && <p className="error-text">{error}</p>}
+          {error ? <p className="error-text">{error}</p> : null}
           <button className="btn" type="submit" disabled={loading}>
             {loading ? 'Creating…' : 'Create site'}
           </button>

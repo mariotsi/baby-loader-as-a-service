@@ -85,9 +85,22 @@ button {
   margin-bottom: 1rem;
 }
 
-.field label {
+.field label,
+.field .field-label {
   font-size: 0.85rem;
   font-weight: 600;
+}
+
+.swatches {
+  border: 0;
+  margin: 0;
+  padding: 0;
+  min-width: 0;
+}
+
+.swatches legend {
+  padding: 0;
+  margin-bottom: 0.35rem;
 }
 
 .field input,

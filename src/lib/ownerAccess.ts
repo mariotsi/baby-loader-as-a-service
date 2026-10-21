@@ -33,7 +33,7 @@ export async function accessOwnedSite(sessionToken: string | undefined, slug: st
     return 'unauthenticated';
   }
   const site = await getSiteBySlug(slug);
-  if (!site || !site.ownerId.equals(owner.id)) {
+  if (!site?.ownerId.equals(owner.id)) {
     return 'notFound';
   }
   return { owner, site } as OwnedSite;

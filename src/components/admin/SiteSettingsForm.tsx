@@ -10,6 +10,7 @@ import type { SiteDTO, Milestone } from '@/lib/site';
 import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
+const LANGUAGE_NAMES: Record<Lang, string> = { it: 'Italian', en: 'English' };
 
 export function SiteSettingsForm({ site }: { site: SiteDTO }) {
   const router = useRouter();
@@ -106,7 +107,7 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
           <input type="checkbox" checked={born} onChange={(e) => setBorn(e.target.checked)} />
           The baby has been born
         </label>
-        {born && (
+        {born ? (
           <>
             <div className="field">
               <label htmlFor="settings-birth-datetime">Birth date &amp; time</label>
@@ -125,7 +126,7 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
             {messageLangs.map((lang) => (
               <div className="field" key={lang}>
                 <label htmlFor={`settings-birth-message-${lang}`}>
-                  Message{messageLangs.length > 1 ? (lang === 'it' ? ' (Italian)' : ' (English)') : ''}
+                  Message{messageLangs.length > 1 ? ` (${LANGUAGE_NAMES[lang]})` : ''}
                 </label>
                 <textarea
                   id={`settings-birth-message-${lang}`}
@@ -136,12 +137,13 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
               </div>
             ))}
           </>
-        )}
+        ) : null}
       </div>
 
       <div className="card stack">
         <h2>Milestones</h2>
         {milestones.map((m, i) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: Milestones have no id; each row edits and removes the Milestone at its index.
           <div className="row" key={i}>
             <input
               placeholder="Label"
@@ -169,8 +171,9 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
       <div className="card stack">
         <h2>Appearance</h2>
         <div className="field">
-          <label>Palette</label>
-          <div className="row">
+          <fieldset className="swatches">
+            <legend className="field-label">Palette</legend>
+            <div className="row">
             {PALETTES.map((p) => (
               <button
                 type="button"
@@ -181,7 +184,8 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
                 title={p.name}
               />
             ))}
-          </div>
+            </div>
+          </fieldset>
         </div>
         <div className="field">
           <label htmlFor="settings-font">Font</label>
@@ -211,8 +215,8 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
         </label>
       </div>
 
-      {message && <p className={message === 'Saved.' ? 'success-text' : 'error-text'}>{message}</p>}
-      <button className="btn" onClick={save} disabled={saving} style={{ alignSelf: 'flex-start' }}>
+      {message ? <p className={message === 'Saved.' ? 'success-text' : 'error-text'}>{message}</p> : null}
+      <button type="button" className="btn" onClick={save} disabled={saving} style={{ alignSelf: 'flex-start' }}>
         {saving ? 'Saving…' : 'Save changes'}
       </button>
     </div>

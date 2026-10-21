@@ -38,28 +38,27 @@ export default async function SitePage({ params }: { params: Promise<{ slug: str
 
   return (
     <div style={themeStyle(site.theme) as CSSProperties}>
-      {/* eslint-disable-next-line @next/next/no-page-custom-font -- curated, per-Site font chosen from a fixed list */}
       <link rel="stylesheet" href={googleFontsHref([site.theme.font])} />
       <div className="container">
         <div className="site-hero">
           <p className="site-tagline">{born ? t.bornTagline : t.waitingTagline}</p>
           <h1 className="site-title">{title}</h1>
 
-          {showSex && <p className="muted">{site.sex === 'female' ? t.sexFemale : t.sexMale}</p>}
+          {showSex ? <p className="muted">{site.sex === 'female' ? t.sexFemale : t.sexMale}</p> : null}
 
-          {!born && site.dueDate && (
+          {!born && site.dueDate ? (
             <div className="stack" style={{ alignItems: 'center', marginTop: '1.5rem' }}>
               <p className="muted">
                 {t.duePrefix} {new Date(site.dueDate).toLocaleDateString(dateLocale, { dateStyle: 'long' })}
               </p>
               <CountdownDisplay dueIso={site.dueDate} t={t} />
             </div>
-          )}
+          ) : null}
 
-          {birth.born && (
+          {birth.born ? (
             <div className="stack" style={{ alignItems: 'center', marginTop: '1.5rem' }}>
               <p>{t.bornOn(new Date(birth.details.datetime).toLocaleString(dateLocale, { dateStyle: 'long', timeStyle: 'short' }))}</p>
-              {(birth.details.weightGrams || birth.details.lengthCm) && (
+              {birth.details.weightGrams || birth.details.lengthCm ? (
                 <div className="row" style={{ justifyContent: 'center' }}>
                   {birth.details.weightGrams ? (
                     <span className="muted">
@@ -72,9 +71,9 @@ export default async function SitePage({ params }: { params: Promise<{ slug: str
                     </span>
                   ) : null}
                 </div>
-              )}
+              ) : null}
             </div>
-          )}
+          ) : null}
 
           <div style={{ marginTop: '2rem' }}>
             <PushSubscribeButton

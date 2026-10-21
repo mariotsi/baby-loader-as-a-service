@@ -214,7 +214,7 @@ export function parseSiteSettings(input: unknown, now: Date = new Date()): Parse
     return { ok: false, errors: toErrors(result.error.issues, input) };
   }
   const errors = crossFieldErrors(result.data, now);
-  return errors.length ? { ok: false, errors } : { ok: true, value: result.data as ValidSiteSettings };
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: result.data as ValidSiteSettings };
 }
 
 /** The body of a Site's creation: `{ slug, settings }`. The Slug is lowercased and never changes afterwards. */
@@ -224,5 +224,5 @@ export function parseNewSite(input: unknown, now: Date = new Date()): ParseResul
     return { ok: false, errors: toErrors(result.error.issues, input) };
   }
   const errors = crossFieldErrors(result.data.settings, now).map((e) => ({ ...e, path: `settings.${e.path}` }));
-  return errors.length ? { ok: false, errors } : { ok: true, value: result.data as unknown as ValidNewSite };
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: result.data as unknown as ValidNewSite };
 }

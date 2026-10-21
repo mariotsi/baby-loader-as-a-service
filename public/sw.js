@@ -3,7 +3,7 @@
 // Title/body/icon always come from the push payload (set by the sender per
 // Site in api/send-notification) — this file has no Site branding baked in.
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
@@ -79,6 +79,6 @@ self.addEventListener('notificationclick', (event) => {
   );
 });
 
-self.addEventListener('pushsubscriptionchange', (event) => {
+self.addEventListener('pushsubscriptionchange', () => {
   // The client will handle re-subscription on next visit.
 });

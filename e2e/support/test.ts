@@ -59,6 +59,7 @@ export const test = base.extend<Fixtures>({
     await use(await withBypass(context));
   },
 
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright reads a fixture's dependencies from this destructuring.
   project: async ({}, use, testInfo) => {
     await use(testInfo.project.name as ProjectName);
   },
@@ -111,9 +112,9 @@ export async function fakePushService(page: Page): Promise<void> {
     const sub = {
       endpoint,
       toJSON: () => ({ endpoint, expirationTime: null, keys: { p256dh, auth } }),
-      unsubscribe: async () => {
+      unsubscribe: () => {
         current = null;
-        return true;
+        return Promise.resolve(true);
       },
     };
     const registration = {
@@ -129,6 +130,7 @@ export async function fakePushService(page: Page): Promise<void> {
     };
     Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: serviceWorker });
     Object.defineProperty(window, 'PushManager', { configurable: true, value: function PushManager() {} });
+    // biome-ignore lint/correctness/noComponentHookFactories: a stand-in for the browser's Notification constructor, not a React component.
     const FakeNotification = function Notification() {} as unknown as { permission: string; requestPermission: () => Promise<string> };
     FakeNotification.permission = 'granted';
     FakeNotification.requestPermission = async () => 'granted';

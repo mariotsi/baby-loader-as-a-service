@@ -90,6 +90,12 @@ npm run dev
 `npm run seed` creates `demo-owner-a@waitingpages.test` and
 `demo-owner-b@waitingpages.test`, password `waiting-pages-demo`.
 
+[Biome](https://biomejs.dev) lints and formats the code (`biome.json`):
+`npm run lint` checks, `npm run format` fixes what it can. `npm install`
+sets up a [lefthook](https://lefthook.dev) pre-commit hook (`lefthook.yml`)
+that runs Biome on the staged files, and CI runs the same checks with
+`biome ci`.
+
 `npm run dev:staging` runs the local app on staging's database instead, with
 the credentials in `.env.staging.local` (see `.env.staging.local.example`).
 No local setup reaches production's database.
@@ -195,7 +201,7 @@ receives the exact commit that passed the E2E suite on staging.
 ### From pull request to production
 
 1. A pull request targets `staging`. `.github/workflows/ci.yml` runs type
-   checking, lint and unit tests (job `ci`), and the staging project deploys
+   checking, Biome's lint and format check, and unit tests (job `ci`), and the staging project deploys
    a preview, on which `.github/workflows/cd.yml` runs the E2E suite (job
    `e2e`). Both are required before it merges.
 2. Merging deploys `staging` to `staging.loading.baby`, whose first request

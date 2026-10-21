@@ -38,7 +38,7 @@ async function legacyDb(): Promise<{ db: Db; siteId: ObjectId }> {
 }
 
 async function collectionNames(db: Db): Promise<string[]> {
-  return (await db.listCollections({}, { nameOnly: true }).toArray()).map((c) => c.name).sort();
+  return (await db.listCollections({}, { nameOnly: true }).toArray()).map((c) => c.name).sort((a, b) => a.localeCompare(b));
 }
 
 test('moves Sites to `sites` with their indexes, and subscriptions to `siteId`', async () => {
@@ -52,7 +52,7 @@ test('moves Sites to `sites` with their indexes, and subscriptions to `siteId`',
   const subscriptions = await db.collection('subscriptions').find().toArray();
   assert.ok(subscriptions.every((s) => s.siteId?.equals(siteId) && !('tenantId' in s)));
   assert.deepEqual(
-    (await db.collection('subscriptions').indexes()).map((index) => index.name).sort(),
+    (await db.collection('subscriptions').indexes()).map((index) => index.name ?? '').sort((a, b) => a.localeCompare(b)),
     ['_id_', 'endpoint_1']
   );
 });
