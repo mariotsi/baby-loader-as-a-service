@@ -1,14 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import type { PushButtonMessages } from '@/lib/messages';
+import type { PushButtonCopy } from '@/lib/publicPageView';
 import { decodeVapidKey, VapidKeyError } from '@/lib/vapid';
 
 interface Props {
   slug: string;
   vapidPublicKey: string | undefined;
-  born: boolean;
-  t: PushButtonMessages;
+  t: PushButtonCopy;
 }
 
 type Status = 'checking' | 'unsupported' | 'denied' | 'subscribed' | 'unsubscribed';
@@ -43,7 +42,7 @@ async function detectStatus(): Promise<Status> {
   }
 }
 
-export function PushSubscribeButton({ slug, vapidPublicKey, born, t }: Props) {
+export function PushSubscribeButton({ slug, vapidPublicKey, t }: Props) {
   const [status, setStatus] = useState<Status>('checking');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -123,14 +122,13 @@ export function PushSubscribeButton({ slug, vapidPublicKey, born, t }: Props) {
     return <p className="muted">{t.errorDenied}</p>;
   }
 
-  const subscribeLabel = born ? t.subscribeBorn : t.subscribeWaiting;
-  const buttonLabel = busy ? t.subscribing : subscribeLabel;
+  const buttonLabel = busy ? t.subscribing : t.subscribe;
 
   return (
     <div className="stack" style={{ alignItems: 'center' }}>
       {status === 'subscribed' ? (
         <>
-          <p className="muted">{born ? t.subscribedBorn : t.subscribedWaiting}</p>
+          <p className="muted">{t.subscribed}</p>
           <button type="button" className="btn btn-secondary" onClick={unsubscribe} disabled={busy}>
             {t.unsubscribe}
           </button>

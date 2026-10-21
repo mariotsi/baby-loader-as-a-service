@@ -20,7 +20,7 @@ export default async function AdminSitePage({ params }: { params: Promise<{ slug
           </Link>
         </div>
       </div>
-      <SiteSettingsForm site={toSiteDTO(site)} />
+      <SiteSettingsForm site={toSiteDTO(site)} timeZones={Intl.supportedValuesOf('timeZone')} />
     </div>
   );
 }

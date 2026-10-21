@@ -15,7 +15,9 @@ const en = {
   duePrefix: 'Due date:',
   daysLeft: (n: number): string => (n === 1 ? 'day to go' : 'days to go'),
   daysLate: (n: number): string => (n === 1 ? 'day late' : 'days late'),
+  dueToday: 'Due today',
   lateNote: 'Taking their time...',
+  milestonesTitle: 'Milestones',
 
   bornTagline: 'Here at last',
   bornTitle: 'Welcome',
@@ -50,7 +52,9 @@ const it: Messages = {
   duePrefix: 'Arrivo previsto:',
   daysLeft: (n: number): string => (n === 1 ? 'giorno rimanente' : 'giorni rimanenti'),
   daysLate: (n: number): string => (n === 1 ? 'giorno in ritardo' : 'giorni in ritardo'),
+  dueToday: 'Arriva oggi',
   lateNote: 'Se la sta prendendo comoda...',
+  milestonesTitle: 'Tappe',
 
   bornTagline: 'È arrivato/a',
   bornTitle: 'Benvenuto/a',
@@ -77,29 +81,3 @@ const it: Messages = {
 };
 
 export const messages: Record<Lang, Messages> = { it, en };
-
-const pushButtonKeys = [
-  'checking',
-  'subscribedBorn',
-  'subscribedWaiting',
-  'unsubscribe',
-  'subscribeBorn',
-  'subscribeWaiting',
-  'subscribing',
-  'subscribeOk',
-  'unsubscribeOk',
-  'errorGeneric',
-  'errorUnsupported',
-  'errorDenied',
-] as const;
-
-export type PushButtonMessages = Pick<Messages, (typeof pushButtonKeys)[number]>;
-
-/**
- * The copy PushSubscribeButton needs, and nothing else. Passing the whole
- * Messages object to that Client Component makes the page throw: React
- * cannot serialize the function entries (daysLeft, bornOn, ...).
- */
-export function pushButtonMessages(t: Messages): PushButtonMessages {
-  return Object.fromEntries(pushButtonKeys.map((key) => [key, t[key]])) as PushButtonMessages;
-}

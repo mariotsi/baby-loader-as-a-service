@@ -16,6 +16,7 @@ const FIELD_LABELS: Record<string, string> = {
   'birth.details.message.en': 'Message (English)',
   milestones: 'Milestones',
   language: 'Language',
+  timezone: 'Timezone',
   'theme.palette': 'Palette',
   'theme.font': 'Font',
   'privacy.showName': 'Show name',

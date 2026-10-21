@@ -33,7 +33,7 @@ One baby's waiting page together with everything the Owner configured for it.
 _Avoid_: Tenant, waiting page, account, project
 
 **Site settings**:
-Everything an Owner configures for a Site: the baby's name and Sex, Due date, Birth details, Milestones, Theme, Privacy settings and Language mode. The Slug is chosen once, at creation, and is not a Site setting.
+Everything an Owner configures for a Site: the baby's name and Sex, Due date, Birth details, Milestones, Theme, Privacy settings, Language mode and Timezone. The Slug is chosen once, at creation, and is not a Site setting.
 _Avoid_: Tenant settings, configuration, preferences
 
 **Slug**:
@@ -109,7 +109,7 @@ One of the Platform's curated typefaces.
 _Avoid_: Typeface, typography
 
 **Privacy settings**:
-The Owner's choice of whether the baby's name and Sex appear on the Public page.
+The Owner's choice of whether the baby's name and Sex appear on the Public page during the Waiting state. The Born state always shows them.
 _Avoid_: Visibility, toggles
 
 **Language mode**:
@@ -119,6 +119,10 @@ _Avoid_: Locale, translation setting
 **Language switcher**:
 The control on a Public page in Both mode that lets a Visitor pick Italian or English.
 _Avoid_: Language picker, toggle
+
+**Timezone**:
+The time zone a Site tells its Countdown and Birth details in: the Countdown changes at its midnight.
+_Avoid_: Locale, region
 
 ### Notifications
 

@@ -45,6 +45,16 @@ function isIsoDatetime(value: string): boolean {
   return ISO_DATETIME.test(value) && isValid(parseISO(value));
 }
 
+/** Any IANA name `Intl` knows, aliases included: browsers report some zones by an older alias (Europe/Kiev). */
+export function isTimeZone(value: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en', { timeZone: value });
+    return value !== '';
+  } catch {
+    return false;
+  }
+}
+
 const invalidDate = { params: { code: 'invalidDate' } };
 
 /** An empty date is a missing one, reported as `required` and not also as `invalidDate`. */
@@ -76,6 +86,7 @@ const siteSettingsSchema = z.strictObject({
     .array(z.strictObject({ label: z.string().check(z.trim(), z.minLength(1), z.maxLength(80)), date: calendarDate }))
     .check(z.maxLength(50)),
   language: z.enum(['it', 'en', 'both']),
+  timezone: z.string().check(z.refine(isTimeZone, { params: { code: 'invalidOption' } })),
   theme: z.strictObject({
     palette: z.enum(PALETTES.map((p) => p.id) as [string, ...string[]]),
     font: z.enum(FONTS.map((f) => f.id) as [string, ...string[]]),
@@ -121,6 +132,7 @@ export const defaultSiteSettings: SiteSettingsInput = {
   birth: { born: false, details: null },
   milestones: [],
   language: 'en',
+  timezone: 'Europe/Rome',
   theme: { palette: DEFAULT_PALETTE, font: DEFAULT_FONT },
   privacy: { showName: true, showSex: true },
 };

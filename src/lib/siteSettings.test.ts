@@ -176,3 +176,11 @@ test('a Notification defaults to the name, hidden by Privacy settings only while
   assert.equal(defaultNotificationTitle({ babyName: 'Emma', birth: born(), privacy: hidden }), 'Emma');
   assert.equal(defaultNotificationTitle({ babyName: '', birth: born(), privacy: hidden }), undefined);
 });
+
+test('the Timezone is any zone Intl knows, aliases included', () => {
+  for (const timezone of ['Europe/Rome', 'America/New_York', 'Europe/Kiev', 'UTC']) {
+    assert.equal(parseSiteSettings(settings({ timezone }), NOW).ok, true, timezone);
+  }
+  assert.deepEqual(errorsOf(settings({ timezone: 'Mars/Olympus' })), [{ path: 'timezone', code: 'invalidOption' }]);
+  assert.deepEqual(errorsOf(settings({ timezone: '' })), [{ path: 'timezone', code: 'invalidOption' }]);
+});

@@ -33,8 +33,14 @@ test.describe('Public page', () => {
     await page.goto(await addressOf('e2e-both'));
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for Bianca');
 
+    // Switching swaps the view in place: a marker set before the click survives it.
+    await page.evaluate(() => {
+      (window as { stillHere?: boolean }).stillHere = true;
+    });
     await page.getByRole('button', { name: 'it', exact: true }).click();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Stiamo aspettando Bianca');
+    await expect(page.locator('html')).toHaveAttribute('lang', 'it');
+    expect(await page.evaluate(() => (window as { stillHere?: boolean }).stillHere)).toBe(true);
 
     await page.reload();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Stiamo aspettando Bianca');

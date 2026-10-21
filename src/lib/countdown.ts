@@ -1,11 +1,13 @@
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
+import { TZDate } from '@date-fns/tz';
+import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 
 /**
- * Whole days between `from` and `dueIso`, rounded to the nearest day so a due
- * date of "today" doesn't flicker between 0 and 1 depending on time of day.
- * Positive when the due date is in the future, negative when it has passed.
+ * Whole calendar days from today in `timeZone` to the Due date: positive
+ * before it, 0 on the day, negative once it has passed. The count changes at
+ * local midnight in the Site's Timezone. The Public page, the share image and
+ * Notifications all count with this.
  */
-export function daysUntil(dueIso: string, from: Date = new Date()): number {
-  const due = new Date(dueIso);
-  return Math.round((due.getTime() - from.getTime()) / MS_PER_DAY);
+export function countdownDays(dueDate: string, timeZone: string, now: Date = new Date()): number {
+  const today = format(new TZDate(now, timeZone), 'yyyy-MM-dd');
+  return differenceInCalendarDays(parseISO(dueDate), parseISO(today));
 }
