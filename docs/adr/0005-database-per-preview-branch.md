@@ -5,5 +5,5 @@ Every Vercel preview deployment of a branch writes to its own database, `waiting
 ## Consequences
 
 - A free Atlas cluster holds at most 100 databases and 500 collections; each branch uses three collections, so preview databases are dropped when their pull request closes or their branch is deleted (`.github/workflows/drop-preview-db.yml`).
-- A preview database starts empty: each preview needs its own signup and Site to test with.
+- A preview database starts with the E2E fixtures and demo data the E2E workflow writes (ADR-0006).
 - Branch names that differ only in punctuation (`feat/x`, `feat-x`) share a database.

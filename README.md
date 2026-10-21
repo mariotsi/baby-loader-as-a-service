@@ -73,19 +73,55 @@ Deliberately not yet built (see the original planning discussion):
 
 ## Local development
 
+Needs Docker (on macOS, [Colima](https://github.com/abiosoft/colima) works:
+`brew install colima docker docker-compose && colima start`).
+
 ```bash
 npm install
-cp .env.local.example .env.local   # fill in MONGODB_URI, SESSION_SECRET, VAPID keys
+npm run db:up                       # MongoDB in Docker, data kept in a volume
+cp .env.local.example .env.local    # then fill in SESSION_SECRET and the VAPID keys
 npm run generate-vapid              # prints VAPID keys to paste into .env.local
+npm run seed                        # optional: demo Owners and Sites
 npm run dev
 ```
 
-In dev, `localhost:3000` serves the marketing/account/admin app. Tenant
-subdomains need a resolvable `ROOT_DOMAIN` — most browsers resolve
-`*.localhost` locally, so you can test a tenant at `slugname.localhost:3000`
-once `ROOT_DOMAIN=localhost` is set. In production, set `ROOT_DOMAIN` to your
-real domain (e.g. `example.com`) and point a wildcard DNS record
-(`*.example.com`) at your deployment.
+`localhost:3000` serves the Platform, and each Site its Address at
+`<slug>.localhost:3000` (browsers resolve `*.localhost` to this machine).
+`npm run seed` creates `demo-owner-a@waitingpages.test` and
+`demo-owner-b@waitingpages.test`, password `waiting-pages-demo`.
+
+`npm run dev:staging` runs the local app on staging's database instead, with
+the credentials in `.env.staging.local` (see `.env.staging.local.example`).
+No local setup reaches production's database.
+
+## End-to-end tests
+
+Playwright tests in `e2e/` cover signup and Site creation, login, the Public
+page in each state, Privacy settings and Language mode, Site settings,
+Subscribers and Notifications, and that an Owner cannot reach another
+Owner's Sites. They run in Chromium (desktop) and WebKit (iPhone).
+
+```bash
+npm run db:up
+npm run e2e              # builds and starts the app on :3100, database waitingpages-e2e
+npm run e2e:staging      # against staging.loading.baby, needs .env.staging.local
+npm run e2e:report       # opens the last HTML report
+```
+
+Before a run the suite asks the deployment which environment it is
+(`/api/version`), refuses production, and resets its fixtures in that
+deployment's database; afterwards it deletes what it created. ADR-0006 has
+the data rules.
+
+In CI, `.github/workflows/e2e.yml` runs the suite on every deployment of
+the `baby-loader-staging` project once Vercel reports it to GitHub as ready:
+each preview, whose check shows on the pull request, and staging. Both
+Vercel projects create GitHub Deployments; the workflow ignores the
+production project's. It needs three repository secrets:
+`PREVIEW_MONGODB_URI` (non-production cluster), `E2E_PASSWORD` (fixture
+Owners) and `VERCEL_AUTOMATION_BYPASS_SECRET` (the staging project's
+Protection Bypass for Automation, to get past Deployment Protection on its
+`vercel.app` URLs).
 
 ## Hosting
 
@@ -97,29 +133,47 @@ flagged as a cost item to verify, not yet done.
 
 ## Environments
 
-| Environment | Vercel project | Addresses | MongoDB |
-|---|---|---|---|
-| Production | `baby-loader-as-a-service`, branch `main` | `loading.baby`, Sites at `<slug>.loading.baby` | production cluster, database `waitingpages` |
-| Staging | `baby-loader-staging`, branch `staging` | `staging.loading.baby`, Sites at `<slug>.staging.loading.baby` | non-production cluster, database `waitingpages-staging` |
-| Preview | `baby-loader-as-a-service`, every other branch | the branch's `*.vercel.app` URL, Sites at `/sites/<slug>` | non-production cluster, database `waitingpages-<branch>` |
+Two Vercel projects keep production apart from everything else: the
+production project builds only `main`, and the staging project builds
+`staging` and every other branch.
 
-- **Database per branch** (`src/lib/dbName.ts`): a preview deployment with no
-  `MONGODB_DB_NAME` uses `waitingpages-<branch>`. MongoDB creates it on its
-  first write, and the first request of each process creates the indexes
-  (`src/lib/indexes.ts`), so a new branch needs no setup. The workflow
-  `.github/workflows/drop-preview-db.yml` drops the database when the pull
-  request closes or the branch is deleted, using the repository secret
-  `PREVIEW_MONGODB_URI`.
-- **Root domain fallback** (`src/lib/tenantUrl.ts`): a preview deployment
-  leaves `ROOT_DOMAIN` unset and uses its branch URL, so Sites are served by
-  path. Subdomain routing is exercised on staging.
-- **Credentials**: preview deployments run unreviewed branch code, so the
-  production `MONGODB_URI` is set only in the Production scope of the
-  production project, and Preview uses the non-production cluster. Staging and
-  Preview each have their own `SESSION_SECRET` and VAPID keypair; within an
-  environment every Site shares that one keypair (ADR-0002).
-- **Staging builds only `staging`**: its project's Ignored Build Step is set to
-  "Only build production", with `staging` as its production branch, so a pull
-  request is not deployed twice.
+| Environment | Vercel project | Branch | Addresses | MongoDB |
+|---|---|---|---|---|
+| Production | `baby-loader-as-a-service` | `main` | `loading.baby`, Sites at `<slug>.loading.baby` | production cluster, database `waitingpages` |
+| Staging | `baby-loader-staging` (its production branch) | `staging` | `staging.loading.baby`, Sites at `<slug>.staging.loading.baby` | non-production cluster, database `waitingpages-staging` |
+| Preview | `baby-loader-staging` (its preview deployments) | any other, `main` included | the branch's `baby-loader-staging-git-…vercel.app` URL, Sites at `/sites/<slug>` | non-production cluster, database `waitingpages-<branch>` |
+| Local | none | any | `localhost:3000`, Sites at `<slug>.localhost:3000` | Docker MongoDB, database `waitingpages-dev` |
+
+- **Who builds what**: the production project's Ignored Build Step skips
+  every deployment but production, so it never builds a preview. The staging
+  project has `staging` as its production branch and builds a preview of
+  every other push.
+- **Credentials**: preview deployments run unreviewed branch code, so
+  production's `MONGODB_URI`, `SESSION_SECRET` and VAPID keypair exist only in
+  the production project, Production scope. The staging project holds the
+  non-production cluster's `MONGODB_URI`, a `SESSION_SECRET` and a VAPID
+  keypair for its Production and Preview scopes; within a deployment every
+  Site shares one keypair (ADR-0002).
+- **Database per deployment** (`src/lib/dbName.ts`): production and staging
+  set `MONGODB_DB_NAME`; a preview, which does not, uses
+  `waitingpages-<branch>`. Production refuses to start without
+  `MONGODB_DB_NAME`, and anywhere else an unset name falls back to
+  `waitingpages-staging`, never to production's. MongoDB creates a database
+  on its first write, and the first request of each process creates the
+  indexes (`src/lib/indexes.ts`), so a new branch needs no setup. The
+  workflow `.github/workflows/drop-preview-db.yml` drops a preview's database
+  when its pull request closes or its branch is deleted, using the repository
+  secret `PREVIEW_MONGODB_URI` (non-production cluster).
+- **Root domain** (`src/lib/tenantUrl.ts`): production and staging set
+  `ROOT_DOMAIN`. A preview leaves it unset and uses its branch URL, a
+  `vercel.app` host without wildcard subdomains, so it serves Sites by path;
+  subdomain routing is exercised on staging.
+- **Deployment Protection**: both projects require a Vercel login on every
+  `vercel.app` URL and leave their custom domains public, so staging is
+  public and previews are not. CI gets past the protection on previews with
+  the staging project's Protection Bypass for Automation, stored as the
+  repository secret `VERCEL_AUTOMATION_BYPASS_SECRET`.
+- **Environment ribbon** (`src/lib/appEnv.ts`): every page names its
+  environment in a corner ribbon, except in production.
 - **Reserved slug**: `staging` is a Reserved slug, since `staging.loading.baby`
   serves the staging Platform.

@@ -1,9 +1,12 @@
-import { createHmac, randomBytes, scrypt, timingSafeEqual, type ScryptOptions } from 'crypto';
-import { promisify } from 'util';
+import { createHmac, timingSafeEqual } from 'crypto';
 import type { NextRequest } from 'next/server';
 import { ObjectId } from 'mongodb';
 import { getDb } from './mongodb.ts';
 import { rateLimit } from './rateLimit.ts';
+import { hashPassword, verifyPassword } from './password.ts';
+import { ROOT_HOSTNAME } from './tenantUrl.ts';
+
+export { hashPassword, verifyPassword };
 
 export const SESSION_COOKIE = 'session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -18,53 +21,6 @@ export interface User {
 async function usersCollection() {
   const db = await getDb();
   return db.collection<User>('users');
-}
-
-// --- Passwords -------------------------------------------------------------
-
-/**
- * OWASP-recommended scrypt profile. Each hash needs 128 * N * r bytes
- * (64 MiB), and several logins can run concurrently in one serverless
- * instance.
- */
-const SCRYPT_COST = { N: 2 ** 16, r: 8, p: 2 };
-const SCRYPT_KEYLEN = 64;
-
-const scryptAsync = promisify(scrypt) as (
-  password: string,
-  salt: string,
-  keylen: number,
-  options: ScryptOptions
-) => Promise<Buffer>;
-
-function runScrypt(password: string, salt: string, N: number, r: number, p: number): Promise<Buffer> {
-  // Node rejects any call needing more than maxmem, which defaults to 32 MiB.
-  return scryptAsync(password, salt, SCRYPT_KEYLEN, { N, r, p, maxmem: 2 * 128 * N * r });
-}
-
-/**
- * Returns `scrypt$N$r$p$salt$hash` (salt and hash in hex). The cost travels
- * with each hash, so raising SCRYPT_COST leaves existing hashes verifiable.
- */
-export async function hashPassword(password: string): Promise<string> {
-  const { N, r, p } = SCRYPT_COST;
-  const salt = randomBytes(16).toString('hex');
-  const hash = await runScrypt(password, salt, N, r, p);
-  return ['scrypt', N, r, p, salt, hash.toString('hex')].join('$');
-}
-
-export async function verifyPassword(password: string, stored: string): Promise<boolean> {
-  const [algorithm, n, r, p, salt, hash] = stored.split('$');
-  const cost = [n, r, p].map(Number);
-  if (algorithm !== 'scrypt' || !salt || !hash || !cost.every((v) => Number.isInteger(v) && v > 0)) {
-    return false;
-  }
-  const candidate = await runScrypt(password, salt, cost[0], cost[1], cost[2]);
-  const expected = Buffer.from(hash, 'hex');
-  if (candidate.length !== expected.length) {
-    return false;
-  }
-  return timingSafeEqual(candidate, expected);
 }
 
 // --- Accounts ----------------------------------------------------------------
@@ -141,7 +97,9 @@ export function sessionCookieOptions(maxAge = SESSION_TTL_MS / 1000) {
   return {
     name: SESSION_COOKIE,
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
+    // A production build served on localhost (the local E2E server) runs over
+    // plain http, where Safari and WebKit refuse to send a Secure cookie.
+    secure: process.env.NODE_ENV === 'production' && ROOT_HOSTNAME !== 'localhost',
     sameSite: 'strict' as const,
     path: '/',
     maxAge,
