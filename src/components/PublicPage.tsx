@@ -46,7 +46,7 @@ export function PublicPage({
         {view.milestones ? <Milestones milestones={view.milestones} /> : null}
 
         <div style={{ marginTop: '2rem' }}>
-          <PushSubscribeButton slug={slug} vapidPublicKey={vapidPublicKey} t={view.push} />
+          <PushSubscribeButton slug={slug} lang={view.lang} vapidPublicKey={vapidPublicKey} t={view.push} />
         </div>
 
         {views.length > 1 ? (

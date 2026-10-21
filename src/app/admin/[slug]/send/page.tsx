@@ -1,5 +1,6 @@
 import { SendNotificationForm } from '@/components/admin/SendNotificationForm';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
+import { siteLangs } from '@/lib/publicPageView';
 
 export default async function SendPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -9,7 +10,7 @@ export default async function SendPage({ params }: { params: Promise<{ slug: str
     <div className="container">
       <h1>Send a notification</h1>
       <p className="muted">To everyone subscribed on {site.babyName || site.slug}&apos;s page.</p>
-      <SendNotificationForm slug={site.slug} />
+      <SendNotificationForm slug={site.slug} lang={siteLangs(site.language)[0]} />
     </div>
   );
 }

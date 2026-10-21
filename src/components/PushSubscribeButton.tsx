@@ -1,11 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import type { Lang } from '@/lib/i18n';
 import type { PushButtonCopy } from '@/lib/publicPageView';
 import { decodeVapidKey, VapidKeyError } from '@/lib/vapid';
 
 interface Props {
   slug: string;
+  /** The Public page's current language, stored with the Subscription. */
+  lang: Lang;
   vapidPublicKey: string | undefined;
   t: PushButtonCopy;
 }
@@ -42,7 +45,7 @@ async function detectStatus(): Promise<Status> {
   }
 }
 
-export function PushSubscribeButton({ slug, vapidPublicKey, t }: Props) {
+export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
   const [status, setStatus] = useState<Status>('checking');
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
@@ -69,7 +72,7 @@ export function PushSubscribeButton({ slug, vapidPublicKey, t }: Props) {
       const res = await fetch('/api/subscribe', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, subscription: sub.toJSON(), deviceHints: clientDeviceHints() }),
+        body: JSON.stringify({ slug, lang, subscription: sub.toJSON(), deviceHints: clientDeviceHints() }),
       });
       if (!res.ok) {
         throw new Error('server');
