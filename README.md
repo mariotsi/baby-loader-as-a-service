@@ -186,7 +186,7 @@ receives the exact commit that passed the E2E suite on staging.
 1. A pull request targets `staging`. `.github/workflows/ci.yml` runs type
    checking, lint and unit tests (job `ci`), and the staging project deploys
    a preview, on which `.github/workflows/cd.yml` runs the E2E suite (job
-   `e2e`). Both checks show on the pull request.
+   `e2e`). Both are required before it merges.
 2. Merging deploys `staging` to `staging.loading.baby`, whose first request
    applies the new data migrations (see "Data migrations" below). Once
    Vercel reports that deployment ready, `cd.yml` runs the E2E suite against
@@ -212,8 +212,11 @@ the failed run is re-run.
   half is the repository secret `PROMOTE_DEPLOY_KEY`, which `promote` pushes
   with. Nobody pushes or merges to `main` by hand, and adding another write
   deploy key would let it bypass too.
-- **Ruleset "Require CI on staging"**: every commit `staging` receives needs
-  a successful `ci` check, and force pushes and deletion are blocked.
+- **Ruleset "Require CI and E2E on staging"**: a pull request merges into
+  `staging` only once its head commit has a successful `ci` check and a
+  successful `e2e` check from its preview, and force pushes and deletion are
+  blocked. Pull requests merge by squash only, titled after the pull
+  request.
 - **Fast-forward only**: `promote` never force pushes. If `main` holds a
   commit `staging` lacks, it fails until `main` is merged into `staging`,
   and a commit `main` already contains is left alone.
