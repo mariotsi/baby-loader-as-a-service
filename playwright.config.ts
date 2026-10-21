@@ -26,7 +26,15 @@ export default defineConfig({
   projects: [
     { name: 'setup', testMatch: /auth\.setup\.ts/ },
     { name: 'desktop', use: { ...devices['Desktop Chrome'] }, dependencies: ['setup'] },
-    { name: 'iphone', use: { ...devices['iPhone 15'] }, dependencies: ['setup'] },
+    {
+      name: 'iphone',
+      use: { ...devices['iPhone 15'] },
+      dependencies: ['setup'],
+      // Desktop alone runs these. Login and signup allow 10 attempts a minute
+      // per IP, so a second browser could trip the limit; Owner isolation is
+      // enforced on the server, where the browser makes no difference.
+      testIgnore: ['accounts.spec.ts', 'owner-isolation.spec.ts'],
+    },
   ],
   webServer: vapid
     ? {

@@ -3,10 +3,6 @@ import { FIXTURE_OWNERS, runEmail, runSlug } from './support/data.ts';
 import { bypassHeaders, e2ePassword, runId } from './support/env.ts';
 import { dashboardAddress, expect, test } from './support/test.ts';
 
-// Login and signup share a limit of 10 attempts a minute per IP, so these run
-// in one browser only; the forms are server-rendered the same everywhere.
-test.skip(({ browserName }) => browserName !== 'chromium', 'rate-limited auth endpoints, checked once');
-
 async function createSite(page: Page, slug: string, babyName: string) {
   await page.goto('/onboarding');
   await page.getByLabel('Site address').fill(slug);

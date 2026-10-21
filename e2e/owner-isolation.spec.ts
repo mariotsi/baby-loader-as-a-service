@@ -6,9 +6,6 @@ import { expect, test } from './support/test.ts';
 /** A Site of Owner A that Owner B tries to reach. */
 const A_SITE = 'e2e-waiting';
 
-// Server-side checks: one browser covers them.
-test.skip(({ browserName }) => browserName !== 'chromium', 'server-side authorization, checked once');
-
 test.describe('Owner B, logged in', () => {
   test.use({ storageState: ownerStatePath('b') });
 
