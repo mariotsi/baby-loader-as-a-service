@@ -43,4 +43,43 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Peso: 3100 g')).toBeVisible();
     await expect(page.getByText('È una femmina')).toBeVisible();
   });
+
+  test('explains a missing birth date and time and a weight in fractions of a gram', async ({ page, project }) => {
+    await page.goto(`/admin/${perProjectSlug('e2e-rules', project)}`);
+
+    await page.getByLabel('The baby has been born').check();
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByText('Birth date & time is required.', { exact: true })).toBeVisible();
+
+    await page.getByLabel('Birth date & time').fill('2026-01-15T08:30');
+    await page.getByLabel('Weight (g)').fill('3400.5');
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByText('Weight must be a whole number of grams.', { exact: true })).toBeVisible();
+
+    await page.reload();
+    await expect(page.getByLabel('The baby has been born')).not.toBeChecked();
+  });
+
+  test('keeps a Birth message the Language mode does not show', async ({ page, project }) => {
+    await page.goto(`/admin/${perProjectSlug('e2e-messages', project)}`);
+
+    await page.getByLabel('The baby has been born').check();
+    await page.getByLabel('Birth date & time').fill('2026-01-15T08:30');
+    await page.getByLabel('Message (Italian)').fill('Benvenuta Marta!');
+    await page.getByLabel('Message (English)').fill('Welcome Marta!');
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+
+    // 'Saved.' is still on screen from the first save, so wait for the second one itself.
+    await page.getByLabel('Language', { exact: true }).selectOption('en');
+    const saved = page.waitForResponse((res) => res.request().method() === 'PUT');
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    expect((await saved).ok()).toBe(true);
+
+    // A reload drops the form's own state: what follows comes from the saved Site.
+    await page.reload();
+    await expect(page.getByLabel('Message', { exact: true })).toHaveValue('Welcome Marta!');
+    await page.getByLabel('Language', { exact: true }).selectOption('both');
+    await expect(page.getByLabel('Message (Italian)')).toHaveValue('Benvenuta Marta!');
+  });
 });

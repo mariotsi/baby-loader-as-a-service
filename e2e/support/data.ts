@@ -70,8 +70,10 @@ const sharedFixtureSites: SiteSpec[] = [
 const perProjectFixtureBases: Omit<SiteSpec, 'slug'>[] = [
   { ...waiting, owner: 'a', babyName: 'Edith' },
   { ...waiting, owner: 'a', babyName: 'Nora' },
+  { ...waiting, owner: 'a', babyName: 'Ruth' },
+  { ...waiting, owner: 'a', babyName: 'Marta', language: 'both' },
 ];
-const PER_PROJECT_BASES = ['e2e-edit', 'e2e-notify'] as const;
+const PER_PROJECT_BASES = ['e2e-edit', 'e2e-notify', 'e2e-rules', 'e2e-messages'] as const;
 export type PerProjectFixture = (typeof PER_PROJECT_BASES)[number];
 
 export function perProjectSlug(base: PerProjectFixture, project: ProjectName): string {
