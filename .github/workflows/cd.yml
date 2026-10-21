@@ -54,9 +54,9 @@ jobs:
           key: npm-playwright-${{ hashFiles('package-lock.json') }}
       - run: npm ci
 
-      # The run's test data goes to the database the deployment under test
-      # uses: staging's from the Production scope of baby-loader-staging, a
-      # preview's from its Preview scope.
+      # The run's test data goes where the deployment under test reads it:
+      # inside a pull request (a preview) PREVIEW_MONGODB_URI, otherwise
+      # (staging) STAGING_MONGODB_URI.
       - name: Pick the database of the deployment under test
         env:
           ENVIRONMENT: ${{ github.event.deployment.environment }}
@@ -64,8 +64,8 @@ jobs:
           PREVIEW_MONGODB_URI: ${{ secrets.PREVIEW_MONGODB_URI }}
         run: |
           case "$ENVIRONMENT" in
-            Production*) secret=STAGING_MONGODB_URI uri=$STAGING_MONGODB_URI ;;
-            *) secret=PREVIEW_MONGODB_URI uri=$PREVIEW_MONGODB_URI ;;
+            Preview*) secret=PREVIEW_MONGODB_URI uri=$PREVIEW_MONGODB_URI ;;
+            *) secret=STAGING_MONGODB_URI uri=$STAGING_MONGODB_URI ;;
           esac
           if [ -z "$uri" ]; then
             echo "::error::Set the repository secret $secret"
