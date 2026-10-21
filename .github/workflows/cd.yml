@@ -32,6 +32,13 @@ jobs:
       endsWith(github.event.deployment.environment, 'baby-loader-staging')
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Playwright's image ships its browsers and their system dependencies.
+    # Its version must equal @playwright/test in package.json, which CI
+    # checks (scripts/check-playwright-image.mjs).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      # The runner's user, which owns the mounted workspace and home.
+      options: --user 1001
     env:
       CI: true
       # Staging and preview databases both live on the non-production cluster.
@@ -42,10 +49,11 @@ jobs:
       VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      # The image's Node (24) runs the suite.
+      - uses: actions/cache@v4
         with:
-          node-version: 24
-          cache: npm
+          path: ~/.npm
+          key: npm-playwright-${{ hashFiles('package-lock.json') }}
       - run: npm ci
 
       - name: Find where the deployment serves this commit
@@ -54,7 +62,6 @@ jobs:
           COMMIT: ${{ github.sha }}
         run: node scripts/wait-for-deployment.mjs >> "$GITHUB_ENV"
 
-      - run: npx playwright install --with-deps chromium webkit
       - run: npx playwright test
 
       - uses: actions/upload-artifact@v4
