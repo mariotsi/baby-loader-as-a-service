@@ -124,6 +124,13 @@ Owners) and `VERCEL_AUTOMATION_BYPASS_SECRET` (the staging project's
 Protection Bypass for Automation, to get past Deployment Protection on its
 `vercel.app` URLs).
 
+The job runs in Playwright's Docker image
+(`mcr.microsoft.com/playwright:v<version>-noble`), which ships the browsers
+and their system dependencies for one Playwright release. Its tag must equal
+the exact `@playwright/test` version in `package.json`: CI checks it on every
+pull request (`scripts/check-playwright-image.mjs`), so an upgrade changes
+both together.
+
 ## Hosting
 
 Intended for Vercel, which has native support for the wildcard-subdomain +
