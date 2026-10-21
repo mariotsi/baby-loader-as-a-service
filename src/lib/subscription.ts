@@ -1,13 +1,16 @@
 import { ObjectId } from 'mongodb';
-import type { DeviceInfo } from './deviceInfo';
-import type { GeoLocation } from './geoip';
-import { getDb } from './mongodb';
+import type { DeviceInfo } from './deviceInfo.ts';
+import type { GeoLocation } from './geoip.ts';
+import type { Lang } from './i18n.ts';
+import { getDb } from './mongodb.ts';
 
 export interface PushSubscriptionDoc {
   _id: ObjectId;
   siteId: ObjectId;
   endpoint: string;
   keys: { p256dh: string; auth: string };
+  /** The Public page's language when the Visitor opted in; null on Subscriptions older than the field. */
+  lang?: Lang | null;
   deviceInfo: DeviceInfo | null;
   geo: GeoLocation | null;
   createdAt: Date;
@@ -23,6 +26,7 @@ export interface UpsertSubscriptionInput {
   siteId: ObjectId;
   endpoint: string;
   keys: { p256dh: string; auth: string };
+  lang: Lang | null;
   deviceInfo: DeviceInfo | null;
   geo: GeoLocation | null;
 }
@@ -36,6 +40,7 @@ export async function upsertSubscription(input: UpsertSubscriptionInput): Promis
     {
       $set: {
         keys: input.keys,
+        lang: input.lang,
         deviceInfo: input.deviceInfo,
         geo: input.geo,
         updatedAt: now,
@@ -56,9 +61,10 @@ export async function deleteSubscription(siteId: ObjectId, endpoint: string): Pr
   await col.deleteOne({ siteId, endpoint });
 }
 
-export async function deleteSubscriptionByEndpoint(endpoint: string): Promise<void> {
+/** A push endpoint the push service reports gone is dead for every Site it was subscribed to. */
+export async function deleteSubscriptionsByEndpoint(endpoint: string): Promise<void> {
   const col = await collection();
-  await col.deleteOne({ endpoint });
+  await col.deleteMany({ endpoint });
 }
 
 export async function listSubscriptionsBySite(siteId: ObjectId): Promise<PushSubscriptionDoc[]> {

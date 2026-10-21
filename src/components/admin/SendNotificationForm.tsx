@@ -1,8 +1,11 @@
 'use client';
 
 import { type FormEvent, useState } from 'react';
+import type { Lang } from '@/lib/i18n';
+import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
-export function SendNotificationForm({ slug }: { slug: string }) {
+/** Sends one text, in the Site's primary language `lang`; every Subscription receives it. */
+export function SendNotificationForm({ slug, lang }: { slug: string; lang: Lang }) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
@@ -15,7 +18,7 @@ export function SendNotificationForm({ slug }: { slug: string }) {
     const res = await fetch('/api/send-notification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug, title, body }),
+      body: JSON.stringify({ slug, messages: { [lang]: title.trim() ? { title, body } : { body } } }),
     });
     const data = await res.json();
     setSending(false);
@@ -23,7 +26,7 @@ export function SendNotificationForm({ slug }: { slug: string }) {
       setResult(`Sent to ${data.sent} of ${data.total} subscribers.`);
       setBody('');
     } else {
-      setResult(data.error || 'Something went wrong.');
+      setResult(data.errors ? describeSiteSettingsErrors(data.errors) : data.error || 'Something went wrong.');
     }
   }
 

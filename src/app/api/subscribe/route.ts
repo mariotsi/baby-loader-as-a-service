@@ -2,6 +2,8 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { clientIp } from '@/lib/auth';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import { lookupGeo } from '@/lib/geoip';
+import { isLang } from '@/lib/i18n';
+import { siteLangs } from '@/lib/publicPageView';
 import { rateLimit } from '@/lib/rateLimit';
 import { getSiteBySlug } from '@/lib/site';
 import { deleteSubscription, upsertSubscription } from '@/lib/subscription';
@@ -27,11 +29,13 @@ export async function POST(req: NextRequest) {
   const ip = clientIp(req);
   const deviceInfo = buildDeviceInfo(req.headers.get('user-agent'), body?.deviceHints);
   const geo = await lookupGeo(ip);
+  const lang = isLang(body?.lang) && siteLangs(site.language).includes(body.lang) ? body.lang : null;
 
   await upsertSubscription({
     siteId: site._id,
     endpoint: subscription.endpoint,
     keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth },
+    lang,
     deviceInfo,
     geo,
   });

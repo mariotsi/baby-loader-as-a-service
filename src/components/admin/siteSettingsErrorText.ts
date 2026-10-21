@@ -25,6 +25,10 @@ const FIELD_LABELS: Record<string, string> = {
 
 function fieldLabel(path: string): string {
   const field = path.replace(/^settings\./, '');
+  const notification = /^messages\.[a-z]+\.(title|body)$/.exec(field);
+  if (notification) {
+    return notification[1] === 'title' ? 'Title' : 'Message';
+  }
   const milestone = /^milestones\.(\d+)\.(label|date)$/.exec(field);
   if (milestone) {
     return `Milestone ${Number(milestone[1]) + 1} ${milestone[2]}`;
