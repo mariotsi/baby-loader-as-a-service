@@ -5,7 +5,7 @@ import type { DeviceInfo } from './deviceInfo';
 
 export interface PushSubscriptionDoc {
   _id: ObjectId;
-  tenantId: ObjectId;
+  siteId: ObjectId;
   endpoint: string;
   keys: { p256dh: string; auth: string };
   deviceInfo: DeviceInfo | null;
@@ -20,19 +20,19 @@ async function collection() {
 }
 
 export interface UpsertSubscriptionInput {
-  tenantId: ObjectId;
+  siteId: ObjectId;
   endpoint: string;
   keys: { p256dh: string; auth: string };
   deviceInfo: DeviceInfo | null;
   geo: GeoLocation | null;
 }
 
-/** Keyed by (tenantId, endpoint): the same device re-subscribing just refreshes its record. */
+/** Keyed by (siteId, endpoint): the same device re-subscribing just refreshes its record. */
 export async function upsertSubscription(input: UpsertSubscriptionInput): Promise<void> {
   const col = await collection();
   const now = new Date();
   await col.updateOne(
-    { tenantId: input.tenantId, endpoint: input.endpoint },
+    { siteId: input.siteId, endpoint: input.endpoint },
     {
       $set: {
         keys: input.keys,
@@ -42,7 +42,7 @@ export async function upsertSubscription(input: UpsertSubscriptionInput): Promis
       },
       $setOnInsert: {
         _id: new ObjectId(),
-        tenantId: input.tenantId,
+        siteId: input.siteId,
         endpoint: input.endpoint,
         createdAt: now,
       },
@@ -51,9 +51,9 @@ export async function upsertSubscription(input: UpsertSubscriptionInput): Promis
   );
 }
 
-export async function deleteSubscription(tenantId: ObjectId, endpoint: string): Promise<void> {
+export async function deleteSubscription(siteId: ObjectId, endpoint: string): Promise<void> {
   const col = await collection();
-  await col.deleteOne({ tenantId, endpoint });
+  await col.deleteOne({ siteId, endpoint });
 }
 
 export async function deleteSubscriptionByEndpoint(endpoint: string): Promise<void> {
@@ -61,12 +61,12 @@ export async function deleteSubscriptionByEndpoint(endpoint: string): Promise<vo
   await col.deleteOne({ endpoint });
 }
 
-export async function listSubscriptionsByTenant(tenantId: ObjectId): Promise<PushSubscriptionDoc[]> {
+export async function listSubscriptionsBySite(siteId: ObjectId): Promise<PushSubscriptionDoc[]> {
   const col = await collection();
-  return col.find({ tenantId }).sort({ createdAt: -1 }).toArray();
+  return col.find({ siteId }).sort({ createdAt: -1 }).toArray();
 }
 
-export async function countSubscriptionsByTenant(tenantId: ObjectId): Promise<number> {
+export async function countSubscriptionsBySite(siteId: ObjectId): Promise<number> {
   const col = await collection();
-  return col.countDocuments({ tenantId });
+  return col.countDocuments({ siteId });
 }

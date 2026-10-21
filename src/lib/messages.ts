@@ -1,11 +1,11 @@
 import type { Lang } from './i18n';
 
 /**
- * Core user-facing copy for a tenant's public page. Deliberately smaller than
+ * Core user-facing copy for a Site's Public page. Deliberately smaller than
  * baby-loader's dictionary (which also covers detailed per-OS "notifications
  * are blocked" troubleshooting copy) — that richer copy is a good candidate
  * to port over in a later pass, it just isn't needed to prove out the
- * multi-tenant architecture itself.
+ * multi-Site architecture itself.
  */
 const en = {
   waitingTagline: 'Expecting',

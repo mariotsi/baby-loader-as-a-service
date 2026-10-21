@@ -24,7 +24,7 @@ export default function OnboardingPage() {
     setError(null);
     setLoading(true);
     try {
-      const res = await fetch('/api/tenants', {
+      const res = await fetch('/api/sites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -44,7 +44,7 @@ export default function OnboardingPage() {
         setError(data.errors ? describeSiteSettingsErrors(data.errors) : data.error || 'Something went wrong.');
         return;
       }
-      router.push(`/admin/${data.tenant.slug}`);
+      router.push(`/admin/${data.site.slug}`);
     } catch {
       setError('Something went wrong.');
     } finally {

@@ -1,15 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireUser } from '@/lib/ownerAccessNext';
 import { parseNewSite } from '@/lib/siteSettings';
-import { createSite, listTenantsByOwner, toTenantDTO } from '@/lib/tenant';
+import { createSite, listSitesByOwner, toSiteDTO } from '@/lib/site';
 
 export async function GET(req: NextRequest) {
   const access = requireUser(req);
   if ('error' in access) {
     return access.error;
   }
-  const tenants = await listTenantsByOwner(access.user);
-  return NextResponse.json({ tenants: tenants.map(toTenantDTO) });
+  const sites = await listSitesByOwner(access.user);
+  return NextResponse.json({ sites: sites.map(toSiteDTO) });
 }
 
 export async function POST(req: NextRequest) {
@@ -26,5 +26,5 @@ export async function POST(req: NextRequest) {
   if (!created.ok) {
     return NextResponse.json({ errors: created.errors }, { status: 409 });
   }
-  return NextResponse.json({ tenant: toTenantDTO(created.site) }, { status: 201 });
+  return NextResponse.json({ site: toSiteDTO(created.site) }, { status: 201 });
 }

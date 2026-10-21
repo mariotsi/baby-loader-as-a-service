@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { ROOT_HOSTNAME } from '@/lib/tenantUrl';
+import { ROOT_HOSTNAME } from '@/lib/address';
 
 /**
- * Resolves which tenant (if any) a request's Host header maps to, and
+ * Resolves which Site (if any) a request's Host header maps to, and
  * rewrites it to the internal `/sites/[slug]` route. This is the one place
- * in the app that turns "which URL was this?" into "which tenant is this?" —
- * every other route either doesn't need a tenant (marketing, auth, admin) or
+ * in the app that turns "which URL was this?" into "which Site is this?" —
+ * every other route either doesn't need a Site (marketing, auth, admin) or
  * receives the slug explicitly (admin/[slug]/...).
  *
  * Deliberately does NOT query the database here: middleware performance
@@ -28,7 +28,7 @@ function resolveSlug(host: string): string | null {
 
   if (hostname.endsWith(`.${ROOT_HOSTNAME}`)) {
     const sub = hostname.slice(0, -(`.${ROOT_HOSTNAME}`.length));
-    // Only a single level of subdomain is a tenant slug; anything else
+    // Only a single level of subdomain is a Slug; anything else
     // (unexpected multi-level host) falls through to the root app.
     return sub && !sub.includes('.') ? sub : null;
   }
@@ -56,7 +56,7 @@ export const config = {
   matcher: [
     /*
      * Skip Next internals, API routes, and static files — none of these are
-     * ever a tenant's public page.
+     * ever a Site's Public page.
      */
     '/((?!api|_next/static|_next/image|favicon.ico|sw.js|icon-.*\\.png).*)',
   ],

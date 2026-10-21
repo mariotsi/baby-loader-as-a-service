@@ -4,7 +4,7 @@ import { ObjectId } from 'mongodb';
 import { startTestDb } from './testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import { accessOwnedSite, authenticate, type AuthenticatedUser, type OwnedSite } from './ownerAccess.ts';
-import { createSite, getTenantBySlug, listTenantsByOwner, saveSiteSettings } from './tenant.ts';
+import { createSite, getSiteBySlug, listSitesByOwner, saveSiteSettings } from './site.ts';
 import { defaultSiteSettings, parseNewSite, parseSiteSettings, type SiteSettingsInput } from './siteSettings.ts';
 
 let stopDb: () => Promise<void>;
@@ -34,12 +34,12 @@ async function owned(slug: string): Promise<OwnedSite> {
 test('createSite stores the Site settings under the Owner', async () => {
   const created = await createSite(owner, newSite('noah', { ...defaultSiteSettings, babyName: 'Noah' }));
   assert.ok(created.ok);
-  const stored = await getTenantBySlug('noah');
+  const stored = await getSiteBySlug('noah');
   assert.equal(stored?.babyName, 'Noah');
   assert.deepEqual(stored?.birth, { born: false, details: null });
   assert.ok(stored?.ownerId.equals(owner.id));
   assert.deepEqual(
-    (await listTenantsByOwner(owner)).map((site) => site.slug),
+    (await listSitesByOwner(owner)).map((site) => site.slug),
     ['noah']
   );
 });

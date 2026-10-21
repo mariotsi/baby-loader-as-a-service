@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getTenantBySlug } from '@/lib/tenant';
+import { getSiteBySlug } from '@/lib/site';
 import { upsertSubscription, deleteSubscription } from '@/lib/subscription';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import { lookupGeo } from '@/lib/geoip';
@@ -12,15 +12,15 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const tenantSlug = typeof body?.tenantSlug === 'string' ? body.tenantSlug : '';
+  const slug = typeof body?.slug === 'string' ? body.slug : '';
   const subscription = body?.subscription;
 
-  if (!tenantSlug || !subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+  if (!slug || !subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
     return NextResponse.json({ error: 'Invalid subscription payload.' }, { status: 400 });
   }
 
-  const tenant = await getTenantBySlug(tenantSlug);
-  if (!tenant) {
+  const site = await getSiteBySlug(slug);
+  if (!site) {
     return NextResponse.json({ error: 'Unknown site.' }, { status: 404 });
   }
 
@@ -29,7 +29,7 @@ export async function POST(req: NextRequest) {
   const geo = await lookupGeo(ip);
 
   await upsertSubscription({
-    tenantId: tenant._id,
+    siteId: site._id,
     endpoint: subscription.endpoint,
     keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth },
     deviceInfo,
@@ -41,18 +41,18 @@ export async function POST(req: NextRequest) {
 
 export async function DELETE(req: NextRequest) {
   const body = await req.json().catch(() => null);
-  const tenantSlug = typeof body?.tenantSlug === 'string' ? body.tenantSlug : '';
+  const slug = typeof body?.slug === 'string' ? body.slug : '';
   const endpoint = typeof body?.endpoint === 'string' ? body.endpoint : '';
 
-  if (!tenantSlug || !endpoint) {
+  if (!slug || !endpoint) {
     return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
   }
 
-  const tenant = await getTenantBySlug(tenantSlug);
-  if (!tenant) {
+  const site = await getSiteBySlug(slug);
+  if (!site) {
     return NextResponse.json({ error: 'Unknown site.' }, { status: 404 });
   }
 
-  await deleteSubscription(tenant._id, endpoint);
+  await deleteSubscription(site._id, endpoint);
   return NextResponse.json({ ok: true });
 }

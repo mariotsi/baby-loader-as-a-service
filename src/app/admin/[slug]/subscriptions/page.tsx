@@ -1,11 +1,11 @@
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
-import { listSubscriptionsByTenant } from '@/lib/subscription';
+import { listSubscriptionsBySite } from '@/lib/subscription';
 
 export default async function SubscriptionsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { site: tenant } = await pageOwnedSite(slug);
+  const { site } = await pageOwnedSite(slug);
 
-  const subscriptions = await listSubscriptionsByTenant(tenant._id);
+  const subscriptions = await listSubscriptionsBySite(site._id);
 
   return (
     <div className="container">

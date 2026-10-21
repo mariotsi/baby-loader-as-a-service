@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from 'react';
 
-export function SendNotificationForm({ tenantSlug }: { tenantSlug: string }) {
+export function SendNotificationForm({ slug }: { slug: string }) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
@@ -15,7 +15,7 @@ export function SendNotificationForm({ tenantSlug }: { tenantSlug: string }) {
     const res = await fetch('/api/send-notification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ tenantSlug, title, body }),
+      body: JSON.stringify({ slug, title, body }),
     });
     const data = await res.json();
     setSending(false);

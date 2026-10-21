@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
 import { parseSiteSettings } from '@/lib/siteSettings';
-import { saveSiteSettings, toTenantDTO } from '@/lib/tenant';
+import { saveSiteSettings, toSiteDTO } from '@/lib/site';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -9,7 +9,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   if ('error' in access) {
     return access.error;
   }
-  return NextResponse.json({ tenant: toTenantDTO(access.owned.site) });
+  return NextResponse.json({ site: toSiteDTO(access.owned.site) });
 }
 
 /** Replaces every Site setting; the body is the complete Site settings. */
@@ -28,5 +28,5 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
   if (!saved) {
     return NextResponse.json({ error: 'Not found.' }, { status: 404 });
   }
-  return NextResponse.json({ tenant: toTenantDTO(saved) });
+  return NextResponse.json({ site: toSiteDTO(saved) });
 }

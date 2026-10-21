@@ -1,13 +1,13 @@
 # baby-loader-as-a-service
 
-Multi-tenant "waiting page" SaaS: customers create their own customizable
+Multi-Site "waiting page" SaaS: customers create their own customizable
 baby countdown/announcement page — pick a color palette and font, choose
 whether to show the baby's name and/or sex, set the language (English,
 Italian, or both with a switcher) — get an admin dashboard and a shareable
 subdomain link, and push notifications to send updates to visitors.
 
 This is a **separate, independent project** inspired by
-[`baby-loader`](https://github.com/mariotsi/baby-loader), a single-tenant
+[`baby-loader`](https://github.com/mariotsi/baby-loader), a single-Site
 personal project. `baby-loader` is not modified by this repo in any way, and
 the two apps use **separate MongoDB databases** — see "Isolation from
 baby-loader" below. A handful of framework-agnostic utilities
@@ -20,41 +20,41 @@ point and adapted; from here the two codebases evolve independently.
 Next.js 16 (App Router) + TypeScript, MongoDB Atlas, Web Push (VAPID).
 Intended to deploy on Vercel (see "Hosting" below).
 
-## How multi-tenancy works
+## How Sites work
 
-- **Tenant data model** (`src/lib/tenant.ts`): a `tenants` collection holds
-  each site's slug, owner, baby info, theme, privacy toggles, language mode,
-  and (future) custom domain. `subscriptions` (`src/lib/subscription.ts`) is
-  scoped by `tenantId`.
+- **Site data model** (`src/lib/site.ts`): a `sites` collection holds
+  each Site's Slug, Owner, Site settings (`src/lib/siteSettings.ts`), and
+  (future) Custom domain. `subscriptions` (`src/lib/subscription.ts`) is
+  scoped by `siteId`.
 - **Subdomain routing** (`src/middleware.ts`): reads the request's `Host`
   header and rewrites `slug.yourdomain.com/*` to the internal
   `/sites/[slug]` route (`src/app/sites/[slug]/page.tsx`), which looks the
-  tenant up by slug and renders its public page. The root domain (and
+  Site up by Slug and renders its Public page. The root domain (and
   `localhost` in dev) is untouched and serves the marketing site / accounts /
   admin instead. No database lookup happens in middleware — the string
   parsing there stays cheap, and an unknown slug 404s inside the page itself.
 - **Accounts** (`src/lib/auth.ts`): email/password accounts with hashed
   passwords (scrypt) and a signed session cookie — no shared admin password.
-  Every tenant has an `ownerId`; admin routes and pages check ownership
-  before allowing reads/writes.
+  Every Site has an `ownerId`; Owner access (`src/lib/ownerAccess.ts`) checks
+  it for every Dashboard route and page before any read or write.
 - **Theming** (`src/lib/theme.ts`): a curated list of palettes and Google
-  Fonts, not free-form CSS — keeps every tenant site fast, safe, and cheap.
+  Fonts, not free-form CSS — keeps every Site fast, safe, and cheap.
   Applied as CSS custom properties (see `src/app/globals.css`).
 - **Push notifications**: one shared VAPID keypair for the whole platform;
-  `subscriptions` are scoped by tenant so a "send notification" only reaches
-  that tenant's subscribers.
+  `subscriptions` are scoped by Site so a Notification only reaches that
+  Site's Subscribers.
 
 ## What's implemented vs. what's next
 
-Implemented: accounts, tenant creation/onboarding, subdomain routing, theming
+Implemented: accounts, Site creation/onboarding, subdomain routing, theming
 (palette + font), name/sex visibility toggles, language mode (mono or
-switcher), due-date countdown + milestones, born-state fields, per-tenant
+switcher), due-date countdown + milestones, born-state fields, per-Site
 push notifications and subscriber list.
 
 Deliberately not yet built (see the original planning discussion):
 - **Custom domains (CNAME)** — needs the Vercel Domains API behind a
   `DomainProvider` abstraction so it isn't a hard Vercel lock-in; not started.
-- **Media storage** — tenant-uploaded hero photo/video and a custom OG/share
+- **Media storage** — Owner-uploaded hero photo/video and a custom OG/share
   image; the public page currently has no hero media at all. Needs a small
   storage abstraction (Vercel Blob or an S3-compatible provider).
 - **Billing** — no Stripe integration; site creation is free/manual for now.
@@ -138,9 +138,9 @@ both together.
 ## Hosting
 
 Intended for Vercel, which has native support for the wildcard-subdomain +
-per-tenant-custom-domain pattern this app is built around. Before relying on
+per-Site custom-domain pattern this app is built around. Before relying on
 custom domains for real customers, confirm current Vercel pricing/limits for
-programmatic domain management against expected tenant volume — this was
+programmatic domain management against expected Site volume — this was
 flagged as a cost item to verify, not yet done.
 
 ## Environments
@@ -178,7 +178,7 @@ receives the exact commit that passed the E2E suite on staging.
   workflow `.github/workflows/drop-preview-db.yml` drops a preview's database
   when its pull request closes or its branch is deleted, using the repository
   secret `PREVIEW_MONGODB_URI` (non-production cluster).
-- **Root domain** (`src/lib/tenantUrl.ts`): production and staging set
+- **Root domain** (`src/lib/address.ts`): production and staging set
   `ROOT_DOMAIN`. A preview leaves it unset and uses its branch URL, a
   `vercel.app` host without wildcard subdomains, so it serves Sites by path;
   subdomain routing is exercised on staging.
@@ -255,7 +255,6 @@ has.
   runs it there for good. So a migration only makes changes the previous
   code still reads correctly (add a field before reading it, stop writing
   one before removing it), is safe to rerun, and is quick: the first
-  requests wait for it.
-
-`scripts/migrate-site-settings.mjs` stays outside this mechanism: a one-off run by hand
-(dry run unless `--apply`).
+  requests wait for it. `0001-rename-tenants-to-sites` is the one
+  exception: it renames storage the previous deployment reads, so an
+  instant rollback past it does not work.

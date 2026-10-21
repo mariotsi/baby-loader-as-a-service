@@ -6,28 +6,28 @@ import { format, parseISO } from 'date-fns';
 import { PALETTES, FONTS } from '@/lib/theme';
 import type { Lang } from '@/lib/i18n';
 import type { BirthDetails, SiteSettingsInput } from '@/lib/siteSettings';
-import type { TenantDTO, Milestone } from '@/lib/tenant';
+import type { SiteDTO, Milestone } from '@/lib/site';
 import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
 
-export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
+export function SiteSettingsForm({ site }: { site: SiteDTO }) {
   const router = useRouter();
-  const [babyName, setBabyName] = useState(tenant.babyName);
-  const [sex, setSex] = useState(tenant.sex);
-  const [dueDate, setDueDate] = useState(tenant.dueDate?.slice(0, 10) ?? '');
-  const details = tenant.birth.details;
-  const [born, setBorn] = useState(tenant.birth.born);
+  const [babyName, setBabyName] = useState(site.babyName);
+  const [sex, setSex] = useState(site.sex);
+  const [dueDate, setDueDate] = useState(site.dueDate?.slice(0, 10) ?? '');
+  const details = site.birth.details;
+  const [born, setBorn] = useState(site.birth.born);
   const [birthDatetime, setBirthDatetime] = useState(details ? format(parseISO(details.datetime), LOCAL_DATETIME) : '');
   const [weight, setWeight] = useState(details?.weightGrams?.toString() ?? '');
   const [lengthCm, setLengthCm] = useState(details?.lengthCm?.toString() ?? '');
   const [birthMessage, setBirthMessage] = useState<BirthDetails['message']>(details?.message ?? {});
-  const [language, setLanguage] = useState(tenant.language);
-  const [palette, setPalette] = useState(tenant.theme.palette);
-  const [font, setFont] = useState(tenant.theme.font);
-  const [showName, setShowName] = useState(tenant.privacy.showName);
-  const [showSex, setShowSex] = useState(tenant.privacy.showSex);
-  const [milestones, setMilestones] = useState<Milestone[]>(tenant.milestones);
+  const [language, setLanguage] = useState(site.language);
+  const [palette, setPalette] = useState(site.theme.palette);
+  const [font, setFont] = useState(site.theme.font);
+  const [showName, setShowName] = useState(site.privacy.showName);
+  const [showSex, setShowSex] = useState(site.privacy.showSex);
+  const [milestones, setMilestones] = useState<Milestone[]>(site.milestones);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
 
@@ -67,7 +67,7 @@ export function TenantSettingsForm({ tenant }: { tenant: TenantDTO }) {
       theme: { palette, font },
       privacy: { showName, showSex },
     };
-    const res = await fetch(`/api/tenants/${tenant.slug}`, {
+    const res = await fetch(`/api/sites/${site.slug}`, {
       method: 'PUT',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(settings),

@@ -35,14 +35,14 @@ test.describe('Owner B, logged in', () => {
 
     // Another Owner's Site answers as if it did not exist: 404, never 403.
     test('cannot read or change Owner A’s Site settings', async () => {
-      expect((await api.get(`/api/tenants/${A_SITE}`)).status()).toBe(404);
-      const put = await api.put(`/api/tenants/${A_SITE}`, { data: { ...defaultSiteSettings, babyName: 'Taken over' } });
+      expect((await api.get(`/api/sites/${A_SITE}`)).status()).toBe(404);
+      const put = await api.put(`/api/sites/${A_SITE}`, { data: { ...defaultSiteSettings, babyName: 'Taken over' } });
       expect(put.status()).toBe(404);
     });
 
     test('cannot count or notify Owner A’s Subscribers', async () => {
-      expect((await api.get(`/api/send-notification?tenantSlug=${A_SITE}`)).status()).toBe(404);
-      const send = await api.post('/api/send-notification', { data: { tenantSlug: A_SITE, body: 'Hello from B' } });
+      expect((await api.get(`/api/send-notification?slug=${A_SITE}`)).status()).toBe(404);
+      const send = await api.post('/api/send-notification', { data: { slug: A_SITE, body: 'Hello from B' } });
       expect(send.status()).toBe(404);
     });
   });
@@ -57,9 +57,9 @@ test.describe('without a session', () => {
   test('the API answers 401', async () => {
     const api = await playwrightRequest.newContext({ baseURL: BASE_URL, extraHTTPHeaders: bypassHeaders() });
     try {
-      expect((await api.get('/api/tenants')).status()).toBe(401);
-      expect((await api.get(`/api/tenants/${A_SITE}`)).status()).toBe(401);
-      expect((await api.post('/api/send-notification', { data: { tenantSlug: A_SITE, body: 'x' } })).status()).toBe(401);
+      expect((await api.get('/api/sites')).status()).toBe(401);
+      expect((await api.get(`/api/sites/${A_SITE}`)).status()).toBe(401);
+      expect((await api.post('/api/send-notification', { data: { slug: A_SITE, body: 'x' } })).status()).toBe(401);
     } finally {
       await api.dispose();
     }

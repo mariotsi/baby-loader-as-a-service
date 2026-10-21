@@ -13,7 +13,9 @@
 
 import { MongoClient, ObjectId } from 'mongodb';
 import { databaseName, testDataPolicy } from '../src/lib/dbName.ts';
+import { applyMigrations } from '../src/lib/migrations.ts';
 import { hashPassword } from '../src/lib/password.ts';
+import { MIGRATIONS } from '../src/migrations/index.ts';
 import { parseNewSite } from '../src/lib/siteSettings.ts';
 import {
   DEMO_OWNERS,
@@ -39,7 +41,7 @@ function isoDate(daysFromNow, now) {
 }
 
 /**
- * A Site document as createSite (src/lib/tenant.ts) stores it, its Site
+ * A Site document as createSite (src/lib/site.ts) stores it, its Site
  * settings validated by the same parseNewSite the app runs, so a fixture can
  * never hold settings the app would refuse.
  */
@@ -93,9 +95,9 @@ function siteDoc(spec, ownerId, now) {
 async function resetData(db, owners, sites, password) {
   const emails = Object.values(owners);
   const slugs = sites.map((s) => s.slug);
-  const old = await db.collection('tenants').find({ slug: { $in: slugs } }, { projection: { _id: 1 } }).toArray();
-  await db.collection('subscriptions').deleteMany({ tenantId: { $in: old.map((t) => t._id) } });
-  await db.collection('tenants').deleteMany({ slug: { $in: slugs } });
+  const old = await db.collection('sites').find({ slug: { $in: slugs } }, { projection: { _id: 1 } }).toArray();
+  await db.collection('subscriptions').deleteMany({ siteId: { $in: old.map((t) => t._id) } });
+  await db.collection('sites').deleteMany({ slug: { $in: slugs } });
   await db.collection('users').deleteMany({ email: { $in: emails } });
 
   const now = new Date();
@@ -109,7 +111,7 @@ async function resetData(db, owners, sites, password) {
       createdAt: now,
     });
   }
-  await db.collection('tenants').insertMany(sites.map((spec) => siteDoc(spec, ownerIds[spec.owner], now)));
+  await db.collection('sites').insertMany(sites.map((spec) => siteDoc(spec, ownerIds[spec.owner], now)));
 }
 
 /** Removes one run's Users and Sites, and those of any run older than a day. */
@@ -120,11 +122,11 @@ async function cleanup(db, runId) {
   const siteFilter = { $or: [{ slug: { $regex: thisRun } }, { slug: { $regex: anyRun }, createdAt: { $lt: stale } }] };
   const userFilter = { $or: [{ email: { $regex: thisRun } }, { email: { $regex: anyRun }, createdAt: { $lt: stale } }] };
 
-  const sites = await db.collection('tenants').find(siteFilter, { projection: { _id: 1 } }).toArray();
-  const subs = await db.collection('subscriptions').deleteMany({ tenantId: { $in: sites.map((s) => s._id) } });
-  const tenants = await db.collection('tenants').deleteMany(siteFilter);
+  const found = await db.collection('sites').find(siteFilter, { projection: { _id: 1 } }).toArray();
+  const subs = await db.collection('subscriptions').deleteMany({ siteId: { $in: found.map((s) => s._id) } });
+  const sites = await db.collection('sites').deleteMany(siteFilter);
   const users = await db.collection('users').deleteMany(userFilter);
-  return { users: users.deletedCount, sites: tenants.deletedCount, subscribers: subs.deletedCount };
+  return { users: users.deletedCount, sites: sites.deletedCount, subscribers: subs.deletedCount };
 }
 
 async function main() {
@@ -150,6 +152,12 @@ async function main() {
   const client = await new MongoClient(uri).connect();
   try {
     const db = client.db(dbName);
+    // The data below is written in the current shape, so the database must
+    // reach it first, as the app does on its first request.
+    const applied = await applyMigrations(db, MIGRATIONS);
+    if (applied.length) {
+      console.log(`Applied migrations to ${dbName}: ${applied.join(', ')}`);
+    }
     if (command === 'reset') {
       await resetData(db, FIXTURE_OWNERS, FIXTURE_SITES, e2ePassword());
       console.log(`E2E fixtures reset in ${dbName}: ${FIXTURE_SITES.length} Sites.`);

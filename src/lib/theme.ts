@@ -1,14 +1,14 @@
 /**
- * Curated theming: tenants pick from a fixed list of palettes and fonts
- * rather than supplying free-form CSS or font URLs. This keeps every tenant
+ * Curated theming: Owners pick from a fixed list of palettes and fonts
+ * rather than supplying free-form CSS or font URLs. This keeps every Site
  * site fast (no arbitrary remote assets), safe (no injected CSS/JS), and
- * cheap (a handful of known Google Fonts, not one download per tenant).
+ * cheap (a handful of known Google Fonts, not one download per Site).
  */
 
 export interface Palette {
   id: string;
   name: string;
-  /** CSS custom property values, applied on the tenant page's root element. */
+  /** CSS custom property values, applied on the Public page's root element. */
   vars: {
     '--bg': string;
     '--fg': string;
@@ -156,7 +156,7 @@ export function isFontId(id: string | undefined): id is string {
   return !!id && FONTS.some((f) => f.id === id);
 }
 
-/** Builds the inline CSS custom properties for a tenant's chosen theme. */
+/** Builds the inline CSS custom properties for a Site's chosen theme. */
 export function themeStyle(theme: { palette: string; font: string }): Record<string, string> {
   const palette = getPalette(theme.palette);
   const font = getFont(theme.font);

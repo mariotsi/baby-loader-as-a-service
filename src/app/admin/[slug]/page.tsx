@@ -1,26 +1,26 @@
 import Link from 'next/link';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
-import { toTenantDTO } from '@/lib/tenant';
-import { TenantSettingsForm } from '@/components/admin/TenantSettingsForm';
+import { toSiteDTO } from '@/lib/site';
+import { SiteSettingsForm } from '@/components/admin/SiteSettingsForm';
 
-export default async function AdminTenantPage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function AdminSitePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
-  const { site: tenant } = await pageOwnedSite(slug);
+  const { site } = await pageOwnedSite(slug);
 
   return (
     <div className="container">
       <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>{tenant.babyName || tenant.slug}</h1>
+        <h1>{site.babyName || site.slug}</h1>
         <div className="row">
-          <Link className="btn-secondary" href={`/admin/${tenant.slug}/subscriptions`}>
+          <Link className="btn-secondary" href={`/admin/${site.slug}/subscriptions`}>
             Subscribers
           </Link>
-          <Link className="btn-secondary" href={`/admin/${tenant.slug}/send`}>
+          <Link className="btn-secondary" href={`/admin/${site.slug}/send`}>
             Send notification
           </Link>
         </div>
       </div>
-      <TenantSettingsForm tenant={toTenantDTO(tenant)} />
+      <SiteSettingsForm site={toSiteDTO(site)} />
     </div>
   );
 }

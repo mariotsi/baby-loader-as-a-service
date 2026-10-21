@@ -1,10 +1,10 @@
 import Link from 'next/link';
 import { pageUser } from '@/lib/ownerAccessNext';
-import { listTenantsByOwner } from '@/lib/tenant';
-import { tenantPublicUrl } from '@/lib/tenantUrl';
+import { listSitesByOwner } from '@/lib/site';
+import { siteAddress } from '@/lib/address';
 
 export default async function AdminPage() {
-  const tenants = await listTenantsByOwner(await pageUser());
+  const sites = await listSitesByOwner(await pageUser());
 
   return (
     <div className="container">
@@ -15,21 +15,21 @@ export default async function AdminPage() {
         </Link>
       </div>
 
-      {tenants.length === 0 ? (
+      {sites.length === 0 ? (
         <p className="muted">You haven&apos;t created a site yet.</p>
       ) : (
         <div className="stack">
-          {tenants.map((tenant) => (
-            <div className="card row" key={tenant.slug} style={{ justifyContent: 'space-between' }}>
+          {sites.map((site) => (
+            <div className="card row" key={site.slug} style={{ justifyContent: 'space-between' }}>
               <div>
-                <strong>{tenant.babyName || tenant.slug}</strong>
-                <div className="muted">{tenantPublicUrl(tenant.slug).replace(/^https?:\/\//, '')}</div>
+                <strong>{site.babyName || site.slug}</strong>
+                <div className="muted">{siteAddress(site.slug).replace(/^https?:\/\//, '')}</div>
               </div>
               <div className="row">
-                <a className="btn-secondary" href={tenantPublicUrl(tenant.slug)} target="_blank" rel="noreferrer">
+                <a className="btn-secondary" href={siteAddress(site.slug)} target="_blank" rel="noreferrer">
                   View
                 </a>
-                <Link className="btn" href={`/admin/${tenant.slug}`}>
+                <Link className="btn" href={`/admin/${site.slug}`}>
                   Manage
                 </Link>
               </div>

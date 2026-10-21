@@ -1,7 +1,7 @@
 // baby-loader-as-a-service Service Worker v1.0
-// Handles push events and notification clicks for every tenant site.
+// Handles push events and notification clicks for every Site.
 // Title/body/icon always come from the push payload (set by the sender per
-// tenant in api/send-notification) — this file has no tenant branding baked in.
+// Site in api/send-notification) — this file has no Site branding baked in.
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
