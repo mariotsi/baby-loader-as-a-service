@@ -1,3 +1,4 @@
+import { BASE_URL } from './support/env.ts';
 import { expect, test } from './support/test.ts';
 
 test.describe('Public page', () => {
@@ -46,6 +47,15 @@ test.describe('Public page', () => {
       await page.goto(await addressOf('e2e-both'));
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Stiamo aspettando Bianca');
     });
+  });
+
+  test('reached at /sites/<slug> on the Platform, redirects to its Address', async ({ page, addressOf }) => {
+    const address = await addressOf('e2e-waiting');
+    test.skip(address.includes('/sites/'), 'In path mode /sites/<slug> is the Address itself');
+
+    await page.goto(`${BASE_URL}/sites/e2e-waiting`);
+    await expect(page).toHaveURL(new URL(address).href);
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for Wanda');
   });
 
   test('answers 404 for a Slug no Site has', async ({ page, addressOf }) => {

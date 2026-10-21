@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { ROOT_DOMAIN } from '@/lib/address';
+import { ADDRESS_CONFIG } from '@/lib/address';
 import { appEnv } from '@/lib/appEnv';
 
 /**
@@ -14,6 +14,6 @@ export function GET() {
     env: appEnv(process.env),
     commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
     branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
-    rootDomain: ROOT_DOMAIN,
+    rootDomain: ADDRESS_CONFIG.rootDomain,
   });
 }

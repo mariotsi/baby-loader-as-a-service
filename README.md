@@ -26,13 +26,16 @@ Intended to deploy on Vercel (see "Hosting" below).
   each Site's Slug, Owner, Site settings (`src/lib/siteSettings.ts`), and
   (future) Custom domain. `subscriptions` (`src/lib/subscription.ts`) is
   scoped by `siteId`.
-- **Subdomain routing** (`src/middleware.ts`): reads the request's `Host`
-  header and rewrites `slug.yourdomain.com/*` to the internal
+- **Addresses** (`src/lib/address.ts`, applied by `src/proxy.ts`): one
+  module turns a Slug into its Address and a request's `Host` and path back
+  into a Site. `slug.yourdomain.com/*` is rewritten to the internal
   `/sites/[slug]` route (`src/app/sites/[slug]/page.tsx`), which looks the
-  Site up by Slug and renders its Public page. The root domain (and
-  `localhost` in dev) is untouched and serves the marketing site / accounts /
-  admin instead. No database lookup happens in middleware — the string
-  parsing there stays cheap, and an unknown slug 404s inside the page itself.
+  Site up by Slug and renders its Public page; a `/sites/<slug>` path on any
+  other host redirects to the Site's Address, so each Site keeps one origin.
+  The root domain (and `localhost` in dev) serves the marketing site,
+  accounts and Dashboard. The proxy queries no database, and an unknown Slug
+  404s inside the page itself. Address also owns which Slugs are allowed:
+  their format and the Reserved slugs.
 - **Accounts** (`src/lib/auth.ts`): email/password accounts with hashed
   passwords (scrypt) and a signed session cookie — no shared admin password.
   Every Site has an `ownerId`; Owner access (`src/lib/ownerAccess.ts`) checks

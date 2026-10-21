@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import type { NextRequest } from 'next/server';
-import { ROOT_HOSTNAME } from './address.ts';
+import { ADDRESS_CONFIG } from './address.ts';
 import { getDb } from './mongodb.ts';
 import { hashPassword, verifyPassword } from './password.ts';
 import { rateLimit } from './rateLimit.ts';
@@ -103,7 +103,7 @@ export function sessionCookieOptions(maxAge = SESSION_TTL_MS / 1000) {
     httpOnly: true,
     // A production build served on localhost (the local E2E server) runs over
     // plain http, where Safari and WebKit refuse to send a Secure cookie.
-    secure: process.env.NODE_ENV === 'production' && ROOT_HOSTNAME !== 'localhost',
+    secure: process.env.NODE_ENV === 'production' && ADDRESS_CONFIG.protocol === 'https',
     sameSite: 'strict' as const,
     path: '/',
     maxAge,

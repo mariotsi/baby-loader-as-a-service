@@ -1,0 +1,35 @@
+import { type NextRequest, NextResponse } from 'next/server';
+import { resolveRequest } from '@/lib/address';
+
+/**
+ * Sends each request where Address (src/lib/address.ts) says it belongs: a
+ * Site's subdomain is rewritten to its internal /sites/<slug> route, a Site
+ * reached away from its Address is redirected there, and everything else is
+ * the Platform. No database query: Custom domains are served as the Platform
+ * until they exist.
+ */
+export function proxy(req: NextRequest) {
+  const resolution = resolveRequest(req.headers.get('host') ?? '', req.nextUrl.pathname);
+
+  if (resolution.kind === 'redirect') {
+    const location = new URL(resolution.location);
+    location.search = req.nextUrl.search;
+    return NextResponse.redirect(location, 308);
+  }
+  if (resolution.kind === 'site' && resolution.internalPath !== req.nextUrl.pathname) {
+    const url = req.nextUrl.clone();
+    url.pathname = resolution.internalPath;
+    return NextResponse.rewrite(url);
+  }
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    /*
+     * Skip Next internals, API routes, and static files — none of these are
+     * ever a Site's Public page.
+     */
+    '/((?!api|_next/static|_next/image|favicon.ico|sw.js|icon-.*\\.png).*)',
+  ],
+};
