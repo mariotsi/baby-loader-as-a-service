@@ -1,5 +1,6 @@
 import { addMonths, format, isAfter, isMatch, isValid, parseISO } from 'date-fns';
 import * as z from 'zod/mini';
+import { slugProblem } from './address.ts';
 import { DEFAULT_FONT, DEFAULT_PALETTE, FONTS, PALETTES } from './theme.ts';
 
 /**
@@ -30,31 +31,6 @@ export interface SiteSettingsError {
 
 export type ParseResult<T> = { ok: true; value: T } | { ok: false; errors: SiteSettingsError[] };
 
-const RESERVED_SLUGS = new Set([
-  'www',
-  'api',
-  'admin',
-  'app',
-  'mail',
-  'ftp',
-  'root',
-  'support',
-  'help',
-  'blog',
-  'status',
-  'docs',
-  'assets',
-  'static',
-  'cdn',
-  'signup',
-  'login',
-  'onboarding',
-  'billing',
-  'account',
-  'staging',
-]);
-
-const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?$/;
 const DAY_FORMAT = 'yyyy-MM-dd';
 const CALENDAR_DATE = /^\d{4}-\d{2}-\d{2}$/;
 const ISO_DATETIME = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(?::\d{2}(?:\.\d+)?)?(?:Z|[+-]\d{2}:\d{2})$/;
@@ -111,8 +87,8 @@ const newSiteSchema = z.strictObject({
   slug: z.string().check(
     z.trim(),
     z.toLowerCase(),
-    z.regex(SLUG_PATTERN),
-    z.refine((slug) => !RESERVED_SLUGS.has(slug), { params: { code: 'slugReserved' } })
+    z.refine((slug) => slugProblem(slug) !== 'invalidFormat', { params: { code: 'invalidFormat' } }),
+    z.refine((slug) => slugProblem(slug) !== 'slugReserved', { params: { code: 'slugReserved' } })
   ),
   settings: siteSettingsSchema,
 });
