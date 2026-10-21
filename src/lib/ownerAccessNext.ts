@@ -1,8 +1,8 @@
-import { NextResponse, type NextRequest } from 'next/server';
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
+import { type NextRequest, NextResponse } from 'next/server';
 import { SESSION_COOKIE } from './auth.ts';
-import { accessOwnedSite, authenticate, type AuthenticatedUser, type OwnedSite } from './ownerAccess.ts';
+import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
 
 /**
  * Owner access for Route Handlers and Dashboard pages. Routes answer 401 with

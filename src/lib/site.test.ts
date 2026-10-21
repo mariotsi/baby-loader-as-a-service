@@ -1,11 +1,11 @@
-import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, before, test } from 'node:test';
 import { ObjectId } from 'mongodb';
-import { startTestDb } from './testDb.ts';
 import { issueSessionToken } from './auth.ts';
-import { accessOwnedSite, authenticate, type AuthenticatedUser, type OwnedSite } from './ownerAccess.ts';
+import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
 import { createSite, getSiteBySlug, listSitesByOwner, saveSiteSettings } from './site.ts';
 import { defaultSiteSettings, parseNewSite, parseSiteSettings, type SiteSettingsInput } from './siteSettings.ts';
+import { startTestDb } from './testDb.ts';
 
 let stopDb: () => Promise<void>;
 let token: string;
@@ -46,7 +46,10 @@ test('createSite stores the Site settings under the Owner', async () => {
 
 test('a taken Slug is a slugTaken error from the unique index', async () => {
   assert.ok((await createSite(owner, newSite('mia'))).ok);
-  assert.deepEqual(await createSite(owner, newSite('mia')), { ok: false, errors: [{ path: 'slug', code: 'slugTaken' }] });
+  assert.deepEqual(await createSite(owner, newSite('mia')), {
+    ok: false,
+    errors: [{ path: 'slug', code: 'slugTaken' }],
+  });
 });
 
 test('saveSiteSettings replaces every Site setting at once', async () => {
@@ -63,7 +66,10 @@ test('saveSiteSettings replaces every Site setting at once', async () => {
     ...defaultSiteSettings,
     babyName: 'Leo',
     sex: 'male',
-    birth: { born: true, details: { datetime: '2026-10-01T10:00:00.000Z', weightGrams: 3300, lengthCm: 51, message: { en: 'Hi' } } },
+    birth: {
+      born: true,
+      details: { datetime: '2026-10-01T10:00:00.000Z', weightGrams: 3300, lengthCm: 51, message: { en: 'Hi' } },
+    },
   });
   assert.ok(bornNoMilestones.ok);
   const saved = await saveSiteSettings(await owned('leo'), bornNoMilestones.value);

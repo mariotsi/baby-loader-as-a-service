@@ -1,7 +1,7 @@
 import { ObjectId } from 'mongodb';
-import { getDb } from './mongodb';
-import type { GeoLocation } from './geoip';
 import type { DeviceInfo } from './deviceInfo';
+import type { GeoLocation } from './geoip';
+import { getDb } from './mongodb';
 
 export interface PushSubscriptionDoc {
   _id: ObjectId;

@@ -1,10 +1,10 @@
-import { createHmac, timingSafeEqual } from 'crypto';
-import type { NextRequest } from 'next/server';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 import { ObjectId } from 'mongodb';
-import { getDb } from './mongodb.ts';
-import { rateLimit } from './rateLimit.ts';
-import { hashPassword, verifyPassword } from './password.ts';
+import type { NextRequest } from 'next/server';
 import { ROOT_HOSTNAME } from './address.ts';
+import { getDb } from './mongodb.ts';
+import { hashPassword, verifyPassword } from './password.ts';
+import { rateLimit } from './rateLimit.ts';
 
 export { hashPassword, verifyPassword };
 
@@ -62,7 +62,11 @@ function secret(): string | undefined {
 }
 
 function sign(value: string): string {
-  return createHmac('sha256', secret()!).update(value).digest('base64url');
+  const key = secret();
+  if (!key) {
+    throw new Error('SESSION_SECRET is not set');
+  }
+  return createHmac('sha256', key).update(value).digest('base64url');
 }
 
 export function issueSessionToken(userId: string): string {

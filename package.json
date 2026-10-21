@@ -8,14 +8,16 @@
     "build": "next build",
     "start": "next start",
     "generate-vapid": "node scripts/generate-vapid.js",
-    "lint": "eslint src public/sw.js --ext .js,.ts,.tsx",
+    "lint": "biome check",
     "typecheck": "tsc --noEmit",
     "test": "node --test --test-timeout=60000 --experimental-strip-types src/lib/*.test.ts src/migrations/*.test.ts",
     "e2e": "playwright test",
     "e2e:staging": "node --env-file=.env.staging.local node_modules/.bin/playwright test",
     "e2e:report": "playwright show-report",
     "db:up": "docker compose up -d --wait",
-    "seed": "node --env-file-if-exists=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-data.mjs demo"
+    "seed": "node --env-file-if-exists=.env.local --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-data.mjs demo",
+    "format": "biome check --write",
+    "prepare": "test ! -e .git || lefthook install"
   },
   "dependencies": {
     "date-fns": "^4.4.0",
@@ -28,14 +30,14 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.6.2",
     "@playwright/test": "1.64.1",
     "@types/node": "^20.0.0",
     "@types/react": "^18.0.0",
     "@types/react-dom": "^18.0.0",
     "@types/ua-parser-js": "^0.7.39",
     "@types/web-push": "^3.6.3",
-    "eslint": "^8.57.0",
-    "eslint-config-next": "^15.5.23",
+    "lefthook": "2.2.2",
     "mongodb-memory-server": "^10.4.3",
     "typescript": "^5.0.0"
   }

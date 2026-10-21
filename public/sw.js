@@ -3,7 +3,7 @@
 // Title/body/icon always come from the push payload (set by the sender per
 // Site in api/send-notification) — this file has no Site branding baked in.
 
-self.addEventListener('install', (event) => {
+self.addEventListener('install', () => {
   self.skipWaiting();
 });
 
@@ -61,24 +61,22 @@ self.addEventListener('notificationclick', (event) => {
   const urlToOpen = new URL(event.notification.data?.url || '/', self.location.origin).href;
 
   event.waitUntil(
-    clients
-      .matchAll({ type: 'window', includeUncontrolled: true })
-      .then((windowClients) => {
-        for (const client of windowClients) {
-          if (client.url === urlToOpen && 'focus' in client) {
-            return client.focus();
-          }
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url === urlToOpen && 'focus' in client) {
+          return client.focus();
         }
-        // Fall back to focusing any open window and navigating it.
-        const [first] = windowClients;
-        if (first && 'navigate' in first && 'focus' in first) {
-          return first.navigate(urlToOpen).then((c) => (c || first).focus());
-        }
-        return clients.openWindow(urlToOpen);
-      })
+      }
+      // Fall back to focusing any open window and navigating it.
+      const [first] = windowClients;
+      if (first && 'navigate' in first && 'focus' in first) {
+        return first.navigate(urlToOpen).then((c) => (c || first).focus());
+      }
+      return clients.openWindow(urlToOpen);
+    })
   );
 });
 
-self.addEventListener('pushsubscriptionchange', (event) => {
+self.addEventListener('pushsubscriptionchange', () => {
   // The client will handle re-subscription on next visit.
 });

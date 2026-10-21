@@ -27,13 +27,16 @@ export function authenticate(sessionToken: string | undefined): AuthenticatedUse
   return { id: new ObjectId(userId) } as AuthenticatedUser;
 }
 
-export async function accessOwnedSite(sessionToken: string | undefined, slug: string): Promise<OwnedSite | AccessDenial> {
+export async function accessOwnedSite(
+  sessionToken: string | undefined,
+  slug: string
+): Promise<OwnedSite | AccessDenial> {
   const owner = authenticate(sessionToken);
   if (!owner) {
     return 'unauthenticated';
   }
   const site = await getSiteBySlug(slug);
-  if (!site || !site.ownerId.equals(owner.id)) {
+  if (!site?.ownerId.equals(owner.id)) {
     return 'notFound';
   }
   return { owner, site } as OwnedSite;

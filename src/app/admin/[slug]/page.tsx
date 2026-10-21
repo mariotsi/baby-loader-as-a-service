@@ -1,7 +1,7 @@
 import Link from 'next/link';
+import { SiteSettingsForm } from '@/components/admin/SiteSettingsForm';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { toSiteDTO } from '@/lib/site';
-import { SiteSettingsForm } from '@/components/admin/SiteSettingsForm';
 
 export default async function AdminSitePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

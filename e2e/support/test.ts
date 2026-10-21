@@ -1,5 +1,12 @@
 import { createECDH, randomBytes } from 'node:crypto';
-import { test as base, expect, type Browser, type BrowserContext, type BrowserContextOptions, type Page } from '@playwright/test';
+import {
+  type Browser,
+  type BrowserContext,
+  type BrowserContextOptions,
+  test as base,
+  expect,
+  type Page,
+} from '@playwright/test';
 import { fixtureSite, type Owner, type ProjectName } from './data.ts';
 import { BASE_URL, bypassHeaders, ownerStatePath } from './env.ts';
 
@@ -35,9 +42,9 @@ const addressCache = new Map<string, string>();
  */
 export async function dashboardAddress(page: Page, slug: string): Promise<string> {
   await page.goto('/admin');
-  const hrefs = await page.getByRole('link', { name: 'View' }).evaluateAll((links) =>
-    links.map((a) => (a as HTMLAnchorElement).href)
-  );
+  const hrefs = await page
+    .getByRole('link', { name: 'View' })
+    .evaluateAll((links) => links.map((a) => (a as HTMLAnchorElement).href));
   const pattern = new RegExp(`(//|/sites/)${slug}(\\.|/|$)`);
   const address = hrefs.find((href) => pattern.test(href));
   if (!address) {
@@ -59,6 +66,7 @@ export const test = base.extend<Fixtures>({
     await use(await withBypass(context));
   },
 
+  // biome-ignore lint/correctness/noEmptyPattern: Playwright reads a fixture's dependencies from this destructuring.
   project: async ({}, use, testInfo) => {
     await use(testInfo.project.name as ProjectName);
   },
@@ -111,9 +119,9 @@ export async function fakePushService(page: Page): Promise<void> {
     const sub = {
       endpoint,
       toJSON: () => ({ endpoint, expirationTime: null, keys: { p256dh, auth } }),
-      unsubscribe: async () => {
+      unsubscribe: () => {
         current = null;
-        return true;
+        return Promise.resolve(true);
       },
     };
     const registration = {
@@ -129,7 +137,11 @@ export async function fakePushService(page: Page): Promise<void> {
     };
     Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: serviceWorker });
     Object.defineProperty(window, 'PushManager', { configurable: true, value: function PushManager() {} });
-    const FakeNotification = function Notification() {} as unknown as { permission: string; requestPermission: () => Promise<string> };
+    // biome-ignore lint/correctness/noComponentHookFactories: a stand-in for the browser's Notification constructor, not a React component.
+    const FakeNotification = function Notification() {} as unknown as {
+      permission: string;
+      requestPermission: () => Promise<string>;
+    };
     FakeNotification.permission = 'granted';
     FakeNotification.requestPermission = async () => 'granted';
     Object.defineProperty(window, 'Notification', { configurable: true, value: FakeNotification });

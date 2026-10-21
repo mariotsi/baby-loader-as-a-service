@@ -1,4 +1,4 @@
-import { UAParser } from 'ua-parser-js';
+import UAParser from 'ua-parser-js';
 
 // Hints the client can voluntarily report about itself. None of these need a
 // permission prompt (unlike navigator.geolocation), so they're safe to send
@@ -198,6 +198,73 @@ function buildLabel(input: {
 }
 
 /**
+ * The device model: Client Hints (Chromium only) carry the real value Chrome's
+ * UA Reduction strips out, so they take precedence over the UA. Chrome sends
+ * "K" in the UA and, on some configurations, an empty string via Client
+ * Hints; neither identifies anything, so both become no model.
+ */
+function resolveModel(chModel: string | null, uaModel: string | null, osName: string | null): string | null {
+  const model = chModel || uaModel;
+  return !model || isAndroidPlaceholderModel(model, osName) ? null : model;
+}
+
+/**
+ * Android prefers the Client Hints version and drops the frozen "10", a
+ * placeholder rather than the device's real version.
+ */
+function resolveAndroidVersion(uaVersion: string | null, chPlatformVersion: string | null): string | null {
+  if (chPlatformVersion) {
+    return chPlatformVersion;
+  }
+  return uaVersion === ANDROID_FROZEN_OS_VERSION ? null : uaVersion;
+}
+
+/**
+ * From version 26 onward Apple ships matching major version numbers across
+ * iOS, iPadOS, macOS ("Tahoe") and Safari itself (Safari 26 <-> iOS/macOS
+ * 26), and Safari's own version is NOT frozen — so its major is a far
+ * better estimate of the real OS version than Apple's placeholder ("18.6" on
+ * iOS/iPadOS, "10.15.7" on macOS). This alignment only holds for Safari: a
+ * Chrome/Edge major number has no relationship to the OS version at all, so
+ * non-Safari browsers always fall through to "unknown" rather than showing a
+ * meaningless guess. Below Safari 26 there's no such alignment either (e.g.
+ * Safari 17 shipped with macOS 14), so the real version is left unknown
+ * rather than guessed.
+ */
+function estimateAppleOsVersion(browserName: string | null, browserVersion: string | null): string | null {
+  const isSafari = !!browserName && /safari/i.test(browserName);
+  const browserMajor = isSafari && browserVersion ? Number.parseInt(browserVersion, 10) : Number.NaN;
+  return Number.isFinite(browserMajor) && browserMajor >= 26 ? String(browserMajor) : null;
+}
+
+/** The OS version worth storing, and whether Apple froze the one the UA reported. */
+function resolveOsVersion(input: {
+  osName: string | null;
+  uaVersion: string | null;
+  browserName: string | null;
+  browserVersion: string | null;
+  chPlatformVersion: string | null;
+}): { version: string | null; frozen: boolean } {
+  const { osName, uaVersion, browserName, browserVersion, chPlatformVersion } = input;
+  const isAndroid = !!osName && /android/i.test(osName);
+  const version = isAndroid ? resolveAndroidVersion(uaVersion, chPlatformVersion) : uaVersion;
+  const frozen = isAppleOsVersionFrozen(osName, version, browserName);
+  return { version: frozen ? estimateAppleOsVersion(browserName, browserVersion) : version, frozen };
+}
+
+function screenOf(h: ClientDeviceHints): DeviceInfo['screen'] {
+  const width = clampInt(h.screenWidth, 20000);
+  const height = clampInt(h.screenHeight, 20000);
+  return width !== null || height !== null ? { width, height, pixelRatio: clampFloat(h.pixelRatio) } : null;
+}
+
+function viewportOf(h: ClientDeviceHints): DeviceInfo['viewport'] {
+  const width = clampInt(h.viewportWidth, 20000);
+  const height = clampInt(h.viewportHeight, 20000);
+  return width !== null || height !== null ? { width, height } : null;
+}
+
+/**
  * Builds a sanitized device/browser fingerprint from the request's
  * User-Agent (authoritative, can't be spoofed by editing the page) and
  * whatever extra client hints were volunteered (best-effort, capped in size
@@ -207,63 +274,25 @@ export function buildDeviceInfo(userAgent: string | null, rawHints: unknown): De
   const parsed = new UAParser(userAgent ?? undefined).getResult();
   const h = (rawHints && typeof rawHints === 'object' ? rawHints : {}) as ClientDeviceHints;
 
-  const screenWidth = clampInt(h.screenWidth, 20000);
-  const screenHeight = clampInt(h.screenHeight, 20000);
-  const viewportWidth = clampInt(h.viewportWidth, 20000);
-  const viewportHeight = clampInt(h.viewportHeight, 20000);
-  const pixelRatio = clampFloat(h.pixelRatio);
-
   const osName = clip(parsed.os.name);
   const browserName = clip(parsed.browser.name);
   const browserVersion = clip(parsed.browser.version, 30);
   const deviceType = clip(parsed.device.type) ?? 'desktop';
   const vendor = clip(parsed.device.vendor);
+  const model = resolveModel(clipUnknown(h.chModel, 100), clip(parsed.device.model), osName);
+  const { version: osVersion, frozen: osVersionFrozen } = resolveOsVersion({
+    osName,
+    uaVersion: clip(parsed.os.version, 30),
+    browserName,
+    browserVersion,
+    chPlatformVersion: clipUnknown(h.chPlatformVersion, 30),
+  });
 
-  // Client Hints (Chromium only) carry the real values Chrome's UA Reduction
-  // strips out, so they take precedence over anything parsed from the UA.
-  const chModel = clipUnknown(h.chModel, 100);
-  const chPlatformVersion = clipUnknown(h.chPlatformVersion, 30);
-
-  let model = chModel || clip(parsed.device.model);
-  // Chrome sends "K" in the UA and, on some configurations, an empty string
-  // via Client Hints. Neither identifies anything, so store nothing.
-  if (isAndroidPlaceholderModel(model, osName) || model === '') {
-    model = null;
-  }
-
-  let osVersion = clip(parsed.os.version, 30);
-  const isAndroid = !!osName && /android/i.test(osName);
-  if (isAndroid) {
-    // Prefer the Client Hints value; otherwise drop the frozen "10", which is
-    // a placeholder rather than the device's real Android version.
-    if (chPlatformVersion) {
-      osVersion = chPlatformVersion;
-    } else if (osVersion === ANDROID_FROZEN_OS_VERSION) {
-      osVersion = null;
-    }
-  }
-
+  const screen = screenOf(h);
   // Only worth guessing for iOS where the UA hides the real model; on
   // Android/others the model comes from Client Hints when available.
   const isIOS = !!osName && /ios|ipados/i.test(osName);
-  const modelGuess = isIOS ? guessIphoneModel(screenWidth, screenHeight, pixelRatio) : null;
-
-  const osVersionFrozen = isAppleOsVersionFrozen(osName, osVersion, browserName);
-  if (osVersionFrozen) {
-    // From version 26 onward Apple ships matching major version numbers across
-    // iOS, iPadOS, macOS ("Tahoe") and Safari itself (Safari 26 <-> iOS/macOS
-    // 26), and Safari's own version is NOT frozen — so its major is a far
-    // better estimate of the real OS version than Apple's placeholder
-    // ("18.6" on iOS/iPadOS, "10.15.7" on macOS). This alignment only holds
-    // for Safari: a Chrome/Edge major number has no relationship to the OS
-    // version at all, so non-Safari browsers always fall through to "unknown"
-    // rather than showing a meaningless guess. Below Safari 26 there's no
-    // such alignment either (e.g. Safari 17 shipped with macOS 14), so the
-    // real version is left unknown rather than guessed.
-    const isSafari = !!browserName && /safari/i.test(browserName);
-    const browserMajor = isSafari && browserVersion ? parseInt(browserVersion, 10) : NaN;
-    osVersion = Number.isFinite(browserMajor) && browserMajor >= 26 ? String(browserMajor) : null;
-  }
+  const modelGuess = isIOS && screen ? guessIphoneModel(screen.width, screen.height, screen.pixelRatio) : null;
 
   return {
     ua: clip(userAgent, 512),
@@ -288,14 +317,8 @@ export function buildDeviceInfo(userAgent: string | null, rawHints: unknown): De
     }),
     timezone: clipUnknown(h.timezone, 60),
     platform: clipUnknown(h.platform, 60),
-    screen:
-      screenWidth !== null || screenHeight !== null
-        ? { width: screenWidth, height: screenHeight, pixelRatio }
-        : null,
-    viewport:
-      viewportWidth !== null || viewportHeight !== null
-        ? { width: viewportWidth, height: viewportHeight }
-        : null,
+    screen,
+    viewport: viewportOf(h),
     hardwareConcurrency: clampInt(h.hardwareConcurrency, 128),
     deviceMemory: clampFloat(h.deviceMemory, 1024),
     touchPoints: clampInt(h.touchPoints, 50),

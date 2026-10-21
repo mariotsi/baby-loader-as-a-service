@@ -1,8 +1,8 @@
-import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, before, test } from 'node:test';
 import type { Db } from 'mongodb';
-import { getMongoClient } from './mongodb.ts';
 import { applyMigrations, MIGRATIONS_COLLECTION, type Migration } from './migrations.ts';
+import { getMongoClient } from './mongodb.ts';
 import { startTestDb } from './testDb.ts';
 
 let stopDb: () => Promise<void>;
@@ -65,20 +65,20 @@ test('processes starting together apply each migration once', async () => {
 
 test('a failing migration stays unrecorded, releases the lock and is retried', async () => {
   const db = await freshDb();
-  let fail = true;
+  const failure: { on: boolean } = { on: true };
   const flaky: Migration = {
     id: '0002-flaky',
-    async up(db) {
-      if (fail) {
+    async up(target) {
+      if (failure.on) {
         throw new Error('boom');
       }
-      await db.collection('log').insertOne({ id: '0002-flaky' });
+      await target.collection('log').insertOne({ id: '0002-flaky' });
     },
   };
   const migrations = [logging('0001-a'), flaky, logging('0003-c')];
   await assert.rejects(applyMigrations(db, migrations, { waitMs: 0 }), /boom/);
   assert.deepEqual(await logged(db), ['0001-a']);
-  fail = false;
+  failure.on = false;
   assert.deepEqual(await applyMigrations(db, migrations, { waitMs: 0 }), ['0002-flaky', '0003-c']);
 });
 

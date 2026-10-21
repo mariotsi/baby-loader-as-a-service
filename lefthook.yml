@@ -1,0 +1,8 @@
+# Git hooks, installed by `npm install` (the prepare script). CI runs the
+# same checks with `biome ci`, so skipping a hook never skips the check.
+pre-commit:
+  commands:
+    biome:
+      glob: "*.{js,mjs,cjs,ts,tsx,json,jsonc,css,md,yml,yaml}"
+      run: npx biome check --write --no-errors-on-unmatched --files-ignore-unknown=true {staged_files}
+      stage_fixed: true

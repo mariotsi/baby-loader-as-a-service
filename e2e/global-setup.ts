@@ -50,9 +50,8 @@ export default async function globalSetup() {
 }
 
 export function runDataScript(args: string[]) {
-  execFileSync(
-    process.execPath,
-    ['--disable-warning=MODULE_TYPELESS_PACKAGE_JSON', 'scripts/e2e-data.mjs', ...args],
-    { stdio: 'inherit', env: process.env }
-  );
+  execFileSync(process.execPath, ['--disable-warning=MODULE_TYPELESS_PACKAGE_JSON', 'scripts/e2e-data.mjs', ...args], {
+    stdio: 'inherit',
+    env: process.env,
+  });
 }

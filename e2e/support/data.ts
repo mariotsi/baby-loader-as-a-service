@@ -48,7 +48,13 @@ const waiting = {
 
 /** Sites tests only read. */
 const sharedFixtureSites: SiteSpec[] = [
-  { ...waiting, slug: 'e2e-waiting', owner: 'a', babyName: 'Wanda', milestones: [{ label: 'First scan', inDays: -60 }] },
+  {
+    ...waiting,
+    slug: 'e2e-waiting',
+    owner: 'a',
+    babyName: 'Wanda',
+    milestones: [{ label: 'First scan', inDays: -60 }],
+  },
   {
     ...waiting,
     slug: 'e2e-born',

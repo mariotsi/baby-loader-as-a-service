@@ -1,11 +1,11 @@
-import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
+import { after, before, test } from 'node:test';
 import { ObjectId } from 'mongodb';
-import { startTestDb } from './testDb.ts';
 import { issueSessionToken } from './auth.ts';
-import { accessOwnedSite, authenticate, type AuthenticatedUser } from './ownerAccess.ts';
+import { type AuthenticatedUser, accessOwnedSite, authenticate } from './ownerAccess.ts';
 import { createSite } from './site.ts';
 import { defaultSiteSettings, parseNewSite } from './siteSettings.ts';
+import { startTestDb } from './testDb.ts';
 
 let stopDb: () => Promise<void>;
 const ownerToken = issueSessionTokenLater();
@@ -35,12 +35,12 @@ test('no session or a forged one is unauthenticated', async () => {
   assert.equal(await accessOwnedSite(`${userId}.${expiresAt}.forged`, 'emma'), 'unauthenticated');
 });
 
-test('a missing Site and another Owner\'s Site are both notFound', async () => {
+test("a missing Site and another Owner's Site are both notFound", async () => {
   assert.equal(await accessOwnedSite(ownerToken(), 'nobody'), 'notFound');
   assert.equal(await accessOwnedSite(otherToken(), 'emma'), 'notFound');
 });
 
-test('the Owner gets their Site, whatever the Slug\'s case', async () => {
+test("the Owner gets their Site, whatever the Slug's case", async () => {
   const access = await accessOwnedSite(ownerToken(), 'EMMA');
   assert.ok(typeof access === 'object');
   assert.equal(access.site.slug, 'emma');

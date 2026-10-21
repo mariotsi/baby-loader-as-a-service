@@ -1,13 +1,13 @@
-import type { CSSProperties } from 'react';
 import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import { getSiteBySlug } from '@/lib/site';
-import { themeStyle, googleFontsHref } from '@/lib/theme';
-import { messages, pushButtonMessages } from '@/lib/messages';
-import { negotiateLang, LANG_COOKIE, type Lang } from '@/lib/i18n';
-import { daysUntil } from '@/lib/countdown';
+import type { CSSProperties } from 'react';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PushSubscribeButton } from '@/components/PushSubscribeButton';
+import { daysUntil } from '@/lib/countdown';
+import { LANG_COOKIE, type Lang, negotiateLang } from '@/lib/i18n';
+import { messages, pushButtonMessages } from '@/lib/messages';
+import { getSiteBySlug } from '@/lib/site';
+import { googleFontsHref, themeStyle } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,28 +38,31 @@ export default async function SitePage({ params }: { params: Promise<{ slug: str
 
   return (
     <div style={themeStyle(site.theme) as CSSProperties}>
-      {/* eslint-disable-next-line @next/next/no-page-custom-font -- curated, per-Site font chosen from a fixed list */}
       <link rel="stylesheet" href={googleFontsHref([site.theme.font])} />
       <div className="container">
         <div className="site-hero">
           <p className="site-tagline">{born ? t.bornTagline : t.waitingTagline}</p>
           <h1 className="site-title">{title}</h1>
 
-          {showSex && <p className="muted">{site.sex === 'female' ? t.sexFemale : t.sexMale}</p>}
+          {showSex ? <p className="muted">{site.sex === 'female' ? t.sexFemale : t.sexMale}</p> : null}
 
-          {!born && site.dueDate && (
+          {!born && site.dueDate ? (
             <div className="stack" style={{ alignItems: 'center', marginTop: '1.5rem' }}>
               <p className="muted">
                 {t.duePrefix} {new Date(site.dueDate).toLocaleDateString(dateLocale, { dateStyle: 'long' })}
               </p>
               <CountdownDisplay dueIso={site.dueDate} t={t} />
             </div>
-          )}
+          ) : null}
 
-          {birth.born && (
+          {birth.born ? (
             <div className="stack" style={{ alignItems: 'center', marginTop: '1.5rem' }}>
-              <p>{t.bornOn(new Date(birth.details.datetime).toLocaleString(dateLocale, { dateStyle: 'long', timeStyle: 'short' }))}</p>
-              {(birth.details.weightGrams || birth.details.lengthCm) && (
+              <p>
+                {t.bornOn(
+                  new Date(birth.details.datetime).toLocaleString(dateLocale, { dateStyle: 'long', timeStyle: 'short' })
+                )}
+              </p>
+              {birth.details.weightGrams || birth.details.lengthCm ? (
                 <div className="row" style={{ justifyContent: 'center' }}>
                   {birth.details.weightGrams ? (
                     <span className="muted">
@@ -72,9 +75,9 @@ export default async function SitePage({ params }: { params: Promise<{ slug: str
                     </span>
                   ) : null}
                 </div>
-              )}
+              ) : null}
             </div>
-          )}
+          ) : null}
 
           <div style={{ marginTop: '2rem' }}>
             <PushSubscribeButton

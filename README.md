@@ -90,6 +90,12 @@ npm run dev
 `npm run seed` creates `demo-owner-a@waitingpages.test` and
 `demo-owner-b@waitingpages.test`, password `waiting-pages-demo`.
 
+[Biome](https://biomejs.dev) lints and formats the code (`biome.json`):
+`npm run lint` checks, `npm run format` fixes what it can. `npm install`
+sets up a [lefthook](https://lefthook.dev) pre-commit hook (`lefthook.yml`)
+that runs Biome on the staged files, and CI runs the same checks with
+`biome ci`.
+
 `npm run dev:staging` runs the local app on staging's database instead, with
 the credentials in `.env.staging.local` (see `.env.staging.local.example`).
 No local setup reaches production's database.
@@ -151,13 +157,12 @@ production project builds only `main`, and the staging project builds
 only: pull requests merge into `staging`, the default branch, and `main`
 receives the exact commit that passed the E2E suite on staging.
 
-| Environment | Vercel project | Branch | Addresses | MongoDB |
-|---|---|---|---|---|
-| Production | `baby-loader-as-a-service` | `main` | `loading.baby`, Sites at `<slug>.loading.baby` | production cluster, database `waitingpages` |
-| Staging | `baby-loader-staging` (its production branch) | `staging` | `staging.loading.baby`, Sites at `<slug>.staging.loading.baby` | non-production cluster, database `waitingpages-staging` |
-| Preview | `baby-loader-staging` (its preview deployments) | any other, `main` included | the branch's `baby-loader-staging-git-…vercel.app` URL, Sites at `/sites/<slug>` | non-production cluster, database `waitingpages-<branch>` |
-| Local | none | any | `localhost:3000`, Sites at `<slug>.localhost:3000` | Docker MongoDB, database `waitingpages-dev` |
-
+| Environment | Vercel project                                  | Branch                     | Addresses                                                                        | MongoDB                                                  |
+| ----------- | ----------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Production  | `baby-loader-as-a-service`                      | `main`                     | `loading.baby`, Sites at `<slug>.loading.baby`                                   | production cluster, database `waitingpages`              |
+| Staging     | `baby-loader-staging` (its production branch)   | `staging`                  | `staging.loading.baby`, Sites at `<slug>.staging.loading.baby`                   | non-production cluster, database `waitingpages-staging`  |
+| Preview     | `baby-loader-staging` (its preview deployments) | any other, `main` included | the branch's `baby-loader-staging-git-…vercel.app` URL, Sites at `/sites/<slug>` | non-production cluster, database `waitingpages-<branch>` |
+| Local       | none                                            | any                        | `localhost:3000`, Sites at `<slug>.localhost:3000`                               | Docker MongoDB, database `waitingpages-dev`              |
 - **Who builds what**: the production project's Ignored Build Step skips
   every deployment but production, so it never builds a preview. The staging
   project has `staging` as its production branch and builds a preview of
@@ -195,7 +200,7 @@ receives the exact commit that passed the E2E suite on staging.
 ### From pull request to production
 
 1. A pull request targets `staging`. `.github/workflows/ci.yml` runs type
-   checking, lint and unit tests (job `ci`), and the staging project deploys
+   checking, Biome's lint and format check, and unit tests (job `ci`), and the staging project deploys
    a preview, on which `.github/workflows/cd.yml` runs the E2E suite (job
    `e2e`). Both are required before it merges.
 2. Merging deploys `staging` to `staging.loading.baby`, whose first request
@@ -242,7 +247,6 @@ first request of each process (`getDb` in `src/lib/mongodb.ts`), before
 creating indexes and before any query: production, staging, each preview's
 database and local ones alike, with the credentials the deployment already
 has.
-
 - **Once per database**: the `migrations` collection records each applied
   id and holds a lock, so among processes starting together one applies
   them and the others wait for it. A holder that dies stops renewing its

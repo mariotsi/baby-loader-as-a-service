@@ -12,18 +12,12 @@
 // nothing on production, fixtures only on staging.
 
 import { MongoClient, ObjectId } from 'mongodb';
+import { DEMO_OWNERS, DEMO_SITES, FIXTURE_OWNERS, FIXTURE_SITES, RUN_PREFIX } from '../e2e/support/data.ts';
 import { databaseName, testDataPolicy } from '../src/lib/dbName.ts';
 import { applyMigrations } from '../src/lib/migrations.ts';
 import { hashPassword } from '../src/lib/password.ts';
-import { MIGRATIONS } from '../src/migrations/index.ts';
 import { parseNewSite } from '../src/lib/siteSettings.ts';
-import {
-  DEMO_OWNERS,
-  DEMO_SITES,
-  FIXTURE_OWNERS,
-  FIXTURE_SITES,
-  RUN_PREFIX,
-} from '../e2e/support/data.ts';
+import { MIGRATIONS } from '../src/migrations/index.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -95,7 +89,10 @@ function siteDoc(spec, ownerId, now) {
 async function resetData(db, owners, sites, password) {
   const emails = Object.values(owners);
   const slugs = sites.map((s) => s.slug);
-  const old = await db.collection('sites').find({ slug: { $in: slugs } }, { projection: { _id: 1 } }).toArray();
+  const old = await db
+    .collection('sites')
+    .find({ slug: { $in: slugs } }, { projection: { _id: 1 } })
+    .toArray();
   await db.collection('subscriptions').deleteMany({ siteId: { $in: old.map((t) => t._id) } });
   await db.collection('sites').deleteMany({ slug: { $in: slugs } });
   await db.collection('users').deleteMany({ email: { $in: emails } });
@@ -120,24 +117,25 @@ async function cleanup(db, runId) {
   const anyRun = `^${RUN_PREFIX}`;
   const stale = new Date(Date.now() - DAY_MS);
   const siteFilter = { $or: [{ slug: { $regex: thisRun } }, { slug: { $regex: anyRun }, createdAt: { $lt: stale } }] };
-  const userFilter = { $or: [{ email: { $regex: thisRun } }, { email: { $regex: anyRun }, createdAt: { $lt: stale } }] };
+  const userFilter = {
+    $or: [{ email: { $regex: thisRun } }, { email: { $regex: anyRun }, createdAt: { $lt: stale } }],
+  };
 
-  const found = await db.collection('sites').find(siteFilter, { projection: { _id: 1 } }).toArray();
+  const found = await db
+    .collection('sites')
+    .find(siteFilter, { projection: { _id: 1 } })
+    .toArray();
   const subs = await db.collection('subscriptions').deleteMany({ siteId: { $in: found.map((s) => s._id) } });
   const sites = await db.collection('sites').deleteMany(siteFilter);
   const users = await db.collection('users').deleteMany(userFilter);
   return { users: users.deletedCount, sites: sites.deletedCount, subscribers: subs.deletedCount };
 }
 
-async function main() {
-  const [command, arg] = process.argv.slice(2);
-  const { uri, dbName, policy } = target();
+/** Validates the command line against what the target database allows; returns whether demo data is wanted. */
+function checkCommand(command, arg, dbName, policy) {
   const withDemo = command === 'demo' || (command === 'reset' && arg === '--demo');
-
-  if (command === 'reset' || command === 'cleanup') {
-    if (!policy.fixtures) {
-      throw new Error(`Refusing to write test data to ${dbName}`);
-    }
+  if ((command === 'reset' || command === 'cleanup') && !policy.fixtures) {
+    throw new Error(`Refusing to write test data to ${dbName}`);
   }
   if (withDemo && !policy.demo) {
     throw new Error(`Refusing to write demo data to ${dbName}`);
@@ -148,28 +146,38 @@ async function main() {
   if (!['reset', 'demo', 'cleanup'].includes(command)) {
     throw new Error('Usage: node scripts/e2e-data.mjs reset [--demo] | demo | cleanup <runId>');
   }
+  return withDemo;
+}
+
+async function run(db, dbName, { command, arg, withDemo }) {
+  // The data below is written in the current shape, so the database must
+  // reach it first, as the app does on its first request.
+  const applied = await applyMigrations(db, MIGRATIONS);
+  if (applied.length > 0) {
+    console.log(`Applied migrations to ${dbName}: ${applied.join(', ')}`);
+  }
+  if (command === 'reset') {
+    await resetData(db, FIXTURE_OWNERS, FIXTURE_SITES, e2ePassword());
+    console.log(`E2E fixtures reset in ${dbName}: ${FIXTURE_SITES.length} Sites.`);
+  }
+  if (withDemo) {
+    await resetData(db, DEMO_OWNERS, DEMO_SITES, process.env.DEMO_PASSWORD || 'waiting-pages-demo');
+    console.log(`Demo data reset in ${dbName}: ${DEMO_SITES.length} Sites.`);
+  }
+  if (command === 'cleanup') {
+    const removed = await cleanup(db, arg);
+    console.log(`Run ${arg} cleaned up in ${dbName}:`, removed);
+  }
+}
+
+async function main() {
+  const [command, arg] = process.argv.slice(2);
+  const { uri, dbName, policy } = target();
+  const withDemo = checkCommand(command, arg, dbName, policy);
 
   const client = await new MongoClient(uri).connect();
   try {
-    const db = client.db(dbName);
-    // The data below is written in the current shape, so the database must
-    // reach it first, as the app does on its first request.
-    const applied = await applyMigrations(db, MIGRATIONS);
-    if (applied.length) {
-      console.log(`Applied migrations to ${dbName}: ${applied.join(', ')}`);
-    }
-    if (command === 'reset') {
-      await resetData(db, FIXTURE_OWNERS, FIXTURE_SITES, e2ePassword());
-      console.log(`E2E fixtures reset in ${dbName}: ${FIXTURE_SITES.length} Sites.`);
-    }
-    if (withDemo) {
-      await resetData(db, DEMO_OWNERS, DEMO_SITES, process.env.DEMO_PASSWORD || 'waiting-pages-demo');
-      console.log(`Demo data reset in ${dbName}: ${DEMO_SITES.length} Sites.`);
-    }
-    if (command === 'cleanup') {
-      const removed = await cleanup(db, arg);
-      console.log(`Run ${arg} cleaned up in ${dbName}:`, removed);
-    }
+    await run(client.db(dbName), dbName, { command, arg, withDemo });
   } finally {
     await client.close();
   }

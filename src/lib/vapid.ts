@@ -14,7 +14,10 @@ export class VapidKeyError extends Error {}
  */
 export function decodeVapidKey(raw: string | undefined): ArrayBuffer {
   // Tolerate values pasted with surrounding quotes or trailing newlines.
-  const normalized = (raw ?? '').trim().replace(/^["']|["']$/g, '').trim();
+  const normalized = (raw ?? '')
+    .trim()
+    .replace(/^["']|["']$/g, '')
+    .trim();
 
   if (!normalized) {
     throw new VapidKeyError(
@@ -28,9 +31,10 @@ export function decodeVapidKey(raw: string | undefined): ArrayBuffer {
   let binary: string;
   try {
     binary = atob(base64);
-  } catch {
+  } catch (err) {
     throw new VapidKeyError(
-      'Invalid VAPID public key: not a base64url string. Regenerate it with `npm run generate-vapid`.'
+      'Invalid VAPID public key: not a base64url string. Regenerate it with `npm run generate-vapid`.',
+      { cause: err }
     );
   }
 

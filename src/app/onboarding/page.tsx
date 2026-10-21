@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, type FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { PALETTES, FONTS, DEFAULT_PALETTE, DEFAULT_FONT } from '@/lib/theme';
-import { defaultSiteSettings } from '@/lib/siteSettings';
+import { type FormEvent, useState } from 'react';
 import { describeSiteSettingsErrors } from '@/components/admin/siteSettingsErrorText';
+import { defaultSiteSettings } from '@/lib/siteSettings';
+import { DEFAULT_FONT, DEFAULT_PALETTE, FONTS, PALETTES } from '@/lib/theme';
 
 export default function OnboardingPage() {
   const router = useRouter();
@@ -85,19 +85,21 @@ export default function OnboardingPage() {
             </select>
           </div>
           <div className="field">
-            <label>Color palette</label>
-            <div className="row">
-              {PALETTES.map((p) => (
-                <button
-                  type="button"
-                  key={p.id}
-                  onClick={() => setPalette(p.id)}
-                  className={`swatch${palette === p.id ? ' selected' : ''}`}
-                  style={{ background: p.vars['--accent'] }}
-                  title={p.name}
-                />
-              ))}
-            </div>
+            <fieldset className="swatches">
+              <legend className="field-label">Color palette</legend>
+              <div className="row">
+                {PALETTES.map((p) => (
+                  <button
+                    type="button"
+                    key={p.id}
+                    onClick={() => setPalette(p.id)}
+                    className={`swatch${palette === p.id ? ' selected' : ''}`}
+                    style={{ background: p.vars['--accent'] }}
+                    title={p.name}
+                  />
+                ))}
+              </div>
+            </fieldset>
           </div>
           <div className="field">
             <label htmlFor="font">Font</label>
@@ -119,7 +121,7 @@ export default function OnboardingPage() {
               Show sex
             </label>
           </div>
-          {error && <p className="error-text">{error}</p>}
+          {error ? <p className="error-text">{error}</p> : null}
           <button className="btn" type="submit" disabled={loading}>
             {loading ? 'Creating…' : 'Create site'}
           </button>

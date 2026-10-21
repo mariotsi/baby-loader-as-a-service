@@ -1,13 +1,13 @@
-import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { test } from 'node:test';
 import {
   databaseName,
   isLocalMongoUri,
   isPreviewDbName,
-  previewDbName,
-  testDataPolicy,
   PRODUCTION_DB_NAME,
+  previewDbName,
   STAGING_DB_NAME,
+  testDataPolicy,
 } from './dbName.ts';
 
 test('previewDbName lowercases the branch and replaces separators', () => {

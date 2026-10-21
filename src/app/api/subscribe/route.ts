@@ -1,10 +1,10 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { getSiteBySlug } from '@/lib/site';
-import { upsertSubscription, deleteSubscription } from '@/lib/subscription';
+import { type NextRequest, NextResponse } from 'next/server';
+import { clientIp } from '@/lib/auth';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import { lookupGeo } from '@/lib/geoip';
-import { clientIp } from '@/lib/auth';
 import { rateLimit } from '@/lib/rateLimit';
+import { getSiteBySlug } from '@/lib/site';
+import { deleteSubscription, upsertSubscription } from '@/lib/subscription';
 
 export async function POST(req: NextRequest) {
   if (!rateLimit(`subscribe:${clientIp(req)}`, 20, 60_000)) {

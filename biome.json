@@ -1,0 +1,114 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    "useIgnoreFile": true
+  },
+  "files": {
+    "ignoreUnknown": true
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 120
+  },
+  "linter": {
+    "enabled": true,
+    "rules": {
+      "preset": "recommended",
+      "correctness": {
+        "noBeforeInteractiveScriptOutsideDocument": "warn",
+        "noNextAsyncClientComponent": "warn",
+        "useInlineScriptId": "error",
+        "noUnusedImports": "error",
+        "noUnusedVariables": "error",
+        "useUniqueElementIds": "warn",
+        "noUnresolvedImports": "off"
+      },
+      "performance": {
+        "noImgElement": "warn",
+        "noSyncScripts": "error",
+        "noUnwantedPolyfillio": "warn",
+        "useGoogleFontPreconnect": "warn",
+        "noBarrelFile": "error",
+        "noReExportAll": "error"
+      },
+      "style": {
+        "noHeadElement": "warn",
+        "useBlockStatements": "error",
+        "useConst": "error",
+        "useTemplate": "error",
+        "useSelfClosingElements": "error",
+        "noUselessElse": "error",
+        "noInferrableTypes": "error",
+        "useAsConstAssertion": "error",
+        "useShorthandFunctionType": "error",
+        "useExponentiationOperator": "error",
+        "noParameterAssign": "error",
+        "useNumberNamespace": "error",
+        "useCollapsedIf": "error",
+        "noNestedTernary": "error",
+        "useErrorCause": "error",
+        "useExplicitLengthCheck": "error"
+      },
+      "suspicious": {
+        "noDocumentImportInPage": "error",
+        "noHeadImportInDocument": "error",
+        "useGoogleFontDisplay": "warn",
+        "noImportCycles": "error",
+        "noDeprecatedImports": "error",
+        "noLeakedRender": "error",
+        "noShadow": "error",
+        "useAwait": "error",
+        "noUnnecessaryConditions": "error",
+        "useArraySortCompare": "error"
+      },
+      "nursery": {
+        "noFloatingPromises": "error",
+        "noMisusedPromises": "error",
+        "useExhaustiveSwitchCases": "error",
+        "useAwaitThenable": "error"
+      },
+      "complexity": {
+        "noExcessiveCognitiveComplexity": "error",
+        "noUselessUndefined": "error"
+      }
+    },
+    "domains": {
+      "next": "recommended",
+      "react": "recommended",
+      "playwright": "recommended"
+    }
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "single",
+      "jsxQuoteStyle": "double",
+      "semicolons": "always",
+      "trailingCommas": "es5",
+      "arrowParentheses": "always"
+    }
+  },
+  "overrides": [
+    {
+      "includes": ["src/components/admin/SiteSettingsForm.tsx", "src/app/sites/\\[slug\\]/page.tsx"],
+      "linter": {
+        "rules": {
+          "complexity": {
+            "noExcessiveCognitiveComplexity": "warn"
+          }
+        }
+      }
+    }
+  ],
+  "assist": {
+    "enabled": true,
+    "actions": {
+      "source": {
+        "organizeImports": "on"
+      }
+    }
+  }
+}

@@ -19,9 +19,7 @@ export type Migration = {
  * One collection holds both the record of applied migrations, one document
  * per id, and the lock, a document whose _id no migration id can take.
  */
-type MigrationDoc =
-  | { _id: string; appliedAt: Date }
-  | { _id: typeof LOCK_ID; owner: string; expiresAt: Date };
+type MigrationDoc = { _id: string; appliedAt: Date } | { _id: typeof LOCK_ID; owner: string; expiresAt: Date };
 
 export const MIGRATIONS_COLLECTION = 'migrations';
 const LOCK_ID = '~lock';

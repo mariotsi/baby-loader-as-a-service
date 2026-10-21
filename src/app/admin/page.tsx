@@ -1,7 +1,7 @@
 import Link from 'next/link';
+import { siteAddress } from '@/lib/address';
 import { pageUser } from '@/lib/ownerAccessNext';
 import { listSitesByOwner } from '@/lib/site';
-import { siteAddress } from '@/lib/address';
 
 export default async function AdminPage() {
   const sites = await listSitesByOwner(await pageUser());
