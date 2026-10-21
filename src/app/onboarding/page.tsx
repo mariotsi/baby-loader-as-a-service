@@ -34,6 +34,7 @@ export default function OnboardingPage() {
             babyName,
             dueDate: dueDate || null,
             language,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
             theme: { palette, font },
             privacy: { showName, showSex },
           },

@@ -1,0 +1,142 @@
+import assert from 'node:assert/strict';
+import { test } from 'node:test';
+import { publicPageView, publicPageViews } from './publicPageView.ts';
+import { defaultSiteSettings, type SiteSettings } from './siteSettings.ts';
+
+const NOW = new Date('2026-10-20T10:00:00Z');
+
+function site(overrides: Partial<SiteSettings> = {}): SiteSettings {
+  return {
+    ...structuredClone(defaultSiteSettings),
+    babyName: 'Emma',
+    sex: 'female',
+    dueDate: '2026-11-01',
+    ...overrides,
+  } as SiteSettings;
+}
+
+const BORN: SiteSettings['birth'] = {
+  born: true,
+  details: { datetime: '2026-10-19T08:30:00.000Z', weightGrams: 3400, lengthCm: 50, message: { it: 'Ciao', en: 'Hi' } },
+};
+
+test('the Waiting state leads with the Countdown', () => {
+  const view = publicPageView(site(), 'en', NOW);
+  assert.equal(view.tagline, 'Expecting');
+  assert.equal(view.title, 'We are waiting for Emma');
+  assert.equal(view.sex, 'It’s a girl');
+  assert.deepEqual(view.waiting, {
+    dueDate: 'Due date: November 1, 2026',
+    count: 12,
+    unit: 'days to go',
+    lateNote: null,
+  });
+  assert.equal(view.born, null);
+});
+
+test('the Countdown says the day itself, and how late after it', () => {
+  assert.deepEqual(publicPageView(site({ dueDate: '2026-10-20' }), 'en', NOW).waiting, {
+    dueDate: 'Due date: October 20, 2026',
+    count: null,
+    unit: 'Due today',
+    lateNote: null,
+  });
+  assert.deepEqual(publicPageView(site({ dueDate: '2026-10-19' }), 'it', NOW).waiting, {
+    dueDate: 'Arrivo previsto: 19 ottobre 2026',
+    count: 1,
+    unit: 'giorno in ritardo',
+    lateNote: 'Se la sta prendendo comoda...',
+  });
+});
+
+test("the Countdown follows the Site's Timezone", () => {
+  // 23:30 on the 20th in New York is already the 21st in Rome.
+  const lateEvening = new Date('2026-10-21T03:30:00Z');
+  assert.equal(publicPageView(site({ dueDate: '2026-10-22' }), 'en', lateEvening).waiting?.count, 1);
+  assert.equal(
+    publicPageView(site({ dueDate: '2026-10-22', timezone: 'America/New_York' }), 'en', lateEvening).waiting?.count,
+    2
+  );
+});
+
+test('no Due date, no Countdown', () => {
+  assert.equal(publicPageView(site({ dueDate: null }), 'en', NOW).waiting, null);
+});
+
+test('Privacy settings hide the name and Sex while Waiting', () => {
+  const view = publicPageView(site({ privacy: { showName: false, showSex: false } }), 'it', NOW);
+  assert.equal(view.title, 'Stiamo aspettando qualcuno');
+  assert.equal(view.sex, null);
+  assert.equal(publicPageView(site({ babyName: '' }), 'en', NOW).title, 'We are waiting for someone');
+  assert.equal(publicPageView(site({ sex: 'unknown' }), 'en', NOW).sex, null);
+});
+
+test('the Born state announces the name and Sex whatever the Privacy settings', () => {
+  const view = publicPageView(site({ birth: BORN, privacy: { showName: false, showSex: false } }), 'en', NOW);
+  assert.equal(view.tagline, 'Here at last');
+  assert.equal(view.title, 'Welcome Emma');
+  assert.equal(view.sex, 'It’s a girl');
+  assert.equal(view.waiting, null);
+});
+
+test("Birth details are told in the Site's Timezone and language", () => {
+  assert.deepEqual(publicPageView(site({ birth: BORN }), 'en', NOW).born, {
+    bornOn: 'Born on October 19, 2026, 10:30',
+    weightLine: 'Weight: 3400 g',
+    lengthLine: 'Length: 50 cm',
+    message: 'Hi',
+  });
+  assert.equal(publicPageView(site({ birth: BORN }), 'it', NOW).born?.bornOn, 'Nato/a il 19 ottobre 2026, 10:30');
+  assert.equal(
+    publicPageView(site({ birth: BORN, timezone: 'America/New_York' }), 'en', NOW).born?.bornOn,
+    'Born on October 19, 2026, 04:30'
+  );
+});
+
+test('missing Birth details stay out', () => {
+  const sparse: SiteSettings['birth'] = {
+    born: true,
+    details: { datetime: BORN.details?.datetime ?? '', weightGrams: null, lengthCm: null, message: { it: '  ' } },
+  };
+  const born = publicPageView(site({ birth: sparse }), 'en', NOW).born;
+  assert.deepEqual([born?.weightLine, born?.lengthLine, born?.message], [null, null, null]);
+});
+
+test("Milestones come in date order, dated in the page's language", () => {
+  const milestones = [
+    { label: 'Gender reveal', date: '2026-06-10' },
+    { label: 'First scan', date: '2026-04-02' },
+  ];
+  assert.deepEqual(publicPageView(site({ milestones }), 'it', NOW).milestones, {
+    title: 'Tappe',
+    items: [
+      { date: '2 aprile 2026', label: 'First scan' },
+      { date: '10 giugno 2026', label: 'Gender reveal' },
+    ],
+  });
+  assert.equal(publicPageView(site(), 'en', NOW).milestones, null);
+});
+
+test("the push button copy follows the Site's state", () => {
+  assert.equal(publicPageView(site(), 'en', NOW).push.subscribe, 'Notify me when they arrive');
+  assert.equal(publicPageView(site({ birth: BORN }), 'en', NOW).push.subscribe, 'Get the next updates');
+});
+
+test('a Site in Both mode gets one view per language, Italian first', () => {
+  assert.deepEqual(
+    publicPageViews(site({ language: 'both' }), NOW).map((view) => [view.lang, view.title]),
+    [
+      ['it', 'Stiamo aspettando Emma'],
+      ['en', 'We are waiting for Emma'],
+    ]
+  );
+  assert.deepEqual(
+    publicPageViews(site({ language: 'it' }), NOW).map((view) => view.lang),
+    ['it']
+  );
+});
+
+test('a view is plain data that survives serialization to a Client Component', () => {
+  const view = publicPageView(site({ birth: BORN, milestones: [{ label: 'Scan', date: '2026-04-02' }] }), 'en', NOW);
+  assert.deepEqual(JSON.parse(JSON.stringify(view)), view);
+});

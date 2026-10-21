@@ -1,24 +1,24 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
-import { LANG_COOKIE, LANGS, type Lang } from '@/lib/i18n';
+import type { Lang } from '@/lib/i18n';
 
-export function LanguageSwitcher({ current }: { current: Lang }) {
-  const router = useRouter();
-
-  function setLang(lang: Lang) {
-    // biome-ignore lint/suspicious/noDocumentCookie: the Cookie Store API is missing from Safari before 18.4, which Visitors still use.
-    document.cookie = `${LANG_COOKIE}=${lang}; path=/; max-age=31536000; samesite=lax`;
-    router.refresh();
-  }
-
+export function LanguageSwitcher({
+  langs,
+  current,
+  onChange,
+}: {
+  langs: Lang[];
+  current: Lang;
+  onChange: (lang: Lang) => void;
+}) {
   return (
     <div className="row" style={{ justifyContent: 'center' }}>
-      {LANGS.map((lang) => (
+      {langs.map((lang) => (
         <button
           type="button"
           key={lang}
           className="btn-secondary"
+          aria-pressed={lang === current}
           style={{
             border: 'none',
             background: 'none',
@@ -28,7 +28,7 @@ export function LanguageSwitcher({ current }: { current: Lang }) {
             cursor: 'pointer',
             color: 'var(--fg)',
           }}
-          onClick={() => setLang(lang)}
+          onClick={() => onChange(lang)}
         >
           {lang}
         </button>

@@ -12,7 +12,8 @@ import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
 const LANGUAGE_NAMES: Record<Lang, string> = { it: 'Italian', en: 'English' };
 
-export function SiteSettingsForm({ site }: { site: SiteDTO }) {
+/** `timeZones` comes from the server, so the list the page renders matches the one it hydrates. */
+export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones: string[] }) {
   const router = useRouter();
   const [babyName, setBabyName] = useState(site.babyName);
   const [sex, setSex] = useState(site.sex);
@@ -24,6 +25,7 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
   const [lengthCm, setLengthCm] = useState(details?.lengthCm?.toString() ?? '');
   const [birthMessage, setBirthMessage] = useState<BirthDetails['message']>(details?.message ?? {});
   const [language, setLanguage] = useState(site.language);
+  const [timezone, setTimezone] = useState(site.timezone);
   const [palette, setPalette] = useState(site.theme.palette);
   const [font, setFont] = useState(site.theme.font);
   const [showName, setShowName] = useState(site.privacy.showName);
@@ -65,6 +67,7 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
         : { born: false, details: null },
       milestones: milestones.filter((m) => m.label && m.date),
       language,
+      timezone,
       theme: { palette, font },
       privacy: { showName, showSex },
     };
@@ -224,13 +227,23 @@ export function SiteSettingsForm({ site }: { site: SiteDTO }) {
             <option value="both">Both (visitor picks)</option>
           </select>
         </div>
+        <div className="field">
+          <label htmlFor="settings-timezone">Timezone</label>
+          <select id="settings-timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)}>
+            {(timeZones.includes(timezone) ? timeZones : [timezone, ...timeZones]).map((zone) => (
+              <option key={zone} value={zone}>
+                {zone}
+              </option>
+            ))}
+          </select>
+        </div>
         <label className="row" style={{ gap: '0.5rem' }}>
           <input type="checkbox" checked={showName} onChange={(e) => setShowName(e.target.checked)} />
-          Show name on the public page
+          Show name on the Public page while waiting
         </label>
         <label className="row" style={{ gap: '0.5rem' }}>
           <input type="checkbox" checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
-          Show sex on the public page
+          Show sex on the Public page while waiting
         </label>
       </div>
 
