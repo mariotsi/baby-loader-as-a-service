@@ -187,14 +187,14 @@ receives the exact commit that passed the E2E suite on staging.
    checking, lint and unit tests (job `ci`), and the staging project deploys
    a preview, on which `.github/workflows/cd.yml` runs the E2E suite (job
    `e2e`). Both checks show on the pull request.
-2. Merging deploys `staging` to `staging.loading.baby`. Once Vercel reports
-   that deployment ready, `cd.yml` applies the migrations `main` does not
-   have yet to `waitingpages-staging` (job `migrations`, see "Data
-   migrations" below), then runs the E2E suite against
+2. Merging deploys `staging` to `staging.loading.baby`, whose first request
+   applies the new data migrations (see "Data migrations" below). Once
+   Vercel reports that deployment ready, `cd.yml` runs the E2E suite against
    `staging.loading.baby` once it serves that commit.
 3. When the suite passes, job `promote` fast-forwards `main` to that commit
    (`git push origin <sha>:main`), and the production project deploys it to
-   `loading.baby`. Nothing is merged or rebuilt from other sources on the
+   `loading.baby`, whose first request applies the same migrations to
+   production's database. Nothing is merged or rebuilt from other sources on the
    way: production runs the commit staging tested.
 
 Staging runs one at a time: a newer staging deployment cancels the run of an
@@ -220,22 +220,28 @@ the failed run is re-run.
 
 ### Data migrations
 
-A data migration is a one-off script in `scripts/migrations/`, named so the
-scripts sort in the order they run (`0001-short-name.mjs`). Like
-`scripts/migrate-site-settings.mjs`, it is a dry run unless given `--apply`,
-works on `databaseName(process.env)` in `MONGODB_URI`, and is safe to rerun.
-Both the previous and the new code meet migrated data: staging deploys the
-new code before migrating, production migrates before deploying it.
+A data migration lives in `src/migrations/` as `NNNN-short-name.ts`,
+exporting a `Migration` (`src/lib/migrations.ts`) whose id is its file
+name, and is appended to the list in `src/migrations/index.ts`. Every
+deployment applies the ones its database has no record of, in order, on the
+first request of each process (`getDb` in `src/lib/mongodb.ts`), before
+creating indexes and before any query: production, staging, each preview's
+database and local ones alike, with the credentials the deployment already
+has.
 
-- **Staging**: job `migrations` applies every script `staging` adds over
-  `main` to `waitingpages-staging`, with `PREVIEW_MONGODB_URI`, before E2E
-  runs. Every staging deployment until the promotion applies them again,
-  which a rerunnable script allows.
-- **Production**: production's credentials stay in the production Vercel
-  project and in `.env.prod.local`, never in GitHub. When a promotion
-  carries a migration, job `production-migration` waits on the GitHub
-  Environment `production-migration`, whose required reviewer is the
-  repository owner. The `migrations` job's summary lists the commands; run
-  each one locally (`node --env-file=.env.prod.local scripts/migrations/<name>.mjs --apply`),
-  then approve, and `promote` pushes. Promotions without a migration need no
-  approval.
+- **Once per database**: the `migrations` collection records each applied
+  id and holds a lock, so among processes starting together one applies
+  them and the others wait for it. A holder that dies stops renewing its
+  30-second lease, and the next process takes over.
+- **Failure**: a migration that throws stays unrecorded and fails the
+  request; the next request tries again. Code never runs on data its
+  migrations have not reached.
+- **Compatibility**: while Vercel moves traffic to a new deployment, the
+  previous one keeps serving on the migrated data, and an instant rollback
+  runs it there for good. So a migration only makes changes the previous
+  code still reads correctly (add a field before reading it, stop writing
+  one before removing it), is safe to rerun, and is quick: the first
+  requests wait for it.
+
+`scripts/migrate-site-settings.mjs` stays outside this mechanism: a one-off run by hand
+(dry run unless `--apply`).

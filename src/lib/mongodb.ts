@@ -1,6 +1,8 @@
 import { MongoClient, type Db } from 'mongodb';
 import { databaseName } from './dbName.ts';
 import { ensureIndexes } from './indexes.ts';
+import { applyMigrations } from './migrations.ts';
+import { MIGRATIONS } from '../migrations/index.ts';
 
 declare global {
   // eslint-disable-next-line no-var
@@ -16,7 +18,7 @@ let clientPromise: Promise<MongoClient> | undefined;
  */
 export const DB_NAME = databaseName(process.env);
 
-let indexesReady: Promise<void> | undefined;
+let databaseReady: Promise<void> | undefined;
 
 /**
  * Lazy connection: a missing MONGODB_URI must fail on the first query, not on
@@ -46,16 +48,26 @@ export function getMongoClient(): Promise<MongoClient> {
 }
 
 /**
- * The first call in each process creates any missing index, so a preview
- * deployment's brand-new database is ready on its first request. A failure is
- * logged and requests go on without the missing indexes.
+ * The first call in each process prepares the database before any query
+ * runs: it applies the pending migrations (src/migrations), then creates any
+ * missing index, so a preview deployment's brand-new database is ready on
+ * its first request. A failed migration fails the request, and the next
+ * call tries again: code never runs on data it does not expect. A failed
+ * index is logged and requests go on without it.
  */
 export async function getDb(): Promise<Db> {
   const client = await getMongoClient();
   const db = client.db(DB_NAME);
-  indexesReady ??= ensureIndexes(db).catch((err) => {
-    console.error(`Creating indexes on ${DB_NAME} failed`, err);
-  });
-  await indexesReady;
+  databaseReady ??= applyMigrations(db, MIGRATIONS).then(
+    () =>
+      ensureIndexes(db).catch((err) => {
+        console.error(`Creating indexes on ${DB_NAME} failed`, err);
+      }),
+    (err) => {
+      databaseReady = undefined;
+      throw err;
+    }
+  );
+  await databaseReady;
   return db;
 }
