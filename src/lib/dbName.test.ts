@@ -16,10 +16,10 @@ test('previewDbName lowercases the branch and replaces separators', () => {
   assert.equal(previewDbName('/leading-and-trailing/'), 'waitingpages-leading-and-trailing');
 });
 
-test('previewDbName keeps long names within 64 characters and apart', () => {
+test('previewDbName keeps long names within 38 characters and apart', () => {
   const a = previewDbName(`feature/${'x'.repeat(80)}-a`);
   const b = previewDbName(`feature/${'x'.repeat(80)}-b`);
-  assert.ok(a.length <= 64 && b.length <= 64);
+  assert.ok(a.length <= 38 && b.length <= 38);
   assert.notEqual(a, b);
   assert.match(a, /^waitingpages-feature-x+-[0-9a-f]{8}$/);
 });
@@ -78,4 +78,11 @@ test('testDataPolicy keeps demo data off staging', () => {
 
 test('testDataPolicy allows everything on a local server', () => {
   assert.deepEqual(testDataPolicy('mongodb://localhost:27017', STAGING_DB_NAME), { fixtures: true, demo: true });
+});
+
+test('previewDbName fits a branch name that just overflows the limit', () => {
+  const name = previewDbName('real-address-in-slug-field');
+  assert.ok(name.length <= 38, name);
+  assert.match(name, /^waitingpages-real-address-.*-[0-9a-f]{8}$/);
+  assert.equal(isPreviewDbName(name), true);
 });
