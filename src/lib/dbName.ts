@@ -7,13 +7,14 @@ export const PRODUCTION_DB_NAME = 'waitingpages';
 export const STAGING_DB_NAME = `${PRODUCTION_DB_NAME}-staging`;
 
 const PREVIEW_PREFIX = `${PRODUCTION_DB_NAME}-`;
-const MAX_DB_NAME_LENGTH = 64; // MongoDB's limit, in bytes
+/** Atlas rejects longer database names on the shared tiers the non-production cluster runs on (MongoDB itself allows 64). */
+const MAX_DB_NAME_LENGTH = 38;
 
 /**
  * Database of one Git branch's preview deployments: "waitingpages-<branch>",
  * lowercased, with each run of characters outside [a-z0-9] turned into one
  * "-". Branches that differ only in punctuation (feat/x, feat-x) therefore
- * share a database. A name over MongoDB's limit is truncated and suffixed
+ * share a database. A name over Atlas's limit is truncated and suffixed
  * with a hash of the full branch name, so long branches sharing a prefix get
  * distinct databases.
  */
