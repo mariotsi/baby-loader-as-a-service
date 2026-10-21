@@ -1,0 +1,167 @@
+name: CD
+
+# Runs on every deployment of the Vercel project baby-loader-staging once
+# Vercel reports it ready:
+# - a preview: the Playwright suite (e2e/), whose check lands on the pull
+#   request's commit;
+# - staging, the project's production branch: the data migrations main has
+#   not run yet, applied to staging's database, then the suite, then, once
+#   production's migrations are approved, promotion of that same commit to
+#   main, which the production project baby-loader-as-a-service builds.
+# The production project's deployments are never tested: the jobs filter
+# them out, and the suite refuses a deployment that reports production
+# (e2e/global-setup.ts).
+
+on:
+  deployment_status:
+
+permissions:
+  contents: read
+
+# Vercel's deployment events carry no branch: staging runs one at a time,
+# the newest deployment winning, and previews are grouped per commit.
+concurrency:
+  group: cd-${{ startsWith(github.event.deployment.environment, 'Production') && 'staging' || github.sha }}
+  cancel-in-progress: true
+
+jobs:
+  migrations:
+    if: >-
+      github.event.deployment_status.state == 'success' &&
+      startsWith(github.event.deployment.environment, 'Production') &&
+      endsWith(github.event.deployment.environment, 'baby-loader-staging')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    outputs:
+      added: ${{ steps.list.outputs.added }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: List the migrations main has not run
+        id: list
+        run: |
+          added=$(git diff --name-only --diff-filter=A origin/main...HEAD -- 'scripts/migrations/*.mjs' | sort | tr '\n' ' ')
+          echo "added=${added% }" >> "$GITHUB_OUTPUT"
+          if [ -n "$added" ]; then
+            {
+              echo "### Production migrations to run before approving production-migration"
+              echo
+              echo '```bash'
+              for script in $added; do
+                echo "node --env-file=.env.prod.local $script --apply"
+              done
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - uses: actions/setup-node@v4
+        if: steps.list.outputs.added != ''
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+        if: steps.list.outputs.added != ''
+
+      - name: Apply them to staging's database
+        if: steps.list.outputs.added != ''
+        env:
+          MONGODB_URI: ${{ secrets.PREVIEW_MONGODB_URI }}
+          MONGODB_DB_NAME: waitingpages-staging
+          ADDED: ${{ steps.list.outputs.added }}
+        run: |
+          for script in $ADDED; do
+            echo "::group::$script"
+            node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON "$script" --apply
+            echo "::endgroup::"
+          done
+
+  # The ruleset "Require E2E on main" requires a check named e2e from GitHub
+  # Actions on every commit main receives: keep this job's name.
+  e2e:
+    needs: migrations
+    if: >-
+      !cancelled() && needs.migrations.result != 'failure' &&
+      github.event.deployment_status.state == 'success' &&
+      endsWith(github.event.deployment.environment, 'baby-loader-staging')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      CI: true
+      # Staging and preview databases both live on the non-production cluster.
+      E2E_MONGODB_URI: ${{ secrets.PREVIEW_MONGODB_URI }}
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      # baby-loader-staging's Protection Bypass for Automation: its vercel.app
+      # URLs sit behind Deployment Protection, staging.loading.baby does not.
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Find where the deployment serves this commit
+        env:
+          DEPLOYMENT_URL: ${{ github.event.deployment_status.environment_url }}
+          COMMIT: ${{ github.sha }}
+        run: node scripts/wait-for-deployment.mjs >> "$GITHUB_ENV"
+
+      - run: npx playwright install --with-deps chromium webkit
+      - run: npx playwright test
+
+      - uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+  # Waits, through the environment's required reviewer, for the production
+  # migrations listed in the migrations job's summary to be run by hand.
+  production-migration:
+    needs: [migrations, e2e]
+    if: needs.migrations.outputs.added != ''
+    environment: production-migration
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Production migrations approved"
+
+  promote:
+    needs: [e2e, production-migration]
+    if: >-
+      !cancelled() && needs.e2e.result == 'success' &&
+      (needs.production-migration.result == 'success' || needs.production-migration.result == 'skipped') &&
+      startsWith(github.event.deployment.environment, 'Production') &&
+      endsWith(github.event.deployment.environment, 'baby-loader-staging')
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # One push to main at a time. The push is a fast-forward, so main never
+    # moves back to an older commit whichever run comes last.
+    concurrency:
+      group: promote-main
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          # Write deploy key, the only bypass actor of the ruleset that
+          # restricts updates to main.
+          ssh-key: ${{ secrets.PROMOTE_DEPLOY_KEY }}
+
+      - name: Fast-forward main to this commit
+        env:
+          SHA: ${{ github.event.deployment.sha }}
+        run: |
+          git fetch origin main
+          if git merge-base --is-ancestor "$SHA" origin/main; then
+            echo "main already contains $SHA"
+            exit 0
+          fi
+          if ! git merge-base --is-ancestor origin/main "$SHA"; then
+            echo "::error::main has commits $SHA lacks: merge main into staging first"
+            exit 1
+          fi
+          git push origin "$SHA:refs/heads/main"

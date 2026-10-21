@@ -113,11 +113,12 @@ Before a run the suite asks the deployment which environment it is
 deployment's database; afterwards it deletes what it created. ADR-0006 has
 the data rules.
 
-In CI, `.github/workflows/e2e.yml` runs the suite on every deployment of
+In CI, `.github/workflows/cd.yml` runs the suite on every deployment of
 the `baby-loader-staging` project once Vercel reports it to GitHub as ready:
-each preview, whose check shows on the pull request, and staging. Both
-Vercel projects create GitHub Deployments; the workflow ignores the
-production project's. It needs three repository secrets:
+each preview, whose check shows on the pull request, and staging, where a
+pass promotes the commit to production (see "Environments"). Both Vercel
+projects create GitHub Deployments; the workflow ignores the production
+project's. The suite needs three repository secrets:
 `PREVIEW_MONGODB_URI` (non-production cluster), `E2E_PASSWORD` (fixture
 Owners) and `VERCEL_AUTOMATION_BYPASS_SECRET` (the staging project's
 Protection Bypass for Automation, to get past Deployment Protection on its
@@ -135,7 +136,9 @@ flagged as a cost item to verify, not yet done.
 
 Two Vercel projects keep production apart from everything else: the
 production project builds only `main`, and the staging project builds
-`staging` and every other branch.
+`staging` and every other branch. Changes reach production through staging
+only: pull requests merge into `staging`, the default branch, and `main`
+receives the exact commit that passed the E2E suite on staging.
 
 | Environment | Vercel project | Branch | Addresses | MongoDB |
 |---|---|---|---|---|
@@ -177,3 +180,62 @@ production project builds only `main`, and the staging project builds
   environment in a corner ribbon, except in production.
 - **Reserved slug**: `staging` is a Reserved slug, since `staging.loading.baby`
   serves the staging Platform.
+
+### From pull request to production
+
+1. A pull request targets `staging`. `.github/workflows/ci.yml` runs type
+   checking, lint and unit tests (job `ci`), and the staging project deploys
+   a preview, on which `.github/workflows/cd.yml` runs the E2E suite (job
+   `e2e`). Both checks show on the pull request.
+2. Merging deploys `staging` to `staging.loading.baby`. Once Vercel reports
+   that deployment ready, `cd.yml` applies the migrations `main` does not
+   have yet to `waitingpages-staging` (job `migrations`, see "Data
+   migrations" below), then runs the E2E suite against
+   `staging.loading.baby` once it serves that commit.
+3. When the suite passes, job `promote` fast-forwards `main` to that commit
+   (`git push origin <sha>:main`), and the production project deploys it to
+   `loading.baby`. Nothing is merged or rebuilt from other sources on the
+   way: production runs the commit staging tested.
+
+Staging runs one at a time: a newer staging deployment cancels the run of an
+older one, and its promotion carries the older commits along. A failed E2E
+run leaves `main` where it is until a later staging commit passes, or until
+the failed run is re-run.
+
+### What guards `main`
+
+- **Ruleset "Require E2E on main"**: every commit `main` receives needs a
+  successful `e2e` check from GitHub Actions. It has no bypass actors.
+- **Ruleset "Only promotion updates main"**: restricts updates and blocks
+  force pushes and deletion. Its bypass actor is the repository's deploy
+  keys, and the only one is `promote-main`, with write access: its private
+  half is the repository secret `PROMOTE_DEPLOY_KEY`, which `promote` pushes
+  with. Nobody pushes or merges to `main` by hand, and adding another write
+  deploy key would let it bypass too.
+- **Ruleset "Require CI on staging"**: every commit `staging` receives needs
+  a successful `ci` check, and force pushes and deletion are blocked.
+- **Fast-forward only**: `promote` never force pushes. If `main` holds a
+  commit `staging` lacks, it fails until `main` is merged into `staging`,
+  and a commit `main` already contains is left alone.
+
+### Data migrations
+
+A data migration is a one-off script in `scripts/migrations/`, named so the
+scripts sort in the order they run (`0001-short-name.mjs`). Like
+`scripts/migrate-site-settings.mjs`, it is a dry run unless given `--apply`,
+works on `databaseName(process.env)` in `MONGODB_URI`, and is safe to rerun.
+Both the previous and the new code meet migrated data: staging deploys the
+new code before migrating, production migrates before deploying it.
+
+- **Staging**: job `migrations` applies every script `staging` adds over
+  `main` to `waitingpages-staging`, with `PREVIEW_MONGODB_URI`, before E2E
+  runs. Every staging deployment until the promotion applies them again,
+  which a rerunnable script allows.
+- **Production**: production's credentials stay in the production Vercel
+  project and in `.env.prod.local`, never in GitHub. When a promotion
+  carries a migration, job `production-migration` waits on the GitHub
+  Environment `production-migration`, whose required reviewer is the
+  repository owner. The `migrations` job's summary lists the commands; run
+  each one locally (`node --env-file=.env.prod.local scripts/migrations/<name>.mjs --apply`),
+  then approve, and `promote` pushes. Promotions without a migration need no
+  approval.
