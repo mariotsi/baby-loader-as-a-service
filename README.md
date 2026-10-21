@@ -157,13 +157,12 @@ production project builds only `main`, and the staging project builds
 only: pull requests merge into `staging`, the default branch, and `main`
 receives the exact commit that passed the E2E suite on staging.
 
-| Environment | Vercel project | Branch | Addresses | MongoDB |
-|---|---|---|---|---|
-| Production | `baby-loader-as-a-service` | `main` | `loading.baby`, Sites at `<slug>.loading.baby` | production cluster, database `waitingpages` |
-| Staging | `baby-loader-staging` (its production branch) | `staging` | `staging.loading.baby`, Sites at `<slug>.staging.loading.baby` | non-production cluster, database `waitingpages-staging` |
-| Preview | `baby-loader-staging` (its preview deployments) | any other, `main` included | the branch's `baby-loader-staging-git-…vercel.app` URL, Sites at `/sites/<slug>` | non-production cluster, database `waitingpages-<branch>` |
-| Local | none | any | `localhost:3000`, Sites at `<slug>.localhost:3000` | Docker MongoDB, database `waitingpages-dev` |
-
+| Environment | Vercel project                                  | Branch                     | Addresses                                                                        | MongoDB                                                  |
+| ----------- | ----------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Production  | `baby-loader-as-a-service`                      | `main`                     | `loading.baby`, Sites at `<slug>.loading.baby`                                   | production cluster, database `waitingpages`              |
+| Staging     | `baby-loader-staging` (its production branch)   | `staging`                  | `staging.loading.baby`, Sites at `<slug>.staging.loading.baby`                   | non-production cluster, database `waitingpages-staging`  |
+| Preview     | `baby-loader-staging` (its preview deployments) | any other, `main` included | the branch's `baby-loader-staging-git-…vercel.app` URL, Sites at `/sites/<slug>` | non-production cluster, database `waitingpages-<branch>` |
+| Local       | none                                            | any                        | `localhost:3000`, Sites at `<slug>.localhost:3000`                               | Docker MongoDB, database `waitingpages-dev`              |
 - **Who builds what**: the production project's Ignored Build Step skips
   every deployment but production, so it never builds a preview. The staging
   project has `staging` as its production branch and builds a preview of
@@ -248,7 +247,6 @@ first request of each process (`getDb` in `src/lib/mongodb.ts`), before
 creating indexes and before any query: production, staging, each preview's
 database and local ones alike, with the credentials the deployment already
 has.
-
 - **Once per database**: the `migrations` collection records each applied
   id and holds a lock, so among processes starting together one applies
   them and the others wait for it. A holder that dies stops renewing its
