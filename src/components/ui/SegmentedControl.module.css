@@ -1,0 +1,79 @@
+.root {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+}
+
+.options {
+  display: inline-grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  gap: var(--space-1);
+  padding: var(--space-1);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-surface);
+}
+
+.fullWidth .options {
+  display: grid;
+}
+
+.option {
+  position: relative;
+  display: grid;
+}
+
+.input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(var(--control-height) - var(--space-2));
+  padding: 0 var(--space-4);
+  border-radius: var(--radius-pill);
+  font-weight: var(--weight-bold);
+  white-space: nowrap;
+  color: var(--color-text);
+}
+
+.sm .pill {
+  min-height: 2.25rem;
+  padding: 0 var(--space-3);
+  font-size: var(--text-sm);
+}
+
+.input:hover + .pill {
+  background: var(--color-soft);
+}
+
+.input:focus-visible + .pill {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+}
+
+.input:checked + .pill {
+  background: var(--color-accent);
+  color: var(--color-on-accent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .pill {
+    transition: background-color var(--duration-fast);
+  }
+}

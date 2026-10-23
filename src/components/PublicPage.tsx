@@ -1,15 +1,21 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
+import { Countdown } from '@/components/Countdown';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PushSubscribeButton } from '@/components/PushSubscribeButton';
+import { JoyBackground } from '@/components/ui/JoyBackground';
 import { LANG_COOKIE, type Lang } from '@/lib/i18n';
 import type { PublicPageView } from '@/lib/publicPageView';
+import styles from './PublicPage.module.css';
 
 /**
  * A Site's Public page, laid out from its views: one per language the Site
  * speaks, computed on the server. Switching language swaps the view in place
  * and remembers the choice in the language cookie for the next visit.
+ *
+ * On a phone everything stacks in one centred column; on a wide screen the
+ * name and the call to action sit beside the Countdown or the Birth details.
  */
 export function PublicPage({
   views,
@@ -36,73 +42,71 @@ export function PublicPage({
   }
 
   return (
-    <div className="container">
-      <div className="site-hero">
-        <p className="site-tagline">{view.tagline}</p>
-        <h1 className="site-title">{view.title}</h1>
-        {view.sex ? <p className="muted">{view.sex}</p> : null}
-        {view.waiting ? <Waiting waiting={view.waiting} /> : null}
-        {view.born ? <Born born={view.born} /> : null}
-        {view.milestones ? <Milestones milestones={view.milestones} /> : null}
-
-        <div style={{ marginTop: '2rem' }}>
-          <PushSubscribeButton slug={slug} lang={view.lang} vapidPublicKey={vapidPublicKey} t={view.push} />
-        </div>
-
-        {views.length > 1 ? (
-          <div style={{ marginTop: '2rem' }}>
-            <LanguageSwitcher langs={views.map((v) => v.lang)} current={view.lang} onChange={chooseLang} />
+    <div className={styles.page}>
+      <JoyBackground />
+      {views.length > 1 ? (
+        <header className={styles.header}>
+          <LanguageSwitcher
+            langs={views.map((v) => v.lang)}
+            current={view.lang}
+            label={view.languageLabel}
+            onChange={chooseLang}
+          />
+        </header>
+      ) : null}
+      <main className={styles.hero}>
+        <div className={styles.intro}>
+          <p className={styles.tagline}>{view.tagline}</p>
+          <h1 className={styles.title}>{view.title}</h1>
+          {view.sex ? <p className={styles.sex}>{view.sex}</p> : null}
+          {view.waiting ? <p className={styles.lead}>{view.waiting.dueDate}</p> : null}
+          {view.born ? <p className={styles.lead}>{view.born.bornOn}</p> : null}
+          <div className={styles.cta}>
+            <PushSubscribeButton slug={slug} lang={view.lang} vapidPublicKey={vapidPublicKey} t={view.push} />
           </div>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
-function Waiting({ waiting }: { waiting: NonNullable<PublicPageView['waiting']> }) {
-  return (
-    <div className="stack" style={{ alignItems: 'center', marginTop: '1.5rem' }}>
-      <p className="muted">{waiting.dueDate}</p>
-      <p className="countdown">
-        {waiting.count === null ? (
-          waiting.unit
-        ) : (
-          <>
-            {waiting.count} <span style={{ fontSize: '1.1rem', fontWeight: 400 }}>{waiting.unit}</span>
-          </>
-        )}
-      </p>
-      {waiting.lateNote ? <p className="muted">{waiting.lateNote}</p> : null}
+        </div>
+        <div className={styles.aside}>
+          {view.waiting ? <Countdown waiting={view.waiting} /> : null}
+          {view.born ? <Born born={view.born} /> : null}
+          {view.milestones ? <Milestones milestones={view.milestones} /> : null}
+        </div>
+      </main>
     </div>
   );
 }
 
 function Born({ born }: { born: NonNullable<PublicPageView['born']> }) {
+  const lines = [born.weightLine, born.lengthLine].filter((line): line is string => !!line);
   return (
-    <div className="stack" style={{ alignItems: 'center', marginTop: '1.5rem' }}>
-      <p>{born.bornOn}</p>
-      {born.weightLine || born.lengthLine ? (
-        <div className="row" style={{ justifyContent: 'center' }}>
-          {born.weightLine ? <span className="muted">{born.weightLine}</span> : null}
-          {born.lengthLine ? <span className="muted">{born.lengthLine}</span> : null}
-        </div>
+    <>
+      {lines.length > 0 ? (
+        <ul className={styles.stats}>
+          {lines.map((line) => (
+            <li key={line} className={styles.stat}>
+              {line}
+            </li>
+          ))}
+        </ul>
       ) : null}
-      {born.message ? <p>{born.message}</p> : null}
-    </div>
+      {born.message ? <p className={styles.message}>{born.message}</p> : null}
+    </>
   );
 }
 
 function Milestones({ milestones }: { milestones: NonNullable<PublicPageView['milestones']> }) {
+  const headingId = useId();
   return (
-    <section className="stack" style={{ marginTop: '2rem' }} aria-label={milestones.title}>
-      <h2 className="muted">{milestones.title}</h2>
-      <ul className="stack" style={{ listStyle: 'none', padding: 0 }}>
+    <section className={styles.milestones} aria-labelledby={headingId}>
+      <h2 id={headingId} className={styles.milestonesTitle}>
+        {milestones.title}
+      </h2>
+      <ol className={styles.timeline}>
         {milestones.items.map((item) => (
           <li key={`${item.date}-${item.label}`}>
-            <span className="muted">{item.date}</span> {item.label}
+            <span className={styles.when}>{item.date}</span> {item.label}
           </li>
         ))}
-      </ul>
+      </ol>
     </section>
   );
 }

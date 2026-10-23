@@ -105,8 +105,12 @@ One of the Platform's curated colour sets.
 _Avoid_: Colour scheme, colours
 
 **Font**:
-One of the Platform's curated typefaces.
+One of the Platform's curated pairs of typefaces: a display face for the baby's name, the Countdown and headings, and a body face for everything else.
 _Avoid_: Typeface, typography
+
+**Platform theme**:
+The Platform's own fixed Palette and Font, worn by its marketing, auth, onboarding and Dashboard pages. Owners cannot pick it.
+_Avoid_: Default theme, admin theme
 
 **Privacy settings**:
 The Owner's choice of whether the baby's name and Sex appear on the Public page during the Waiting state. The Born state always shows them.

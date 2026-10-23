@@ -17,7 +17,9 @@ const en = {
   daysLate: (n: number): string => (n === 1 ? 'day late' : 'days late'),
   dueToday: 'Due today',
   lateNote: 'Taking their time...',
+  weekOf: (week: number): string => `Week ${week} of 40`,
   milestonesTitle: 'Milestones',
+  languageLabel: 'Language',
 
   bornTagline: 'Here at last',
   bornTitle: 'Welcome',
@@ -54,7 +56,9 @@ const it: Messages = {
   daysLate: (n: number): string => (n === 1 ? 'giorno in ritardo' : 'giorni in ritardo'),
   dueToday: 'Arriva oggi',
   lateNote: 'Se la sta prendendo comoda...',
+  weekOf: (week: number): string => `Settimana ${week} di 40`,
   milestonesTitle: 'Tappe',
+  languageLabel: 'Lingua',
 
   bornTagline: 'È arrivato/a',
   bornTitle: 'Benvenuto/a',

@@ -1,14 +1,27 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { type SubmitEvent, useState } from 'react';
+import { type ReactNode, type SubmitEvent, useId, useState } from 'react';
 import { describeSiteSettingsErrors } from '@/components/admin/siteSettingsErrorText';
+import { PagePreview } from '@/components/PagePreview';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Field } from '@/components/ui/Field';
+import { FontPicker } from '@/components/ui/FontPicker';
+import { Input } from '@/components/ui/Input';
+import { PageShell } from '@/components/ui/PageShell';
+import { PalettePicker } from '@/components/ui/PalettePicker';
+import { Select } from '@/components/ui/Select';
+import { StatusMessage } from '@/components/ui/StatusMessage';
+import { Switch } from '@/components/ui/Switch';
 import { type AddressConfig, siteAddress, slugProblem } from '@/lib/address';
-import { defaultSiteSettings } from '@/lib/siteSettings';
-import { DEFAULT_FONT, DEFAULT_PALETTE, FONTS, PALETTES } from '@/lib/theme';
+import { publicPageView, siteLangs } from '@/lib/publicPageView';
+import { defaultSiteSettings, type SiteSettings } from '@/lib/siteSettings';
+import { DEFAULT_FONT, DEFAULT_PALETTE } from '@/lib/theme';
+import styles from './OnboardingForm.module.css';
 
-/** What the slug field says under it: the Site's Address, or why the Slug cannot be one. */
-function slugHint(slug: string, addressConfig: AddressConfig): string {
+/** Why the Slug cannot be an Address, if it cannot. */
+function slugError(slug: string): string | undefined {
   const problem = slug ? slugProblem(slug) : null;
   if (problem === 'invalidFormat') {
     return 'Use 3-32 lowercase letters, numbers or hyphens, with no hyphen at either end.';
@@ -16,12 +29,25 @@ function slugHint(slug: string, addressConfig: AddressConfig): string {
   if (problem === 'slugReserved') {
     return 'This address is reserved.';
   }
-  return `Your page will be at ${siteAddress(slug || 'emma', addressConfig)}`;
+  return undefined;
+}
+
+/** A card title with its step number, so the form reads as three short steps. */
+function Step({ n, children }: { n: number; children: ReactNode }) {
+  return (
+    <>
+      <span className={styles.step} aria-hidden="true">
+        {n}
+      </span>
+      {children}
+    </>
+  );
 }
 
 /** `addressConfig` comes from the server page: only the server knows the root domain. */
 export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig }) {
   const router = useRouter();
+  const previewId = useId();
   const [slug, setSlug] = useState('');
   const [babyName, setBabyName] = useState('');
   const [dueDate, setDueDate] = useState('');
@@ -33,6 +59,19 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const settings = {
+    ...defaultSiteSettings,
+    babyName,
+    dueDate: dueDate || null,
+    language,
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+    theme: { palette, font },
+    privacy: { showName, showSex },
+  };
+  const preview = publicPageView(settings as SiteSettings, siteLangs(language)[0]);
+  const trimmedSlug = slug.trim();
+  const slugProblemText = slugError(trimmedSlug);
+
   async function onSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
@@ -41,18 +80,7 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
       const res = await fetch('/api/sites', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          slug,
-          settings: {
-            ...defaultSiteSettings,
-            babyName,
-            dueDate: dueDate || null,
-            language,
-            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-            theme: { palette, font },
-            privacy: { showName, showSex },
-          },
-        }),
+        body: JSON.stringify({ slug, settings }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -68,82 +96,81 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
   }
 
   return (
-    <div className="container">
-      <div className="card" style={{ maxWidth: 520, margin: '2rem auto' }}>
-        <h1>Create your waiting page</h1>
-        <form onSubmit={onSubmit} className="stack">
-          <div className="field">
-            <label htmlFor="slug">Site address</label>
-            <input
-              id="slug"
-              required
-              value={slug}
-              onChange={(e) => setSlug(e.target.value.toLowerCase())}
-              placeholder="emma"
-            />
-            <span className="muted" aria-live="polite">
-              {slugHint(slug.trim(), addressConfig)}
-            </span>
-          </div>
-          <div className="field">
-            <label htmlFor="babyName">Baby&apos;s name</label>
-            <input id="babyName" required value={babyName} onChange={(e) => setBabyName(e.target.value)} />
-          </div>
-          <div className="field">
-            <label htmlFor="dueDate">Due date</label>
-            <input id="dueDate" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-          </div>
-          <div className="field">
-            <label htmlFor="language">Language</label>
-            <select id="language" value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>
-              <option value="en">English only</option>
-              <option value="it">Italiano only</option>
-              <option value="both">Both (visitor picks)</option>
-            </select>
-          </div>
-          <div className="field">
-            <fieldset className="swatches">
-              <legend className="field-label">Color palette</legend>
-              <div className="row">
-                {PALETTES.map((p) => (
-                  <button
-                    type="button"
-                    key={p.id}
-                    onClick={() => setPalette(p.id)}
-                    className={`swatch${palette === p.id ? ' selected' : ''}`}
-                    style={{ background: p.vars['--accent'] }}
-                    title={p.name}
-                  />
-                ))}
-              </div>
-            </fieldset>
-          </div>
-          <div className="field">
-            <label htmlFor="font">Font</label>
-            <select id="font" value={font} onChange={(e) => setFont(e.target.value)}>
-              {FONTS.map((f) => (
-                <option key={f.id} value={f.id}>
-                  {f.name}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div className="row">
-            <label className="row" style={{ gap: '0.5rem' }}>
-              <input type="checkbox" checked={showName} onChange={(e) => setShowName(e.target.checked)} />
-              Show name
-            </label>
-            <label className="row" style={{ gap: '0.5rem' }}>
-              <input type="checkbox" checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
-              Show sex
-            </label>
-          </div>
-          {error ? <p className="error-text">{error}</p> : null}
-          <button className="btn" type="submit" disabled={loading}>
-            {loading ? 'Creating…' : 'Create site'}
-          </button>
-        </form>
+    <PageShell width="wide">
+      <div className={styles.intro}>
+        <p className={styles.eyebrow}>Your new page</p>
+        <h1 className={styles.title}>Create your waiting page</h1>
+        <p className={styles.lead}>Three little steps, and everyone can start counting the days with you.</p>
       </div>
-    </div>
+      <form onSubmit={onSubmit} className={styles.layout}>
+        <div className={styles.cards}>
+          <Card title={<Step n={1}>The basics</Step>} description="Where your page lives and who it is for.">
+            <Field
+              label="Site address"
+              hint={
+                slugProblemText
+                  ? undefined
+                  : `Your page will be at ${siteAddress(trimmedSlug || 'emma', addressConfig)}`
+              }
+              error={slugProblemText}
+              liveHint
+              required
+            >
+              <Input
+                value={slug}
+                onChange={(e) => setSlug(e.target.value.toLowerCase())}
+                placeholder="emma"
+                autoComplete="off"
+                autoCapitalize="none"
+                spellCheck={false}
+              />
+            </Field>
+            <Field label="Baby's name" required>
+              <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
+            </Field>
+            <Field label="Due date" optional hint="Your page counts the days down to it.">
+              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            </Field>
+          </Card>
+          <Card title={<Step n={2}>Make it yours</Step>} description="Pick the colors and letters your page wears.">
+            <PalettePicker value={palette} onChange={setPalette} />
+            <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
+            <Field label="Language">
+              <Select value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>
+                <option value="en">English only</option>
+                <option value="it">Italiano only</option>
+                <option value="both">Both (visitor picks)</option>
+              </Select>
+            </Field>
+          </Card>
+          <Card title={<Step n={3}>Who sees what</Step>} description="Until the birth, you decide what the page tells.">
+            <div>
+              <Switch
+                label="Show the name while waiting"
+                checked={showName}
+                onChange={(e) => setShowName(e.target.checked)}
+              />
+              <Switch
+                label="Show the sex while waiting"
+                checked={showSex}
+                onChange={(e) => setShowSex(e.target.checked)}
+              />
+            </div>
+          </Card>
+        </div>
+        <section className={styles.preview} aria-labelledby={previewId}>
+          <h2 id={previewId} className={styles.previewTitle}>
+            Your page
+          </h2>
+          <PagePreview view={preview} theme={settings.theme} />
+        </section>
+        <div className={styles.actions}>
+          <StatusMessage tone="danger">{error}</StatusMessage>
+          <Button variant="primary" type="submit" icon="sparkles" loading={loading}>
+            {loading ? 'Creating…' : 'Create site'}
+          </Button>
+        </div>
+      </form>
+    </PageShell>
   );
 }

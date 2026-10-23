@@ -1,0 +1,84 @@
+.playground {
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--gutter) var(--space-8);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-2xl);
+}
+
+.controls {
+  display: grid;
+  gap: var(--space-4);
+}
+
+.pickers {
+  display: grid;
+  gap: var(--space-5);
+}
+
+@media (min-width: 64rem) {
+  .pickers {
+    grid-template-columns: 1.2fr 1fr;
+    align-items: start;
+  }
+}
+
+.themed {
+  color-scheme: var(--color-scheme);
+  display: grid;
+  gap: var(--space-6);
+  padding: var(--space-5) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-weight: var(--font-body-weight);
+}
+
+@media (min-width: 40rem) {
+  .themed {
+    padding: var(--space-6);
+  }
+}
+
+.phones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--space-5);
+}
+
+.phone {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  justify-items: center;
+}
+
+/* A 375 by 720 screen, scaled down to fit a phone that views the playground itself. */
+.screen {
+  width: 375px;
+  max-width: calc(100vw - 2 * var(--gutter) - 2rem);
+  height: 720px;
+  border: 0.625rem solid var(--color-text);
+  border-radius: 2.5rem;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-lg);
+}
+
+.caption {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.contrast {
+  display: grid;
+  gap: var(--space-4);
+  overflow-x: auto;
+}

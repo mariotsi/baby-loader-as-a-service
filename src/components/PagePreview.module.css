@@ -1,0 +1,53 @@
+.preview {
+  color-scheme: var(--color-scheme);
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-6) var(--space-4) var(--space-5);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 8% 18%, var(--color-joy-1) 0 22%, transparent 23%),
+    radial-gradient(circle at 94% 62%, var(--color-joy-2) 0 18%, transparent 19%),
+    radial-gradient(circle at 30% 100%, var(--color-joy-3) 0 16%, transparent 17%), var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-weight: var(--font-body-weight);
+  text-align: center;
+}
+
+.countdown {
+  width: 100%;
+  margin-top: var(--space-3);
+}
+
+.tagline {
+  margin: 0;
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  color: var(--color-text-muted);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
+  font-size: var(--text-2xl);
+  line-height: var(--leading-tight);
+  color: var(--color-accent-ink);
+  overflow-wrap: anywhere;
+}
+
+.sex {
+  margin: 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .preview {
+    transition: background-color var(--duration-base);
+  }
+}

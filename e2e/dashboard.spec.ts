@@ -46,7 +46,7 @@ test.describe('Dashboard', () => {
     await page.getByLabel('Birth date & time').fill('2026-01-15T08:30');
     await page.getByLabel('Weight (g)').fill('3100');
     await page.getByLabel('Length (cm)').fill('49');
-    await page.getByRole('button', { name: '+ Add milestone' }).click();
+    await page.getByRole('button', { name: 'Add milestone' }).click();
     await page.getByLabel('Milestone 1 label').fill('Coming home');
     await page.getByLabel('Milestone 1 date').fill('2026-01-18');
     await page.getByLabel('Language', { exact: true }).selectOption('it');
@@ -100,7 +100,7 @@ test.describe('Dashboard', () => {
 
     // A reload drops the form's own state: what follows comes from the saved Site.
     await page.reload();
-    await expect(page.getByLabel('Message', { exact: true })).toHaveValue('Welcome Marta!');
+    await expect(page.getByLabel('Message optional', { exact: true })).toHaveValue('Welcome Marta!');
     await page.getByLabel('Language', { exact: true }).selectOption('both');
     await expect(page.getByLabel('Message (Italian)')).toHaveValue('Benvenuta Marta!');
   });

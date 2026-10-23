@@ -1,9 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { StatusMessage } from '@/components/ui/StatusMessage';
 import type { Lang } from '@/lib/i18n';
 import type { PushButtonCopy } from '@/lib/publicPageView';
 import { decodeVapidKey, VapidKeyError } from '@/lib/vapid';
+import styles from './PushSubscribeButton.module.css';
 
 interface Props {
   slug: string;
@@ -115,33 +118,35 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
     }
   }
 
-  if (status === 'checking') {
-    return <p className="muted">{t.checking}</p>;
-  }
-  if (status === 'unsupported') {
-    return <p className="muted">{t.errorUnsupported}</p>;
-  }
-  if (status === 'denied') {
-    return <p className="muted">{t.errorDenied}</p>;
+  if (status === 'checking' || status === 'unsupported' || status === 'denied') {
+    const notice = { checking: t.checking, unsupported: t.errorUnsupported, denied: t.errorDenied }[status];
+    return (
+      <div className={styles.push}>
+        <StatusMessage tone="info">{notice}</StatusMessage>
+      </div>
+    );
   }
 
-  const buttonLabel = busy ? t.subscribing : t.subscribe;
+  const failed = feedback !== null && feedback !== t.subscribeOk && feedback !== t.unsubscribeOk;
+  const success = failed ? null : feedback;
+  const failure = failed ? feedback : null;
 
   return (
-    <div className="stack" style={{ alignItems: 'center' }}>
+    <div className={styles.push}>
       {status === 'subscribed' ? (
         <>
-          <p className="muted">{t.subscribed}</p>
-          <button type="button" className="btn btn-secondary" onClick={unsubscribe} disabled={busy}>
+          <StatusMessage tone="success">{t.subscribed}</StatusMessage>
+          <Button onClick={unsubscribe} loading={busy}>
             {t.unsubscribe}
-          </button>
+          </Button>
         </>
       ) : (
-        <button type="button" className="btn" onClick={subscribe} disabled={busy}>
-          {buttonLabel}
-        </button>
+        <Button variant="primary" icon="bell" onClick={subscribe} loading={busy}>
+          {busy ? t.subscribing : t.subscribe}
+        </Button>
       )}
-      {feedback ? <p className="muted">{feedback}</p> : null}
+      <StatusMessage tone="success">{success}</StatusMessage>
+      <StatusMessage tone="danger">{failure}</StatusMessage>
     </div>
   );
 }

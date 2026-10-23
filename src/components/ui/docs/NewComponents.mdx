@@ -1,0 +1,72 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Design system/Rules for new components" />
+
+# Rules for new components
+
+A component joins `src/components/ui` only when it follows every rule here. Review checks each one.
+
+## Files
+
+1. **One folder entry per component**: `Name.tsx`, `Name.module.css` and `Name.stories.tsx` in `src/components/ui`.
+   Text controls share `control.module.css`. No `index.ts`: import each component from its own file.
+2. **Stories cover every variant and state** (`tags: ['autodocs']`), with a sentence on when to use each, and the
+   component joins the `ComponentSheet` in `demos/` so the Playground and the every-Palette check render it.
+
+## Styling
+
+3. **Tokens only.** No hex or `rgb()` color, no font family, no spacing, font size or duration written as a number.
+   Read `var(--color-*)`, `var(--space-*)`, `var(--text-*)`, `var(--duration-*)` and friends. A component may size
+   its own geometry in `rem`, like the Switch's track.
+4. **Respect the pairings.** Text uses `--color-text`, `--color-text-muted` or `--color-accent-ink`; text on an accent
+   fill uses `--color-on-accent`; a control's boundary uses `--color-border`; a focus ring or selected outline uses
+   `--color-accent-ink`. `--color-accent` and `--color-soft` are fills, never text and never a control's only edge.
+   A component that needs a pairing outside this list adds it to `paletteContrastPairings` in `src/lib/contrast.ts`,
+   so `theme.test.ts` proves every Palette meets it.
+5. **`className` is for placement**, like a margin or a grid area, never for restyling a component. A new look is a new
+   prop.
+
+## Semantics and keyboard
+
+6. **Native element first.** A `<button>` for actions, an `<a>` for navigation, `<input>`, `<select>`, `<label>`,
+   `<fieldset>` and `<legend>` for forms. ARIA only adds what HTML lacks, like `role="switch"` or `aria-busy`.
+   Never a `<div>` with an `onClick`.
+7. **Always an accessible name.** A visible label, or an `aria-label` the component requires when it has no text.
+   Icons are decorative (`Icon` hides them) and never the only label.
+8. **No hand-written `id`.** Generate it with `useId()`. Biome's `useUniqueElementIds` fails the build otherwise.
+9. **Everything works with a keyboard**, in a logical order, with the focus ring visible: `outline: var(--focus-ring)`.
+   Never remove an outline without drawing one.
+10. **State never by color alone.** A checked option also shows a check, a bold label or a moved thumb; an error also
+    has an icon and words.
+11. **Live regions are mounted first.** Status and error messages that appear after an action go in a region that
+    already exists, like `StatusMessage`, so screen readers announce them.
+
+## Size and layout
+
+12. **Mobile first.** Base styles are for a 320px screen. Larger screens add to them with `min-width` media queries or
+    container queries. Nothing scrolls sideways at 320px, and text still fits at 200% zoom.
+13. **Touch targets at least 44px tall**: `--control-height-sm` is the smallest an interactive control may be.
+
+## Motion
+
+14. **Motion only for those who want it.** Every transition and animation sits inside
+    `@media (prefers-reduced-motion: no-preference)`, with durations and easings from the tokens.
+15. **No motion that loops on its own for more than 5 seconds** (WCAG 2.2.2), except a spinner while work is in
+    flight. Motion that follows the person, like the parallax, is fine.
+16. **Motion never carries meaning alone.** A shake on an error comes with the error text.
+
+## Words
+
+17. **Sentence case, warm and short.** Labels name the thing, buttons start with a verb, errors say how to fix them.
+    No "please", no exclamation marks in system copy.
+
+## Before review
+
+Run all four and look at the component in the Playground, in every Palette, at phone and desktop widths:
+
+```sh
+npm run test             # every Palette meets WCAG AA on every pairing
+npm run test:storybook   # every story renders with no axe violation
+npm run lint
+npm run typecheck
+```

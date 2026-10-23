@@ -30,6 +30,7 @@ test('the Waiting state leads with the Countdown', () => {
     count: 12,
     unit: 'days to go',
     lateNote: null,
+    week: { number: 39, label: 'Week 39 of 40' },
   });
   assert.equal(view.born, null);
 });
@@ -40,13 +41,27 @@ test('the Countdown says the day itself, and how late after it', () => {
     count: null,
     unit: 'Due today',
     lateNote: null,
+    week: { number: 40, label: 'Week 40 of 40' },
   });
   assert.deepEqual(publicPageView(site({ dueDate: '2026-10-19' }), 'it', NOW).waiting, {
     dueDate: 'Arrivo previsto: 19 ottobre 2026',
     count: 1,
     unit: 'giorno in ritardo',
     lateNote: 'Se la sta prendendo comoda...',
+    week: null,
   });
+});
+
+test('the week of pregnancy counts back from the Due date as the end of week 40', () => {
+  const weekFor = (dueDate: string, lang: 'en' | 'it' = 'en') =>
+    publicPageView(site({ dueDate }), lang, NOW).waiting?.week ?? null;
+  // NOW is 2026-10-20: 42 days before 2026-12-01.
+  assert.deepEqual(weekFor('2026-12-01'), { number: 34, label: 'Week 34 of 40' });
+  assert.deepEqual(weekFor('2026-12-01', 'it'), { number: 34, label: 'Settimana 34 di 40' });
+  assert.equal(weekFor('2026-10-26')?.number, 40, 'the last six days are week 40');
+  assert.equal(weekFor('2026-10-27')?.number, 39, 'a full week before is week 39');
+  assert.equal(weekFor('2027-07-20')?.number, 1, '273 days before is week 1');
+  assert.equal(weekFor('2027-07-27'), null, 'more than 39 weeks away is before week 1');
 });
 
 test("the Countdown follows the Site's Timezone", () => {

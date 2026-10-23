@@ -18,6 +18,10 @@ GitHub Issues on mariotsi/baby-loader-as-a-service, via the `gh` CLI. See `docs/
 
 Default vocabulary: `needs-triage`, `needs-info`, `ready-for-agent`, `ready-for-human`, `wontfix`. See `docs/agents/triage-labels.md`.
 
+### Design system
+
+UI is built from `src/components/ui`, styled only through tokens. Before building a page read `src/components/ui/docs/UsingComponents.mdx`; before adding or changing a component follow `src/components/ui/docs/NewComponents.mdx`. Browse it all with `npm run storybook`.
+
 ### Domain docs
 
 Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.

@@ -1,0 +1,84 @@
+.root {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-3);
+  min-height: var(--control-height-sm);
+  padding-block: var(--space-2);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Hidden but focusable: the label is the target and the box draws the state. */
+.input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.box {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 1.625rem;
+  height: 1.625rem;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: calc(var(--radius-sm) / 1.5);
+  background: var(--color-surface);
+  color: var(--color-on-accent);
+}
+
+.check {
+  opacity: 0;
+  scale: 0.4;
+}
+
+.input:hover + .box {
+  border-color: var(--color-accent-ink);
+}
+
+.input:focus-visible + .box {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.input:checked + .box {
+  background: var(--color-accent);
+  border-color: var(--color-accent-ink);
+}
+
+.input:checked + .box .check {
+  opacity: 1;
+  scale: 1;
+}
+
+.text {
+  display: grid;
+  gap: var(--space-1);
+  padding-top: 0.1rem;
+}
+
+.label {
+  font-weight: var(--weight-medium);
+}
+
+.hint {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .check {
+    transition:
+      opacity var(--duration-fast),
+      scale var(--duration-base) var(--ease-bounce);
+  }
+
+  .box {
+    transition:
+      background-color var(--duration-fast),
+      border-color var(--duration-fast);
+  }
+}

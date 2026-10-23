@@ -1,11 +1,10 @@
 import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
-import type { CSSProperties } from 'react';
 import { PublicPage } from '@/components/PublicPage';
 import { LANG_COOKIE, type Lang, negotiateLang } from '@/lib/i18n';
 import { publicPageViews } from '@/lib/publicPageView';
 import { getSiteBySlug } from '@/lib/site';
-import { googleFontsHref, themeStyle } from '@/lib/theme';
+import { getFont, googleFontsHref, rootTokenCss, themeStyle } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,14 +28,15 @@ export default async function SitePage({ params }: { params: Promise<{ slug: str
   const views = publicPageViews(site);
 
   return (
-    <div style={themeStyle(site.theme) as CSSProperties}>
-      <link rel="stylesheet" href={googleFontsHref([site.theme.font])} />
+    <>
+      <style>{rootTokenCss(themeStyle(site.theme))}</style>
+      <link rel="stylesheet" href={googleFontsHref([getFont(site.theme.font)])} />
       <PublicPage
         views={views}
         initialLang={await initialLang(views.map((view) => view.lang))}
         slug={site.slug}
         vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY}
       />
-    </div>
+    </>
   );
 }

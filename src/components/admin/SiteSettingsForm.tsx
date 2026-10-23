@@ -2,11 +2,22 @@
 
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { type SubmitEvent, useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Checkbox } from '@/components/ui/Checkbox';
+import { Field } from '@/components/ui/Field';
+import { FontPicker } from '@/components/ui/FontPicker';
+import { Input } from '@/components/ui/Input';
+import { PalettePicker } from '@/components/ui/PalettePicker';
+import { Select } from '@/components/ui/Select';
+import { StatusMessage } from '@/components/ui/StatusMessage';
+import { Switch } from '@/components/ui/Switch';
+import { Textarea } from '@/components/ui/Textarea';
 import type { Lang } from '@/lib/i18n';
 import type { Milestone, SiteDTO } from '@/lib/site';
 import type { BirthDetails, SiteSettingsInput } from '@/lib/siteSettings';
-import { FONTS, PALETTES } from '@/lib/theme';
+import styles from './SiteSettingsForm.module.css';
 import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
@@ -46,7 +57,8 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
 
   const messageLangs: Lang[] = language === 'both' ? ['it', 'en'] : [language];
 
-  async function save() {
+  async function save(e: SubmitEvent<HTMLFormElement>) {
+    e.preventDefault();
     setSaving(true);
     setMessage(null);
     const settings: SiteSettingsInput = {
@@ -86,171 +98,160 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
     }
   }
 
+  const saved = message === 'Saved.';
+
   return (
-    <div className="stack" style={{ marginTop: '1.5rem' }}>
-      <div className="card stack">
-        <h2>Baby details</h2>
-        <div className="field">
-          <label htmlFor="settings-name">Name</label>
-          <input id="settings-name" value={babyName} onChange={(e) => setBabyName(e.target.value)} />
+    <form onSubmit={save} className={styles.form}>
+      <div className={styles.columns}>
+        <div className={styles.column}>
+          <Card title="Baby details" description="What your page says about the little one.">
+            <Field label="Name">
+              <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
+            </Field>
+            <Field label="Sex">
+              <Select value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
+                <option value="unknown">Prefer not to say</option>
+                <option value="female">Girl</option>
+                <option value="male">Boy</option>
+              </Select>
+            </Field>
+            <Field label="Due date" optional>
+              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+            </Field>
+            <Checkbox
+              label="The baby has been born"
+              hint="Your page switches from the Countdown to the Birth details."
+              checked={born}
+              onChange={(e) => setBorn(e.target.checked)}
+            />
+            {born ? (
+              <>
+                <Field label="Birth date & time">
+                  <Input
+                    type="datetime-local"
+                    value={birthDatetime}
+                    onChange={(e) => setBirthDatetime(e.target.value)}
+                  />
+                </Field>
+                <div className={styles.pair}>
+                  <Field label="Weight (g)" optional>
+                    <Input
+                      type="number"
+                      inputMode="numeric"
+                      value={weight}
+                      onChange={(e) => setWeight(e.target.value)}
+                    />
+                  </Field>
+                  <Field label="Length (cm)" optional>
+                    <Input
+                      type="number"
+                      inputMode="decimal"
+                      value={lengthCm}
+                      onChange={(e) => setLengthCm(e.target.value)}
+                    />
+                  </Field>
+                </div>
+                {messageLangs.map((lang) => (
+                  <Field
+                    key={lang}
+                    label={`Message${messageLangs.length > 1 ? ` (${LANGUAGE_NAMES[lang]})` : ''}`}
+                    optional
+                  >
+                    <Textarea
+                      value={birthMessage[lang] ?? ''}
+                      onChange={(e) => setBirthMessage({ ...birthMessage, [lang]: e.target.value })}
+                    />
+                  </Field>
+                ))}
+              </>
+            ) : null}
+          </Card>
+
+          <Card title="Milestones" description="The little moments of your story, in date order on your page.">
+            {milestones.length > 0 ? (
+              <ol className={styles.milestones}>
+                {milestones.map((m, i) => (
+                  // biome-ignore lint/suspicious/noArrayIndexKey: Milestones have no id; each row edits and removes the Milestone at its index.
+                  <li className={styles.milestone} key={i}>
+                    <Input
+                      className={styles.milestoneLabel}
+                      placeholder="The first kick"
+                      aria-label={`Milestone ${i + 1} label`}
+                      value={m.label}
+                      onChange={(e) => updateMilestone(i, { label: e.target.value })}
+                    />
+                    <Input
+                      className={styles.milestoneDate}
+                      type="date"
+                      aria-label={`Milestone ${i + 1} date`}
+                      value={m.date}
+                      onChange={(e) => updateMilestone(i, { date: e.target.value })}
+                    />
+                    <Button
+                      size="sm"
+                      icon="trash"
+                      onClick={() => removeMilestone(i)}
+                      aria-label={`Remove milestone ${i + 1}`}
+                    >
+                      Remove
+                    </Button>
+                  </li>
+                ))}
+              </ol>
+            ) : null}
+            <div>
+              <Button variant="ghost" icon="plus" onClick={addMilestone}>
+                Add milestone
+              </Button>
+            </div>
+          </Card>
         </div>
-        <div className="field">
-          <label htmlFor="settings-sex">Sex</label>
-          <select id="settings-sex" value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
-            <option value="unknown">Prefer not to say</option>
-            <option value="female">Girl</option>
-            <option value="male">Boy</option>
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="settings-due-date">Due date</label>
-          <input id="settings-due-date" type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-        </div>
-        <label className="row" style={{ gap: '0.5rem' }}>
-          <input type="checkbox" checked={born} onChange={(e) => setBorn(e.target.checked)} />
-          The baby has been born
-        </label>
-        {born ? (
-          <>
-            <div className="field">
-              <label htmlFor="settings-birth-datetime">Birth date &amp; time</label>
-              <input
-                id="settings-birth-datetime"
-                type="datetime-local"
-                value={birthDatetime}
-                onChange={(e) => setBirthDatetime(e.target.value)}
+
+        <div className={styles.column}>
+          <Card title="Appearance" description="The colors, letters and words of your page.">
+            <PalettePicker value={palette} onChange={setPalette} />
+            <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
+            <Field label="Language">
+              <Select value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>
+                <option value="en">English only</option>
+                <option value="it">Italiano only</option>
+                <option value="both">Both (visitor picks)</option>
+              </Select>
+            </Field>
+            <Field label="Timezone" hint="The Countdown turns over at midnight here.">
+              <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
+                {(timeZones.includes(timezone) ? timeZones : [timezone, ...timeZones]).map((zone) => (
+                  <option key={zone} value={zone}>
+                    {zone}
+                  </option>
+                ))}
+              </Select>
+            </Field>
+          </Card>
+          <Card title="Who sees what" description="After the birth your page always shows the name and the sex.">
+            <div>
+              <Switch
+                label="Show the name while waiting"
+                checked={showName}
+                onChange={(e) => setShowName(e.target.checked)}
+              />
+              <Switch
+                label="Show the sex while waiting"
+                checked={showSex}
+                onChange={(e) => setShowSex(e.target.checked)}
               />
             </div>
-            <div className="row">
-              <div className="field">
-                <label htmlFor="settings-weight">Weight (g)</label>
-                <input id="settings-weight" type="number" value={weight} onChange={(e) => setWeight(e.target.value)} />
-              </div>
-              <div className="field">
-                <label htmlFor="settings-length">Length (cm)</label>
-                <input
-                  id="settings-length"
-                  type="number"
-                  value={lengthCm}
-                  onChange={(e) => setLengthCm(e.target.value)}
-                />
-              </div>
-            </div>
-            {messageLangs.map((lang) => (
-              <div className="field" key={lang}>
-                <label htmlFor={`settings-birth-message-${lang}`}>
-                  Message{messageLangs.length > 1 ? ` (${LANGUAGE_NAMES[lang]})` : ''}
-                </label>
-                <textarea
-                  id={`settings-birth-message-${lang}`}
-                  value={birthMessage[lang] ?? ''}
-                  onChange={(e) => setBirthMessage({ ...birthMessage, [lang]: e.target.value })}
-                  rows={3}
-                />
-              </div>
-            ))}
-          </>
-        ) : null}
+          </Card>
+        </div>
       </div>
 
-      <div className="card stack">
-        <h2>Milestones</h2>
-        {milestones.map((m, i) => (
-          // biome-ignore lint/suspicious/noArrayIndexKey: Milestones have no id; each row edits and removes the Milestone at its index.
-          <div className="row" key={i}>
-            <input
-              placeholder="Label"
-              aria-label={`Milestone ${i + 1} label`}
-              value={m.label}
-              onChange={(e) => updateMilestone(i, { label: e.target.value })}
-              style={{ flex: 1 }}
-            />
-            <input
-              type="date"
-              aria-label={`Milestone ${i + 1} date`}
-              value={m.date}
-              onChange={(e) => updateMilestone(i, { date: e.target.value })}
-            />
-            <button
-              type="button"
-              className="btn-secondary"
-              onClick={() => removeMilestone(i)}
-              aria-label={`Remove milestone ${i + 1}`}
-            >
-              Remove
-            </button>
-          </div>
-        ))}
-        <button type="button" className="btn-secondary" onClick={addMilestone} style={{ alignSelf: 'flex-start' }}>
-          + Add milestone
-        </button>
+      <div className={styles.saveBar}>
+        <Button variant="primary" type="submit" loading={saving}>
+          {saving ? 'Saving…' : 'Save changes'}
+        </Button>
+        <StatusMessage tone="success">{saved ? 'Saved. Your page is up to date.' : null}</StatusMessage>
+        <StatusMessage tone="danger">{message && !saved ? message : null}</StatusMessage>
       </div>
-
-      <div className="card stack">
-        <h2>Appearance</h2>
-        <div className="field">
-          <fieldset className="swatches">
-            <legend className="field-label">Palette</legend>
-            <div className="row">
-              {PALETTES.map((p) => (
-                <button
-                  type="button"
-                  key={p.id}
-                  onClick={() => setPalette(p.id)}
-                  className={`swatch${palette === p.id ? ' selected' : ''}`}
-                  style={{ background: p.vars['--accent'] }}
-                  title={p.name}
-                />
-              ))}
-            </div>
-          </fieldset>
-        </div>
-        <div className="field">
-          <label htmlFor="settings-font">Font</label>
-          <select id="settings-font" value={font} onChange={(e) => setFont(e.target.value)}>
-            {FONTS.map((f) => (
-              <option key={f.id} value={f.id}>
-                {f.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="settings-language">Language</label>
-          <select
-            id="settings-language"
-            value={language}
-            onChange={(e) => setLanguage(e.target.value as typeof language)}
-          >
-            <option value="en">English only</option>
-            <option value="it">Italiano only</option>
-            <option value="both">Both (visitor picks)</option>
-          </select>
-        </div>
-        <div className="field">
-          <label htmlFor="settings-timezone">Timezone</label>
-          <select id="settings-timezone" value={timezone} onChange={(e) => setTimezone(e.target.value)}>
-            {(timeZones.includes(timezone) ? timeZones : [timezone, ...timeZones]).map((zone) => (
-              <option key={zone} value={zone}>
-                {zone}
-              </option>
-            ))}
-          </select>
-        </div>
-        <label className="row" style={{ gap: '0.5rem' }}>
-          <input type="checkbox" checked={showName} onChange={(e) => setShowName(e.target.checked)} />
-          Show name on the Public page while waiting
-        </label>
-        <label className="row" style={{ gap: '0.5rem' }}>
-          <input type="checkbox" checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
-          Show sex on the Public page while waiting
-        </label>
-      </div>
-
-      {message ? <p className={message === 'Saved.' ? 'success-text' : 'error-text'}>{message}</p> : null}
-      <button type="button" className="btn" onClick={save} disabled={saving} style={{ alignSelf: 'flex-start' }}>
-        {saving ? 'Saving…' : 'Save changes'}
-      </button>
-    </div>
+    </form>
   );
 }

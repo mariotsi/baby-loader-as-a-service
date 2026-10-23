@@ -1,0 +1,87 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Design system/Using the components" />
+
+# Using the components
+
+## Pick by intent
+
+| You need                                              | Use                                        |
+| ----------------------------------------------------- | ------------------------------------------ |
+| The one main action of a view                         | `Button variant="primary"`                 |
+| Any other action                                      | `Button` (secondary is the default)        |
+| A quiet action that repeats, like "Add milestone"     | `Button variant="ghost"`                   |
+| To go to another page or a Site's Address             | `ButtonLink`, never a `Button` with a push |
+| Text entry                                            | `Field` with `Input` or `Textarea`         |
+| One of five or more options, like a Timezone          | `Field` with `Select`                      |
+| One of two to four options, like the Language mode    | `SegmentedControl`                         |
+| A fact the person states: "The baby has been born"    | `Checkbox`                                 |
+| A setting that shows or hides something               | `Switch`                                   |
+| A Site's Palette or Font                              | `PalettePicker`, `FontPicker`              |
+| The outcome of an action: saved, sent, failed         | `StatusMessage`                            |
+| A group of related settings with a heading            | `Card title="…"`                           |
+| Space between siblings                                | `Stack`                                    |
+| The playful circles behind a whole page               | `JoyBackground`, once per page             |
+
+## Buttons
+
+- **One primary per view.** If two actions look equally important, one of them is not.
+- **Say what happens.** A verb, then what it acts on: "Create Emma's page", "Send notification". No "OK" or "Submit".
+- **Do not disable a button while work is in flight.** Pass `loading` and an in-progress label ("Saving…"): the button
+  keeps its focus, says it is busy and ignores presses.
+- **Navigation is a link.** `ButtonLink` keeps opening in a new tab and reads as a link to screen readers.
+
+```tsx
+<Stack direction="row" gap={3}>
+  <ButtonLink href={`/admin/${slug}`}>Back</ButtonLink>
+  <Button variant="primary" type="submit" loading={saving}>
+    {saving ? 'Saving…' : 'Save changes'}
+  </Button>
+</Stack>
+```
+
+## Forms
+
+- **Every control has a label.** Wrap it in a `Field`, which generates the id and ties the label, hint and error to
+  the control. A control outside a `Field`, like a Milestone row's date, takes an `aria-label`.
+- **Never write an `id` by hand.** Biome fails the build on one. `Field` and `useId()` make unique ids.
+- **Mark the optional fields**, with `optional`, not the required ones.
+- **An error says what happened and how to fix it**: "Someone got there first. Try emma-2026.", not "Invalid slug".
+- **Put the form's outcome in a `StatusMessage`** next to its submit button. Keep the `StatusMessage` mounted and change
+  its children, or screen readers miss the announcement.
+
+```tsx
+<Field label="Page address" hint={`Your page will be at ${address}`} error={slugError} liveHint required>
+  <Input value={slug} onChange={(e) => setSlug(e.target.value.toLowerCase())} />
+</Field>
+<StatusMessage tone={failed ? 'danger' : 'success'}>{message}</StatusMessage>
+```
+
+## Layout
+
+- **Start from the phone.** Lay a page out in one column first. Add columns at `min-width: 60rem` (wide screens)
+  where they help, as the Public page demo does with the Countdown beside the name.
+- **Use the width tokens**: `--content-narrow` for a sign-in card, `--content-medium` for a form, `--content-wide`
+  for a Dashboard. Side padding is `--gutter`, which grows from 16px on a phone.
+- **Let rows wrap.** `Stack direction="row"` wraps when the screen runs out of room; never let a page scroll sideways.
+
+## Theming
+
+- **Never set a color, size or font in a page.** Use a token, or a component that already uses one.
+- The Platform's pages need nothing: the root layout writes the Platform's theme on `:root`. Wrap the page in a
+  `PageShell`, which brings the wordmark, the circles and one `<main>`.
+- A Public page writes its Site's theme on `:root` with `<style>{rootTokenCss(themeStyle(site.theme))}</style>`,
+  which comes after the layout's and wins, and loads `googleFontsHref([getFont(site.theme.font)])`.
+- A part of a page in another theme, like the onboarding preview, sets the tokens inline:
+  `style={themeStyle(theme)}`.
+- A page that shows the `FontPicker` loads every Font: `googleFontsHref(FONTS)`.
+
+## Words
+
+The Owner is an expecting parent: talk to them like a friend who is happy for them.
+
+- Warm, short, sentence case. "Make it yours", "Your page is up to date".
+- Talk about **their** baby and **their** page, by name when you have it: "Create Emma's page".
+- No "please", no blame, no jargon. "Couldn't save your changes. Try again." Never "Error 500".
+- Use the [glossary](https://github.com/mariotsi/baby-loader-as-a-service/blob/staging/GLOSSARY.md) terms in code
+  and keep the copy plain: the code says Slug, the page says "page address".

@@ -103,6 +103,24 @@ that runs Biome on the staged files, and CI runs the same checks with
 the credentials in `.env.staging.local` (see `.env.staging.local.example`).
 No local setup reaches production's database.
 
+## Design system
+
+Every page is built from the components in `src/components/ui`, styled only
+through design tokens: `src/lib/theme.ts` holds the Palettes and Fonts that
+set the color and typography tokens, `src/styles/tokens.css` everything no
+theme changes. [Storybook](https://storybook.js.org) shows each component,
+the rules for using and adding them, a Playground with every component in
+any Palette and Font, and the real pages with sample content.
+
+```bash
+npm run storybook          # Storybook on localhost:6006
+npm run test:storybook     # every story in Chromium, failing on any axe violation
+npm run build-storybook    # a static Storybook in storybook-static/
+```
+
+`npm test` also checks every Palette against WCAG AA on each color pairing
+the components render, and CI runs both checks on every pull request.
+
 ## End-to-end tests
 
 Playwright tests in `e2e/` cover signup and Site creation, login, the Public

@@ -1,0 +1,16 @@
+.stack {
+  display: flex;
+  gap: var(--stack-gap);
+  align-items: var(--stack-align, stretch);
+  justify-content: var(--stack-justify, flex-start);
+  min-width: 0;
+}
+
+.column {
+  flex-direction: column;
+}
+
+.row {
+  flex-flow: row wrap;
+  align-items: var(--stack-align, center);
+}
