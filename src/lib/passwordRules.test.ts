@@ -5,7 +5,7 @@ import { newPasswordProblem, PASSWORD_RULES_ATTRIBUTE, unmetPasswordRules } from
 const ids = (password: string) => unmetPasswordRules(password).map((rule) => rule.id);
 
 test('a password meets each rule on its own', () => {
-  assert.deepEqual(ids(''), ['length', 'lower', 'upper', 'digit', 'symbol', 'noSpaces']);
+  assert.deepEqual(ids(''), ['length', 'lower', 'upper', 'digit', 'symbol']);
   assert.deepEqual(ids('abcdefghij'), ['upper', 'digit', 'symbol']);
   assert.deepEqual(ids('Abcdefghi1'), ['symbol']);
   assert.deepEqual(ids('Abcdefgh1!'), []);
@@ -18,10 +18,10 @@ test('letters and digits from any script count, and any other character but a sp
   }
 });
 
-test('a password has no spaces, and a space is no symbol', () => {
-  assert.deepEqual(ids('Abcdefgh1 !'), ['noSpaces']);
-  assert.deepEqual(ids('Abcdefgh 12'), ['symbol', 'noSpaces']);
-  assert.deepEqual(ids('Abcdefgh1!\t'), ['noSpaces'], 'any whitespace');
+test('a space is allowed and counts toward the length, but is no symbol', () => {
+  assert.deepEqual(ids('Abcdefgh 12'), ['symbol']);
+  assert.deepEqual(ids('Correct horse battery 9!'), []);
+  assert.deepEqual(ids(' Leading and trailing 7! '), [], 'spaces are kept as typed');
 });
 
 test('length counts characters, not UTF-16 units', () => {
@@ -41,9 +41,9 @@ test('the server explains what a new password lacks, and caps its length', () =>
   assert.match(newPasswordProblem(`Aa1!${'x'.repeat(130)}`) ?? '', /at most 128/);
 });
 
-test('the passwordrules attribute names every rule and leaves the space out', () => {
+test('the passwordrules attribute needs a symbol other than a space, and allows spaces', () => {
   assert.equal(
     PASSWORD_RULES_ATTRIBUTE,
-    'minlength: 10; maxlength: 128; required: lower; required: upper; required: digit; required: [-~!@#$%^&*_+=`|(){}[:;"\'<>,.?]]; allowed: lower, upper, digit, [-~!@#$%^&*_+=`|(){}[:;"\'<>,.?]];'
+    'minlength: 10; maxlength: 128; required: lower; required: upper; required: digit; required: [-~!@#$%^&*_+=`|(){}[:;"\'<>,.?]]; allowed: lower, upper, digit, special;'
   );
 });

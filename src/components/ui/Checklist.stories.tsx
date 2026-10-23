@@ -7,7 +7,6 @@ const ITEMS = [
   { id: 'upper', label: 'An uppercase letter', met: false },
   { id: 'digit', label: 'A number', met: true },
   { id: 'symbol', label: 'A symbol, such as ! ? @ # $ % & * - _', met: false },
-  { id: 'noSpaces', label: 'No spaces', met: true },
 ];
 
 const meta = {

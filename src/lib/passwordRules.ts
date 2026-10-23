@@ -24,20 +24,19 @@ export const PASSWORD_RULES: readonly PasswordRule[] = [
   { id: 'lower', label: 'A lowercase letter', met: (p) => /\p{Ll}/u.test(p) },
   { id: 'upper', label: 'An uppercase letter', met: (p) => /\p{Lu}/u.test(p) },
   { id: 'digit', label: 'A number', met: (p) => /\p{Nd}/u.test(p) },
-  // Anything that is not a letter, a number or a space counts.
+  // Anything that is not a letter, a number or a space counts. A space is allowed, as any other character.
   { id: 'symbol', label: 'A symbol, such as ! ? @ # $ % & * - _', met: (p) => /[^\p{L}\p{N}\s]/u.test(p) },
-  // Unmet until something is typed, so an empty field does not start with a tick.
-  { id: 'noSpaces', label: 'No spaces', met: (p) => p.length > 0 && !/\s/u.test(p) },
 ];
 
-/** The symbols a generated password picks from: `special` in the attribute's syntax, minus the space it includes. */
-const GENERATED_SYMBOLS = '[-~!@#$%^&*_+=`|(){}[:;"\'<>,.?]]';
+/** The symbols that meet the symbol rule, in the attribute's syntax: its `special` class, minus the space. */
+const SYMBOLS = '[-~!@#$%^&*_+=`|(){}[:;"\'<>,.?]]';
 
 /**
  * The rules in the `passwordrules` attribute's syntax, which Safari and some
- * password managers read to generate a password that passes them.
+ * password managers read to generate a password that passes them: it may
+ * hold a space, but needs one of the symbols that are not.
  */
-export const PASSWORD_RULES_ATTRIBUTE = `minlength: ${PASSWORD_MIN_LENGTH}; maxlength: ${PASSWORD_MAX_LENGTH}; required: lower; required: upper; required: digit; required: ${GENERATED_SYMBOLS}; allowed: lower, upper, digit, ${GENERATED_SYMBOLS};`;
+export const PASSWORD_RULES_ATTRIBUTE = `minlength: ${PASSWORD_MIN_LENGTH}; maxlength: ${PASSWORD_MAX_LENGTH}; required: lower; required: upper; required: digit; required: ${SYMBOLS}; allowed: lower, upper, digit, special;`;
 
 export function unmetPasswordRules(password: string): PasswordRule[] {
   return PASSWORD_RULES.filter((rule) => !rule.met(password));
