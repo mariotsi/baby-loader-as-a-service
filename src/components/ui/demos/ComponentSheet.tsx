@@ -6,6 +6,7 @@ import { Badge } from '../Badge';
 import { Button, ButtonLink } from '../Button';
 import { Card } from '../Card';
 import { Checkbox } from '../Checkbox';
+import { Checklist } from '../Checklist';
 import { Field } from '../Field';
 import { Input } from '../Input';
 import { LanguagesPicker } from '../LanguagesPicker';
@@ -109,6 +110,13 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
           <StatusMessage tone="success">Saved. Your page is up to date.</StatusMessage>
           <StatusMessage tone="info">Sent to 12 of 12 subscribers.</StatusMessage>
           <StatusMessage tone="danger">Couldn't save your changes. Try again.</StatusMessage>
+          <Checklist
+            items={[
+              { id: 'length', label: 'At least 10 characters', met: true },
+              { id: 'upper', label: 'An uppercase letter', met: false },
+            ]}
+            flagUnmet
+          />
           <Stack direction="row" gap={2}>
             <Badge tone="highlight" icon="star">
               Recommended

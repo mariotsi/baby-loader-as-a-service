@@ -36,3 +36,8 @@ export const Onboarding: Story = {
 export const Login: Story = {
   render: () => <CredentialsForm mode="login" />,
 };
+
+/** The real signup page: the password's rules tick off as you type, and Sign up checks them and the confirmation. */
+export const Signup: Story = {
+  render: () => <CredentialsForm mode="signup" />,
+};

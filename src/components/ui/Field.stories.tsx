@@ -39,6 +39,19 @@ export const WithError: Story = {
   },
 };
 
+/**
+ * The error reaches screen readers only, for a problem the page already shows another way: here the field is still
+ * marked invalid, and a Checklist under it would flag the rules.
+ */
+export const ErrorForScreenReaders: Story = {
+  args: {
+    label: 'Password',
+    error: 'Not met yet: An uppercase letter.',
+    errorForScreenReaders: true,
+    children: <Input type="password" defaultValue="abcdefghij1!" />,
+  },
+};
+
 /** Mark the optional fields, not the required ones. */
 export const Optional: Story = {
   args: { label: 'Due date', optional: true, children: <Input type="date" /> },

@@ -4,6 +4,7 @@ import { createContext, type ReactNode, useContext, useId } from 'react';
 import { Badge } from './Badge';
 import styles from './Field.module.css';
 import { Icon } from './Icon';
+import { VisuallyHidden } from './VisuallyHidden';
 
 /** What a Field tells the control inside it, so the label, hint and error reach assistive technology. */
 interface FieldControl {
@@ -42,6 +43,12 @@ interface FieldProps {
   required?: boolean;
   /** Says "optional" next to the label. Mark the optional fields, not the required ones. */
   optional?: boolean;
+  /**
+   * Gives the error to screen readers only, while the control still shows
+   * it is invalid. Only for a problem the page already shows another way,
+   * like the rules a Checklist flags under the field.
+   */
+  errorForScreenReaders?: boolean;
   /** Announces the hint and the error as they change while the person types, as for a live preview of the Address. */
   liveHint?: boolean;
   /** One control: `Input`, `Textarea` or `Select`. */
@@ -49,12 +56,56 @@ interface FieldProps {
   className?: string;
 }
 
+/** The error and hint under the control. A live region must exist before its content changes, so a live one renders even while empty. */
+function FieldMessages({
+  error,
+  errorId,
+  hint,
+  hintId,
+  live,
+}: {
+  error: ReactNode;
+  errorId: string;
+  hint: ReactNode;
+  hintId: string;
+  live: boolean;
+}) {
+  if (!(live || error || hint)) {
+    return null;
+  }
+  return (
+    <div className={styles.messages} aria-live={live ? 'polite' : undefined}>
+      {error ? (
+        <p id={errorId} className={styles.error}>
+          <Icon name="alert" className={styles.errorIcon} />
+          <span>{error}</span>
+        </p>
+      ) : null}
+      {hint ? (
+        <p id={hintId} className={styles.hint}>
+          {hint}
+        </p>
+      ) : null}
+    </div>
+  );
+}
+
 /**
  * A labelled form control with its hint and error. It generates the
  * control's id, so a Field never needs a hand-written one and stays unique
  * when it renders twice.
  */
-export function Field({ label, hint, error, required = false, optional, liveHint, children, className }: FieldProps) {
+export function Field({
+  label,
+  hint,
+  error,
+  errorForScreenReaders = false,
+  required = false,
+  optional,
+  liveHint = false,
+  children,
+  className,
+}: FieldProps) {
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
@@ -67,22 +118,18 @@ export function Field({ label, hint, error, required = false, optional, liveHint
         {optional ? <Badge size="sm"> optional</Badge> : null}
       </label>
       <FieldContext.Provider value={{ id, describedBy, invalid: !!error, required }}>{children}</FieldContext.Provider>
-      {/* A live region must exist before its content changes, so a live one renders even while empty. */}
-      {liveHint || error || hint ? (
-        <div className={styles.messages} aria-live={liveHint ? 'polite' : undefined}>
-          {error ? (
-            <p id={errorId} className={styles.error}>
-              <Icon name="alert" className={styles.errorIcon} />
-              <span>{error}</span>
-            </p>
-          ) : null}
-          {hint ? (
-            <p id={hintId} className={styles.hint}>
-              {hint}
-            </p>
-          ) : null}
-        </div>
+      {error && errorForScreenReaders ? (
+        <VisuallyHidden>
+          <span id={errorId}>{error}</span>
+        </VisuallyHidden>
       ) : null}
+      <FieldMessages
+        error={errorForScreenReaders ? null : error}
+        errorId={errorId}
+        hint={hint}
+        hintId={hintId}
+        live={liveHint}
+      />
     </div>
   );
 }
