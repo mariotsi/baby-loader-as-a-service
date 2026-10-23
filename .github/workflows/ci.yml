@@ -1,9 +1,10 @@
 name: CI
 
-# Checks every pull request into staging: that cd.yml's Playwright image
-# matches @playwright/test, types, lint and formatting (Biome), and unit
+# Checks every pull request into staging: that the workflows' Playwright
+# images match @playwright/test, types, lint and formatting (Biome), unit
 # tests (src/**/*.test.ts, some starting their own MongoDB with
-# mongodb-memory-server). The Playwright suite runs on the pull request's
+# mongodb-memory-server), and every Storybook story rendered in Chromium
+# with no axe violation. The Playwright suite runs on the pull request's
 # preview deployment (cd.yml).
 
 on:
@@ -38,3 +39,25 @@ jobs:
       - name: Lint and format check
         run: npx biome ci
       - run: npm test
+
+  # Renders every story in Chromium and fails on any axe violation, in every
+  # Palette (vitest.config.ts, the "storybook" project).
+  storybook:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Playwright's image ships Chromium and its system dependencies. Its
+    # version must equal @playwright/test in package.json, which the ci job
+    # checks (scripts/check-playwright-image.mjs).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      # The runner's user, which owns the mounted workspace and home.
+      options: --user 1001
+    steps:
+      - uses: actions/checkout@v4
+      # The image's Node (24) runs the tests.
+      - uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: npm-playwright-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+      - run: npm run test:storybook

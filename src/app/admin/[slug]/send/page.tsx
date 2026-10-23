@@ -1,16 +1,31 @@
 import { SendNotificationForm } from '@/components/admin/SendNotificationForm';
+import { ButtonLink } from '@/components/ui/Button';
+import { PageShell } from '@/components/ui/PageShell';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { siteLangs } from '@/lib/publicPageView';
+import styles from '../../admin.module.css';
 
 export default async function SendPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { site } = await pageOwnedSite(slug);
+  const name = site.babyName || site.slug;
 
   return (
-    <div className="container">
-      <h1>Send a notification</h1>
-      <p className="muted">To everyone subscribed on {site.babyName || site.slug}&apos;s page.</p>
+    <PageShell
+      width="medium"
+      nav={
+        <ButtonLink href={`/admin/${site.slug}`} variant="ghost" size="sm">
+          Back to {name}
+        </ButtonLink>
+      }
+    >
+      <div className={styles.header}>
+        <div className={styles.heading}>
+          <h1 className={styles.title}>Send a notification</h1>
+          <p className={styles.lead}>To everyone subscribed on {name}&apos;s page.</p>
+        </div>
+      </div>
       <SendNotificationForm slug={site.slug} lang={siteLangs(site.language)[0]} />
-    </div>
+    </PageShell>
   );
 }

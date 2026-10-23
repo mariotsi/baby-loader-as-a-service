@@ -1,0 +1,39 @@
+import { Meta } from '@storybook/addon-docs/blocks';
+
+<Meta title="Design system/Introduction" />
+
+# Waiting Pages design system
+
+Parents use this Platform to build the page that tells their family a baby is on the way. Everything here should
+feel warm and a little playful, and work for everyone, on the phone in their hand first.
+
+## What is in here
+
+- **Tokens** (`src/styles/tokens.css` and `src/lib/theme.ts`): every color, typeface, size, space, radius, shadow and
+  duration the components use. A Palette sets the color tokens and a Font sets the typography tokens, so switching a
+  Site's Theme restyles its Public page through the tokens alone.
+- **Components** (`src/components/ui`): the building blocks of the Dashboard, auth, onboarding and Public pages, with
+  no external UI library.
+- **Playground**: every component on one page, with a Palette and Font picker and a live contrast report.
+- **Demos**: whole pages composed from the components, to judge the system on a real layout at every viewport.
+
+## Two themes, one system
+
+| Where                                  | Theme                       | Set by                                                     |
+| -------------------------------------- | --------------------------- | ---------------------------------------------------------- |
+| Marketing, auth, onboarding, Dashboard | The Platform's fixed theme  | `rootTokenCss(platformStyle())` in the root layout         |
+| A Site's Public page                   | The Site's Palette and Font | `rootTokenCss(themeStyle(site.theme))` on the page, which wins |
+
+Components never know which theme they are in: they read the tokens, and whoever renders them sets the tokens.
+
+## The promises
+
+1. **Accessible by design.** Every Palette passes WCAG 2.2 AA on every pairing the components render, checked in CI
+   (`theme.test.ts`). Every story passes axe in a real browser (`npm run test:storybook`). Controls are native HTML
+   elements, reachable and usable with a keyboard, with a visible focus ring.
+2. **Mobile first.** Every component starts from a 320px screen and grows into larger ones, never the other way round.
+3. **Joyful, gently.** Bouncy presses, a pop when something is picked, circles drifting at different depths. All of it
+   stops under `prefers-reduced-motion`, and none of it carries meaning on its own.
+
+Read [Using the components](?path=/docs/design-system-using-the-components--docs) before building a page, and
+[Rules for new components](?path=/docs/design-system-rules-for-new-components--docs) before adding to the system.

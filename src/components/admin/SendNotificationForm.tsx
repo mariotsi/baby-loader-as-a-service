@@ -1,6 +1,13 @@
 'use client';
 
 import { type SubmitEvent, useState } from 'react';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { Field } from '@/components/ui/Field';
+import { Input } from '@/components/ui/Input';
+import { Stack } from '@/components/ui/Stack';
+import { StatusMessage } from '@/components/ui/StatusMessage';
+import { Textarea } from '@/components/ui/Textarea';
 import type { Lang } from '@/lib/i18n';
 import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
@@ -9,7 +16,7 @@ export function SendNotificationForm({ slug, lang }: { slug: string; lang: Lang 
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
-  const [result, setResult] = useState<string | null>(null);
+  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
 
   async function onSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,29 +30,39 @@ export function SendNotificationForm({ slug, lang }: { slug: string; lang: Lang 
     const data = await res.json();
     setSending(false);
     if (res.ok) {
-      setResult(`Sent to ${data.sent} of ${data.total} subscribers.`);
+      setResult({ ok: true, text: `Sent to ${data.sent} of ${data.total} subscribers.` });
       setBody('');
     } else {
-      setResult(data.errors ? describeSiteSettingsErrors(data.errors) : data.error || 'Something went wrong.');
+      setResult({
+        ok: false,
+        text: data.errors ? describeSiteSettingsErrors(data.errors) : data.error || 'Something went wrong.',
+      });
     }
   }
 
   return (
-    <form onSubmit={onSubmit} className="card stack">
-      <div className="field">
-        <label htmlFor="notification-title">
-          Title (optional, defaults to the baby&apos;s name unless Privacy settings hide it before the birth)
-        </label>
-        <input id="notification-title" value={title} onChange={(e) => setTitle(e.target.value)} />
-      </div>
-      <div className="field">
-        <label htmlFor="notification-message">Message</label>
-        <textarea id="notification-message" required rows={3} value={body} onChange={(e) => setBody(e.target.value)} />
-      </div>
-      {result ? <p className="muted">{result}</p> : null}
-      <button className="btn" type="submit" disabled={sending} style={{ alignSelf: 'flex-start' }}>
-        {sending ? 'Sending…' : 'Send notification'}
-      </button>
-    </form>
+    <Card>
+      <form onSubmit={onSubmit}>
+        <Stack gap={5}>
+          <Field
+            label="Title"
+            optional
+            hint="Left empty, it is the baby's name, unless your Privacy settings hide it before the birth."
+          >
+            <Input value={title} onChange={(e) => setTitle(e.target.value)} autoComplete="off" />
+          </Field>
+          <Field label="Message" required>
+            <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Any day now!" />
+          </Field>
+          <Stack direction="row" gap={3}>
+            <Button variant="primary" type="submit" icon="bell" loading={sending}>
+              {sending ? 'Sending…' : 'Send notification'}
+            </Button>
+            <StatusMessage tone="info">{result?.ok ? result.text : null}</StatusMessage>
+            <StatusMessage tone="danger">{result && !result.ok ? result.text : null}</StatusMessage>
+          </Stack>
+        </Stack>
+      </form>
+    </Card>
   );
 }

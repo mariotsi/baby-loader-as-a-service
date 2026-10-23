@@ -8,7 +8,7 @@ test.describe('Public page', () => {
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for Wanda');
     await expect(page.getByText('It’s a girl')).toBeVisible();
     await expect(page.getByText(/^Due date:/)).toBeVisible();
-    await expect(page.locator('.countdown')).toHaveText(/^\d+ days to go$/);
+    await expect(page.getByText(/^\d+ days to go$/)).toBeVisible();
   });
 
   test('in the Born state leads with the Birth details', async ({ page, addressOf }) => {
@@ -18,7 +18,7 @@ test.describe('Public page', () => {
     await expect(page.getByText(/^Born on /)).toBeVisible();
     await expect(page.getByText('Weight: 3250 g')).toBeVisible();
     await expect(page.getByText('Length: 50 cm')).toBeVisible();
-    await expect(page.locator('.countdown')).toHaveCount(0);
+    await expect(page.getByText(/ days to go$/)).toHaveCount(0);
   });
 
   test('hides the name and Sex when Privacy settings say so', async ({ page, addressOf }) => {
@@ -37,7 +37,7 @@ test.describe('Public page', () => {
     await page.evaluate(() => {
       (window as { stillHere?: boolean }).stillHere = true;
     });
-    await page.getByRole('button', { name: 'it', exact: true }).click();
+    await page.getByRole('radio', { name: 'Italiano' }).check();
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Stiamo aspettando Bianca');
     await expect(page.locator('html')).toHaveAttribute('lang', 'it');
     expect(await page.evaluate(() => (window as { stillHere?: boolean }).stillHere)).toBe(true);

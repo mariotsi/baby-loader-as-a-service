@@ -1,0 +1,74 @@
+.page {
+  position: relative;
+  isolation: isolate;
+  min-height: 100dvh;
+  overflow: clip;
+  padding: var(--space-4) var(--gutter) var(--space-8);
+}
+
+.header {
+  position: relative;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-3);
+  max-width: var(--content-wide);
+  margin: 0 auto;
+}
+
+.wordmark {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height-sm);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
+  font-size: var(--text-lg);
+  color: var(--color-text);
+  text-decoration: none;
+}
+
+.heart {
+  color: var(--color-accent-ink);
+}
+
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
+
+.main {
+  position: relative;
+  margin: var(--space-6) auto 0;
+}
+
+@media (min-width: 40rem) {
+  .main {
+    margin-top: var(--space-7);
+  }
+}
+
+.narrow {
+  max-width: var(--content-narrow);
+}
+
+.medium {
+  max-width: var(--content-medium);
+}
+
+.wide {
+  max-width: var(--content-wide);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .heart {
+    transition: transform var(--duration-base) var(--ease-bounce);
+  }
+
+  .wordmark:hover .heart {
+    transform: scale(1.25) rotate(-8deg);
+  }
+}

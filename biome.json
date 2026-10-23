@@ -24,7 +24,7 @@
         "useInlineScriptId": "error",
         "noUnusedImports": "error",
         "noUnusedVariables": "error",
-        "useUniqueElementIds": "warn",
+        "useUniqueElementIds": "error",
         "noUnresolvedImports": "off"
       },
       "performance": {

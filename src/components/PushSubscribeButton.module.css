@@ -1,0 +1,6 @@
+/* Lines up with whatever holds it: centred on a phone, at the start beside the Countdown on a wide screen. */
+.push {
+  display: grid;
+  justify-items: inherit;
+  gap: var(--space-3);
+}

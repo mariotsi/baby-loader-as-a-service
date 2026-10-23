@@ -40,6 +40,8 @@ export type PublicPageView = {
     count: number | null;
     unit: string;
     lateNote: string | null;
+    /** The week of pregnancy, counting the Due date as the end of week 40; null before week 1 and once late. */
+    week: { number: number; label: string } | null;
   } | null;
   born: {
     bornOn: string;
@@ -48,6 +50,8 @@ export type PublicPageView = {
     message: string | null;
   } | null;
   milestones: { title: string; items: { date: string; label: string }[] } | null;
+  /** Names the Language switcher in this view's language. */
+  languageLabel: string;
   push: PushButtonCopy;
 };
 
@@ -72,6 +76,7 @@ export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = n
     waiting: !birth.born && settings.dueDate ? waitingView(settings.dueDate, settings.timezone, lang, now) : null,
     born: birth.born ? bornView(birth.details, settings.timezone, lang) : null,
     milestones: milestonesView(settings.milestones, lang),
+    languageLabel: t.languageLabel,
     push: pushButtonCopy(t, birth.born),
   };
 }
@@ -118,13 +123,21 @@ function waitingView(dueDate: string, timezone: string, lang: Lang, now: Date): 
   const t = messages[lang];
   const days = countdownDays(dueDate, timezone, now);
   const due = `${t.duePrefix} ${formatDay(dueDate, lang)}`;
+  const week = pregnancyWeek(days);
+  const weekView = week ? { number: week, label: t.weekOf(week) } : null;
   if (days > 0) {
-    return { dueDate: due, count: days, unit: t.daysLeft(days), lateNote: null };
+    return { dueDate: due, count: days, unit: t.daysLeft(days), lateNote: null, week: weekView };
   }
   if (days === 0) {
-    return { dueDate: due, count: null, unit: t.dueToday, lateNote: null };
+    return { dueDate: due, count: null, unit: t.dueToday, lateNote: null, week: weekView };
   }
-  return { dueDate: due, count: -days, unit: t.daysLate(-days), lateNote: t.lateNote };
+  return { dueDate: due, count: -days, unit: t.daysLate(-days), lateNote: t.lateNote, week: null };
+}
+
+/** Pregnancies are dated to 40 weeks at the Due date: 42 days before it is week 34. */
+function pregnancyWeek(daysToDue: number): number | null {
+  const week = 40 - Math.floor(daysToDue / 7);
+  return daysToDue >= 0 && week >= 1 ? week : null;
 }
 
 /** A calendar day such as a Due date: no time, so no Timezone. */

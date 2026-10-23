@@ -1,0 +1,73 @@
+/* The shared look of the text controls: Input, Textarea and Select. */
+.control {
+  color-scheme: var(--color-scheme);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  /* 16px or more stops iOS Safari from zooming in on focus. */
+  font-size: var(--text-md);
+  font-weight: var(--font-body-weight);
+  line-height: var(--leading-snug);
+}
+
+.control::placeholder {
+  color: var(--color-text-muted);
+  opacity: 1;
+}
+
+.control:hover {
+  border-color: var(--color-text-muted);
+}
+
+.control:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 1px;
+  border-color: var(--color-accent-ink);
+}
+
+.control[aria-invalid="true"] {
+  border-color: var(--color-danger);
+}
+
+/* iOS Safari centers date values and gives them no height of their own. */
+.control::-webkit-date-and-time-value {
+  text-align: start;
+  min-height: 1.3em;
+}
+
+.textarea {
+  min-height: 7rem;
+  padding-block: var(--space-3);
+  resize: vertical;
+}
+
+.selectWrap {
+  position: relative;
+  display: block;
+}
+
+.select {
+  appearance: none;
+  padding-inline-end: var(--space-7);
+  cursor: pointer;
+}
+
+.chevron {
+  position: absolute;
+  inset-inline-end: var(--space-4);
+  top: 50%;
+  translate: 0 -50%;
+  color: var(--color-text-muted);
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .control {
+    transition: border-color var(--duration-fast);
+  }
+}

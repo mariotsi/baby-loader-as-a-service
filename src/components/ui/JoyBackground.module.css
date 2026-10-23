@@ -1,0 +1,85 @@
+.root {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/*
+ * Each layer has a depth: nearer circles (a larger --depth) move further for
+ * the same scroll or pointer movement, which reads as distance.
+ */
+.layer {
+  position: absolute;
+  display: block;
+  aspect-ratio: 1;
+}
+
+.blob {
+  display: block;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--blob-color);
+}
+
+.one {
+  --depth: 1;
+  --blob-color: var(--color-joy-1);
+  width: min(72vw, 28rem);
+  top: 4%;
+  left: -22%;
+}
+
+.two {
+  --depth: 0.55;
+  --blob-color: var(--color-joy-2);
+  width: min(56vw, 22rem);
+  top: 34%;
+  right: -16%;
+}
+
+.three {
+  --depth: 0.3;
+  --blob-color: var(--color-joy-3);
+  width: min(48vw, 18rem);
+  bottom: -6%;
+  left: 12%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .layer {
+    translate: calc(var(--pointer-x, 0) * var(--depth) * 2.5rem) calc(var(--pointer-y, 0) * var(--depth) * 2.5rem);
+    transition: translate var(--duration-slow) var(--ease-out);
+    animation: arrive var(--duration-slow) var(--ease-bounce) both;
+  }
+
+  .two {
+    animation-delay: calc(var(--duration-fast) * 1);
+  }
+
+  .three {
+    animation-delay: calc(var(--duration-fast) * 2);
+  }
+
+  @supports (animation-timeline: scroll()) {
+    .blob {
+      animation: drift linear both;
+      animation-timeline: scroll(root block);
+    }
+  }
+}
+
+@keyframes arrive {
+  from {
+    scale: 0.3;
+    opacity: 0;
+  }
+}
+
+@keyframes drift {
+  to {
+    transform: translateY(calc(var(--depth) * -18rem));
+  }
+}

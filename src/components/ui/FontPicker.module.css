@@ -1,0 +1,108 @@
+.root {
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(6.5rem, 1fr));
+  gap: var(--space-2);
+}
+
+.option {
+  position: relative;
+  display: grid;
+}
+
+.input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.card {
+  position: relative;
+  overflow: hidden;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: var(--space-1);
+  min-height: 5.5rem;
+  padding: var(--space-3) var(--space-2);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-align: center;
+}
+
+.sample {
+  font-family: var(--sample-font);
+  font-weight: var(--sample-weight);
+  font-size: var(--text-xl);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+  white-space: nowrap;
+}
+
+.name {
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.check {
+  position: absolute;
+  top: var(--space-1);
+  right: var(--space-1);
+  color: var(--color-accent-ink);
+  opacity: 0;
+  scale: 0.4;
+}
+
+.input:hover + .card {
+  border-color: var(--color-accent-ink);
+}
+
+.input:focus-visible + .card {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.input:checked + .card {
+  border-color: var(--color-accent-ink);
+  background: var(--color-soft);
+  box-shadow: inset 0 0 0 1px var(--color-accent-ink);
+}
+
+.input:checked + .card .check {
+  opacity: 1;
+  scale: 1;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    transition:
+      transform var(--duration-base) var(--ease-bounce),
+      border-color var(--duration-fast);
+  }
+
+  .option:hover .card {
+    transform: translateY(-2px) rotate(-1deg);
+  }
+
+  .check {
+    transition:
+      opacity var(--duration-fast),
+      scale var(--duration-base) var(--ease-bounce);
+  }
+}

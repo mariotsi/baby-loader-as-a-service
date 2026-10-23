@@ -1,42 +1,67 @@
-import Link from 'next/link';
+import { ButtonLink } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { PageShell } from '@/components/ui/PageShell';
+import { Stack } from '@/components/ui/Stack';
 import { siteAddress } from '@/lib/address';
 import { pageUser } from '@/lib/ownerAccessNext';
 import { listSitesByOwner } from '@/lib/site';
+import styles from './admin.module.css';
 
 export default async function AdminPage() {
   const sites = await listSitesByOwner(await pageUser());
 
   return (
-    <div className="container">
-      <div className="row" style={{ justifyContent: 'space-between' }}>
-        <h1>Your sites</h1>
-        <Link className="btn" href="/onboarding">
-          + New site
-        </Link>
+    <PageShell width="wide">
+      <div className={styles.header}>
+        <h1 className={styles.title}>Your sites</h1>
+        <ButtonLink href="/onboarding" variant="primary" icon="plus">
+          New site
+        </ButtonLink>
       </div>
 
       {sites.length === 0 ? (
-        <p className="muted">You haven&apos;t created a site yet.</p>
+        <Card title="Start your first page" description="It takes a minute, and everyone can start counting with you.">
+          <div>
+            <ButtonLink href="/onboarding" icon="sparkles">
+              Create your page
+            </ButtonLink>
+          </div>
+        </Card>
       ) : (
-        <div className="stack">
-          {sites.map((site) => (
-            <div className="card row" key={site.slug} style={{ justifyContent: 'space-between' }}>
-              <div>
-                <strong>{site.babyName || site.slug}</strong>
-                <div className="muted">{siteAddress(site.slug).replace(/^https?:\/\//, '')}</div>
-              </div>
-              <div className="row">
-                <a className="btn-secondary" href={siteAddress(site.slug)} target="_blank" rel="noreferrer">
-                  View
-                </a>
-                <Link className="btn" href={`/admin/${site.slug}`}>
-                  Manage
-                </Link>
-              </div>
-            </div>
-          ))}
-        </div>
+        <ul className={styles.list}>
+          {sites.map((site) => {
+            const name = site.babyName || site.slug;
+            const address = siteAddress(site.slug);
+            return (
+              <li key={site.slug}>
+                <Card>
+                  <div className={styles.item}>
+                    <p className={styles.itemTitle}>{name}</p>
+                    <p className={styles.itemMeta}>{address.replace(/^https?:\/\//, '')}</p>
+                    <Stack direction="row" gap={2}>
+                      <ButtonLink href={`/admin/${site.slug}`} size="sm" aria-label={`Manage ${name}`}>
+                        Manage
+                      </ButtonLink>
+                      <ButtonLink
+                        href={address}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`View ${name}'s page, opens in a new tab`}
+                        variant="ghost"
+                        size="sm"
+                        icon="external"
+                        iconPosition="end"
+                      >
+                        View
+                      </ButtonLink>
+                    </Stack>
+                  </div>
+                </Card>
+              </li>
+            );
+          })}
+        </ul>
       )}
-    </div>
+    </PageShell>
   );
 }

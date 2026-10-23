@@ -1,0 +1,78 @@
+.form {
+  display: grid;
+  gap: var(--space-5);
+}
+
+/* One column on a phone; on a wide screen the story on the left, the look on the right. */
+.columns {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (min-width: 60rem) {
+  .columns {
+    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  }
+}
+
+.column {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  gap: var(--space-4);
+}
+
+.milestones {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* A phone puts the label on its own line, with the date and the remove button under it. */
+.milestone {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "label label"
+    "date remove";
+  gap: var(--space-2);
+  align-items: center;
+}
+
+@media (min-width: 40rem) {
+  .milestone {
+    grid-template-columns: minmax(0, 1fr) 11rem auto;
+    grid-template-areas: "label date remove";
+  }
+}
+
+.milestoneLabel {
+  grid-area: label;
+}
+
+.milestoneDate {
+  grid-area: date;
+}
+
+/* Keeps saving one tap away at the bottom of a long form. */
+.saveBar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-3);
+  margin-inline: calc(var(--space-2) * -1);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--color-bg);
+  box-shadow: 0 -1px 0 var(--color-border);
+}

@@ -1,0 +1,141 @@
+.root {
+  container-type: inline-size;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.legend {
+  padding: 0;
+  margin-bottom: var(--space-2);
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+}
+
+.options {
+  display: grid;
+  grid-template-columns: repeat(var(--count), minmax(0, 1fr));
+  gap: var(--space-2);
+}
+
+/* A phone-wide form: two even rows. */
+@container (max-width: 26rem) {
+  .options {
+    grid-template-columns: repeat(var(--half), minmax(0, 1fr));
+    row-gap: var(--space-3);
+  }
+}
+
+.option {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-1);
+  border-radius: var(--radius-md);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.swatch {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 3.25rem;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border: var(--border-width) solid var(--swatch-edge);
+  border-radius: 50%;
+  background: var(--swatch-bg);
+}
+
+/* Two of the Palette's decoration colors, as on its Public page. */
+.joy {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 18% 22%, var(--swatch-joy-1) 0 28%, transparent 29%),
+    radial-gradient(circle at 85% 80%, var(--swatch-joy-2) 0 26%, transparent 27%);
+}
+
+.dot {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 55%;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--swatch-accent);
+  color: var(--swatch-on-accent);
+}
+
+.check {
+  opacity: 0;
+  scale: 0.4;
+}
+
+.name {
+  font-size: var(--text-sm);
+  text-align: center;
+  color: var(--color-text);
+}
+
+.input:hover ~ .swatch {
+  outline: var(--border-width) solid var(--color-border);
+  outline-offset: var(--focus-offset);
+}
+
+.input:checked ~ .swatch {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+
+.input:checked ~ .swatch .check {
+  opacity: 1;
+  scale: 1;
+}
+
+.input:checked ~ .name {
+  font-weight: var(--weight-bold);
+}
+
+.input:focus-visible ~ .name {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+  border-radius: var(--radius-sm);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .swatch {
+    transition: scale var(--duration-base) var(--ease-bounce);
+  }
+
+  .option:hover .swatch {
+    scale: 1.08;
+  }
+
+  .input:checked ~ .swatch {
+    animation: pop var(--duration-slow) var(--ease-bounce);
+  }
+
+  .check {
+    transition:
+      opacity var(--duration-fast),
+      scale var(--duration-base) var(--ease-bounce);
+  }
+}
+
+@keyframes pop {
+  40% {
+    scale: 1.18;
+  }
+}

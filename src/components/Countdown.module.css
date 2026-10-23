@@ -1,0 +1,115 @@
+.countdown {
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
+  text-align: center;
+}
+
+.count {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-1) var(--space-3);
+  margin: 0;
+}
+
+.number {
+  font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
+  font-size: calc(var(--text-hero) * 0.85);
+  line-height: 1;
+  color: var(--color-accent-ink);
+}
+
+.unit {
+  font-size: var(--text-lg);
+  font-weight: var(--weight-bold);
+}
+
+.note {
+  margin: var(--space-2) 0 0;
+  color: var(--color-text-muted);
+}
+
+.progress {
+  margin-top: var(--space-5);
+}
+
+.track {
+  position: relative;
+  height: 0.75rem;
+  margin-inline: var(--space-3);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-pill);
+  background: var(--color-soft);
+}
+
+.fill {
+  display: block;
+  height: 100%;
+  border-radius: var(--radius-pill);
+  background: var(--color-accent);
+}
+
+.marker {
+  position: absolute;
+  top: 50%;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  border: var(--border-width) solid var(--color-accent-ink);
+  border-radius: 50%;
+  background: var(--color-surface);
+  color: var(--color-accent-ink);
+  font-size: var(--text-sm);
+  translate: -50% -50%;
+}
+
+.week {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.sm {
+  padding: var(--space-4);
+  box-shadow: var(--shadow-sm);
+}
+
+.sm .number {
+  font-size: var(--text-2xl);
+}
+
+.sm .unit {
+  font-size: var(--text-md);
+}
+
+.sm .progress {
+  margin-top: var(--space-4);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .fill {
+    animation: grow var(--duration-slow) var(--ease-out) both;
+  }
+
+  .marker {
+    animation: ride var(--duration-slow) var(--ease-bounce) both;
+  }
+}
+
+@keyframes grow {
+  from {
+    width: 0;
+  }
+}
+
+@keyframes ride {
+  from {
+    left: 0;
+    rotate: -20deg;
+  }
+}

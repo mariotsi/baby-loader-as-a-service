@@ -1,0 +1,35 @@
+.card {
+  min-width: 0;
+  padding: var(--space-5) var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  color: var(--color-text);
+  box-shadow: var(--shadow-md);
+}
+
+@media (min-width: 40rem) {
+  .card {
+    padding: var(--space-6);
+  }
+}
+
+.header {
+  display: grid;
+  gap: var(--space-1);
+  margin-bottom: var(--space-5);
+}
+
+.title {
+  margin: 0;
+  font-size: var(--text-xl);
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.body {
+  display: grid;
+  gap: var(--space-5);
+}
