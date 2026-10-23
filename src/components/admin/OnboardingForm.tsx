@@ -1,7 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { type FormEvent, useState } from 'react';
+import { type SubmitEvent, useState } from 'react';
 import { describeSiteSettingsErrors } from '@/components/admin/siteSettingsErrorText';
 import { type AddressConfig, siteAddress, slugProblem } from '@/lib/address';
 import { defaultSiteSettings } from '@/lib/siteSettings';
@@ -33,7 +33,7 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setError(null);
     setLoading(true);
