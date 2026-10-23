@@ -137,17 +137,21 @@ test("the push button copy follows the Site's state", () => {
   assert.equal(publicPageView(site({ birth: BORN }), 'en', NOW).push.subscribe, 'Get the next updates');
 });
 
-test('a Site in Both mode gets one view per language, Italian first', () => {
+test("a Site gets one view per Language, in the Platform's order", () => {
   assert.deepEqual(
-    publicPageViews(site({ language: 'both' }), NOW).map((view) => [view.lang, view.title]),
+    publicPageViews(site({ languages: ['it', 'en'] }), NOW).map((view) => [view.lang, view.title]),
     [
       ['it', 'Stiamo aspettando Emma'],
       ['en', 'We are waiting for Emma'],
     ]
   );
   assert.deepEqual(
-    publicPageViews(site({ language: 'it' }), NOW).map((view) => view.lang),
+    publicPageViews(site({ languages: ['it'] }), NOW).map((view) => view.lang),
     ['it']
+  );
+  assert.deepEqual(
+    publicPageViews(site({ languages: ['en', 'it'] }), NOW).map((view) => view.lang),
+    ['it', 'en']
   );
 });
 

@@ -6,6 +6,8 @@
  */
 :root {
   /* Type scale: mobile first, growing with the viewport up to a cap. */
+  /* Only for small labels, like a small Badge: the least the design system sets text in. */
+  --text-2xs: 0.6875rem;
   --text-xs: 0.8125rem;
   --text-sm: 0.875rem;
   --text-md: 1rem;

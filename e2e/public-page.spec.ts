@@ -29,7 +29,7 @@ test.describe('Public page', () => {
     await expect(page.getByText('It’s a girl')).toHaveCount(0);
   });
 
-  test('in Both mode follows the Visitor’s language and the Language switcher', async ({ page, addressOf }) => {
+  test('with two Languages follows the Visitor’s language and the Language switcher', async ({ page, addressOf }) => {
     await page.goto(await addressOf('e2e-both'));
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for Bianca');
 
@@ -49,9 +49,19 @@ test.describe('Public page', () => {
   test.describe('for an Italian browser', () => {
     test.use({ locale: 'it-IT' });
 
-    test('in Both mode opens in Italian', async ({ page, addressOf }) => {
+    test('with two Languages opens in Italian', async ({ page, addressOf }) => {
       await page.goto(await addressOf('e2e-both'));
       await expect(page.getByRole('heading', { level: 1 })).toHaveText('Stiamo aspettando Bianca');
+    });
+  });
+
+  test.describe('for a French browser', () => {
+    test.use({ locale: 'fr-FR' });
+
+    test('opens in English when the Site speaks it and not French', async ({ page, addressOf }) => {
+      // e2e-both speaks Italian and English: neither is French, so English, the first fallback, wins.
+      await page.goto(await addressOf('e2e-both'));
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for Bianca');
     });
   });
 

@@ -8,6 +8,8 @@ import type { Lang } from './i18n';
  * multi-Site architecture itself.
  */
 const en = {
+  /** The language's name in itself. */
+  languageName: 'English',
   waitingTagline: 'Expecting',
   waitingTitle: 'We are waiting for',
   /** Stands in for the name when there is none or Privacy settings hide it. */
@@ -48,6 +50,7 @@ const en = {
 export type Messages = typeof en;
 
 const it: Messages = {
+  languageName: 'Italiano',
   waitingTagline: 'In attesa',
   waitingTitle: 'Stiamo aspettando',
   someone: 'qualcuno',

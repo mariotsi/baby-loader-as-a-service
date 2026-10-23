@@ -11,7 +11,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import type { Lang } from '@/lib/i18n';
 import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
-/** Sends one text, in the Site's primary language `lang`; every Subscription receives it. */
+/** Sends one text, in `lang`, the Site's fallback Language (see fallbackLang); every Subscription receives it. */
 export function SendNotificationForm({ slug, lang }: { slug: string; lang: Lang }) {
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');

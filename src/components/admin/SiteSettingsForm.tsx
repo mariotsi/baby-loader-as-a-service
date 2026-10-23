@@ -9,19 +9,19 @@ import { Checkbox } from '@/components/ui/Checkbox';
 import { Field } from '@/components/ui/Field';
 import { FontPicker } from '@/components/ui/FontPicker';
 import { Input } from '@/components/ui/Input';
+import { LanguagesPicker } from '@/components/ui/LanguagesPicker';
 import { PalettePicker } from '@/components/ui/PalettePicker';
 import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
-import type { Lang } from '@/lib/i18n';
+import { englishName, type Lang } from '@/lib/i18n';
 import type { Milestone, SiteDTO } from '@/lib/site';
 import type { BirthDetails, SiteSettingsInput } from '@/lib/siteSettings';
 import styles from './SiteSettingsForm.module.css';
 import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
-const LANGUAGE_NAMES: Record<Lang, string> = { it: 'Italian', en: 'English' };
 
 /** `timeZones` comes from the server, so the list the page renders matches the one it hydrates. */
 export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones: string[] }) {
@@ -35,7 +35,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
   const [weight, setWeight] = useState(details?.weightGrams?.toString() ?? '');
   const [lengthCm, setLengthCm] = useState(details?.lengthCm?.toString() ?? '');
   const [birthMessage, setBirthMessage] = useState<BirthDetails['message']>(details?.message ?? {});
-  const [language, setLanguage] = useState(site.language);
+  const [languages, setLanguages] = useState<Lang[]>(site.languages);
   const [timezone, setTimezone] = useState(site.timezone);
   const [palette, setPalette] = useState(site.theme.palette);
   const [font, setFont] = useState(site.theme.font);
@@ -55,8 +55,6 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
     setMilestones(milestones.filter((_, idx) => idx !== i));
   }
 
-  const messageLangs: Lang[] = language === 'both' ? ['it', 'en'] : [language];
-
   async function save(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setSaving(true);
@@ -72,13 +70,13 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
               datetime: birthDatetime ? parseISO(birthDatetime).toISOString() : '',
               weightGrams: weight ? Number(weight) : null,
               lengthCm: lengthCm ? Number(lengthCm) : null,
-              // Every message written is kept, also one the current Language mode does not show.
+              // Every message written is kept, also one in a Language the Site no longer speaks.
               message: Object.fromEntries(Object.entries(birthMessage).filter(([, text]) => text)),
             },
           }
         : { born: false, details: null },
       milestones: milestones.filter((m) => m.label && m.date),
-      language,
+      languages,
       timezone,
       theme: { palette, font },
       privacy: { showName, showSex },
@@ -151,12 +149,8 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
                     />
                   </Field>
                 </div>
-                {messageLangs.map((lang) => (
-                  <Field
-                    key={lang}
-                    label={`Message${messageLangs.length > 1 ? ` (${LANGUAGE_NAMES[lang]})` : ''}`}
-                    optional
-                  >
+                {languages.map((lang) => (
+                  <Field key={lang} label={`Message${languages.length > 1 ? ` (${englishName(lang)})` : ''}`} optional>
                     <Textarea
                       value={birthMessage[lang] ?? ''}
                       onChange={(e) => setBirthMessage({ ...birthMessage, [lang]: e.target.value })}
@@ -211,13 +205,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
           <Card title="Appearance" description="The colors, letters and words of your page.">
             <PalettePicker value={palette} onChange={setPalette} />
             <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
-            <Field label="Language">
-              <Select value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>
-                <option value="en">English only</option>
-                <option value="it">Italiano only</option>
-                <option value="both">Both (visitor picks)</option>
-              </Select>
-            </Field>
+            <LanguagesPicker value={languages} onChange={setLanguages} />
             <Field label="Timezone" hint="The Countdown turns over at midnight here.">
               <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
                 {(timeZones.includes(timezone) ? timeZones : [timezone, ...timeZones]).map((zone) => (

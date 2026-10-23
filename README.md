@@ -124,7 +124,7 @@ the components render, and CI runs both checks on every pull request.
 ## End-to-end tests
 
 Playwright tests in `e2e/` cover signup and Site creation, login, the Public
-page in each state, Privacy settings and Language mode, Site settings,
+page in each state, Privacy settings and Languages, Site settings,
 Subscribers and Notifications, and that an Owner cannot reach another
 Owner's Sites. They run in Chromium (desktop) and WebKit (iPhone).
 

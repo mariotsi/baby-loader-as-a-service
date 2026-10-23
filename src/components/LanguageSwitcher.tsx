@@ -3,11 +3,13 @@
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import type { Lang } from '@/lib/i18n';
+import { messages } from '@/lib/messages';
 
-/** Each language named in itself, so a Visitor finds their own whichever language the page is in. */
-const NAMES: Record<Lang, string> = { it: 'Italiano', en: 'English' };
-
-/** The Language switcher of a Public page in Both mode: short codes on screen, full names for screen readers. */
+/**
+ * The Language switcher of a Public page with more than one Language: short
+ * codes on screen, and for screen readers each language named in itself, so a
+ * Visitor finds their own whichever language the page is in.
+ */
 export function LanguageSwitcher({
   langs,
   current,
@@ -31,7 +33,7 @@ export function LanguageSwitcher({
         label: (
           <span lang={lang}>
             <span aria-hidden="true">{lang.toUpperCase()}</span>
-            <VisuallyHidden>{NAMES[lang]}</VisuallyHidden>
+            <VisuallyHidden>{messages[lang].languageName}</VisuallyHidden>
           </span>
         ),
       }))}

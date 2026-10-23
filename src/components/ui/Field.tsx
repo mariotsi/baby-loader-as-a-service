@@ -1,6 +1,7 @@
 'use client';
 
 import { createContext, type ReactNode, useContext, useId } from 'react';
+import { Badge } from './Badge';
 import styles from './Field.module.css';
 import { Icon } from './Icon';
 
@@ -63,7 +64,7 @@ export function Field({ label, hint, error, required = false, optional, liveHint
     <div className={[styles.field, className].filter(Boolean).join(' ')}>
       <label htmlFor={id} className={styles.label}>
         {label}
-        {optional ? <span className={styles.optional}> optional</span> : null}
+        {optional ? <Badge size="sm"> optional</Badge> : null}
       </label>
       <FieldContext.Provider value={{ id, describedBy, invalid: !!error, required }}>{children}</FieldContext.Provider>
       {/* A live region must exist before its content changes, so a live one renders even while empty. */}

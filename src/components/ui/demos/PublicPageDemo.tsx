@@ -3,7 +3,7 @@ import { PublicPage } from '@/components/PublicPage';
 import { publicPageViews } from '@/lib/publicPageView';
 import { defaultSiteSettings, type SiteSettings } from '@/lib/siteSettings';
 
-/** A Site in Both mode, six weeks from its Due date, with a few Milestones. */
+/** A Site speaking Italian and English, six weeks from its Due date, with a few Milestones. */
 function sampleSettings(state: 'waiting' | 'born'): SiteSettings {
   const now = new Date();
   const day = (offset: number) => format(addDays(now, offset), 'yyyy-MM-dd');
@@ -12,7 +12,7 @@ function sampleSettings(state: 'waiting' | 'born'): SiteSettings {
     babyName: 'Emma',
     sex: 'female',
     dueDate: day(42),
-    language: 'both',
+    languages: ['it', 'en'],
     timezone: 'Europe/Rome',
     milestones: [
       { label: 'We found out!', date: day(-200) },

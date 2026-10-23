@@ -14,16 +14,6 @@
   gap: var(--space-2);
 }
 
-/* A tag beside the label keeps a label with parentheses of its own, like "Weight (g)", readable. */
-.optional {
-  padding: 0 var(--space-2);
-  border-radius: var(--radius-pill);
-  background: var(--color-soft);
-  font-size: var(--text-xs);
-  font-weight: var(--font-body-weight);
-  color: var(--color-text-muted);
-}
-
 .messages {
   display: grid;
   gap: var(--space-1);
