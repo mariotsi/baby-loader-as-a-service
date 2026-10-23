@@ -22,6 +22,7 @@ const PATHS = {
   ),
   check: <path d="M5 12.5l4.5 4.5L19 7.5" />,
   'chevron-down': <path d="M6 9l6 6 6-6" />,
+  circle: <circle cx="12" cy="12" r="9" />,
   'circle-check': (
     <>
       <circle cx="12" cy="12" r="9" />

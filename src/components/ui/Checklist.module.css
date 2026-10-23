@@ -1,0 +1,45 @@
+.list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: var(--text-sm);
+}
+
+.item {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+}
+
+.icon {
+  flex: none;
+  margin-top: 0.1em;
+}
+
+.todo {
+  color: var(--color-text-muted);
+}
+
+.met {
+  color: var(--color-success);
+  font-weight: var(--weight-bold);
+}
+
+.missing {
+  color: var(--color-danger);
+  font-weight: var(--weight-bold);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .met .icon {
+    animation: tick var(--duration-slow) var(--ease-bounce);
+  }
+}
+
+@keyframes tick {
+  from {
+    scale: 0.4;
+  }
+}

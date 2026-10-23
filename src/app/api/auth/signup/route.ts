@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { authRateLimit, createUser, issueSessionToken, sessionCookieOptions } from '@/lib/auth';
+import { newPasswordProblem } from '@/lib/passwordRules';
 
 export async function POST(req: NextRequest) {
   if (!authRateLimit(req)) {
@@ -13,8 +14,9 @@ export async function POST(req: NextRequest) {
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
     return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
   }
-  if (password.length < 8) {
-    return NextResponse.json({ error: 'Password must be at least 8 characters.' }, { status: 400 });
+  const passwordProblem = newPasswordProblem(password);
+  if (passwordProblem) {
+    return NextResponse.json({ error: passwordProblem }, { status: 400 });
   }
 
   try {
