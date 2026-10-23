@@ -57,21 +57,21 @@ test('isPreviewDbName rejects the production database and accepts preview names'
 
 test('isLocalMongoUri accepts only hosts on this machine', () => {
   assert.equal(isLocalMongoUri('mongodb://localhost:27017'), true);
-  assert.equal(isLocalMongoUri('mongodb://user:pw@127.0.0.1:27017/?directConnection=true'), true);
+  assert.equal(isLocalMongoUri('mongodb://user@127.0.0.1:27017/?directConnection=true'), true);
   assert.equal(isLocalMongoUri('mongodb://localhost:27017,127.0.0.1:27018'), true);
   assert.equal(isLocalMongoUri('mongodb://localhost:27017,db.example.com:27017'), false);
-  assert.equal(isLocalMongoUri('mongodb+srv://user:pw@cluster.example.mongodb.net/'), false);
+  assert.equal(isLocalMongoUri('mongodb+srv://cluster.example.mongodb.net/'), false);
   assert.equal(isLocalMongoUri('mongodb://localhost.example.com:27017'), false);
 });
 
 test('testDataPolicy never writes test data to production', () => {
-  const remote = 'mongodb+srv://user:pw@cluster.example.mongodb.net/';
+  const remote = 'mongodb+srv://cluster.example.mongodb.net/';
   assert.deepEqual(testDataPolicy(remote, PRODUCTION_DB_NAME), { fixtures: false, demo: false });
   assert.deepEqual(testDataPolicy(remote, 'pushnotify'), { fixtures: false, demo: false });
 });
 
 test('testDataPolicy keeps demo data off staging', () => {
-  const remote = 'mongodb+srv://user:pw@cluster.example.mongodb.net/';
+  const remote = 'mongodb+srv://cluster.example.mongodb.net/';
   assert.deepEqual(testDataPolicy(remote, STAGING_DB_NAME), { fixtures: true, demo: false });
   assert.deepEqual(testDataPolicy(remote, previewDbName('feat/x')), { fixtures: true, demo: true });
 });
