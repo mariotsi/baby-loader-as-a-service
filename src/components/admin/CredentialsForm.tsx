@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type RefObject, type SubmitEvent, useId, useRef, useState } from 'react';
+import { LoginBaby, type LoginBabyState } from '@/components/LoginBaby';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checklist } from '@/components/ui/Checklist';
@@ -66,6 +67,23 @@ async function rememberCredentials(email: string, password: string) {
 function fieldValues(form: HTMLFormElement) {
   const value = (name: string) => (form.elements.namedItem(name) as HTMLInputElement | null)?.value ?? '';
   return { email: value('email'), password: value('password'), confirm: value('confirm-password') };
+}
+
+/**
+ * Where the end of the typed email sits across the field, from -1 at its
+ * start to 1 at its end, for the baby's eyes. An email field reports no
+ * caret position, so this measures the text in the field's own font.
+ */
+function textEnd(input: HTMLInputElement): number {
+  const context = document.createElement('canvas').getContext('2d');
+  if (!context) {
+    return 0;
+  }
+  const style = getComputedStyle(input);
+  context.font = style.font;
+  const room = input.clientWidth - Number.parseFloat(style.paddingLeft) - Number.parseFloat(style.paddingRight);
+  const ratio = room > 0 ? context.measureText(input.value).width / room : 0;
+  return Math.min(1, ratio) * 2 - 1;
 }
 
 /** What stops a new password from being sent, once the Owner has tried to send it. */
@@ -153,6 +171,12 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
   const copy = MODES[mode];
   const router = useRouter();
   const [email, setEmail] = useState('');
+  const [baby, setBaby] = useState<LoginBabyState>('sleeping');
+  const [look, setLook] = useState(-1);
+  const watchEmail = (input: HTMLInputElement) => {
+    setBaby('watching');
+    setLook(textEnd(input));
+  };
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [tried, setTried] = useState(false);
@@ -207,6 +231,11 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
 
   return (
     <PageShell width="narrow">
+      {mode === 'login' ? (
+        <div className={styles.baby}>
+          <LoginBaby state={baby} look={look} />
+        </div>
+      ) : null}
       <Card title={copy.title} description={copy.description} headingLevel={1}>
         <form onSubmit={onSubmit}>
           <Stack gap={5}>
@@ -216,7 +245,14 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
                 type="email"
                 autoComplete="username"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (mode === 'login') {
+                    watchEmail(e.target);
+                  }
+                }}
+                onFocus={mode === 'login' ? (e) => watchEmail(e.target) : undefined}
+                onBlur={mode === 'login' ? () => setBaby('awake') : undefined}
               />
             </Field>
             {mode === 'signup' ? (
@@ -237,6 +273,8 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
                   autoComplete="current-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => setBaby('covering')}
+                  onBlur={() => setBaby('awake')}
                 />
               </Field>
             )}
