@@ -1,6 +1,6 @@
 'use client';
 
-import { type FormEvent, useState } from 'react';
+import { type SubmitEvent, useState } from 'react';
 import type { Lang } from '@/lib/i18n';
 import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
@@ -11,7 +11,7 @@ export function SendNotificationForm({ slug, lang }: { slug: string; lang: Lang 
   const [sending, setSending] = useState(false);
   const [result, setResult] = useState<string | null>(null);
 
-  async function onSubmit(e: FormEvent) {
+  async function onSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setSending(true);
     setResult(null);
