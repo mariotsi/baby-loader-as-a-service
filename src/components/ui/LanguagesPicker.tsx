@@ -6,6 +6,7 @@ import { messages } from '@/lib/messages';
 import { Badge } from './Badge';
 import { Button } from './Button';
 import { Checkbox } from './Checkbox';
+import { Icon } from './Icon';
 import styles from './LanguagesPicker.module.css';
 
 interface LanguagesPickerProps {
@@ -45,7 +46,11 @@ export function LanguagesPicker({ value, onChange, legend = 'Languages' }: Langu
       <legend className={styles.legend}>{legend}</legend>
       <p id={hintId} className={styles.hint}>
         Tick every language your page speaks. You write your page's words in each of them: your Birth message gets a box
-        per language. Visitors switch between them, and the main one opens for anyone whose browser speaks none.
+        per language. Visitors switch between them, and the main one{' '}
+        <span aria-hidden="true">
+          (<Icon name="star" className={styles.hintStar} />)
+        </span>
+        opens for anyone whose browser speaks none.
       </p>
       <ul className={styles.options}>
         {LANGS.map((lang) => {
@@ -72,7 +77,7 @@ export function LanguagesPicker({ value, onChange, legend = 'Languages' }: Langu
               />
               {main ? (
                 <Badge tone="highlight" icon="star">
-                  Main language
+                  <span className={styles.badgeText}>Main language</span>
                 </Badge>
               ) : null}
               {checked && value.length > 1 && !main ? (
