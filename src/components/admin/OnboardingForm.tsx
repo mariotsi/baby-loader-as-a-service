@@ -9,13 +9,14 @@ import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
 import { FontPicker } from '@/components/ui/FontPicker';
 import { Input } from '@/components/ui/Input';
+import { LanguagesPicker } from '@/components/ui/LanguagesPicker';
 import { PageShell } from '@/components/ui/PageShell';
 import { PalettePicker } from '@/components/ui/PalettePicker';
-import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Switch } from '@/components/ui/Switch';
 import { type AddressConfig, siteAddress, slugProblem } from '@/lib/address';
-import { publicPageView, siteLangs } from '@/lib/publicPageView';
+import type { Lang } from '@/lib/i18n';
+import { publicPageView } from '@/lib/publicPageView';
 import { defaultSiteSettings, type SiteSettings } from '@/lib/siteSettings';
 import { DEFAULT_FONT, DEFAULT_PALETTE } from '@/lib/theme';
 import styles from './OnboardingForm.module.css';
@@ -51,7 +52,7 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
   const [slug, setSlug] = useState('');
   const [babyName, setBabyName] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [language, setLanguage] = useState<'it' | 'en' | 'both'>('en');
+  const [languages, setLanguages] = useState<Lang[]>(['en']);
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
   const [font, setFont] = useState(DEFAULT_FONT);
   const [showName, setShowName] = useState(true);
@@ -63,12 +64,12 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
     ...defaultSiteSettings,
     babyName,
     dueDate: dueDate || null,
-    language,
+    languages,
     timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
     theme: { palette, font },
     privacy: { showName, showSex },
   };
-  const preview = publicPageView(settings as SiteSettings, siteLangs(language)[0]);
+  const preview = publicPageView(settings as SiteSettings, languages[0]);
   const trimmedSlug = slug.trim();
   const slugProblemText = slugError(trimmedSlug);
 
@@ -135,13 +136,7 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
           <Card title={<Step n={2}>Make it yours</Step>} description="Pick the colors and letters your page wears.">
             <PalettePicker value={palette} onChange={setPalette} />
             <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
-            <Field label="Language">
-              <Select value={language} onChange={(e) => setLanguage(e.target.value as typeof language)}>
-                <option value="en">English only</option>
-                <option value="it">Italiano only</option>
-                <option value="both">Both (visitor picks)</option>
-              </Select>
-            </Field>
+            <LanguagesPicker value={languages} onChange={setLanguages} />
           </Card>
           <Card title={<Step n={3}>Who sees what</Step>} description="Until the birth, you decide what the page tells.">
             <div>

@@ -1,0 +1,41 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0.125rem var(--space-2);
+  border: 1px solid transparent;
+  border-radius: calc(var(--radius-sm) / 2.5);
+  font-family: var(--font-body);
+  font-size: var(--text-xs);
+  font-weight: var(--weight-bold);
+  line-height: var(--leading-snug);
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: default;
+}
+
+.sm {
+  gap: 0.125rem;
+  padding: 0 var(--space-1);
+  font-size: var(--text-2xs);
+  line-height: var(--leading-tight);
+  letter-spacing: 0.06em;
+}
+
+.icon {
+  flex: none;
+  width: 1.1em;
+  height: 1.1em;
+}
+
+/* Text sits on the decoration color here, a pairing theme.test.ts checks for every Palette. */
+.highlight {
+  background: var(--color-joy-2);
+  color: var(--color-text);
+}
+
+.neutral {
+  border-color: var(--color-border);
+  color: var(--color-text-muted);
+}

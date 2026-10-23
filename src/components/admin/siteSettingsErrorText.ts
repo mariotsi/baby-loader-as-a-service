@@ -1,3 +1,4 @@
+import { englishName, isLang } from '@/lib/i18n';
 import type { SiteSettingsError } from '@/lib/siteSettings';
 
 /** English copy for Site settings error codes, shown by the Dashboard forms. */
@@ -12,10 +13,8 @@ const FIELD_LABELS: Record<string, string> = {
   'birth.details.datetime': 'Birth date & time',
   'birth.details.weightGrams': 'Weight',
   'birth.details.lengthCm': 'Length',
-  'birth.details.message.it': 'Message (Italian)',
-  'birth.details.message.en': 'Message (English)',
   milestones: 'Milestones',
-  language: 'Language',
+  languages: 'Languages',
   timezone: 'Timezone',
   'theme.palette': 'Palette',
   'theme.font': 'Font',
@@ -28,6 +27,14 @@ function fieldLabel(path: string): string {
   const notification = /^messages\.[a-z]+\.(title|body)$/.exec(field);
   if (notification) {
     return notification[1] === 'title' ? 'Title' : 'Message';
+  }
+  const birthMessage = /^birth\.details\.message\.([a-z]+)$/.exec(field);
+  if (birthMessage) {
+    const code = birthMessage[1];
+    return `Message (${isLang(code) ? englishName(code) : code})`;
+  }
+  if (/^languages\.\d+$/.test(field)) {
+    return 'Languages';
   }
   const milestone = /^milestones\.(\d+)\.(label|date)$/.exec(field);
   if (milestone) {

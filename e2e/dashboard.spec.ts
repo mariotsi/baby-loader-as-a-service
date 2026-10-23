@@ -49,7 +49,8 @@ test.describe('Dashboard', () => {
     await page.getByRole('button', { name: 'Add milestone' }).click();
     await page.getByLabel('Milestone 1 label').fill('Coming home');
     await page.getByLabel('Milestone 1 date').fill('2026-01-18');
-    await page.getByLabel('Language', { exact: true }).selectOption('it');
+    await page.getByRole('checkbox', { name: 'Italian' }).check();
+    await page.getByRole('checkbox', { name: 'English' }).uncheck();
     await page.getByRole('button', { name: 'Save changes' }).click();
     await expect(page.getByText('Saved.')).toBeVisible();
 
@@ -58,7 +59,8 @@ test.describe('Dashboard', () => {
     await expect(page.getByLabel('The baby has been born')).toBeChecked();
     await expect(page.getByLabel('Weight (g)')).toHaveValue('3100');
     await expect(page.getByLabel('Milestone 1 label')).toHaveValue('Coming home');
-    await expect(page.getByLabel('Language', { exact: true })).toHaveValue('it');
+    await expect(page.getByRole('checkbox', { name: 'Italian' })).toBeChecked();
+    await expect(page.getByRole('checkbox', { name: 'English' })).not.toBeChecked();
 
     await page.goto(await dashboardAddress(page, slug));
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Benvenuto/a Edith Rose');
@@ -82,7 +84,7 @@ test.describe('Dashboard', () => {
     await expect(page.getByLabel('The baby has been born')).not.toBeChecked();
   });
 
-  test('keeps a Birth message the Language mode does not show', async ({ page, project }) => {
+  test('keeps a Birth message in a Language the Site no longer speaks', async ({ page, project }) => {
     await page.goto(`/admin/${perProjectSlug('e2e-messages', project)}`);
 
     await page.getByLabel('The baby has been born').check();
@@ -93,7 +95,7 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Saved.')).toBeVisible();
 
     // 'Saved.' is still on screen from the first save, so wait for the second one itself.
-    await page.getByLabel('Language', { exact: true }).selectOption('en');
+    await page.getByRole('checkbox', { name: 'Italian' }).uncheck();
     const saved = page.waitForResponse((res) => res.request().method() === 'PUT');
     await page.getByRole('button', { name: 'Save changes' }).click();
     expect((await saved).ok()).toBe(true);
@@ -101,7 +103,7 @@ test.describe('Dashboard', () => {
     // A reload drops the form's own state: what follows comes from the saved Site.
     await page.reload();
     await expect(page.getByLabel('Message optional', { exact: true })).toHaveValue('Welcome Marta!');
-    await page.getByLabel('Language', { exact: true }).selectOption('both');
+    await page.getByRole('checkbox', { name: 'Italian' }).check();
     await expect(page.getByLabel('Message (Italian)')).toHaveValue('Benvenuta Marta!');
   });
 });

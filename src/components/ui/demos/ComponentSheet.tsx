@@ -1,11 +1,14 @@
 'use client';
 
 import { type ReactNode, useState } from 'react';
+import type { Lang } from '@/lib/i18n';
+import { Badge } from '../Badge';
 import { Button, ButtonLink } from '../Button';
 import { Card } from '../Card';
 import { Checkbox } from '../Checkbox';
 import { Field } from '../Field';
 import { Input } from '../Input';
+import { LanguagesPicker } from '../LanguagesPicker';
 import { SegmentedControl } from '../SegmentedControl';
 import { Select } from '../Select';
 import { Stack } from '../Stack';
@@ -29,7 +32,8 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
  * renders once per Palette.
  */
 export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?: 2 | 3; themeName?: string }) {
-  const [language, setLanguage] = useState<'en' | 'it' | 'both'>('both');
+  const [sex, setSex] = useState<'female' | 'male' | 'unknown'>('unknown');
+  const [languages, setLanguages] = useState<Lang[]>(['it', 'en']);
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
   return (
     <div className={styles.sheet}>
@@ -88,15 +92,16 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
             <Switch label="Show the sex while waiting" />
           </div>
           <SegmentedControl
-            legend="Language"
-            value={language}
-            onChange={setLanguage}
+            legend="Sex"
+            value={sex}
+            onChange={setSex}
             options={[
-              { value: 'en', label: 'English' },
-              { value: 'it', label: 'Italiano' },
-              { value: 'both', label: 'Both' },
+              { value: 'female', label: 'Girl' },
+              { value: 'male', label: 'Boy' },
+              { value: 'unknown', label: 'Rather not say' },
             ]}
           />
+          <LanguagesPicker value={languages} onChange={setLanguages} />
         </div>
       </Group>
       <Group title="Feedback">
@@ -104,6 +109,13 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
           <StatusMessage tone="success">Saved. Your page is up to date.</StatusMessage>
           <StatusMessage tone="info">Sent to 12 of 12 subscribers.</StatusMessage>
           <StatusMessage tone="danger">Couldn't save your changes. Try again.</StatusMessage>
+          <Stack direction="row" gap={2}>
+            <Badge tone="highlight" icon="star">
+              Main language
+            </Badge>
+            <Badge>Optional</Badge>
+            <Badge size="sm">Optional</Badge>
+          </Stack>
         </Stack>
       </Group>
       <Card

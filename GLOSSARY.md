@@ -33,7 +33,7 @@ One baby's waiting page together with everything the Owner configured for it.
 _Avoid_: Tenant, waiting page, account, project
 
 **Site settings**:
-Everything an Owner configures for a Site: the baby's name and Sex, Due date, Birth details, Milestones, Theme, Privacy settings, Language mode and Timezone. The Slug is chosen once, at creation, and is not a Site setting.
+Everything an Owner configures for a Site: the baby's name and Sex, Due date, Birth details, Milestones, Theme, Privacy settings, Languages and Timezone. The Slug is chosen once, at creation, and is not a Site setting.
 _Avoid_: Tenant settings, configuration, preferences
 
 **Slug**:
@@ -116,12 +116,16 @@ _Avoid_: Default theme, admin theme
 The Owner's choice of whether the baby's name and Sex appear on the Public page during the Waiting state. The Born state always shows them.
 _Avoid_: Visibility, toggles
 
-**Language mode**:
-Which language a Site's Public page speaks: Italian only, English only, or Both, where each Visitor picks with the Language switcher.
-_Avoid_: Locale, translation setting
+**Languages**:
+The languages a Site's Public page speaks, one or more, in the Owner's order. The first is the Main language: a Visitor whose browser speaks none of them gets it, and Notifications fall back to it.
+_Avoid_: Language mode, locale, translation setting
+
+**Main language**:
+The first of a Site's Languages.
+_Avoid_: Default language, primary locale
 
 **Language switcher**:
-The control on a Public page in Both mode that lets a Visitor pick Italian or English.
+The control on a Public page with more than one Language that lets a Visitor pick one of them.
 _Avoid_: Language picker, toggle
 
 **Timezone**:

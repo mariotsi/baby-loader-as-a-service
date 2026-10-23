@@ -1,7 +1,6 @@
 import { siteAddressPath } from './address.ts';
 import type { Lang } from './i18n.ts';
 import type { OwnedSite } from './ownerAccess.ts';
-import { siteLangs } from './publicPageView.ts';
 import type { Site } from './site.ts';
 import { defaultNotificationTitle, type ParseResult, type SiteSettingsError } from './siteSettings.ts';
 import { deleteSubscriptionsByEndpoint, listSubscriptionsBySite } from './subscription.ts';
@@ -138,7 +137,7 @@ export async function deliverNotification(
  * language's text, else the Site's primary language's, else any text sent.
  */
 function payloads(site: Site, notification: ValidNotification): (lang: Lang | null) => string {
-  const primary = siteLangs(site.language)[0];
+  const primary = site.languages[0];
   const texts = notification.messages;
   const fallback = texts[primary] ?? Object.values(texts)[0];
   const built = new Map<Lang | null, string>();

@@ -1,6 +1,7 @@
 import { addMonths, format, isAfter, isMatch, isValid, parseISO } from 'date-fns';
 import * as z from 'zod/mini';
 import { slugProblem } from './address.ts';
+import { LANGS, type Lang } from './i18n.ts';
 import { DEFAULT_FONT, DEFAULT_PALETTE, FONTS, PALETTES } from './theme.ts';
 
 /**
@@ -63,6 +64,7 @@ const nonEmpty = () => z.minLength(1, { abort: true });
 const calendarDate = z.string().check(nonEmpty(), z.refine(isCalendarDate, invalidDate));
 const isoDatetime = z.string().check(nonEmpty(), z.refine(isIsoDatetime, invalidDate));
 const message = z.string().check(z.maxLength(1000));
+const lang = z.enum(LANGS as readonly Lang[] as [Lang, ...Lang[]]);
 
 const birthSchema = z.discriminatedUnion('born', [
   z.strictObject({ born: z.literal(false), details: z.null() }),
@@ -72,7 +74,8 @@ const birthSchema = z.discriminatedUnion('born', [
       datetime: isoDatetime,
       weightGrams: z.nullable(z.int().check(z.minimum(300), z.maximum(8000))),
       lengthCm: z.nullable(z.number().check(z.minimum(20), z.maximum(70))),
-      message: z.strictObject({ it: z.optional(message), en: z.optional(message) }),
+      // One per language that has one; a language the Site no longer speaks keeps its message.
+      message: z.partialRecord(lang, message),
     }),
   }),
 ]);
@@ -85,7 +88,11 @@ const siteSettingsSchema = z.strictObject({
   milestones: z
     .array(z.strictObject({ label: z.string().check(z.trim(), z.minLength(1), z.maxLength(80)), date: calendarDate }))
     .check(z.maxLength(50)),
-  language: z.enum(['it', 'en', 'both']),
+  /** The Languages the Public page speaks, the primary one first. */
+  languages: z.array(lang).check(
+    z.minLength(1),
+    z.refine((langs) => new Set(langs).size === langs.length, { params: { code: 'invalidOption' } })
+  ),
   timezone: z.string().check(z.refine(isTimeZone, { params: { code: 'invalidOption' } })),
   theme: z.strictObject({
     palette: z.enum(PALETTES.map((p) => p.id) as [string, ...string[]]),
@@ -131,7 +138,7 @@ export const defaultSiteSettings: SiteSettingsInput = {
   dueDate: null,
   birth: { born: false, details: null },
   milestones: [],
-  language: 'en',
+  languages: ['en'],
   timezone: 'Europe/Rome',
   theme: { palette: DEFAULT_PALETTE, font: DEFAULT_FONT },
   privacy: { showName: true, showSex: true },

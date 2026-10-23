@@ -58,13 +58,32 @@ test('a field the schema does not know is rejected', () => {
   assert.deepEqual(errorsOf({ ...settings(), extra: 1 }), [{ path: 'extra', code: 'unknownField' }]);
 });
 
-test('Palette, Font, Language mode and Sex accept only known options', () => {
+test('Palette, Font, Languages and Sex accept only known options', () => {
   assert.deepEqual(errorsOf(settings({ theme: { palette: 'nope', font: 'comic-sans' } })), [
     { path: 'theme.palette', code: 'invalidOption' },
     { path: 'theme.font', code: 'invalidOption' },
   ]);
-  assert.deepEqual(errorsOf(settings({ language: 'fr' as 'en' })), [{ path: 'language', code: 'invalidOption' }]);
+  assert.deepEqual(errorsOf(settings({ languages: ['en', 'fr' as 'en'] })), [
+    { path: 'languages.1', code: 'invalidOption' },
+  ]);
   assert.deepEqual(errorsOf(settings({ sex: 'other' as 'male' })), [{ path: 'sex', code: 'invalidOption' }]);
+});
+
+test('a Site speaks at least one Language, each once, the primary one first', () => {
+  assert.deepEqual(errorsOf(settings({ languages: [] })), [{ path: 'languages', code: 'required' }]);
+  assert.deepEqual(errorsOf(settings({ languages: ['it', 'en', 'it'] })), [
+    { path: 'languages', code: 'invalidOption' },
+  ]);
+  const result = parseSiteSettings(settings({ languages: ['en', 'it'] }), NOW);
+  assert.deepEqual(result.ok && result.value.languages, ['en', 'it']);
+});
+
+test('a Birth message exists only for a supported language', () => {
+  const named = { babyName: 'Emma', sex: 'female' as const };
+  assert.deepEqual(
+    errorsOf(settings({ ...named, birth: born({ message: { fr: 'salut' } as unknown as { it: string } }) })),
+    [{ path: 'birth.details.message.fr', code: 'unknownField' }]
+  );
 });
 
 test('the Due date is a real calendar day within 10 months of today', () => {

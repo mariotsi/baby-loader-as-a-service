@@ -2,19 +2,16 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 import { SegmentedControl } from './SegmentedControl';
 
-type LanguageMode = 'en' | 'it' | 'both';
-
-const LANGUAGE_MODES = [
-  { value: 'en', label: 'English' },
-  { value: 'it', label: 'Italiano' },
-  { value: 'both', label: 'Both' },
-] satisfies { value: LanguageMode; label: string }[];
+const VIEWS = [
+  { value: 'waiting', label: 'Waiting' },
+  { value: 'born', label: 'Born' },
+] satisfies { value: string; label: string }[];
 
 const meta = {
   title: 'Components/SegmentedControl',
   component: SegmentedControl,
   tags: ['autodocs'],
-  args: { legend: 'Language', options: LANGUAGE_MODES, value: 'en', onChange: () => undefined },
+  args: { legend: 'Preview', options: VIEWS, value: 'waiting', onChange: () => undefined },
   render: function SegmentedStory(args) {
     const [value, setValue] = useState(args.value);
     return <SegmentedControl {...args} value={value} onChange={setValue} />;
@@ -24,8 +21,8 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** The Language mode of a Site. */
-export const LanguageMode: Story = {};
+/** Switching a preview between the Waiting and the Born state. */
+export const PreviewState: Story = {};
 
 /** Spread across a phone-wide form. */
 export const FullWidth: Story = {

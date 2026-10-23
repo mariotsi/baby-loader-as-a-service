@@ -2,7 +2,6 @@ import { SendNotificationForm } from '@/components/admin/SendNotificationForm';
 import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
-import { siteLangs } from '@/lib/publicPageView';
 import styles from '../../admin.module.css';
 
 export default async function SendPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -25,7 +24,7 @@ export default async function SendPage({ params }: { params: Promise<{ slug: str
           <p className={styles.lead}>To everyone subscribed on {name}&apos;s page.</p>
         </div>
       </div>
-      <SendNotificationForm slug={site.slug} lang={siteLangs(site.language)[0]} />
+      <SendNotificationForm slug={site.slug} lang={site.languages[0]} />
     </PageShell>
   );
 }

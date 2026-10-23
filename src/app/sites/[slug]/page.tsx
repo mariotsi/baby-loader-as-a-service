@@ -8,14 +8,13 @@ import { getFont, googleFontsHref, rootTokenCss, themeStyle } from '@/lib/theme'
 
 export const dynamic = 'force-dynamic';
 
-/** The Visitor's language among the Site's: the cookie first, then Accept-Language. */
+/** The Visitor's language among the Site's: the cookie first, then Accept-Language, then the main Language. */
 async function initialLang(langs: Lang[]): Promise<Lang> {
   if (langs.length === 1) {
     return langs[0];
   }
   const [headerList, cookieStore] = await Promise.all([headers(), cookies()]);
-  const lang = negotiateLang(headerList.get('accept-language'), cookieStore.get(LANG_COOKIE)?.value);
-  return langs.includes(lang) ? lang : langs[0];
+  return negotiateLang(headerList.get('accept-language'), cookieStore.get(LANG_COOKIE)?.value, langs);
 }
 
 export default async function SitePage({ params }: { params: Promise<{ slug: string }> }) {

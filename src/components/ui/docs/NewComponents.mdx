@@ -20,7 +20,7 @@ A component joins `src/components/ui` only when it follows every rule here. Revi
    its own geometry in `rem`, like the Switch's track.
 4. **Respect the pairings.** Text uses `--color-text`, `--color-text-muted` or `--color-accent-ink`; text on an accent
    fill uses `--color-on-accent`; a control's boundary uses `--color-border`; a focus ring or selected outline uses
-   `--color-accent-ink`. `--color-accent` and `--color-soft` are fills, never text and never a control's only edge.
+   `--color-accent-ink`. `--color-accent` and `--color-soft` are fills, never text and never a control's only edge. A label that is never pressed, like a Badge, may set `--color-text` on a decoration color (`--color-joy-*`).
    A component that needs a pairing outside this list adds it to `paletteContrastPairings` in `src/lib/contrast.ts`,
    so `theme.test.ts` proves every Palette meets it.
 5. **`className` is for placement**, like a margin or a grid area, never for restyling a component. A new look is a new

@@ -24,7 +24,8 @@ export type SiteSpec = {
   owner: Owner;
   babyName: string;
   sex: 'female' | 'male' | 'unknown';
-  language: 'it' | 'en' | 'both';
+  /** The Site's Languages, the main one first. */
+  languages: ('it' | 'en')[];
   showName: boolean;
   showSex: boolean;
   /** Days from today to the Due date; null for no Due date. */
@@ -40,7 +41,7 @@ export type SiteSpec = {
 
 const waiting = {
   sex: 'female',
-  language: 'en',
+  languages: ['en'] as SiteSpec['languages'],
   showName: true,
   showSex: true,
   dueInDays: 30,
@@ -68,7 +69,7 @@ const sharedFixtureSites: SiteSpec[] = [
     birthMessage: { en: 'Everyone is doing well.' },
   },
   { ...waiting, slug: 'e2e-private', owner: 'a', babyName: 'Priscilla', showName: false, showSex: false },
-  { ...waiting, slug: 'e2e-both', owner: 'a', babyName: 'Bianca', language: 'both' },
+  { ...waiting, slug: 'e2e-both', owner: 'a', babyName: 'Bianca', languages: ['it', 'en'] },
   { ...waiting, slug: 'e2e-owner-b', owner: 'b', babyName: 'Beatrice' },
 ];
 
@@ -77,7 +78,7 @@ const perProjectFixtureBases: Omit<SiteSpec, 'slug'>[] = [
   { ...waiting, owner: 'a', babyName: 'Edith' },
   { ...waiting, owner: 'a', babyName: 'Nora' },
   { ...waiting, owner: 'a', babyName: 'Ruth' },
-  { ...waiting, owner: 'a', babyName: 'Marta', language: 'both' },
+  { ...waiting, owner: 'a', babyName: 'Marta', languages: ['it', 'en'] },
 ];
 const PER_PROJECT_BASES = ['e2e-edit', 'e2e-notify', 'e2e-rules', 'e2e-messages'] as const;
 export type PerProjectFixture = (typeof PER_PROJECT_BASES)[number];
@@ -113,7 +114,7 @@ export const DEMO_SITES: SiteSpec[] = [
     slug: 'demo-emma',
     owner: 'a',
     babyName: 'Emma',
-    language: 'both',
+    languages: ['it', 'en'],
     dueInDays: 45,
     milestones: [
       { label: 'First scan', inDays: -90 },
@@ -126,7 +127,7 @@ export const DEMO_SITES: SiteSpec[] = [
     owner: 'a',
     babyName: 'Leo',
     sex: 'male',
-    language: 'it',
+    languages: ['it'],
     dueInDays: -5,
     bornDaysAgo: 4,
     weight: 3480,

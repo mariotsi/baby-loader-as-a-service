@@ -7,26 +7,35 @@ export type Lang = 'it' | 'en';
 
 export const LANGS: readonly Lang[] = ['it', 'en'];
 
-export const DEFAULT_LANG: Lang = 'en';
-
 /** Written by the client when the visitor picks a language by hand. */
 export const LANG_COOKIE = 'lang';
 
+/** A language's name in English, for the Dashboard: "Italian". Any language Intl knows has one. */
+export function englishName(lang: Lang): string {
+  return new Intl.DisplayNames('en', { type: 'language' }).of(lang) ?? lang;
+}
+
 export function isLang(value: unknown): value is Lang {
-  return value === 'it' || value === 'en';
+  return LANGS.includes(value as Lang);
 }
 
 /**
- * An explicit choice always beats the browser preference, so the cookie is
- * checked first. Otherwise the Accept-Language entries are ranked by their q
- * weight and the first supported one wins.
+ * The Visitor's language among `offered`, a Site's Languages with the main
+ * one first. An explicit choice always beats the browser preference, so the
+ * cookie is checked first. Otherwise the Accept-Language entries are ranked
+ * by their q weight and the first offered one wins; with no match, the main
+ * Language does.
  */
-export function negotiateLang(acceptLanguage: string | null | undefined, cookie?: string | null): Lang {
-  if (isLang(cookie)) {
+export function negotiateLang(
+  acceptLanguage: string | null | undefined,
+  cookie: string | null | undefined,
+  offered: readonly Lang[]
+): Lang {
+  if (isLang(cookie) && offered.includes(cookie)) {
     return cookie;
   }
   if (!acceptLanguage) {
-    return DEFAULT_LANG;
+    return offered[0];
   }
 
   const ranked = acceptLanguage
@@ -41,12 +50,14 @@ export function negotiateLang(acceptLanguage: string | null | undefined, cookie?
       };
     })
     .filter((entry) => entry.primary !== '' && entry.weight > 0)
+    // Array.prototype.sort is stable, so entries with the same weight keep the
+    // order in which the browser declared them.
     .sort((a, b) => b.weight - a.weight);
 
   for (const entry of ranked) {
-    if (isLang(entry.primary)) {
+    if (isLang(entry.primary) && offered.includes(entry.primary)) {
       return entry.primary;
     }
   }
-  return DEFAULT_LANG;
+  return offered[0];
 }

@@ -99,7 +99,7 @@ test("parseNotification needs a body per language sent, among the Site's languag
 });
 
 test("each Subscription gets its language, else the Site's primary one", async () => {
-  const owned = await ownedSite('lang-site', { language: 'both' });
+  const owned = await ownedSite('lang-site', { languages: ['it', 'en'] });
   await subscribe(owned, 'https://push.test/it', 'it');
   await subscribe(owned, 'https://push.test/en', 'en');
   await subscribe(owned, 'https://push.test/old');

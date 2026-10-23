@@ -60,7 +60,7 @@ function siteDoc(spec, ownerId, now) {
             }
           : { born: false, details: null },
         milestones: (spec.milestones ?? []).map((m) => ({ label: m.label, date: isoDate(m.inDays, now) })),
-        language: spec.language,
+        languages: [...spec.languages],
         timezone: 'Europe/Rome',
         theme: { palette: 'blush', font: 'inter' },
         privacy: { showName: spec.showName, showSex: spec.showSex },

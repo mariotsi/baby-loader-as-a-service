@@ -58,13 +58,9 @@ export type PublicPageView = {
 const LOCALES = { en: enUS, it: itLocale };
 const DATE_FORMAT: Record<Lang, string> = { en: 'MMMM d, yyyy', it: 'd MMMM yyyy' };
 
-/** The languages a Site's Public page speaks, in the order the Language switcher lists them. */
-export function siteLangs(language: SiteSettings['language']): Lang[] {
-  return language === 'both' ? ['it', 'en'] : [language];
-}
-
+/** One view per Language the Site speaks, in its order: the primary one first, as the Language switcher lists them. */
 export function publicPageViews(settings: SiteSettings, now: Date = new Date()): PublicPageView[] {
-  return siteLangs(settings.language).map((lang) => publicPageView(settings, lang, now));
+  return settings.languages.map((lang) => publicPageView(settings, lang, now));
 }
 
 export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = new Date()): PublicPageView {
