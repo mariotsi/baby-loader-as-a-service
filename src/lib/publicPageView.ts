@@ -2,7 +2,7 @@ import { TZDate } from '@date-fns/tz';
 import { format, parseISO } from 'date-fns';
 import { enUS, it as itLocale } from 'date-fns/locale';
 import { countdownDays } from './countdown.ts';
-import type { Lang } from './i18n.ts';
+import { inPlatformOrder, type Lang } from './i18n.ts';
 import { type Messages, messages } from './messages.ts';
 import type { BirthDetails, SiteSettings } from './siteSettings.ts';
 
@@ -58,9 +58,9 @@ export type PublicPageView = {
 const LOCALES = { en: enUS, it: itLocale };
 const DATE_FORMAT: Record<Lang, string> = { en: 'MMMM d, yyyy', it: 'd MMMM yyyy' };
 
-/** One view per Language the Site speaks, in its order: the primary one first, as the Language switcher lists them. */
+/** One view per Language the Site speaks, in the Platform's order, as the Language switcher lists them. */
 export function publicPageViews(settings: SiteSettings, now: Date = new Date()): PublicPageView[] {
-  return settings.languages.map((lang) => publicPageView(settings, lang, now));
+  return inPlatformOrder(settings.languages).map((lang) => publicPageView(settings, lang, now));
 }
 
 export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = new Date()): PublicPageView {

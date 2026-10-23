@@ -117,12 +117,8 @@ The Owner's choice of whether the baby's name and Sex appear on the Public page 
 _Avoid_: Visibility, toggles
 
 **Languages**:
-The languages a Site's Public page speaks, one or more, in the Owner's order. The first is the Main language: a Visitor whose browser speaks none of them gets it, and Notifications fall back to it.
+The languages a Site's Public page speaks, one or more. A Visitor gets the one their browser asks for; when it asks for none of them, English if the Site speaks it, Italian otherwise. Notifications fall back the same way. A Visitor's pick in the Language switcher is remembered for their next visits.
 _Avoid_: Language mode, locale, translation setting
-
-**Main language**:
-The first of a Site's Languages.
-_Avoid_: Default language, primary locale
 
 **Language switcher**:
 The control on a Public page with more than one Language that lets a Visitor pick one of them.

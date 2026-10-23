@@ -111,7 +111,7 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
           <StatusMessage tone="danger">Couldn't save your changes. Try again.</StatusMessage>
           <Stack direction="row" gap={2}>
             <Badge tone="highlight" icon="star">
-              Main language
+              Recommended
             </Badge>
             <Badge>Optional</Badge>
             <Badge size="sm">Optional</Badge>

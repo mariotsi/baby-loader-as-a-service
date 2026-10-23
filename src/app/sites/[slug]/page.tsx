@@ -8,7 +8,7 @@ import { getFont, googleFontsHref, rootTokenCss, themeStyle } from '@/lib/theme'
 
 export const dynamic = 'force-dynamic';
 
-/** The Visitor's language among the Site's: the cookie first, then Accept-Language, then the main Language. */
+/** The Visitor's language among the Site's: the cookie first, then Accept-Language, then the fallback. */
 async function initialLang(langs: Lang[]): Promise<Lang> {
   if (langs.length === 1) {
     return langs[0];

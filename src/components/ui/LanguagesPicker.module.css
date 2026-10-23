@@ -18,26 +18,12 @@
   color: var(--color-text-muted);
 }
 
-.hintStar {
-  vertical-align: -0.2em;
-}
-
 .options {
-  container-type: inline-size;
   display: grid;
   gap: var(--space-1);
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-/* A phone keeps the badge or the button on the checkbox's line while there is room, and wraps it under otherwise. */
-.option {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-1) var(--space-3);
 }
 
 .native {
@@ -54,20 +40,4 @@
 
 .note:empty {
   margin: 0;
-}
-
-/*
- * In a phone-wide list the badge shows only its star, so it stays on its
- * language's line whatever the language's word for "main" is; the hint
- * explains the star, and screen readers still hear "Main language".
- */
-@container (max-width: 24rem) {
-  .badgeText {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    overflow: hidden;
-    clip-path: inset(50%);
-    white-space: nowrap;
-  }
 }

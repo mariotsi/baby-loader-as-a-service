@@ -26,5 +26,5 @@ type Story = StoryObj<typeof meta>;
 /** One Language: the page speaks only English and shows no switcher. Try unticking it. */
 export const One: Story = {};
 
-/** Two Languages, Italian the main one: Visitors switch, and other browsers get Italian. */
-export const TwoWithItalianMain: Story = { args: { value: ['it', 'en'] } };
+/** Two Languages: Visitors switch between them, and browsers asking for neither get English. */
+export const Two: Story = { args: { value: ['it', 'en'] } };

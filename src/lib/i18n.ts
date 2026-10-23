@@ -10,6 +10,23 @@ export const LANGS: readonly Lang[] = ['it', 'en'];
 /** Written by the client when the visitor picks a language by hand. */
 export const LANG_COOKIE = 'lang';
 
+/**
+ * The order a Site's Languages are tried in when a Visitor's browser speaks
+ * none of them: English, the one most Visitors are likeliest to read, then
+ * Italian. Every language in LANGS has a place here.
+ */
+export const FALLBACK_LANGS: readonly Lang[] = ['en', 'it'];
+
+/** The Language a Visitor gets from `offered`, a Site's Languages, when nothing they ask for is among them. */
+export function fallbackLang(offered: readonly Lang[]): Lang {
+  return FALLBACK_LANGS.find((lang) => offered.includes(lang)) ?? offered[0];
+}
+
+/** A Site's Languages in the order the Platform lists every language, whatever order they are stored in. */
+export function inPlatformOrder(languages: readonly Lang[]): Lang[] {
+  return LANGS.filter((lang) => languages.includes(lang));
+}
+
 /** A language's name in English, for the Dashboard: "Italian". Any language Intl knows has one. */
 export function englishName(lang: Lang): string {
   return new Intl.DisplayNames('en', { type: 'language' }).of(lang) ?? lang;
@@ -20,11 +37,11 @@ export function isLang(value: unknown): value is Lang {
 }
 
 /**
- * The Visitor's language among `offered`, a Site's Languages with the main
- * one first. An explicit choice always beats the browser preference, so the
- * cookie is checked first. Otherwise the Accept-Language entries are ranked
- * by their q weight and the first offered one wins; with no match, the main
- * Language does.
+ * The Visitor's language among `offered`, a Site's Languages. An explicit
+ * choice always beats the browser preference, so the cookie is checked
+ * first. Otherwise the Accept-Language entries are ranked by their q weight
+ * and the first offered one wins; with no match, the fallback does (see
+ * FALLBACK_LANGS).
  */
 export function negotiateLang(
   acceptLanguage: string | null | undefined,
@@ -35,7 +52,7 @@ export function negotiateLang(
     return cookie;
   }
   if (!acceptLanguage) {
-    return offered[0];
+    return fallbackLang(offered);
   }
 
   const ranked = acceptLanguage
@@ -59,5 +76,5 @@ export function negotiateLang(
       return entry.primary;
     }
   }
-  return offered[0];
+  return fallbackLang(offered);
 }

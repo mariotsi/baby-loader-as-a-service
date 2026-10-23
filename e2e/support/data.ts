@@ -24,7 +24,7 @@ export type SiteSpec = {
   owner: Owner;
   babyName: string;
   sex: 'female' | 'male' | 'unknown';
-  /** The Site's Languages, the main one first. */
+  /** The Site's Languages. */
   languages: ('it' | 'en')[];
   showName: boolean;
   showSex: boolean;

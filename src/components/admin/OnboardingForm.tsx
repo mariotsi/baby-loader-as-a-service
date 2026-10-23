@@ -15,7 +15,7 @@ import { PalettePicker } from '@/components/ui/PalettePicker';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Switch } from '@/components/ui/Switch';
 import { type AddressConfig, siteAddress, slugProblem } from '@/lib/address';
-import type { Lang } from '@/lib/i18n';
+import { fallbackLang, type Lang } from '@/lib/i18n';
 import { publicPageView } from '@/lib/publicPageView';
 import { defaultSiteSettings, type SiteSettings } from '@/lib/siteSettings';
 import { DEFAULT_FONT, DEFAULT_PALETTE } from '@/lib/theme';
@@ -69,7 +69,7 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
     theme: { palette, font },
     privacy: { showName, showSex },
   };
-  const preview = publicPageView(settings as SiteSettings, languages[0]);
+  const preview = publicPageView(settings as SiteSettings, fallbackLang(languages));
   const trimmedSlug = slug.trim();
   const slugProblemText = slugError(trimmedSlug);
 

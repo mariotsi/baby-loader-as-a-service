@@ -18,8 +18,8 @@ type Story = StoryObj<typeof meta>;
 /** A plain fact about the thing beside it, like an optional field. */
 export const Neutral: Story = {};
 
-/** Something special, like the main Language of a Site. */
-export const Highlight: Story = { args: { tone: 'highlight', icon: 'star', children: 'Main language' } };
+/** Something special, like a recommended choice. */
+export const Highlight: Story = { args: { tone: 'highlight', icon: 'star', children: 'Recommended' } };
 
 /** Inside a line of text, like the "optional" beside a field's label. */
 export const Small: Story = { args: { size: 'sm', children: 'Optional' } };
@@ -29,10 +29,10 @@ export const NextToAButton: Story = {
   render: () => (
     <Stack direction="row" gap={3}>
       <Badge tone="highlight" icon="star">
-        Main language
+        Recommended
       </Badge>
       <Button size="sm" variant="ghost">
-        Make main
+        Change
       </Button>
     </Stack>
   ),

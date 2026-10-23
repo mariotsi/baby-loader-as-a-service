@@ -88,7 +88,7 @@ const siteSettingsSchema = z.strictObject({
   milestones: z
     .array(z.strictObject({ label: z.string().check(z.trim(), z.minLength(1), z.maxLength(80)), date: calendarDate }))
     .check(z.maxLength(50)),
-  /** The Languages the Public page speaks, the primary one first. */
+  /** The Languages the Public page speaks, in any order: pages list them in the Platform's (see inPlatformOrder). */
   languages: z.array(lang).check(
     z.minLength(1),
     z.refine((langs) => new Set(langs).size === langs.length, { params: { code: 'invalidOption' } })

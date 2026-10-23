@@ -69,7 +69,7 @@ test('Palette, Font, Languages and Sex accept only known options', () => {
   assert.deepEqual(errorsOf(settings({ sex: 'other' as 'male' })), [{ path: 'sex', code: 'invalidOption' }]);
 });
 
-test('a Site speaks at least one Language, each once, the primary one first', () => {
+test('a Site speaks at least one Language, each once', () => {
   assert.deepEqual(errorsOf(settings({ languages: [] })), [{ path: 'languages', code: 'required' }]);
   assert.deepEqual(errorsOf(settings({ languages: ['it', 'en', 'it'] })), [
     { path: 'languages', code: 'invalidOption' },

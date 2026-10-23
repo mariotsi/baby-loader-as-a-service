@@ -3,7 +3,7 @@ import styles from './Badge.module.css';
 import { Icon, type IconName } from './Icon';
 
 interface BadgeProps {
-  /** `highlight` marks something special, like the main Language; `neutral` notes a plain fact, like "optional". */
+  /** `highlight` marks something special, like a recommended choice; `neutral` notes a plain fact, like "optional". */
   tone?: 'neutral' | 'highlight';
   /** `sm` sits inside a line of text, like a field's label. */
   size?: 'md' | 'sm';

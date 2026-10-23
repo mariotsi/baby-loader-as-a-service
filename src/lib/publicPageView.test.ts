@@ -137,7 +137,7 @@ test("the push button copy follows the Site's state", () => {
   assert.equal(publicPageView(site({ birth: BORN }), 'en', NOW).push.subscribe, 'Get the next updates');
 });
 
-test("a Site gets one view per Language, in the Site's order", () => {
+test("a Site gets one view per Language, in the Platform's order", () => {
   assert.deepEqual(
     publicPageViews(site({ languages: ['it', 'en'] }), NOW).map((view) => [view.lang, view.title]),
     [
@@ -151,7 +151,7 @@ test("a Site gets one view per Language, in the Site's order", () => {
   );
   assert.deepEqual(
     publicPageViews(site({ languages: ['en', 'it'] }), NOW).map((view) => view.lang),
-    ['en', 'it']
+    ['it', 'en']
   );
 });
 

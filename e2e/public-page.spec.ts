@@ -58,10 +58,10 @@ test.describe('Public page', () => {
   test.describe('for a French browser', () => {
     test.use({ locale: 'fr-FR' });
 
-    test('opens in the main Language, which the browser does not speak either', async ({ page, addressOf }) => {
-      // e2e-both speaks Italian first, then English: neither is French, so the main one wins.
+    test('opens in English when the Site speaks it and not French', async ({ page, addressOf }) => {
+      // e2e-both speaks Italian and English: neither is French, so English, the first fallback, wins.
       await page.goto(await addressOf('e2e-both'));
-      await expect(page.getByRole('heading', { level: 1 })).toHaveText('Stiamo aspettando Bianca');
+      await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for Bianca');
     });
   });
 

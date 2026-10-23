@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { englishName, isLang, negotiateLang } from './i18n.ts';
+import { englishName, FALLBACK_LANGS, fallbackLang, inPlatformOrder, isLang, LANGS, negotiateLang } from './i18n.ts';
 
 test('the language cookie wins when the Site speaks it', () => {
   assert.equal(negotiateLang('en-US,en;q=0.9', 'it', ['en', 'it']), 'it');
@@ -37,14 +37,28 @@ test('an unknown or empty cookie is ignored', () => {
   assert.equal(negotiateLang('en-US,en;q=0.9', '', [...BOTH]), 'en');
 });
 
-test("with no match the Site's main Language wins", () => {
-  assert.equal(negotiateLang('', null, [...BOTH]), 'it');
-  assert.equal(negotiateLang('*', null, ['en', 'it']), 'en');
-  assert.equal(negotiateLang('garbage;;;', null, [...BOTH]), 'it');
-  assert.equal(negotiateLang('fr-FR,de;q=0.8', null, ['it', 'en']), 'it');
-  assert.equal(negotiateLang('fr-FR', null, ['en', 'it']), 'en');
-  assert.equal(negotiateLang(null, null, ['it', 'en']), 'it');
-  assert.equal(negotiateLang('en;q=0', null, ['it', 'en']), 'it', 'q=0 means not acceptable');
+test('entries with weight zero are not acceptable', () => {
+  assert.equal(negotiateLang('en;q=0,it;q=0.5', null, [...BOTH]), 'it');
+});
+
+test('with no match English wins if the Site speaks it, Italian otherwise', () => {
+  assert.equal(negotiateLang('', null, [...BOTH]), 'en');
+  assert.equal(negotiateLang(null, null, [...BOTH]), 'en');
+  assert.equal(negotiateLang('*', null, [...BOTH]), 'en');
+  assert.equal(negotiateLang('garbage;;;', null, [...BOTH]), 'en');
+  assert.equal(negotiateLang('fr-FR,de;q=0.8', null, [...BOTH]), 'en');
+  assert.equal(negotiateLang('fr-FR', null, ['it']), 'it');
+});
+
+test('every supported language has a place in the fallback order', () => {
+  assert.deepEqual(new Set(FALLBACK_LANGS), new Set(LANGS));
+  assert.equal(fallbackLang(['it', 'en']), 'en');
+  assert.equal(fallbackLang(['it']), 'it');
+});
+
+test('inPlatformOrder lists Languages as the Platform does, whatever order they come in', () => {
+  assert.deepEqual(inPlatformOrder(['en', 'it']), ['it', 'en']);
+  assert.deepEqual(inPlatformOrder(['en']), ['en']);
 });
 
 test('isLang and englishName cover the supported languages', () => {

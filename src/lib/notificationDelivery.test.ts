@@ -98,7 +98,7 @@ test("parseNotification needs a body per language sent, among the Site's languag
   assert.deepEqual(valid({ en: { title: '  ', body: ' Any day now ' } }).messages, { en: { body: 'Any day now' } });
 });
 
-test("each Subscription gets its language, else the Site's primary one", async () => {
+test("each Subscription gets its language, else the Site's fallback one", async () => {
   const owned = await ownedSite('lang-site', { languages: ['it', 'en'] });
   await subscribe(owned, 'https://push.test/it', 'it');
   await subscribe(owned, 'https://push.test/en', 'en');
@@ -116,10 +116,10 @@ test("each Subscription gets its language, else the Site's primary one", async (
   assert.deepEqual(bodies, {
     'https://push.test/it': 'Ciao',
     'https://push.test/en': 'Hi',
-    'https://push.test/old': 'Ciao',
+    'https://push.test/old': 'Hi',
   });
 
-  // Only the primary language written: everyone gets it.
+  // Only one language written: everyone gets it.
   const onlyItalian = fakePush();
   await deliverNotification(owned, valid({ it: { body: 'Solo' } }, ['it', 'en']), onlyItalian.service);
   assert.ok(onlyItalian.sent.every((s) => s.payload.body === 'Solo'));

@@ -1,6 +1,7 @@
 import { SendNotificationForm } from '@/components/admin/SendNotificationForm';
 import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
+import { fallbackLang } from '@/lib/i18n';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import styles from '../../admin.module.css';
 
@@ -24,7 +25,7 @@ export default async function SendPage({ params }: { params: Promise<{ slug: str
           <p className={styles.lead}>To everyone subscribed on {name}&apos;s page.</p>
         </div>
       </div>
-      <SendNotificationForm slug={site.slug} lang={site.languages[0]} />
+      <SendNotificationForm slug={site.slug} lang={fallbackLang(site.languages)} />
     </PageShell>
   );
 }
