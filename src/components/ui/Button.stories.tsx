@@ -34,7 +34,7 @@ export const IconAtTheEnd: Story = {
   args: { variant: 'primary', icon: 'arrow-right', iconPosition: 'end', children: 'Next: the big day' },
 };
 
-/** While loading, the spinner takes the icon's place, at the end too. */
+/** While loading, the Spinner takes the icon's place, at the end too. */
 export const LoadingWithIconAtTheEnd: Story = {
   args: { variant: 'primary', icon: 'arrow-right', iconPosition: 'end', loading: true, children: 'Saving…' },
 };

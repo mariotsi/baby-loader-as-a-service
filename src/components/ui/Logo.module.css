@@ -1,0 +1,89 @@
+.mark {
+  flex: none;
+  overflow: visible;
+}
+
+/* The Palette's colors, as in the logo files. */
+.brand .track {
+  fill: var(--color-surface);
+  stroke: var(--color-soft);
+}
+
+.brand .arc {
+  stroke: var(--color-accent);
+}
+
+.brand .line,
+.brand .mouth {
+  stroke: var(--color-text);
+}
+
+.brand .cheek {
+  fill: var(--color-joy-1);
+}
+
+/* One color, the text's: on a primary Button that is the text on the accent fill. */
+.current .track {
+  stroke: currentColor;
+  opacity: 0.3;
+}
+
+.current .arc,
+.current .line {
+  stroke: currentColor;
+}
+
+.current .cheek,
+.current .mouth {
+  display: none;
+}
+
+.ring {
+  transform-box: view-box;
+  transform-origin: 50px 56px;
+}
+
+.logo {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
+  font-size: var(--text-lg);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+}
+
+.logoMark {
+  width: 1.75em;
+  height: 1.75em;
+}
+
+.baby {
+  color: var(--color-accent-ink);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .spinning .ring {
+    animation: spin calc(var(--duration-slow) * 1.75) linear infinite;
+  }
+
+  .logoMark,
+  .logoMark .ring {
+    transition: transform var(--duration-slow) var(--ease-bounce);
+  }
+
+  .logo:hover .logoMark {
+    transform: rotate(-8deg) scale(1.1);
+  }
+
+  .logo:hover .logoMark .ring {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

@@ -2,7 +2,7 @@ import { Meta } from '@storybook/addon-docs/blocks';
 
 <Meta title="Design system/Introduction" />
 
-# Waiting Pages design system
+# Loading Baby design system
 
 Parents use this Platform to build the page that tells their family a baby is on the way. Everything here should
 feel warm and a little playful, and work for everyone, on the phone in their hand first.
@@ -16,6 +16,9 @@ feel warm and a little playful, and work for everyone, on the phone in their han
   no external UI library.
 - **Playground**: every component on one page, with a Palette and Font picker and a live contrast report.
 - **Demos**: whole pages composed from the components, to judge the system on a real layout at every viewport.
+- **Brand** (`brand/`, built by `npm run brand`): the Sleepy spinner mark, logos, favicons and Open Graph images as
+  files. The `Logo` and `Spinner` components draw the same mark in tokens, so a change to the mark goes in both
+  `scripts/brand-kit.mjs` and `LogoMark`.
 
 ## Two themes, one system
 

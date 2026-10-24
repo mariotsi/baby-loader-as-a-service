@@ -121,6 +121,51 @@ npm run build-storybook    # a static Storybook in storybook-static/
 `npm test` also checks every Palette against WCAG AA on each color pairing
 the components render, and CI runs both checks on every pull request.
 
+## Brand
+
+The Platform is **Loading Baby**, at `loading.baby`, with the tagline "For
+the days before the big day" ("Per i giorni prima del grande giorno"). Its
+mark is the Sleepy spinner: a baby asleep inside a loading ring, the curl on
+its head where the ring starts. In the app it is the `Logo` in every Platform
+header and the `Spinner` that shows wherever work is in flight.
+
+`brand/` holds the brand kit, for anything outside the app: slides, social
+posts, print, a press page.
+
+| Folder          | What                                                                        |
+| --------------- | --------------------------------------------------------------------------- |
+| `brand/Logo`    | 4 marks and 12 lockups, each as SVG, PNG on transparent and JPG             |
+| `brand/Favicon` | `favicon.ico`, `icon.svg`, PNG favicons, app icons, push notification badge |
+| `brand/Social`  | Open Graph images, 1200 × 630, marketing and Dashboard, English and Italian |
+
+The marks are full color, on dark, one color and white. The lockups are
+horizontal and stacked, with no tagline, the English or the Italian one, on
+light and on dark. The SVGs carry the name as outlines, so they need no fonts.
+
+The kit is built from code, so never edit its files by hand: change
+`scripts/brand-kit.mjs` and run
+
+```bash
+npm run brand              # rebuilds brand/ and the app's copies below
+```
+
+The same run copies what the app serves out of the kit:
+
+| App file                            | From                                      |
+| ----------------------------------- | ----------------------------------------- |
+| `src/app/favicon.ico`               | `brand/Favicon/favicon.ico`               |
+| `src/app/icon.svg`                  | `brand/Favicon/icon.svg`                  |
+| `src/app/apple-icon.png`            | `brand/Favicon/apple-touch-icon.png`      |
+| `src/app/opengraph-image.png`       | `brand/Social/og-marketing-en.png`        |
+| `src/app/admin/opengraph-image.png` | `brand/Social/og-dashboard-en.png`        |
+| `public/icon-192.png`               | `brand/Favicon/icon-192.png`              |
+| `public/icon-72.png`                | `brand/Favicon/notification-badge-72.png` |
+
+The `Logo` and `Spinner` components draw the mark in code, with the theme's
+tokens (`LogoMark` in `src/components/ui/Logo.tsx`): a change to the mark goes
+in both the script and that component. Sites bring their own images and
+favicon; until they do, a Site shows the Platform's.
+
 ## End-to-end tests
 
 Playwright tests in `e2e/` cover signup and Site creation, login, the Public

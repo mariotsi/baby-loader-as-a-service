@@ -28,8 +28,9 @@ export const config = {
   matcher: [
     /*
      * Skip Next internals, API routes, and static files — none of these are
-     * ever a Site's Public page.
+     * ever a Site's Public page. The Platform's icons are among them, so a
+     * Site's subdomain shows them too until Sites have their own.
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|sw.js|icon-.*\\.png).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|sw.js|icon-.*\\.png).*)',
   ],
 };

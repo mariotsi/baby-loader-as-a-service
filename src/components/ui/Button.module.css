@@ -67,7 +67,6 @@
 }
 
 .icon,
-.spinner,
 .iconEnd {
   flex: none;
 }
@@ -94,15 +93,5 @@
 
   .button:hover .iconEnd {
     transform: translateX(3px);
-  }
-
-  .spinner {
-    animation: spin calc(var(--duration-slow) * 1.5) linear infinite;
-  }
-}
-
-@keyframes spin {
-  to {
-    transform: rotate(360deg);
   }
 }
