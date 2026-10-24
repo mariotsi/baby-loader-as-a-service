@@ -3,7 +3,7 @@ import { PublicPage } from '@/components/PublicPage';
 import { publicPageViews } from '@/lib/publicPageView';
 import { defaultSiteSettings, type SiteSettings } from '@/lib/siteSettings';
 
-/** A signed Site speaking Italian and English, six weeks from its Due date, with a few Milestones. */
+/** A named Site speaking Italian and English, six weeks from its Due date, with a few Milestones. */
 function sampleSettings(state: 'waiting' | 'born'): SiteSettings {
   const now = new Date();
   const day = (offset: number) => format(addDays(now, offset), 'yyyy-MM-dd');
@@ -14,7 +14,7 @@ function sampleSettings(state: 'waiting' | 'born'): SiteSettings {
     dueDate: day(42),
     languages: ['it', 'en'],
     timezone: 'Europe/Rome',
-    signature: { en: 'Stefania and Simone', it: 'Stefania e Simone' },
+    pageName: { en: 'Stefania and Simone', it: 'Stefania e Simone' },
     milestones: [
       { label: 'We found out!', date: day(-200) },
       { label: 'The first kick', date: day(-90) },

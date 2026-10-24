@@ -15,7 +15,7 @@ import styles from './PublicPage.module.css';
  * speaks, computed on the server. Switching language swaps the view in place
  * and remembers the choice in the language cookie for the next visit.
  *
- * The header carries the Owner's Signature on the left and the Language
+ * The header carries the Owner's Page name on the left and the Language
  * switcher on the right. On a phone everything stacks in one centred column;
  * on a wide screen the name and the call to action sit beside the Countdown
  * or the Birth details.
@@ -47,12 +47,12 @@ export function PublicPage({
   return (
     <div className={styles.page}>
       <JoyBackground />
-      {view.signature || views.length > 1 ? (
+      {view.pageName || views.length > 1 ? (
         <header className={styles.header}>
-          {view.signature ? (
-            <p className={styles.signature}>
+          {view.pageName ? (
+            <p className={styles.pageName}>
               <Icon name="heart" className={styles.heart} />
-              {view.signature}
+              {view.pageName}
             </p>
           ) : null}
           {views.length > 1 ? (

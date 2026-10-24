@@ -20,7 +20,7 @@ const FIELD_LABELS: Record<string, string> = {
   'theme.font': 'Font',
   'privacy.showName': 'Show name',
   'privacy.showSex': 'Show sex',
-  signature: 'Signature',
+  pageName: 'Page name',
 };
 
 function fieldLabel(path: string): string {
@@ -29,10 +29,10 @@ function fieldLabel(path: string): string {
   if (notification) {
     return notification[1] === 'title' ? 'Title' : 'Message';
   }
-  const perLanguage = /^(birth\.details\.message|signature)\.([a-z]+)$/.exec(field);
+  const perLanguage = /^(birth\.details\.message|pageName)\.([a-z]+)$/.exec(field);
   if (perLanguage) {
     const code = perLanguage[2];
-    const name = perLanguage[1] === 'signature' ? 'Signature' : 'Message';
+    const name = perLanguage[1] === 'pageName' ? 'Page name' : 'Message';
     return `${name} (${isLang(code) ? englishName(code) : code})`;
   }
   if (/^languages\.\d+$/.test(field)) {

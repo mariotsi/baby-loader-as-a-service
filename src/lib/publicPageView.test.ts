@@ -94,13 +94,13 @@ test('the Born state announces the name and Sex whatever the Privacy settings', 
   assert.equal(view.waiting, null);
 });
 
-test('the Signature shows in its language, in both states and whatever the Privacy settings', () => {
-  const signature = { it: ' Stefania e Simone ', en: 'Stefania & Simone' };
+test('the Page name shows in its language, in both states and whatever the Privacy settings', () => {
+  const pageName = { it: ' Stefania e Simone ', en: 'Stefania & Simone' };
   const hidden = { showName: false, showSex: false };
-  assert.equal(publicPageView(site({ signature, privacy: hidden }), 'it', NOW).signature, 'Stefania e Simone');
-  assert.equal(publicPageView(site({ signature, birth: BORN }), 'en', NOW).signature, 'Stefania & Simone');
-  assert.equal(publicPageView(site({ signature: { it: 'Stefania e Simone' } }), 'en', NOW).signature, null);
-  assert.equal(publicPageView(site({ signature: { en: '   ' } }), 'en', NOW).signature, null);
+  assert.equal(publicPageView(site({ pageName, privacy: hidden }), 'it', NOW).pageName, 'Stefania e Simone');
+  assert.equal(publicPageView(site({ pageName, birth: BORN }), 'en', NOW).pageName, 'Stefania & Simone');
+  assert.equal(publicPageView(site({ pageName: { it: 'Stefania e Simone' } }), 'en', NOW).pageName, null);
+  assert.equal(publicPageView(site({ pageName: { en: '   ' } }), 'en', NOW).pageName, null);
 });
 
 test("Birth details are told in the Site's Timezone and language", () => {

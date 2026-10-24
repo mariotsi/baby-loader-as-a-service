@@ -30,7 +30,7 @@ export type PushButtonCopy = {
 export type PublicPageView = {
   lang: Lang;
   /** The Owner's line in the header, in both states; null when there is none in this language. */
-  signature: string | null;
+  pageName: string | null;
   tagline: string;
   title: string;
   /** "It's a girl", or null when hidden or unknown. */
@@ -70,7 +70,7 @@ export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = n
   const { birth } = settings;
   return {
     lang,
-    signature: settings.signature[lang]?.trim() || null,
+    pageName: settings.pageName[lang]?.trim() || null,
     ...headline(settings, t),
     waiting: !birth.born && settings.dueDate ? waitingView(settings.dueDate, settings.timezone, lang, now) : null,
     born: birth.born ? bornView(birth.details, settings.timezone, lang) : null,

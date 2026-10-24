@@ -150,18 +150,18 @@ test('the Birth message is capped per language', () => {
   ]);
 });
 
-test('the Signature is trimmed, capped at 60 characters per language and kept for any supported one', () => {
+test('the Page name is trimmed, capped at 60 characters per language and kept for any supported one', () => {
   const result = parseSiteSettings(
-    settings({ languages: ['en'], signature: { en: '  Stefania & Simone ', it: 'S e S' } }),
+    settings({ languages: ['en'], pageName: { en: '  Stefania & Simone ', it: 'S e S' } }),
     NOW
   );
   assert.ok(result.ok);
-  assert.deepEqual(result.value.signature, { en: 'Stefania & Simone', it: 'S e S' });
-  assert.deepEqual(errorsOf(settings({ signature: { en: 'x'.repeat(61) } })), [
-    { path: 'signature.en', code: 'tooLong', params: { max: 60 } },
+  assert.deepEqual(result.value.pageName, { en: 'Stefania & Simone', it: 'S e S' });
+  assert.deepEqual(errorsOf(settings({ pageName: { en: 'x'.repeat(61) } })), [
+    { path: 'pageName.en', code: 'tooLong', params: { max: 60 } },
   ]);
-  assert.deepEqual(errorsOf(settings({ signature: { fr: 'Stéphanie' } as unknown as { en: string } })), [
-    { path: 'signature.fr', code: 'unknownField' },
+  assert.deepEqual(errorsOf(settings({ pageName: { fr: 'Stéphanie' } as unknown as { en: string } })), [
+    { path: 'pageName.fr', code: 'unknownField' },
   ]);
 });
 
