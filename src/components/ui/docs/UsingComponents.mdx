@@ -19,6 +19,8 @@ import { Meta } from '@storybook/addon-docs/blocks';
 | A setting that shows or hides something               | `Switch`                                   |
 | A Site's Palette or Font                              | `PalettePicker`, `FontPicker`              |
 | A Site's Languages                                    | `LanguagesPicker`                          |
+| A text in every Language of a Site                    | `PerLanguageField`                         |
+| One emoji, like a Milestone's                         | `EmojiPicker`                              |
 | The outcome of an action: saved, sent, failed         | `StatusMessage`                            |
 | A status or property of the thing beside it           | `Badge`, never a Button styled as a label  |
 | Requirements that tick off, like a password's rules   | `Checklist`, tied to its control           |
@@ -48,7 +50,23 @@ import { Meta } from '@storybook/addon-docs/blocks';
 ## Forms
 
 - **Every control has a label.** Wrap it in a `Field`, which generates the id and ties the label, hint and error to
-  the control. A control outside a `Field`, like a Milestone row's date, takes an `aria-label`.
+  the control. When the control's place in a row already says what it is, like a Milestone's date beside its emoji,
+  give the label to screen readers only with `labelHidden`.
+- **A text in every Language of a Site**, like a Milestone's label or the Birth message, goes in a `PerLanguageField`:
+  it takes the texts by Language, calls `onChange(lang, text)`, and lays out and labels one control per Language,
+  which its `children` draws.
+
+```tsx
+<PerLanguageField
+  label="Page name"
+  languages={languages}
+  value={pageName}
+  onChange={(lang, text) => setPageName({ ...pageName, [lang]: text })}
+  errors={errors}
+>
+  {({ lang, value, onChange }) => <Input lang={lang} value={value} onChange={(e) => onChange(e.target.value)} />}
+</PerLanguageField>
+```
 - **Never write an `id` by hand.** Biome fails the build on one. `Field` and `useId()` make unique ids.
 - **Mark the optional fields**, with `optional`, not the required ones.
 - **An error says what happened and how to fix it**: "Someone got there first. Try emma-2026.", not "Invalid slug".

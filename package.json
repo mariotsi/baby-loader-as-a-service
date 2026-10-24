@@ -26,6 +26,7 @@
   "dependencies": {
     "@date-fns/tz": "^1.5.0",
     "date-fns": "^4.4.0",
+    "frimousse": "^0.4.0",
     "mongodb": "^6.5.0",
     "next": "^16.4.3",
     "react": "^19.3.1",

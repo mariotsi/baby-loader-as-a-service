@@ -114,6 +114,9 @@ function Milestones({ milestones }: { milestones: NonNullable<PublicPageView['mi
       <ol className={styles.timeline}>
         {milestones.items.map((item) => (
           <li key={`${item.date}-${item.label}`}>
+            <span className={styles.emoji} aria-hidden="true">
+              {item.emoji}
+            </span>
             <span className={styles.when}>{item.date}</span> {item.label}
           </li>
         ))}

@@ -41,6 +41,16 @@
   width: 100%;
 }
 
+/* A square as tall as the button, around its icon alone. */
+.iconOnly {
+  min-width: var(--control-height);
+  padding-inline: 0;
+}
+
+.sm.iconOnly {
+  min-width: var(--control-height-sm);
+}
+
 .primary {
   background: var(--color-accent);
   color: var(--color-on-accent);

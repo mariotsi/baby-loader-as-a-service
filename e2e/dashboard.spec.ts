@@ -46,10 +46,16 @@ test.describe('Dashboard', () => {
     await page.getByLabel('Birth date & time').fill('2026-01-15T08:30');
     await page.getByLabel('Weight (g)').fill('3100');
     await page.getByLabel('Length (cm)').fill('49');
-    await page.getByRole('button', { name: 'Add milestone' }).click();
-    await page.getByLabel('Milestone 1 label').fill('Coming home');
-    await page.getByLabel('Milestone 1 date').fill('2026-01-18');
     await page.getByRole('checkbox', { name: 'Italian' }).check();
+    await page.getByRole('button', { name: 'Add milestone' }).click();
+    const milestone = page.getByRole('group', { name: 'Milestone 1' });
+    await milestone.getByLabel('Date').fill('2026-01-18');
+    await milestone.getByLabel('English').fill('Coming home');
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(milestone.getByText('Write this Milestone in Italian.')).toBeVisible();
+    await expect(milestone.getByLabel('Italian')).toBeFocused();
+    await milestone.getByLabel('Italian').fill('Si torna a casa');
+    await expect(milestone.getByText('Write this Milestone in Italian.')).toBeHidden();
     await page.getByRole('checkbox', { name: 'English' }).uncheck();
     await page.getByLabel('Page name').fill('Elena e Ettore');
     await page.getByRole('button', { name: 'Save changes' }).click();
@@ -59,7 +65,7 @@ test.describe('Dashboard', () => {
     await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Edith Rose');
     await expect(page.getByLabel('The baby has been born')).toBeChecked();
     await expect(page.getByLabel('Weight (g)')).toHaveValue('3100');
-    await expect(page.getByLabel('Milestone 1 label')).toHaveValue('Coming home');
+    await expect(page.getByRole('group', { name: 'Milestone 1' }).getByLabel('Label')).toHaveValue('Si torna a casa');
     await expect(page.getByRole('checkbox', { name: 'Italian' })).toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'English' })).not.toBeChecked();
     await expect(page.getByLabel('Page name')).toHaveValue('Elena e Ettore');
@@ -69,6 +75,7 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Peso: 3100 g')).toBeVisible();
     await expect(page.getByText('È una femmina')).toBeVisible();
     await expect(page.getByRole('banner')).toHaveText('Elena e Ettore');
+    await expect(page.getByText('Si torna a casa')).toBeVisible();
   });
 
   test('explains a missing birth date and time and a weight in fractions of a gram', async ({ page, project }) => {
@@ -92,8 +99,9 @@ test.describe('Dashboard', () => {
 
     await page.getByLabel('The baby has been born').check();
     await page.getByLabel('Birth date & time').fill('2026-01-15T08:30');
-    await page.getByLabel('Message (Italian)').fill('Benvenuta Marta!');
-    await page.getByLabel('Message (English)').fill('Welcome Marta!');
+    const message = page.getByRole('group', { name: /^Message/ });
+    await message.getByLabel('Italian').fill('Benvenuta Marta!');
+    await message.getByLabel('English').fill('Welcome Marta!');
     await page.getByRole('button', { name: 'Save changes' }).click();
     await expect(page.getByText('Saved.')).toBeVisible();
 
@@ -107,6 +115,6 @@ test.describe('Dashboard', () => {
     await page.reload();
     await expect(page.getByLabel('Message optional', { exact: true })).toHaveValue('Welcome Marta!');
     await page.getByRole('checkbox', { name: 'Italian' }).check();
-    await expect(page.getByLabel('Message (Italian)')).toHaveValue('Benvenuta Marta!');
+    await expect(message.getByLabel('Italian')).toHaveValue('Benvenuta Marta!');
   });
 });

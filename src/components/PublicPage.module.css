@@ -165,19 +165,16 @@
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-1) var(--space-3);
-  padding-inline-start: var(--space-5);
+  padding-inline-start: var(--space-6);
 }
 
-.timeline li::before {
-  content: "";
+/* The Milestone's emoji stands where a timeline dot would. */
+.emoji {
   position: absolute;
   inset-inline-start: 0;
-  top: 0.45em;
-  width: 0.75rem;
-  height: 0.75rem;
-  border: var(--border-width) solid var(--color-accent-ink);
-  border-radius: 50%;
-  background: var(--color-accent);
+  top: 0;
+  font-size: var(--text-lg);
+  line-height: var(--leading-snug);
 }
 
 .when {
