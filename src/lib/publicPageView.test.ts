@@ -126,18 +126,23 @@ test('missing Birth details stay out', () => {
   assert.deepEqual([born?.weightLine, born?.lengthLine, born?.message], [null, null, null]);
 });
 
-test("Milestones come in date order, dated in the page's language", () => {
+test("Milestones come in date order, dated and labelled in the page's language", () => {
   const milestones = [
-    { label: 'Gender reveal', date: '2026-06-10' },
-    { label: 'First scan', date: '2026-04-02' },
+    { emoji: '🎀', label: { it: 'Femminuccia!', en: 'It’s a girl!' }, date: '2026-06-10' },
+    { emoji: '🩺', label: { it: 'Prima ecografia', en: 'First scan' }, date: '2026-04-02' },
   ];
-  assert.deepEqual(publicPageView(site({ milestones }), 'it', NOW).milestones, {
+  const languages: SiteSettings['languages'] = ['it', 'en'];
+  assert.deepEqual(publicPageView(site({ languages, milestones }), 'it', NOW).milestones, {
     title: 'Tappe',
     items: [
-      { date: '2 aprile 2026', label: 'First scan' },
-      { date: '10 giugno 2026', label: 'Gender reveal' },
+      { emoji: '🩺', date: '2 aprile 2026', label: 'Prima ecografia' },
+      { emoji: '🎀', date: '10 giugno 2026', label: 'Femminuccia!' },
     ],
   });
+  assert.deepEqual(
+    publicPageView(site({ languages, milestones }), 'en', NOW).milestones?.items.map((item) => item.label),
+    ['First scan', 'It’s a girl!']
+  );
   assert.equal(publicPageView(site(), 'en', NOW).milestones, null);
 });
 
@@ -165,6 +170,10 @@ test("a Site gets one view per Language, in the Platform's order", () => {
 });
 
 test('a view is plain data that survives serialization to a Client Component', () => {
-  const view = publicPageView(site({ birth: BORN, milestones: [{ label: 'Scan', date: '2026-04-02' }] }), 'en', NOW);
+  const view = publicPageView(
+    site({ birth: BORN, milestones: [{ emoji: '🩺', label: { en: 'Scan' }, date: '2026-04-02' }] }),
+    'en',
+    NOW
+  );
   assert.deepEqual(JSON.parse(JSON.stringify(view)), view);
 });

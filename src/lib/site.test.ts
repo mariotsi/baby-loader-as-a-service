@@ -56,7 +56,7 @@ test('saveSiteSettings replaces every Site setting at once', async () => {
   const withMilestone = parseSiteSettings({
     ...defaultSiteSettings,
     babyName: 'Leo',
-    milestones: [{ label: 'First scan', date: '2026-05-01' }],
+    milestones: [{ emoji: '🩺', label: { en: 'First scan' }, date: '2026-05-01' }],
   });
   assert.ok(withMilestone.ok);
   assert.ok((await createSite(owner, newSite('leo'))).ok);

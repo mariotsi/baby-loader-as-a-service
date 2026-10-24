@@ -36,7 +36,8 @@ export type SiteSpec = {
   lengthCm?: number;
   /** The Birth message in each language that has one. */
   birthMessage?: { it?: string; en?: string };
-  milestones?: { label: string; inDays: number }[];
+  /** A label in every Language of the Site. */
+  milestones?: { emoji: string; label: { it?: string; en?: string }; inDays: number }[];
   /** The Page name in each language that has one. */
   pageName?: { it?: string; en?: string };
 };
@@ -56,7 +57,7 @@ const sharedFixtureSites: SiteSpec[] = [
     slug: 'e2e-waiting',
     owner: 'a',
     babyName: 'Wanda',
-    milestones: [{ label: 'First scan', inDays: -60 }],
+    milestones: [{ emoji: '🩺', label: { en: 'First scan' }, inDays: -60 }],
     pageName: { en: 'Wilma & Walter' },
   },
   {
@@ -122,8 +123,8 @@ export const DEMO_SITES: SiteSpec[] = [
     pageName: { it: 'Stefania e Simone', en: 'Stefania & Simone' },
     dueInDays: 45,
     milestones: [
-      { label: 'First scan', inDays: -90 },
-      { label: 'Baby shower', inDays: 20 },
+      { emoji: '🩺', label: { it: 'Prima ecografia', en: 'First scan' }, inDays: -90 },
+      { emoji: '🎈', label: { it: 'Baby shower', en: 'Baby shower' }, inDays: 20 },
     ],
   },
   {

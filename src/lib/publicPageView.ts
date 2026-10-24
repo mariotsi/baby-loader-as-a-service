@@ -51,7 +51,7 @@ export type PublicPageView = {
     lengthLine: string | null;
     message: string | null;
   } | null;
-  milestones: { title: string; items: { date: string; label: string }[] } | null;
+  milestones: { title: string; items: { emoji: string; date: string; label: string }[] } | null;
   /** Names the Language switcher in this view's language. */
   languageLabel: string;
   push: PushButtonCopy;
@@ -114,7 +114,8 @@ function milestonesView(milestones: SiteSettings['milestones'], lang: Lang): Pub
     title: messages[lang].milestonesTitle,
     items: [...milestones]
       .sort((a, b) => a.date.localeCompare(b.date))
-      .map((m) => ({ date: formatDay(m.date, lang), label: m.label })),
+      // A valid Site has a label in every Language it speaks.
+      .map((m) => ({ emoji: m.emoji, date: formatDay(m.date, lang), label: m.label[lang] ?? '' })),
   };
 }
 

@@ -2,6 +2,8 @@
 .control {
   color-scheme: var(--color-scheme);
   width: 100%;
+  /* A date or number control would otherwise keep its intrinsic width and spill out of a narrow grid cell. */
+  min-width: 0;
   min-height: var(--control-height);
   padding: var(--space-2) var(--space-4);
   border: var(--border-width) solid var(--color-border);

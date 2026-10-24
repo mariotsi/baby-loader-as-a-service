@@ -165,18 +165,62 @@ test('the Page name is trimmed, capped at 60 characters per language and kept fo
   ]);
 });
 
-test('Milestones need a label and a real date, at most 50 of them', () => {
-  assert.deepEqual(errorsOf(settings({ milestones: [{ label: '  ', date: '2026-13-01' }] })), [
-    { path: 'milestones.0.label', code: 'required' },
+test('Milestones need an emoji, a label and a real date, at most 50 of them', () => {
+  assert.deepEqual(errorsOf(settings({ milestones: [{ emoji: '✨', label: { en: '  ' }, date: '2026-13-01' }] })), [
     { path: 'milestones.0.date', code: 'invalidDate' },
+    { path: 'milestones.0.label.en', code: 'required' },
   ]);
-  assert.deepEqual(errorsOf(settings({ milestones: [{ label: 'Scan', date: '' }] })), [
+  assert.deepEqual(errorsOf(settings({ milestones: [{ emoji: '✨', label: { en: 'Scan' }, date: '' }] })), [
     { path: 'milestones.0.date', code: 'required' },
   ]);
-  const many = Array.from({ length: 51 }, () => ({ label: 'Scan', date: '2026-05-01' }));
+  const many = Array.from({ length: 51 }, () => ({ emoji: '✨', label: { en: 'Scan' }, date: '2026-05-01' }));
   assert.deepEqual(errorsOf(settings({ milestones: many })), [
     { path: 'milestones', code: 'tooLong', params: { max: 50 } },
   ]);
+});
+
+test("a Milestone's emoji is exactly one emoji, joined sequences and skin tones included", () => {
+  const withEmoji = (emoji: string) => settings({ milestones: [{ emoji, label: { en: 'Scan' }, date: '2026-05-01' }] });
+  for (const emoji of ['🍼', '👶🏽', '👨‍👩‍👧', '🇮🇹', '❤️']) {
+    assert.equal(parseSiteSettings(withEmoji(emoji), NOW).ok, true, emoji);
+  }
+  assert.deepEqual(errorsOf(withEmoji('')), [{ path: 'milestones.0.emoji', code: 'required' }]);
+  for (const emoji of ['a', '🍼🍼', ' 🍼']) {
+    assert.deepEqual(errorsOf(withEmoji(emoji)), [{ path: 'milestones.0.emoji', code: 'invalidFormat' }], emoji);
+  }
+});
+
+test("a Milestone's label is needed in every Language of the Site, and kept in one it no longer speaks", () => {
+  const scan = (label: Record<string, string>) => ({ emoji: '✨', label, date: '2026-05-01' });
+  assert.deepEqual(
+    errorsOf(settings({ languages: ['it', 'en'], milestones: [scan({ en: 'Scan' }), scan({ it: '' })] })),
+    [
+      { path: 'milestones.0.label.it', code: 'required' },
+      { path: 'milestones.1.label.it', code: 'required' },
+      { path: 'milestones.1.label.en', code: 'required' },
+    ]
+  );
+  const kept = parseSiteSettings(
+    settings({ languages: ['en'], milestones: [scan({ en: ' Scan ', it: 'Ecografia' })] }),
+    NOW
+  );
+  assert.ok(kept.ok);
+  assert.deepEqual(kept.value.milestones[0].label, { en: 'Scan', it: 'Ecografia' });
+  assert.deepEqual(errorsOf(settings({ languages: ['it', 'en'], milestones: [scan({ en: 'x'.repeat(81) })] })), [
+    { path: 'milestones.0.label.en', code: 'tooLong', params: { max: 80 } },
+    { path: 'milestones.0.label.it', code: 'required' },
+  ]);
+});
+
+test('a missing label is reported beside the other errors of the same save', () => {
+  assert.deepEqual(
+    errorsOf(settings({ babyName: 'x'.repeat(61), milestones: [{ emoji: '✨', label: {}, date: '' }] })),
+    [
+      { path: 'babyName', code: 'tooLong', params: { max: 60 } },
+      { path: 'milestones.0.date', code: 'required' },
+      { path: 'milestones.0.label.en', code: 'required' },
+    ]
+  );
 });
 
 test('a new Site lowercases its Slug and rejects bad or Reserved ones', () => {

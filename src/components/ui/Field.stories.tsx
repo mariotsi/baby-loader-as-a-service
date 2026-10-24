@@ -52,6 +52,19 @@ export const ErrorForScreenReaders: Story = {
   },
 };
 
+/**
+ * The label reaches screen readers only, for a control whose row already says what it is, like a Milestone's date
+ * beside its emoji. The error still shows under the control.
+ */
+export const LabelHidden: Story = {
+  args: {
+    label: 'Milestone 1 date',
+    labelHidden: true,
+    error: 'Pick the day.',
+    children: <Input type="date" />,
+  },
+};
+
 /** Mark the optional fields, not the required ones. */
 export const Optional: Story = {
   args: { label: 'Due date', optional: true, children: <Input type="date" /> },

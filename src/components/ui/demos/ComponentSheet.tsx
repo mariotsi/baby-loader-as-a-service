@@ -7,10 +7,12 @@ import { Button, ButtonLink } from '../Button';
 import { Card } from '../Card';
 import { Checkbox } from '../Checkbox';
 import { Checklist } from '../Checklist';
+import { EmojiPicker } from '../EmojiPicker';
 import { Field } from '../Field';
 import { Input } from '../Input';
 import { LanguagesPicker } from '../LanguagesPicker';
 import { Logo } from '../Logo';
+import { PerLanguageField } from '../PerLanguageField';
 import { SegmentedControl } from '../SegmentedControl';
 import { Select } from '../Select';
 import { Spinner } from '../Spinner';
@@ -37,6 +39,8 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?: 2 | 3; themeName?: string }) {
   const [sex, setSex] = useState<'female' | 'male' | 'unknown'>('unknown');
   const [languages, setLanguages] = useState<Lang[]>(['it', 'en']);
+  const [emoji, setEmoji] = useState('🍼');
+  const [label, setLabel] = useState<Partial<Record<Lang, string>>>({ en: 'The first kick' });
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
   return (
     <div className={styles.sheet}>
@@ -82,6 +86,19 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
           <Field label="Birth message" className={styles.wide}>
             <Textarea defaultValue="Mum, baby (and dad) are doing great!" />
           </Field>
+          <div className={styles.wide}>
+            <PerLanguageField
+              label="Milestone label"
+              languages={languages}
+              value={label}
+              onChange={(lang, text) => setLabel({ ...label, [lang]: text })}
+              errors={label.it ? {} : { it: 'Write this Milestone in Italian.' }}
+            >
+              {({ lang, value, onChange }) => (
+                <Input lang={lang} value={value} onChange={(e) => onChange(e.target.value)} />
+              )}
+            </PerLanguageField>
+          </div>
         </div>
       </Group>
       <Group title="Choices">
@@ -105,6 +122,7 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
             ]}
           />
           <LanguagesPicker value={languages} onChange={setLanguages} />
+          <EmojiPicker value={emoji} onChange={setEmoji} label="Milestone emoji" />
         </div>
       </Group>
       <Group title="Feedback">

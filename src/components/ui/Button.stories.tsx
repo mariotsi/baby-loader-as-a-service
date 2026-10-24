@@ -42,6 +42,9 @@ export const LoadingWithIconAtTheEnd: Story = {
 /** For dense rows like a Milestone's remove action. Still at least 44px tall. */
 export const Small: Story = { args: { size: 'sm', icon: 'trash', children: 'Remove' } };
 
+/** Only the icon, in a dense row that repeats the action, like a Milestone's remove. The label still names it for screen readers. */
+export const IconOnly: Story = { args: { icon: 'trash', labelHidden: true, children: 'Remove milestone 1' } };
+
 /** Stretches across a phone-wide form. */
 export const FullWidth: Story = {
   args: { variant: 'primary', fullWidth: true, icon: 'arrow-right', iconPosition: 'end', children: 'Next' },

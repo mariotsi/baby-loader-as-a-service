@@ -23,7 +23,7 @@ export type SiteSettingsErrorCode =
   | 'slugTaken'
   | 'slugReserved';
 
-/** One rejected field. `path` is dot-separated (`birth.details.weightGrams`, `milestones.2.label`). */
+/** One rejected field. `path` is dot-separated (`birth.details.weightGrams`, `milestones.2.label.it`). */
 export interface SiteSettingsError {
   path: string;
   code: SiteSettingsErrorCode;
@@ -56,15 +56,36 @@ export function isTimeZone(value: string): boolean {
   }
 }
 
-const invalidDate = { params: { code: 'invalidDate' } };
+/**
+ * A string that must be filled in and follow `rule`. An empty one is a
+ * missing one, reported as `required` and not also as breaking the rule.
+ * Never `abort: true` instead: an aborted parse skips the label check on
+ * siteSettingsSchema, and a save would hide the missing labels.
+ */
+function requiredString(rule: (value: string) => boolean, code: SiteSettingsErrorCode) {
+  return z.string().check(
+    z.minLength(1),
+    z.refine((value) => value === '' || rule(value), { params: { code } })
+  );
+}
 
-/** An empty date is a missing one, reported as `required` and not also as `invalidDate`. */
-const nonEmpty = () => z.minLength(1, { abort: true });
-
-const calendarDate = z.string().check(nonEmpty(), z.refine(isCalendarDate, invalidDate));
-const isoDatetime = z.string().check(nonEmpty(), z.refine(isIsoDatetime, invalidDate));
-const message = z.string().check(z.maxLength(1000));
+const calendarDate = requiredString(isCalendarDate, 'invalidDate');
+const isoDatetime = requiredString(isIsoDatetime, 'invalidDate');
 const lang = z.enum(LANGS as readonly Lang[] as [Lang, ...Lang[]]);
+
+/**
+ * One text per Language, like a Milestone's label. A text in a Language the
+ * Site no longer speaks is kept, so ticking the Language again brings it back.
+ */
+const textPerLanguage = (max: number) => z.partialRecord(lang, z.string().check(z.trim(), z.maxLength(max)));
+
+/** Exactly one emoji, skin tone and joined sequences included. */
+// biome-ignore lint/complexity/useRegexLiterals: TypeScript refuses a literal `v` flag below an ES2024 target.
+const ONE_EMOJI = new RegExp('^\\p{RGI_Emoji}$', 'v');
+const emoji = requiredString((value) => ONE_EMOJI.test(value), 'invalidFormat');
+
+/** What a new Milestone starts with, until the Owner picks its own emoji. */
+export const DEFAULT_MILESTONE_EMOJI = '✨';
 
 const birthSchema = z.discriminatedUnion('born', [
   z.strictObject({ born: z.literal(false), details: z.null() }),
@@ -74,34 +95,64 @@ const birthSchema = z.discriminatedUnion('born', [
       datetime: isoDatetime,
       weightGrams: z.nullable(z.int().check(z.minimum(300), z.maximum(8000))),
       lengthCm: z.nullable(z.number().check(z.minimum(20), z.maximum(70))),
-      // One per language that has one; a language the Site no longer speaks keeps its message.
-      message: z.partialRecord(lang, message),
+      // Optional, so only the Languages that have one.
+      message: textPerLanguage(1000),
     }),
   }),
 ]);
 
-const siteSettingsSchema = z.strictObject({
-  babyName: z.string().check(z.trim(), z.maxLength(60)),
-  sex: z.enum(['female', 'male', 'unknown']),
-  dueDate: z.nullable(calendarDate),
-  birth: birthSchema,
-  milestones: z
-    .array(z.strictObject({ label: z.string().check(z.trim(), z.minLength(1), z.maxLength(80)), date: calendarDate }))
-    .check(z.maxLength(50)),
-  /** The Languages the Public page speaks, in any order: pages list them in the Platform's (see inPlatformOrder). */
-  languages: z.array(lang).check(
-    z.minLength(1),
-    z.refine((langs) => new Set(langs).size === langs.length, { params: { code: 'invalidOption' } })
-  ),
-  timezone: z.string().check(z.refine(isTimeZone, { params: { code: 'invalidOption' } })),
-  theme: z.strictObject({
-    palette: z.enum(PALETTES.map((p) => p.id) as [string, ...string[]]),
-    font: z.enum(FONTS.map((f) => f.id) as [string, ...string[]]),
-  }),
-  privacy: z.strictObject({ showName: z.boolean(), showSex: z.boolean() }),
-  /** The Owner's line in the Public page's header, one per language that has one, kept for a language the Site no longer speaks. */
-  pageName: z.partialRecord(lang, z.string().check(z.trim(), z.maxLength(60))),
-});
+const siteSettingsSchema = z
+  .strictObject({
+    babyName: z.string().check(z.trim(), z.maxLength(60)),
+    sex: z.enum(['female', 'male', 'unknown']),
+    dueDate: z.nullable(calendarDate),
+    birth: birthSchema,
+    milestones: z
+      .array(z.strictObject({ emoji, label: textPerLanguage(80), date: calendarDate }))
+      .check(z.maxLength(50)),
+    /** The Languages the Public page speaks, in any order: pages list them in the Platform's (see inPlatformOrder). */
+    languages: z.array(lang).check(
+      z.minLength(1),
+      z.refine((langs) => new Set(langs).size === langs.length, { params: { code: 'invalidOption' } })
+    ),
+    timezone: z.string().check(z.refine(isTimeZone, { params: { code: 'invalidOption' } })),
+    theme: z.strictObject({
+      palette: z.enum(PALETTES.map((p) => p.id) as [string, ...string[]]),
+      font: z.enum(FONTS.map((f) => f.id) as [string, ...string[]]),
+    }),
+    privacy: z.strictObject({ showName: z.boolean(), showSex: z.boolean() }),
+    /** The Owner's line in the Public page's header, one per language that has one, kept for a language the Site no longer speaks. */
+    pageName: textPerLanguage(60),
+  })
+  .check(
+    z.superRefine(
+      (settings, ctx) => {
+        settings.milestones.forEach((milestone, i) => {
+          for (const missing of missingLanguages(milestone.label, settings.languages)) {
+            ctx.addIssue({ code: 'custom', path: ['milestones', i, 'label', missing], params: { code: 'required' } });
+          }
+        });
+      },
+      // Runs beside the other fields' errors, so one save reports every missing label. Zod leaves an issue's path
+      // unset at the root.
+      { when: ({ issues }) => !issues.some(({ path = [] }) => hidesLabels(path)) }
+    )
+  );
+
+/** Whether an issue at `path` leaves the Languages, or which labels a Milestone has, unknown. */
+function hidesLabels(path: readonly PropertyKey[]): boolean {
+  const [field, , key] = path;
+  return (
+    path.length === 0 ||
+    field === 'languages' ||
+    (field === 'milestones' && (path.length <= 2 || (path.length === 3 && key === 'label')))
+  );
+}
+
+/** The Languages among `languages` that `text` has nothing written in, in the order given. */
+export function missingLanguages(text: Partial<Record<Lang, string>>, languages: readonly Lang[]): Lang[] {
+  return languages.filter((language) => !text[language]?.trim());
+}
 
 const newSiteSchema = z.strictObject({
   slug: z.string().check(
@@ -120,6 +171,7 @@ export type Birth = SiteSettings['birth'];
 export type BirthDetails = Extract<Birth, { born: true }>['details'];
 export type Milestone = SiteSettings['milestones'][number];
 export type PageName = SiteSettings['pageName'];
+export type TextPerLanguage = Milestone['label'];
 
 declare const validSettings: unique symbol;
 declare const validNewSite: unique symbol;

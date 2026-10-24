@@ -16,9 +16,9 @@ function sampleSettings(state: 'waiting' | 'born'): SiteSettings {
     timezone: 'Europe/Rome',
     pageName: { en: 'Stefania and Simone', it: 'Stefania e Simone' },
     milestones: [
-      { label: 'We found out!', date: day(-200) },
-      { label: 'The first kick', date: day(-90) },
-      { label: 'Her room is ready', date: day(-10) },
+      { emoji: '🎉', label: { en: 'We found out!', it: 'Lo abbiamo scoperto!' }, date: day(-200) },
+      { emoji: '🦶', label: { en: 'The first kick', it: 'Il primo calcio' }, date: day(-90) },
+      { emoji: '🧸', label: { en: 'Her room is ready', it: 'La sua cameretta è pronta' }, date: day(-10) },
     ],
     birth:
       state === 'born'

@@ -36,6 +36,12 @@ export function useFieldControlProps<P extends { id?: string; required?: boolean
 
 interface FieldProps {
   label: ReactNode;
+  /**
+   * Gives the label to screen readers only, for a control whose place on the
+   * page already says what it is. The control then lines up with the
+   * controls beside it.
+   */
+  labelHidden?: boolean;
   /** Help under the control. Keep it short and kind. */
   hint?: ReactNode;
   /** What is wrong and how to fix it. Marks the control invalid. */
@@ -97,6 +103,7 @@ function FieldMessages({
  */
 export function Field({
   label,
+  labelHidden = false,
   hint,
   error,
   errorForScreenReaders = false,
@@ -113,10 +120,16 @@ export function Field({
 
   return (
     <div className={[styles.field, className].filter(Boolean).join(' ')}>
-      <label htmlFor={id} className={styles.label}>
-        {label}
-        {optional ? <Badge size="sm"> optional</Badge> : null}
-      </label>
+      {labelHidden ? (
+        <VisuallyHidden>
+          <label htmlFor={id}>{label}</label>
+        </VisuallyHidden>
+      ) : (
+        <label htmlFor={id} className={styles.label}>
+          {label}
+          {optional ? <Badge size="sm"> optional</Badge> : null}
+        </label>
+      )}
       <FieldContext.Provider value={{ id, describedBy, invalid: !!error, required }}>{children}</FieldContext.Provider>
       {error && errorForScreenReaders ? (
         <VisuallyHidden>

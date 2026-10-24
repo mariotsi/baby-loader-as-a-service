@@ -35,30 +35,78 @@
   list-style: none;
 }
 
-/* A phone puts the label on its own line, with the date and the remove button under it. */
+/* Each Milestone lays itself out by its own width, which a phone's gutters and the Card's padding decide. */
+.milestoneItem {
+  container-type: inline-size;
+}
+
+/*
+ * Each Milestone is a framed group: the emoji, the date and Remove on one line, then the label in every Language.
+ * The first line's controls share its top edge, so an error under the date pushes nothing out of line. In a
+ * Milestone under 18.5rem wide, as on a 320px phone, the date would clip beside both buttons, so Remove moves under
+ * the label.
+ * Every row of an area template has the same length: Biome's noInvalidGridAreas measures characters, not cells.
+ */
 .milestone {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: auto minmax(0, 1fr);
   grid-template-areas:
-    "label label"
-    "date remove";
-  gap: var(--space-2);
-  align-items: center;
+    "icon when"
+    "text text"
+    "drop drop";
+  gap: var(--space-3) var(--space-2);
+  align-items: start;
+  min-width: 0;
+  margin: 0;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+}
+
+.milestoneRemove {
+  grid-area: drop;
+  justify-self: end;
+}
+
+@container (min-width: 18.5rem) {
+  .milestone {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "icon when drop"
+      "text text text";
+  }
+
+  .milestoneRemove {
+    justify-self: auto;
+  }
 }
 
 @media (min-width: 40rem) {
   .milestone {
-    grid-template-columns: minmax(0, 1fr) 11rem auto;
-    grid-template-areas: "label date remove";
+    grid-template-columns: auto minmax(0, 14rem) 1fr;
+    padding: var(--space-4);
+  }
+
+  .milestoneRemove {
+    justify-self: end;
   }
 }
 
-.milestoneLabel {
-  grid-area: label;
+/* The legend is for screen readers: with no padding it leaves no gap in the frame. */
+.milestoneLegend {
+  padding: 0;
+}
+
+.milestoneEmoji {
+  grid-area: icon;
 }
 
 .milestoneDate {
-  grid-area: date;
+  grid-area: when;
+}
+
+.milestoneLabel {
+  grid-area: text;
 }
 
 /* Keeps saving one tap away at the bottom of a long form. */
