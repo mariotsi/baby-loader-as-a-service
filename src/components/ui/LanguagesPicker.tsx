@@ -34,8 +34,9 @@ export function LanguagesPicker({ value, onChange, legend = 'Languages' }: Langu
     <fieldset className={styles.root} aria-describedby={hintId}>
       <legend className={styles.legend}>{legend}</legend>
       <p id={hintId} className={styles.hint}>
-        Tick every language your page speaks. You write your page's words in each of them: your Birth message gets a box
-        per language. Visitors get the one their browser asks for, or English if your page has it, and can switch.
+        Tick every language your page speaks. You write your page's words in each of them: your Page name and Birth
+        message get a box per language. Visitors get the one their browser asks for, or English if your page has it, and
+        can switch.
       </p>
       <ul className={styles.options}>
         {LANGS.map((lang) => {

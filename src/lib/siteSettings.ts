@@ -99,6 +99,8 @@ const siteSettingsSchema = z.strictObject({
     font: z.enum(FONTS.map((f) => f.id) as [string, ...string[]]),
   }),
   privacy: z.strictObject({ showName: z.boolean(), showSex: z.boolean() }),
+  /** The Owner's line in the Public page's header, one per language that has one, kept for a language the Site no longer speaks. */
+  pageName: z.partialRecord(lang, z.string().check(z.trim(), z.maxLength(60))),
 });
 
 const newSiteSchema = z.strictObject({
@@ -117,6 +119,7 @@ export type SiteSettings = z.output<typeof siteSettingsSchema>;
 export type Birth = SiteSettings['birth'];
 export type BirthDetails = Extract<Birth, { born: true }>['details'];
 export type Milestone = SiteSettings['milestones'][number];
+export type PageName = SiteSettings['pageName'];
 
 declare const validSettings: unique symbol;
 declare const validNewSite: unique symbol;
@@ -142,6 +145,7 @@ export const defaultSiteSettings: SiteSettingsInput = {
   timezone: 'Europe/Rome',
   theme: { palette: DEFAULT_PALETTE, font: DEFAULT_FONT },
   privacy: { showName: true, showSex: true },
+  pageName: {},
 };
 
 /**

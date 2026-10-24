@@ -64,6 +64,7 @@ function siteDoc(spec, ownerId, now) {
         timezone: 'Europe/Rome',
         theme: { palette: 'blush', font: 'inter' },
         privacy: { showName: spec.showName, showSex: spec.showSex },
+        pageName: spec.pageName ?? {},
       },
     },
     now

@@ -9,9 +9,30 @@
 .header {
   position: relative;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   justify-content: flex-end;
+  gap: var(--space-3);
   max-width: var(--content-wide);
   margin: 0 auto;
+}
+
+/* Takes the free space, so the Language switcher stays on the right with or without it. */
+.pageName {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0 auto 0 0;
+  font-family: var(--font-display);
+  font-weight: var(--font-display-weight);
+  font-size: var(--text-lg);
+  overflow-wrap: anywhere;
+}
+
+.heart {
+  flex: none;
+  color: var(--color-accent-ink);
 }
 
 .hero {
