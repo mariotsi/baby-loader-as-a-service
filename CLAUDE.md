@@ -29,3 +29,11 @@ The Platform is Loading Baby; its logos, favicons and Open Graph images live in 
 ### Domain docs
 
 Single-context: `GLOSSARY.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
+
+## Pull requests
+
+### Screenshots
+
+A PR that changes anything a person sees (a page, a component, a story) shows it in before and after screenshots in its description: the same screen with the same data and viewport, from the base branch and from the PR branch, at a phone width too when the layout responds to it. Each image's alt text says what it shows ("Milestones after: emoji, date and remove on one line").
+- **Before** comes from the base branch running in its own worktree with its own database: a migration on the PR branch rewrites data the base code cannot read.
+- **Attach** with `gh` (2.102 or later): reference each file in the body as `![alt](./before.png)` and pass it with `--attach` to `gh pr create` or `gh pr edit`, which uploads it and rewrites the reference to the asset. The image files stay out of the repo.
