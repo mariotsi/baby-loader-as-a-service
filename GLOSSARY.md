@@ -1,4 +1,4 @@
-# Waiting Pages
+# Loading Baby
 
 A platform where expecting parents create a customizable countdown and birth-announcement page for their baby, share it by link, and send updates to the people following it.
 

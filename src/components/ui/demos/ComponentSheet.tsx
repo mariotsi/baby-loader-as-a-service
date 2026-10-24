@@ -10,8 +10,10 @@ import { Checklist } from '../Checklist';
 import { Field } from '../Field';
 import { Input } from '../Input';
 import { LanguagesPicker } from '../LanguagesPicker';
+import { Logo } from '../Logo';
 import { SegmentedControl } from '../SegmentedControl';
 import { Select } from '../Select';
+import { Spinner } from '../Spinner';
 import { Stack } from '../Stack';
 import { StatusMessage } from '../StatusMessage';
 import { Switch } from '../Switch';
@@ -123,6 +125,11 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
             </Badge>
             <Badge>Optional</Badge>
             <Badge size="sm">Optional</Badge>
+          </Stack>
+          <Stack direction="row" gap={4} align="center">
+            <Spinner size="lg" tone="brand" label="Loading" />
+            <Spinner label="Loading" />
+            <Logo />
           </Stack>
         </Stack>
       </Group>

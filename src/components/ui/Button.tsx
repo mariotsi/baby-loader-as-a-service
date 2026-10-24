@@ -2,6 +2,7 @@ import Link from 'next/link';
 import type { ComponentProps, MouseEvent, ReactNode } from 'react';
 import styles from './Button.module.css';
 import { Icon, type IconName } from './Icon';
+import { Spinner } from './Spinner';
 
 interface ButtonLook {
   /** `primary` is the one main action of a view; `secondary` is the default; `ghost` is for quiet, repeated actions. */
@@ -19,20 +20,20 @@ function lookClassName({ variant = 'secondary', size = 'md', fullWidth }: Button
     .join(' ');
 }
 
-/** The label with at most one icon; while loading, a spinner takes the icon's place, or the start without one. */
+/** The label with at most one icon; while loading, the Spinner takes the icon's place, or the start without one. */
 function Content({
   icon,
   iconPosition = 'start',
   loading,
   children,
 }: ButtonLook & { loading?: boolean; children: ReactNode }) {
-  const name = loading ? 'loader' : icon;
   const position = icon ? iconPosition : 'start';
-  let glyphClass = position === 'end' ? styles.iconEnd : styles.icon;
+  let glyph: ReactNode = null;
   if (loading) {
-    glyphClass = styles.spinner;
+    glyph = <Spinner />;
+  } else if (icon) {
+    glyph = <Icon name={icon} className={position === 'end' ? styles.iconEnd : styles.icon} />;
   }
-  const glyph = name ? <Icon name={name} className={glyphClass} /> : null;
   return (
     <>
       {position === 'start' ? glyph : null}

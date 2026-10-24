@@ -22,6 +22,8 @@ import { Meta } from '@storybook/addon-docs/blocks';
 | The outcome of an action: saved, sent, failed         | `StatusMessage`                            |
 | A status or property of the thing beside it           | `Badge`, never a Button styled as a label  |
 | Requirements that tick off, like a password's rules   | `Checklist`, tied to its control           |
+| Work in flight, outside a Button                      | `Spinner`, the only spinner there is       |
+| The Platform's name and mark                          | `Logo` (`PageShell` already shows it)      |
 | A group of related settings with a heading            | `Card title="…"`                           |
 | Space between siblings                                | `Stack`                                    |
 | The playful circles behind a whole page               | `JoyBackground`, once per page             |
@@ -31,7 +33,7 @@ import { Meta } from '@storybook/addon-docs/blocks';
 - **One primary per view.** If two actions look equally important, one of them is not.
 - **Say what happens.** A verb, then what it acts on: "Create Emma's page", "Send notification". No "OK" or "Submit".
 - **Do not disable a button while work is in flight.** Pass `loading` and an in-progress label ("Saving…"): the button
-  keeps its focus, says it is busy and ignores presses.
+  shows the `Spinner`, keeps its focus, says it is busy and ignores presses.
 - **Navigation is a link.** `ButtonLink` keeps opening in a new tab and reads as a link to screen readers.
 
 ```tsx

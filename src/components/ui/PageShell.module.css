@@ -20,18 +20,9 @@
 .wordmark {
   display: inline-flex;
   align-items: center;
-  gap: var(--space-2);
   min-height: var(--control-height-sm);
   border-radius: var(--radius-sm);
-  font-family: var(--font-display);
-  font-weight: var(--font-display-weight);
-  font-size: var(--text-lg);
-  color: var(--color-text);
   text-decoration: none;
-}
-
-.heart {
-  color: var(--color-accent-ink);
 }
 
 .nav {
@@ -61,14 +52,4 @@
 
 .wide {
   max-width: var(--content-wide);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .heart {
-    transition: transform var(--duration-base) var(--ease-bounce);
-  }
-
-  .wordmark:hover .heart {
-    transform: scale(1.25) rotate(-8deg);
-  }
 }

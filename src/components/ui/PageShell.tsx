@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
-import { Icon } from './Icon';
 import { JoyBackground } from './JoyBackground';
+import { Logo } from './Logo';
 import styles from './PageShell.module.css';
 
 interface PageShellProps {
@@ -13,9 +13,9 @@ interface PageShellProps {
 }
 
 /**
- * The frame of every Platform page: the wordmark, the page's links, the
- * playful circles behind it and one `<main>` for the content. A Public page
- * has its own frame.
+ * The frame of every Platform page: the Logo, the page's links, the playful
+ * circles behind it and one `<main>` for the content. A Public page has its
+ * own frame.
  */
 export function PageShell({ width = 'medium', nav, children }: PageShellProps) {
   return (
@@ -23,8 +23,7 @@ export function PageShell({ width = 'medium', nav, children }: PageShellProps) {
       <JoyBackground />
       <header className={styles.header}>
         <Link href="/" className={styles.wordmark}>
-          <Icon name="heart" className={styles.heart} />
-          Waiting Pages
+          <Logo />
         </Link>
         {nav ? <nav className={styles.nav}>{nav}</nav> : null}
       </header>
