@@ -17,11 +17,19 @@ import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
 import { englishName, type Lang } from '@/lib/i18n';
 import type { Milestone, SiteDTO } from '@/lib/site';
-import type { BirthDetails, SiteSettingsInput } from '@/lib/siteSettings';
+import type { BirthDetails, Signature, SiteSettingsInput } from '@/lib/siteSettings';
 import styles from './SiteSettingsForm.module.css';
 import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
+
+/**
+ * The texts written, one per language, as the Birth message and the
+ * Signature hold them: a text in a Language the Site no longer speaks is kept.
+ */
+function writtenTexts(texts: Partial<Record<Lang, string>>): Partial<Record<Lang, string>> {
+  return Object.fromEntries(Object.entries(texts).filter(([, text]) => text.trim()));
+}
 
 /** `timeZones` comes from the server, so the list the page renders matches the one it hydrates. */
 export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones: string[] }) {
@@ -41,6 +49,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
   const [font, setFont] = useState(site.theme.font);
   const [showName, setShowName] = useState(site.privacy.showName);
   const [showSex, setShowSex] = useState(site.privacy.showSex);
+  const [signature, setSignature] = useState<Signature>(site.signature);
   const [milestones, setMilestones] = useState<Milestone[]>(site.milestones);
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -70,8 +79,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
               datetime: birthDatetime ? parseISO(birthDatetime).toISOString() : '',
               weightGrams: weight ? Number(weight) : null,
               lengthCm: lengthCm ? Number(lengthCm) : null,
-              // Every message written is kept, also one in a Language the Site no longer speaks.
-              message: Object.fromEntries(Object.entries(birthMessage).filter(([, text]) => text)),
+              message: writtenTexts(birthMessage),
             },
           }
         : { born: false, details: null },
@@ -80,6 +88,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
       timezone,
       theme: { palette, font },
       privacy: { showName, showSex },
+      signature: writtenTexts(signature),
     };
     const res = await fetch(`/api/sites/${site.slug}`, {
       method: 'PUT',
@@ -206,6 +215,22 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
             <PalettePicker value={palette} onChange={setPalette} />
             <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
             <LanguagesPicker value={languages} onChange={setLanguages} />
+            {languages.map((lang) => (
+              <Field
+                key={lang}
+                label={`Signature${languages.length > 1 ? ` (${englishName(lang)})` : ''}`}
+                hint="Your names, or anything you'd like to sign the page with."
+                optional
+              >
+                <Input
+                  value={signature[lang] ?? ''}
+                  onChange={(e) => setSignature({ ...signature, [lang]: e.target.value })}
+                  placeholder="Stefania & Simone"
+                  maxLength={60}
+                  autoComplete="off"
+                />
+              </Field>
+            ))}
             <Field label="Timezone" hint="The Countdown turns over at midnight here.">
               <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
                 {(timeZones.includes(timezone) ? timeZones : [timezone, ...timeZones]).map((zone) => (

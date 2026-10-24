@@ -37,6 +37,8 @@ export type SiteSpec = {
   /** The Birth message in each language that has one. */
   birthMessage?: { it?: string; en?: string };
   milestones?: { label: string; inDays: number }[];
+  /** The Signature in each language that has one. */
+  signature?: { it?: string; en?: string };
 };
 
 const waiting = {
@@ -55,6 +57,7 @@ const sharedFixtureSites: SiteSpec[] = [
     owner: 'a',
     babyName: 'Wanda',
     milestones: [{ label: 'First scan', inDays: -60 }],
+    signature: { en: 'Wilma & Walter' },
   },
   {
     ...waiting,
@@ -67,6 +70,7 @@ const sharedFixtureSites: SiteSpec[] = [
     weight: 3250,
     lengthCm: 50,
     birthMessage: { en: 'Everyone is doing well.' },
+    signature: { en: 'Bea & Bob' },
   },
   { ...waiting, slug: 'e2e-private', owner: 'a', babyName: 'Priscilla', showName: false, showSex: false },
   { ...waiting, slug: 'e2e-both', owner: 'a', babyName: 'Bianca', languages: ['it', 'en'] },
@@ -115,6 +119,7 @@ export const DEMO_SITES: SiteSpec[] = [
     owner: 'a',
     babyName: 'Emma',
     languages: ['it', 'en'],
+    signature: { it: 'Stefania e Simone', en: 'Stefania & Simone' },
     dueInDays: 45,
     milestones: [
       { label: 'First scan', inDays: -90 },

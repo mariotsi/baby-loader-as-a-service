@@ -9,6 +9,7 @@ test.describe('Public page', () => {
     await expect(page.getByText('It’s a girl')).toBeVisible();
     await expect(page.getByText(/^Due date:/)).toBeVisible();
     await expect(page.getByText(/^\d+ days to go$/)).toBeVisible();
+    await expect(page.getByRole('banner')).toHaveText('Wilma & Walter');
   });
 
   test('in the Born state leads with the Birth details', async ({ page, addressOf }) => {
@@ -19,6 +20,7 @@ test.describe('Public page', () => {
     await expect(page.getByText('Weight: 3250 g')).toBeVisible();
     await expect(page.getByText('Length: 50 cm')).toBeVisible();
     await expect(page.getByText(/ days to go$/)).toHaveCount(0);
+    await expect(page.getByRole('banner')).toHaveText('Bea & Bob');
   });
 
   test('hides the name and Sex when Privacy settings say so', async ({ page, addressOf }) => {

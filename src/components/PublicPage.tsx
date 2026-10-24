@@ -4,6 +4,7 @@ import { useEffect, useId, useState } from 'react';
 import { Countdown } from '@/components/Countdown';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
 import { PushSubscribeButton } from '@/components/PushSubscribeButton';
+import { Icon } from '@/components/ui/Icon';
 import { JoyBackground } from '@/components/ui/JoyBackground';
 import { LANG_COOKIE, type Lang } from '@/lib/i18n';
 import type { PublicPageView } from '@/lib/publicPageView';
@@ -14,8 +15,10 @@ import styles from './PublicPage.module.css';
  * speaks, computed on the server. Switching language swaps the view in place
  * and remembers the choice in the language cookie for the next visit.
  *
- * On a phone everything stacks in one centred column; on a wide screen the
- * name and the call to action sit beside the Countdown or the Birth details.
+ * The header carries the Owner's Signature on the left and the Language
+ * switcher on the right. On a phone everything stacks in one centred column;
+ * on a wide screen the name and the call to action sit beside the Countdown
+ * or the Birth details.
  */
 export function PublicPage({
   views,
@@ -44,14 +47,22 @@ export function PublicPage({
   return (
     <div className={styles.page}>
       <JoyBackground />
-      {views.length > 1 ? (
+      {view.signature || views.length > 1 ? (
         <header className={styles.header}>
-          <LanguageSwitcher
-            langs={views.map((v) => v.lang)}
-            current={view.lang}
-            label={view.languageLabel}
-            onChange={chooseLang}
-          />
+          {view.signature ? (
+            <p className={styles.signature}>
+              <Icon name="heart" className={styles.heart} />
+              {view.signature}
+            </p>
+          ) : null}
+          {views.length > 1 ? (
+            <LanguageSwitcher
+              langs={views.map((v) => v.lang)}
+              current={view.lang}
+              label={view.languageLabel}
+              onChange={chooseLang}
+            />
+          ) : null}
         </header>
       ) : null}
       <main className={styles.hero}>
