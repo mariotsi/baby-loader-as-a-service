@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { resolveRequest } from '@/lib/address';
+import { addressEnv } from '@/lib/env';
 
 /**
  * Sends each request where Address (src/lib/address.ts) says it belongs: a
@@ -9,7 +10,7 @@ import { resolveRequest } from '@/lib/address';
  * until they exist.
  */
 export function proxy(req: NextRequest) {
-  const resolution = resolveRequest(req.headers.get('host') ?? '', req.nextUrl.pathname);
+  const resolution = resolveRequest(req.headers.get('host') ?? '', req.nextUrl.pathname, addressEnv());
 
   if (resolution.kind === 'redirect') {
     const location = new URL(resolution.location);

@@ -1,5 +1,5 @@
 import { OnboardingForm } from '@/components/onboarding/OnboardingForm';
-import { ADDRESS_CONFIG } from '@/lib/address';
+import { addressEnv } from '@/lib/env';
 import { FONTS, googleFontsHref } from '@/lib/theme';
 
 export default function OnboardingPage() {
@@ -7,7 +7,7 @@ export default function OnboardingPage() {
     <>
       {/* The Font picker and the preview write in every Font. */}
       <link rel="stylesheet" href={googleFontsHref(FONTS)} />
-      <OnboardingForm addressConfig={ADDRESS_CONFIG} />
+      <OnboardingForm addressConfig={addressEnv()} />
     </>
   );
 }

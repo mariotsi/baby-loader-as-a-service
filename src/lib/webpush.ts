@@ -1,9 +1,6 @@
 import webpush from 'web-push';
+import { vapidEnv } from './env.ts';
 import type { PushService } from './notificationDelivery.ts';
-
-const VAPID_EMAIL = process.env.VAPID_EMAIL;
-const VAPID_PUBLIC_KEY = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
-const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY;
 
 let vapidReady = false;
 
@@ -16,10 +13,11 @@ function ensureVapid(): boolean {
   if (vapidReady) {
     return true;
   }
-  if (!VAPID_EMAIL || !VAPID_PUBLIC_KEY || !VAPID_PRIVATE_KEY) {
+  const vapid = vapidEnv();
+  if (!vapid) {
     return false;
   }
-  webpush.setVapidDetails(VAPID_EMAIL, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+  webpush.setVapidDetails(vapid.email, vapid.publicKey, vapid.privateKey);
   vapidReady = true;
   return true;
 }

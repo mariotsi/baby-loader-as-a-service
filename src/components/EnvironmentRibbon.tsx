@@ -1,4 +1,5 @@
-import { type AppEnv, appEnv } from '@/lib/appEnv';
+import type { AppEnv } from '@/lib/appEnv';
+import { deploymentEnv } from '@/lib/env';
 
 const LABELS: Partial<Record<AppEnv, string>> = {
   staging: 'Staging',
@@ -12,7 +13,7 @@ const LABELS: Partial<Record<AppEnv, string>> = {
  * nothing. It ignores pointer events, so it never covers a control.
  */
 export function EnvironmentRibbon() {
-  const env = appEnv(process.env);
+  const env = deploymentEnv().appEnv;
   const label = LABELS[env];
   if (!label) {
     return null;

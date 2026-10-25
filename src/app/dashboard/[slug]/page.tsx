@@ -3,6 +3,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
 import { siteAddress } from '@/lib/address';
+import { addressEnv } from '@/lib/env';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { toSiteDTO } from '@/lib/site';
 import { FONTS, googleFontsHref } from '@/lib/theme';
@@ -11,7 +12,7 @@ import styles from '../dashboard.module.css';
 export default async function DashboardSitePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { site } = await pageOwnedSite(slug);
-  const address = siteAddress(site.slug);
+  const address = siteAddress(site.slug, addressEnv());
 
   return (
     <PageShell

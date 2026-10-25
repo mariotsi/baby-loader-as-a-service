@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
-import { ADDRESS_CONFIG } from '@/lib/address';
-import { appEnv } from '@/lib/appEnv';
+import { addressEnv, deploymentEnv } from '@/lib/env';
 
 /**
  * Which build this deployment runs and where: the E2E suite reads it to pick
@@ -10,10 +9,6 @@ import { appEnv } from '@/lib/appEnv';
  * the repository.
  */
 export function GET() {
-  return NextResponse.json({
-    env: appEnv(process.env),
-    commit: process.env.VERCEL_GIT_COMMIT_SHA ?? null,
-    branch: process.env.VERCEL_GIT_COMMIT_REF ?? null,
-    rootDomain: ADDRESS_CONFIG.rootDomain,
-  });
+  const { appEnv, commit, branch } = deploymentEnv();
+  return NextResponse.json({ env: appEnv, commit, branch, rootDomain: addressEnv().rootDomain });
 }

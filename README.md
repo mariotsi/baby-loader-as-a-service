@@ -88,6 +88,10 @@ npm run seed                        # optional: demo Owners and Sites
 npm run dev
 ```
 
+The server checks its environment variables when it starts
+(`src/lib/env.ts`) and refuses to start, naming each one, when a variable is
+missing or malformed; `next build` needs none of them.
+
 `localhost:3000` serves the Platform, and each Site its Address at
 `<slug>.localhost:3000` (browsers resolve `*.localhost` to this machine).
 `npm run seed` creates `demo-owner-a@waitingpages.test` and
