@@ -189,18 +189,13 @@ function stacked(c, lang) {
   return svgDoc(Math.ceil(width), Math.ceil(bottom + 8), body);
 }
 
-/** The tab icon: the bolder cut, in its dark colors when the browser is dark. */
+/**
+ * The tab icon: the bolder cut, in its light colors on every tab strip. Its
+ * white face is what sets it apart on a dark one, where the dark colors sank
+ * into the strip and left a pink arc floating.
+ */
 function iconSvg() {
-  // One class per element, named after its part, for the dark scheme to recolor.
-  const body = markBody(LIGHT, 'fav32')
-    .replace(
-      /<circle ([^>]*)fill="#ffffff" stroke="#ffe0ec"/,
-      '<circle class="track" $1fill="#ffffff" stroke="#ffe0ec"'
-    )
-    .replace(/<circle ([^>]*)stroke="#d6336c"/, '<circle class="arc" $1stroke="#d6336c"')
-    .replace(/<path ([^>]*)stroke="#33263a"/g, '<path class="line" $1stroke="#33263a"');
-  const style = `<style>@media (prefers-color-scheme: dark){.track{fill:${DARK.face};stroke:${DARK.track}}.arc{stroke:${DARK.arc}}.line{stroke:${DARK.line}}}</style>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${MARK_VIEWBOX}"><title>Loading Baby</title>${style}${body}</svg>\n`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${MARK_VIEWBOX}"><title>Loading Baby</title>${markBody(LIGHT, 'fav32')}</svg>\n`;
 }
 
 /** An ICO of PNG images, which every current browser reads. */
