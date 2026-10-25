@@ -133,7 +133,7 @@ The name the Owner gives their Public page, shown beside a heart at the top of i
 _Avoid_: Signature, page title, site name, byline
 
 **Language switcher**:
-The control on a Public page with more than one Language that lets a Visitor pick one of them.
+The control that picks the language a page speaks: on a Public page with more than one Language, one of the Site's Languages; on every Platform page, any language the Platform speaks. The pick is remembered for the next visit.
 _Avoid_: Language picker, toggle
 
 **Timezone**:

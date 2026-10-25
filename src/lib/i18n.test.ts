@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { englishName, FALLBACK_LANGS, fallbackLang, inPlatformOrder, isLang, LANGS, negotiateLang } from './i18n.ts';
+import {
+  englishName,
+  FALLBACK_LANGS,
+  fallbackLang,
+  inPlatformOrder,
+  isLang,
+  LANGS,
+  negotiateLang,
+  plural,
+} from './i18n.ts';
 
 test('the language cookie wins when the Site speaks it', () => {
   assert.equal(negotiateLang('en-US,en;q=0.9', 'it', ['en', 'it']), 'it');
@@ -66,4 +75,22 @@ test('isLang and englishName cover the supported languages', () => {
   assert.equal(isLang('fr'), false);
   assert.equal(englishName('it'), 'Italian');
   assert.equal(englishName('en'), 'English');
+});
+
+test('a count takes its plural form by the language’s rules', () => {
+  const days = { one: 'day', other: 'days' };
+  assert.equal(plural('en', 1, days), 'day');
+  assert.equal(plural('en', 0, days), 'days');
+  assert.equal(plural('en', 2, days), 'days');
+  assert.equal(plural('it', 1, { one: 'giorno', other: 'giorni' }), 'giorno');
+  assert.equal(plural('it', 5, { one: 'giorno', other: 'giorni' }), 'giorni');
+});
+
+test('a plural form a dictionary leaves out falls back to other', () => {
+  assert.equal(plural('en', 1, { other: 'days' }), 'days');
+});
+
+test('the Platform offers every language, falling back to English', () => {
+  assert.equal(negotiateLang('fr-FR', null, LANGS), 'en');
+  assert.equal(negotiateLang('it-IT,en;q=0.5', null, LANGS), 'it');
 });

@@ -2,12 +2,12 @@
 
 import { useEffect, useId, useState } from 'react';
 import { Countdown } from '@/components/Countdown';
-import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { LanguageSwitcher, rememberLang } from '@/components/LanguageSwitcher';
 import { MilestonePlace } from '@/components/MilestonePlace';
 import { PushSubscribeButton } from '@/components/PushSubscribeButton';
 import { Icon } from '@/components/ui/Icon';
 import { JoyBackground } from '@/components/ui/JoyBackground';
-import { LANG_COOKIE, type Lang } from '@/lib/i18n';
+import type { Lang } from '@/lib/i18n';
 import type { PublicPageView } from '@/lib/publicPageView';
 import styles from './PublicPage.module.css';
 
@@ -40,8 +40,7 @@ export function PublicPage({
   }, [view.lang]);
 
   function chooseLang(next: Lang) {
-    // biome-ignore lint/suspicious/noDocumentCookie: the Cookie Store API is missing from Safari before 18.4, which Visitors still use.
-    document.cookie = `${LANG_COOKIE}=${next}; path=/; max-age=31536000; samesite=lax`;
+    rememberLang(next);
     setLang(next);
   }
 

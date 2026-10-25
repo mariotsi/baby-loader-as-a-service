@@ -32,6 +32,18 @@ export function englishName(lang: Lang): string {
   return new Intl.DisplayNames('en', { type: 'language' }).of(lang) ?? lang;
 }
 
+/** A count's words in every plural form a language has; `other` is the one every language has. */
+export type PluralForms = Partial<Record<Intl.LDMLPluralRule, string>> & { other: string };
+
+/**
+ * The words for `n` in `lang`, picked by the language's own plural rules: 1
+ * is `one` in English and Italian, while other languages also have `few` or
+ * `many`. A form a dictionary leaves out falls back to `other`.
+ */
+export function plural(lang: Lang, n: number, forms: PluralForms): string {
+  return forms[new Intl.PluralRules(lang).select(n)] ?? forms.other;
+}
+
 export function isLang(value: unknown): value is Lang {
   return LANGS.includes(value as Lang);
 }

@@ -2,13 +2,20 @@
 
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
-import type { Lang } from '@/lib/i18n';
-import { messages } from '@/lib/messages';
+import { commonCopy } from '@/lib/copy/common';
+import { LANG_COOKIE, type Lang } from '@/lib/i18n';
+
+/** Writes the language cookie, so the next visit to this host opens in `lang`. */
+export function rememberLang(lang: Lang) {
+  // biome-ignore lint/suspicious/noDocumentCookie: the Cookie Store API is missing from Safari before 18.4, which Visitors still use.
+  document.cookie = `${LANG_COOKIE}=${lang}; path=/; max-age=31536000; samesite=lax`;
+}
 
 /**
- * The Language switcher of a Public page with more than one Language: short
- * codes on screen, and for screen readers each language named in itself, so a
- * Visitor finds their own whichever language the page is in.
+ * The Language switcher, on a Public page with more than one Language and on
+ * every Platform page (see PlatformLanguageSwitcher): short codes on screen,
+ * and for screen readers each language named in itself, so a reader finds
+ * their own whichever language the page is in.
  */
 export function LanguageSwitcher({
   langs,
@@ -33,7 +40,7 @@ export function LanguageSwitcher({
         label: (
           <span lang={lang}>
             <span aria-hidden="true">{lang.toUpperCase()}</span>
-            <VisuallyHidden>{messages[lang].languageName}</VisuallyHidden>
+            <VisuallyHidden>{commonCopy[lang].languageName}</VisuallyHidden>
           </span>
         ),
       }))}

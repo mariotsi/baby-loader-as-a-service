@@ -1,9 +1,10 @@
 import { TZDate } from '@date-fns/tz';
 import { format, parseISO } from 'date-fns';
 import { enUS, it as itLocale } from 'date-fns/locale';
+import { commonCopy } from './copy/common.ts';
+import { type PublicPageCopy, publicPageCopy } from './copy/publicPage.ts';
 import { countdownDays } from './countdown.ts';
 import { inPlatformOrder, type Lang } from './i18n.ts';
-import { type Messages, messages } from './messages.ts';
 import { googleMapsUrl } from './place.ts';
 import type { BirthDetails, SiteSettings } from './siteSettings.ts';
 
@@ -83,7 +84,7 @@ export function publicPageViews(settings: SiteSettings, now: Date = new Date()):
 }
 
 export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = new Date()): PublicPageView {
-  const t = messages[lang];
+  const t = publicPageCopy[lang];
   const { birth } = settings;
   return {
     lang,
@@ -92,13 +93,13 @@ export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = n
     waiting: !birth.born && settings.dueDate ? waitingView(settings.dueDate, settings.timezone, lang, now) : null,
     born: birth.born ? bornView(birth.details, settings.timezone, lang) : null,
     milestones: milestonesView(settings.milestones, lang),
-    languageLabel: t.languageLabel,
+    languageLabel: commonCopy[lang].languageLabel,
     push: pushButtonCopy(t, birth.born),
   };
 }
 
 /** Privacy settings apply only while Waiting: the Born state announces the name and Sex. */
-function headline(settings: SiteSettings, t: Messages): Pick<PublicPageView, 'tagline' | 'title' | 'sex'> {
+function headline(settings: SiteSettings, t: PublicPageCopy): Pick<PublicPageView, 'tagline' | 'title' | 'sex'> {
   const born = settings.birth.born;
   const name = (born || settings.privacy.showName) && settings.babyName ? settings.babyName : null;
   const showSex = (born || settings.privacy.showSex) && settings.sex !== 'unknown';
@@ -111,7 +112,7 @@ function headline(settings: SiteSettings, t: Messages): Pick<PublicPageView, 'ta
 }
 
 function bornView(details: BirthDetails, timezone: string, lang: Lang): NonNullable<PublicPageView['born']> {
-  const t = messages[lang];
+  const t = publicPageCopy[lang];
   const bornAt = format(new TZDate(new Date(details.datetime), timezone), `${DATE_FORMAT[lang]}, HH:mm`, {
     locale: LOCALES[lang],
   });
@@ -128,7 +129,7 @@ function milestonesView(milestones: SiteSettings['milestones'], lang: Lang): Pub
     return null;
   }
   return {
-    title: messages[lang].milestonesTitle,
+    title: publicPageCopy[lang].milestonesTitle,
     items: [...milestones]
       .sort((a, b) => a.date.localeCompare(b.date))
       // A valid Site has a label in every Language it speaks.
@@ -137,14 +138,14 @@ function milestonesView(milestones: SiteSettings['milestones'], lang: Lang): Pub
         date: formatDay(m.date, lang),
         label: m.label[lang] ?? '',
         place: m.place
-          ? { ...m.place, url: googleMapsUrl(m.place), linkLabel: messages[lang].openInMaps(m.place.address) }
+          ? { ...m.place, url: googleMapsUrl(m.place), linkLabel: publicPageCopy[lang].openInMaps(m.place.address) }
           : null,
       })),
   };
 }
 
 function waitingView(dueDate: string, timezone: string, lang: Lang, now: Date): NonNullable<PublicPageView['waiting']> {
-  const t = messages[lang];
+  const t = publicPageCopy[lang];
   const days = countdownDays(dueDate, timezone, now);
   const due = `${t.duePrefix} ${formatDay(dueDate, lang)}`;
   const week = pregnancyWeek(days);
@@ -169,7 +170,7 @@ function formatDay(day: string, lang: Lang): string {
   return format(parseISO(day), DATE_FORMAT[lang], { locale: LOCALES[lang] });
 }
 
-function pushButtonCopy(t: Messages, born: boolean): PushButtonCopy {
+function pushButtonCopy(t: PublicPageCopy, born: boolean): PushButtonCopy {
   return {
     checking: t.checking,
     subscribed: born ? t.subscribedBorn : t.subscribedWaiting,

@@ -1,29 +1,25 @@
-import type { Lang } from './i18n';
+import { type Lang, plural } from '../i18n.ts';
 
 /**
- * Core user-facing copy for a Site's Public page. Deliberately smaller than
- * baby-loader's dictionary (which also covers detailed per-OS "notifications
- * are blocked" troubleshooting copy) — that richer copy is a good candidate
- * to port over in a later pass, it just isn't needed to prove out the
- * multi-Site architecture itself.
+ * The copy of a Site's Public page, in every language in `Lang`. English sets
+ * the shape; every other language must match it, so a missing entry is a type
+ * error. Smaller than baby-loader's dictionary, which also carries per-OS
+ * "notifications are blocked" troubleshooting copy.
  */
 const en = {
-  /** The language's name in itself. */
-  languageName: 'English',
   waitingTagline: 'Expecting',
   waitingTitle: 'We are waiting for',
   /** Stands in for the name when there is none or Privacy settings hide it. */
   someone: 'someone',
   duePrefix: 'Due date:',
-  daysLeft: (n: number): string => (n === 1 ? 'day to go' : 'days to go'),
-  daysLate: (n: number): string => (n === 1 ? 'day late' : 'days late'),
+  daysLeft: (n: number): string => plural('en', n, { one: 'day to go', other: 'days to go' }),
+  daysLate: (n: number): string => plural('en', n, { one: 'day late', other: 'days late' }),
   dueToday: 'Due today',
   lateNote: 'Taking their time...',
   weekOf: (week: number): string => `Week ${week} of 40`,
   milestonesTitle: 'Milestones',
   /** Names the link from a Milestone's Place to Google Maps. */
   openInMaps: (address: string): string => `Open ${address} in Google Maps`,
-  languageLabel: 'Language',
 
   bornTagline: 'Here at last',
   bornTitle: 'Welcome',
@@ -49,22 +45,20 @@ const en = {
   errorDenied: 'Notifications are blocked in your browser settings.',
 };
 
-export type Messages = typeof en;
+export type PublicPageCopy = typeof en;
 
-const it: Messages = {
-  languageName: 'Italiano',
+const it: PublicPageCopy = {
   waitingTagline: 'In attesa',
   waitingTitle: 'Stiamo aspettando',
   someone: 'qualcuno',
   duePrefix: 'Arrivo previsto:',
-  daysLeft: (n: number): string => (n === 1 ? 'giorno rimanente' : 'giorni rimanenti'),
-  daysLate: (n: number): string => (n === 1 ? 'giorno in ritardo' : 'giorni in ritardo'),
+  daysLeft: (n: number): string => plural('it', n, { one: 'giorno rimanente', other: 'giorni rimanenti' }),
+  daysLate: (n: number): string => plural('it', n, { one: 'giorno in ritardo', other: 'giorni in ritardo' }),
   dueToday: 'Arriva oggi',
   lateNote: 'Se la sta prendendo comoda...',
   weekOf: (week: number): string => `Settimana ${week} di 40`,
   milestonesTitle: 'Tappe',
   openInMaps: (address: string): string => `Apri ${address} in Google Maps`,
-  languageLabel: 'Lingua',
 
   bornTagline: 'È arrivato/a',
   bornTitle: 'Benvenuto/a',
@@ -90,4 +84,4 @@ const it: Messages = {
   errorDenied: 'Le notifiche sono bloccate nelle impostazioni del browser.',
 };
 
-export const messages: Record<Lang, Messages> = { it, en };
+export const publicPageCopy: Record<Lang, PublicPageCopy> = { it, en };
