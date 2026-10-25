@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
-import { ADDRESS_CONFIG } from '@/lib/address';
+import { addressEnv } from '@/lib/env';
 import { googleFontsHref, PLATFORM_FONT, platformStyle, rootTokenCss } from '@/lib/theme';
 
 const DESCRIPTION = 'Create a customizable countdown & announcement page for your baby, in minutes.';
@@ -15,16 +15,19 @@ const DESCRIPTION = 'Create a customizable countdown & announcement page for you
  * a page is named by `appleWebApp` on iOS and by `manifest.ts` on Android:
  * the name alone, without the tagline the title carries.
  */
-export const metadata: Metadata = {
-  metadataBase: new URL(`${ADDRESS_CONFIG.protocol}://${ADDRESS_CONFIG.rootDomain}`),
-  title: { default: 'Loading Baby: for the days before the big day', template: '%s · Loading Baby' },
-  description: DESCRIPTION,
-  applicationName: 'Loading Baby',
-  // A saved Platform page opens in Safari, as a bookmark; a Public page overrides this to open full screen.
-  appleWebApp: { title: 'Loading Baby', capable: false },
-  openGraph: { siteName: 'Loading Baby', type: 'website', description: DESCRIPTION },
-  twitter: { card: 'summary_large_image' },
-};
+export function generateMetadata(): Metadata {
+  const { protocol, rootDomain } = addressEnv();
+  return {
+    metadataBase: new URL(`${protocol}://${rootDomain}`),
+    title: { default: 'Loading Baby: for the days before the big day', template: '%s · Loading Baby' },
+    description: DESCRIPTION,
+    applicationName: 'Loading Baby',
+    // A saved Platform page opens in Safari, as a bookmark; a Public page overrides this to open full screen.
+    appleWebApp: { title: 'Loading Baby', capable: false },
+    openGraph: { siteName: 'Loading Baby', type: 'website', description: DESCRIPTION },
+    twitter: { card: 'summary_large_image' },
+  };
+}
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

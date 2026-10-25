@@ -1,4 +1,5 @@
 import { siteAddressPath } from './address.ts';
+import { addressEnv } from './env.ts';
 import { fallbackLang, type Lang } from './i18n.ts';
 import type { OwnedSite } from './ownerAccess.ts';
 import type { Site } from './site.ts';
@@ -148,7 +149,7 @@ function payloads(site: Site, notification: ValidNotification): (lang: Lang | nu
       payload = JSON.stringify({
         title: text?.title || defaultNotificationTitle(site),
         body: text?.body,
-        url: siteAddressPath(site.slug),
+        url: siteAddressPath(site.slug, addressEnv()),
         tag: `site-${site.slug}`,
       });
       built.set(lang, payload);

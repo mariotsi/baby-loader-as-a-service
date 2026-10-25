@@ -1,7 +1,7 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import type { NextRequest } from 'next/server';
-import { ADDRESS_CONFIG } from './address.ts';
+import { addressEnv, sessionSecret } from './env.ts';
 import { getDb } from './mongodb.ts';
 import { hashPassword, verifyPassword } from './password.ts';
 import { rateLimit } from './rateLimit.ts';
@@ -57,16 +57,8 @@ export async function createUser(email: string, password: string): Promise<User>
 
 // --- Sessions ----------------------------------------------------------------
 
-function secret(): string | undefined {
-  return process.env.SESSION_SECRET;
-}
-
 function sign(value: string): string {
-  const key = secret();
-  if (!key) {
-    throw new Error('SESSION_SECRET is not set');
-  }
-  return createHmac('sha256', key).update(value).digest('base64url');
+  return createHmac('sha256', sessionSecret()).update(value).digest('base64url');
 }
 
 export function issueSessionToken(userId: string): string {
@@ -77,7 +69,7 @@ export function issueSessionToken(userId: string): string {
 
 /** Returns the authenticated user's id, or null if the token is missing/invalid/expired. */
 export function verifySessionToken(token: string | undefined): string | null {
-  if (!token || !secret()) {
+  if (!token) {
     return null;
   }
   const [userId, expiresAt, signature] = token.split('.');
@@ -103,7 +95,7 @@ export function sessionCookieOptions(maxAge = SESSION_TTL_MS / 1000) {
     httpOnly: true,
     // A production build served on localhost (the local E2E server) runs over
     // plain http, where Safari and WebKit refuse to send a Secure cookie.
-    secure: process.env.NODE_ENV === 'production' && ADDRESS_CONFIG.protocol === 'https',
+    secure: process.env.NODE_ENV === 'production' && addressEnv().protocol === 'https',
     sameSite: 'strict' as const,
     path: '/',
     maxAge,

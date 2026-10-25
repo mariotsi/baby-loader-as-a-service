@@ -3,6 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
 import { siteAddress } from '@/lib/address';
+import { addressEnv } from '@/lib/env';
 import { pageUser } from '@/lib/ownerAccessNext';
 import { listSitesByOwner } from '@/lib/site';
 import styles from './dashboard.module.css';
@@ -31,7 +32,7 @@ export default async function DashboardPage() {
         <ul className={styles.list}>
           {sites.map((site) => {
             const name = site.babyName || site.slug;
-            const address = siteAddress(site.slug);
+            const address = siteAddress(site.slug, addressEnv());
             return (
               <li key={site.slug}>
                 <Card>

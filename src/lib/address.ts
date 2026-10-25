@@ -33,9 +33,6 @@ export function addressConfig(env: Record<string, string | undefined>): AddressC
   };
 }
 
-/** This deployment's configuration. ROOT_DOMAIN is server-only: the browser gets it as data. */
-export const ADDRESS_CONFIG = addressConfig(typeof process === 'undefined' ? {} : process.env);
-
 /** A DNS label of 3-32 lowercase letters, digits and inner hyphens: what a subdomain can carry. */
 const SLUG_PATTERN = /^[a-z0-9](?:[a-z0-9-]{1,30}[a-z0-9])?$/;
 
@@ -74,14 +71,14 @@ export function slugProblem(slug: string): 'invalidFormat' | 'slugReserved' | nu
 }
 
 /** Absolute URL of a Site's Public page. */
-export function siteAddress(slug: string, config: AddressConfig = ADDRESS_CONFIG): string {
+export function siteAddress(slug: string, config: AddressConfig): string {
   return config.mode === 'path'
     ? `${config.protocol}://${config.rootDomain}/sites/${slug}`
     : `${config.protocol}://${slug}.${config.rootDomain}`;
 }
 
 /** Path of a Site's Public page, relative to the host that serves it. */
-export function siteAddressPath(slug: string, config: AddressConfig = ADDRESS_CONFIG): string {
+export function siteAddressPath(slug: string, config: AddressConfig): string {
   return config.mode === 'path' ? `/sites/${slug}` : '/';
 }
 
@@ -106,7 +103,7 @@ const SITE_PATH = /^\/sites\/([^/]+)(\/.*)?$/;
  * at its Address: in subdomain mode, a /sites/<slug> path on any other host
  * redirects to the Site's subdomain, so each Site keeps an origin of its own.
  */
-export function resolveRequest(host: string, pathname: string, config: AddressConfig = ADDRESS_CONFIG): Resolution {
+export function resolveRequest(host: string, pathname: string, config: AddressConfig): Resolution {
   const hostname = hostnameOf(host.toLowerCase());
   const root = hostnameOf(config.rootDomain);
   const sitePath = SITE_PATH.exec(pathname);

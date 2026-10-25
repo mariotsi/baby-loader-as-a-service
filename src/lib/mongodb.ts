@@ -1,6 +1,6 @@
 import { type Db, MongoClient } from 'mongodb';
 import { MIGRATIONS } from '../migrations/index.ts';
-import { databaseName } from './dbName.ts';
+import { mongoEnv } from './env.ts';
 import { ensureIndexes } from './indexes.ts';
 import { applyMigrations } from './migrations.ts';
 
@@ -10,13 +10,6 @@ declare global {
 
 let clientPromise: Promise<MongoClient> | undefined;
 
-/**
- * This deployment's database (see databaseName). Every name it can produce
- * differs from baby-loader's "pushnotify", so the two apps never share
- * collections even on one cluster.
- */
-export const DB_NAME = databaseName(process.env);
-
 let databaseReady: Promise<void> | undefined;
 
 /**
@@ -25,10 +18,11 @@ let databaseReady: Promise<void> | undefined;
  * the env var isn't available at build time.
  */
 export function getMongoClient(): Promise<MongoClient> {
-  const uri = process.env.MONGODB_URI;
-
-  if (!uri) {
-    return Promise.reject(new Error('Please define MONGODB_URI in .env.local'));
+  let uri: string;
+  try {
+    uri = mongoEnv().uri;
+  } catch (err) {
+    return Promise.reject(err);
   }
 
   if (process.env.NODE_ENV === 'development') {
@@ -56,11 +50,15 @@ export function getMongoClient(): Promise<MongoClient> {
  */
 export async function getDb(): Promise<Db> {
   const client = await getMongoClient();
-  const db = client.db(DB_NAME);
+  // This deployment's database (see databaseName). Every name it can produce
+  // differs from baby-loader's "pushnotify", so the two apps never share
+  // collections even on one cluster.
+  const { dbName } = mongoEnv();
+  const db = client.db(dbName);
   databaseReady ??= applyMigrations(db, MIGRATIONS).then(
     () =>
       ensureIndexes(db).catch((err) => {
-        console.error(`Creating indexes on ${DB_NAME} failed`, err);
+        console.error(`Creating indexes on ${dbName} failed`, err);
       }),
     (err) => {
       databaseReady = undefined;

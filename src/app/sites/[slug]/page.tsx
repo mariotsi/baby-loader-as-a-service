@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { PublicPage } from '@/components/PublicPage';
+import { vapidEnv } from '@/lib/env';
 import { LANG_COOKIE, type Lang, negotiateLang } from '@/lib/i18n';
 import { publicPageViews } from '@/lib/publicPageView';
 import { getSiteBySlug } from '@/lib/site';
@@ -45,7 +46,7 @@ export default async function SitePage({ params }: { params: Promise<{ slug: str
         views={views}
         initialLang={await initialLang(views.map((view) => view.lang))}
         slug={site.slug}
-        vapidPublicKey={process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY}
+        vapidPublicKey={vapidEnv()?.publicKey}
       />
     </>
   );
