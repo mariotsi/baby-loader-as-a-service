@@ -4,6 +4,7 @@ import { enUS, it as itLocale } from 'date-fns/locale';
 import { countdownDays } from './countdown.ts';
 import { inPlatformOrder, type Lang } from './i18n.ts';
 import { type Messages, messages } from './messages.ts';
+import { googleMapsUrl } from './place.ts';
 import type { BirthDetails, SiteSettings } from './siteSettings.ts';
 
 /**
@@ -25,6 +26,22 @@ export type PushButtonCopy = {
   errorGeneric: string;
   errorUnsupported: string;
   errorDenied: string;
+};
+
+export type MilestoneItem = {
+  emoji: string;
+  date: string;
+  label: string;
+  /** Null when the Milestone has no Place. */
+  place: {
+    address: string;
+    lat: number;
+    lon: number;
+    /** Where the map and the address lead. */
+    url: string;
+    /** Names that link: "Open <address> in Google Maps". */
+    linkLabel: string;
+  } | null;
 };
 
 export type PublicPageView = {
@@ -51,7 +68,7 @@ export type PublicPageView = {
     lengthLine: string | null;
     message: string | null;
   } | null;
-  milestones: { title: string; items: { emoji: string; date: string; label: string }[] } | null;
+  milestones: { title: string; items: MilestoneItem[] } | null;
   /** Names the Language switcher in this view's language. */
   languageLabel: string;
   push: PushButtonCopy;
@@ -115,7 +132,14 @@ function milestonesView(milestones: SiteSettings['milestones'], lang: Lang): Pub
     items: [...milestones]
       .sort((a, b) => a.date.localeCompare(b.date))
       // A valid Site has a label in every Language it speaks.
-      .map((m) => ({ emoji: m.emoji, date: formatDay(m.date, lang), label: m.label[lang] ?? '' })),
+      .map((m) => ({
+        emoji: m.emoji,
+        date: formatDay(m.date, lang),
+        label: m.label[lang] ?? '',
+        place: m.place
+          ? { ...m.place, url: googleMapsUrl(m.place), linkLabel: messages[lang].openInMaps(m.place.address) }
+          : null,
+      })),
   };
 }
 

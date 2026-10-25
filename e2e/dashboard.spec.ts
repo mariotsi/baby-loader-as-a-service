@@ -117,4 +117,69 @@ test.describe('Dashboard', () => {
     await page.getByRole('checkbox', { name: 'Italian' }).check();
     await expect(message.getByLabel('Italian')).toHaveValue('Benvenuta Marta!');
   });
+
+  test('saves a Milestone’s Place only once it is picked from the search', async ({ page, project }) => {
+    // Photon never sees a test: it is unreachable first, then answers from here.
+    await page.route(PHOTON, (route) => route.abort());
+    await page.goto(`/dashboard/${perProjectSlug('e2e-places', project)}`);
+    const milestone = page.getByRole('group', { name: 'Milestone 1' });
+    const place = milestone.getByRole('combobox', { name: /^Place/ });
+
+    await place.fill('niguarda');
+    await expect(milestone.getByRole('status')).toHaveText(
+      'Search is unavailable right now. Clear the field to save without a place.'
+    );
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(milestone.getByText('Pick a place from the list, or clear the field.')).toBeVisible();
+    await expect(place).toBeFocused();
+
+    await page.unroute(PHOTON);
+    await page.route(PHOTON, (route) => route.fulfill({ json: PHOTON_RESULTS }));
+    await place.fill('ospedale niguarda');
+    await expect(milestone.getByRole('option')).toHaveCount(2);
+    await milestone.getByRole('option', { name: NIGUARDA }).click();
+    await expect(place).toHaveValue(NIGUARDA);
+    await expect(milestone.getByText('Pick a place from the list, or clear the field.')).toBeHidden();
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByText('Saved.')).toBeVisible();
+
+    await page.reload();
+    await expect(place).toHaveValue(NIGUARDA);
+    await milestone.getByRole('button', { name: 'Remove the place' }).click();
+    await expect(place).toHaveValue('');
+  });
 });
+
+const PHOTON = 'https://photon.komoot.io/**';
+const NIGUARDA = 'Ospedale Niguarda, Via Renato Donatelli, 20162 Milano, Italia';
+
+/** Photon's answer, whatever the search: a hospital and a house, as GeoJSON Features. */
+const PHOTON_RESULTS = {
+  type: 'FeatureCollection',
+  features: [
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [9.1899, 45.5093] },
+      properties: {
+        type: 'house',
+        name: 'Ospedale Niguarda',
+        street: 'Via Renato Donatelli',
+        postcode: '20162',
+        city: 'Milano',
+        country: 'Italia',
+      },
+    },
+    {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [9.1866, 45.4654] },
+      properties: {
+        type: 'house',
+        housenumber: '12',
+        street: 'Via Roma',
+        postcode: '20121',
+        city: 'Milano',
+        country: 'Italia',
+      },
+    },
+  ],
+};

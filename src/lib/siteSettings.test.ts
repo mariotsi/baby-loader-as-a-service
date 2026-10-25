@@ -212,6 +212,32 @@ test("a Milestone's label is needed in every Language of the Site, and kept in o
   ]);
 });
 
+test("a Milestone's Place is optional, and needs an address and a point on Earth", () => {
+  const withPlace = (place: unknown) =>
+    settings({ milestones: [{ emoji: '✨', label: { en: 'Scan' }, date: '2026-05-01', place } as never] });
+  const kept = parseSiteSettings(withPlace({ address: ' Via Roma 12, Milano ', lat: 45.46, lon: 9.19 }), NOW);
+  assert.ok(kept.ok);
+  assert.deepEqual(kept.value.milestones[0].place, { address: 'Via Roma 12, Milano', lat: 45.46, lon: 9.19 });
+  assert.equal(parseSiteSettings(withPlace(undefined), NOW).ok, true);
+
+  assert.deepEqual(errorsOf(withPlace({ address: '  ', lat: 91, lon: -181 })), [
+    { path: 'milestones.0.place.address', code: 'required' },
+    { path: 'milestones.0.place.lat', code: 'outOfRange', params: { max: 90 } },
+    { path: 'milestones.0.place.lon', code: 'outOfRange', params: { min: -180 } },
+  ]);
+  assert.deepEqual(errorsOf(withPlace({ address: 'x'.repeat(201), lat: 0, lon: 0 })), [
+    { path: 'milestones.0.place.address', code: 'tooLong', params: { max: 200 } },
+  ]);
+  assert.deepEqual(errorsOf(withPlace({ address: 'Milano' })), [
+    { path: 'milestones.0.place.lat', code: 'required' },
+    { path: 'milestones.0.place.lon', code: 'required' },
+  ]);
+  assert.deepEqual(errorsOf(withPlace({ address: 'Milano', lat: 45.46, lon: 9.19, label: 'Home' })), [
+    { path: 'milestones.0.place.label', code: 'unknownField' },
+  ]);
+  assert.deepEqual(errorsOf(withPlace(null)), [{ path: 'milestones.0.place', code: 'required' }]);
+});
+
 test('a missing label is reported beside the other errors of the same save', () => {
   assert.deepEqual(
     errorsOf(settings({ babyName: 'x'.repeat(61), milestones: [{ emoji: '✨', label: {}, date: '' }] })),

@@ -87,6 +87,13 @@ const emoji = requiredString((value) => ONE_EMOJI.test(value), 'invalidFormat');
 /** What a new Milestone starts with, until the Owner picks its own emoji. */
 export const DEFAULT_MILESTONE_EMOJI = '✨';
 
+/** A Milestone's Place: its street address, the same in every Language, and the point it stands for (see place.ts). */
+const placeSchema = z.strictObject({
+  address: z.string().check(z.trim(), z.minLength(1), z.maxLength(200)),
+  lat: z.number().check(z.minimum(-90), z.maximum(90)),
+  lon: z.number().check(z.minimum(-180), z.maximum(180)),
+});
+
 const birthSchema = z.discriminatedUnion('born', [
   z.strictObject({ born: z.literal(false), details: z.null() }),
   z.strictObject({
@@ -108,7 +115,7 @@ const siteSettingsSchema = z
     dueDate: z.nullable(calendarDate),
     birth: birthSchema,
     milestones: z
-      .array(z.strictObject({ emoji, label: textPerLanguage(80), date: calendarDate }))
+      .array(z.strictObject({ emoji, label: textPerLanguage(80), date: calendarDate, place: z.optional(placeSchema) }))
       .check(z.maxLength(50)),
     /** The Languages the Public page speaks, in any order: pages list them in the Platform's (see inPlatformOrder). */
     languages: z.array(lang).check(
@@ -164,12 +171,13 @@ const newSiteSchema = z.strictObject({
   settings: siteSettingsSchema,
 });
 
-/** What the editor holds and sends: every field is required. */
+/** What the editor holds and sends: every field is required, except a Milestone's place, absent when it has none. */
 export type SiteSettingsInput = z.input<typeof siteSettingsSchema>;
 export type SiteSettings = z.output<typeof siteSettingsSchema>;
 export type Birth = SiteSettings['birth'];
 export type BirthDetails = Extract<Birth, { born: true }>['details'];
 export type Milestone = SiteSettings['milestones'][number];
+export type Place = NonNullable<Milestone['place']>;
 export type PageName = SiteSettings['pageName'];
 export type TextPerLanguage = Milestone['label'];
 

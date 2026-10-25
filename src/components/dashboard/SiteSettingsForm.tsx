@@ -28,6 +28,7 @@ import {
   type SiteSettingsError,
   type SiteSettingsInput,
 } from '@/lib/siteSettings';
+import { PlaceField } from './PlaceField';
 import styles from './SiteSettingsForm.module.css';
 import { describeSiteSettingsErrors, inlineErrorText, isInlineError } from './siteSettingsErrorText';
 
@@ -43,6 +44,19 @@ const MILESTONE_PLACEHOLDER: Record<Lang, string> = { en: 'The first kick', it: 
  */
 function writtenTexts(texts: Partial<Record<Lang, string>>): Partial<Record<Lang, string>> {
   return Object.fromEntries(Object.entries(texts).filter(([, text]) => text.trim()));
+}
+
+/** A Milestone as the editor holds it: with the text in its Place field, which is not yet a Place while being typed. */
+type MilestoneDraft = Milestone & { placeText: string };
+
+/**
+ * The Place fields holding text that was never picked from the suggestions.
+ * Only the editor knows about them, so the rule runs beside Site settings'.
+ */
+function unpickedPlaces(milestones: MilestoneDraft[]): SiteSettingsError[] {
+  return milestones.flatMap((m, i): SiteSettingsError[] =>
+    m.placeText.trim() && !m.place ? [{ path: `milestones.${i}.place`, code: 'invalidOption' }] : []
+  );
 }
 
 /** `timeZones` comes from the server, so the list the page renders matches the one it hydrates. */
@@ -64,7 +78,9 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
   const [showName, setShowName] = useState(site.privacy.showName);
   const [showSex, setShowSex] = useState(site.privacy.showSex);
   const [pageName, setPageName] = useState<PageName>(site.pageName);
-  const [milestones, setMilestones] = useState<Milestone[]>(site.milestones);
+  const [milestones, setMilestones] = useState<MilestoneDraft[]>(() =>
+    site.milestones.map((m) => ({ ...m, placeText: m.place?.address ?? '' }))
+  );
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   /** The fields in error at the last failed save, checked again on every edit until they pass. */
@@ -95,7 +111,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
             },
           }
         : { born: false, details: null },
-      milestones: milestones.map((m) => ({ ...m, label: writtenTexts(m.label) })),
+      milestones: milestones.map(({ placeText: _, ...m }) => ({ ...m, label: writtenTexts(m.label) })),
       languages,
       timezone,
       theme: { palette, font },
@@ -104,8 +120,14 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
     };
   }
 
+  /** Everything that stops a save: the Site settings rules, then Places typed and never picked. */
+  function problems(): SiteSettingsError[] {
+    const checked = parseSiteSettings(currentSettings());
+    return [...(checked.ok ? [] : checked.errors), ...unpickedPlaces(milestones)];
+  }
+
   // Only the fields that failed the last save are checked while the Owner fixes them: nothing new turns red mid-edit.
-  const errors = failedPaths.length > 0 ? stillFailing(parseSiteSettings(currentSettings()), failedPaths) : [];
+  const errors = failedPaths.length > 0 ? problems().filter((error) => failedPaths.includes(error.path)) : [];
 
   function inlineError(path: string): string | undefined {
     const error = errors.find((e) => e.path === path);
@@ -124,12 +146,12 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
   async function save(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setMessage(null);
-    const settings = currentSettings();
-    const checked = parseSiteSettings(settings);
-    if (!checked.ok) {
-      fail(checked.errors);
+    const found = problems();
+    if (found.length > 0) {
+      fail(found);
       return;
     }
+    const settings = currentSettings();
     setFailedPaths([]);
     setSaving(true);
     const res = await fetch(`/api/sites/${site.slug}`, {
@@ -293,19 +315,19 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
 }
 
 interface MilestonesCardProps {
-  milestones: Milestone[];
-  onChange: (milestones: Milestone[]) => void;
+  milestones: MilestoneDraft[];
+  onChange: (milestones: MilestoneDraft[]) => void;
   languages: Lang[];
   inlineError: (path: string) => string | undefined;
   errorsPerLanguage: (path: string) => Partial<Record<Lang, string>>;
 }
 
-/** Every Milestone as a group: its emoji, its date and its label in each of the Site's Languages. */
+/** Every Milestone as a group: its emoji, its date, its label in each of the Site's Languages and its Place. */
 function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPerLanguage }: MilestonesCardProps) {
   function add() {
-    onChange([...milestones, { emoji: DEFAULT_MILESTONE_EMOJI, label: {}, date: '' }]);
+    onChange([...milestones, { emoji: DEFAULT_MILESTONE_EMOJI, label: {}, date: '', placeText: '' }]);
   }
-  function update(i: number, patch: Partial<Milestone>) {
+  function update(i: number, patch: Partial<MilestoneDraft>) {
     onChange(milestones.map((m, idx) => (idx === i ? { ...m, ...patch } : m)));
   }
   function remove(i: number) {
@@ -360,6 +382,13 @@ function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPe
                     )}
                   </PerLanguageField>
                 </div>
+                <PlaceField
+                  text={m.placeText}
+                  place={m.place}
+                  onChange={(placeText, place) => update(i, { placeText, place })}
+                  error={inlineError(`milestones.${i}.place`)}
+                  className={styles.milestonePlace}
+                />
               </fieldset>
             </li>
           ))}
@@ -382,8 +411,4 @@ function problemsText(errors: SiteSettingsError[]): string | null {
     elsewhere.length > 0 ? describeSiteSettingsErrors(elsewhere) : null,
   ];
   return parts.filter(Boolean).join(' ') || null;
-}
-
-function stillFailing(result: ReturnType<typeof parseSiteSettings>, paths: string[]): SiteSettingsError[] {
-  return result.ok ? [] : result.errors.filter((error) => paths.includes(error.path));
 }

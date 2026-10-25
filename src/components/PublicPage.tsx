@@ -3,6 +3,7 @@
 import { useEffect, useId, useState } from 'react';
 import { Countdown } from '@/components/Countdown';
 import { LanguageSwitcher } from '@/components/LanguageSwitcher';
+import { MilestonePlace } from '@/components/MilestonePlace';
 import { PushSubscribeButton } from '@/components/PushSubscribeButton';
 import { Icon } from '@/components/ui/Icon';
 import { JoyBackground } from '@/components/ui/JoyBackground';
@@ -118,6 +119,7 @@ function Milestones({ milestones }: { milestones: NonNullable<PublicPageView['mi
               {item.emoji}
             </span>
             <span className={styles.when}>{item.date}</span> {item.label}
+            {item.place ? <MilestonePlace place={item.place} /> : null}
           </li>
         ))}
       </ol>

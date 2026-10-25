@@ -1,0 +1,102 @@
+/* Takes the Milestone's whole line, under its date and label. Its width sizes the map, and places the attribution. */
+.place {
+  container-type: inline-size;
+  position: relative;
+  flex-basis: 100%;
+  margin-block-start: var(--space-1);
+}
+
+.link {
+  display: grid;
+  gap: var(--space-2);
+  border-radius: var(--radius-sm);
+  color: var(--color-text-muted);
+  text-decoration: none;
+}
+
+.link:hover {
+  color: var(--color-text);
+}
+
+.link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.map {
+  position: relative;
+  aspect-ratio: 3 / 1;
+}
+
+/*
+ * The edges fade into the card. A mask reads only the alpha of its gradients, so currentColor stands for "opaque"
+ * and sets no color.
+ */
+.canvas {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: var(--color-soft);
+  mask-image:
+    linear-gradient(to right, transparent, currentColor 12%, currentColor 88%, transparent),
+    linear-gradient(to bottom, transparent, currentColor 18%, currentColor 82%, transparent);
+  mask-composite: intersect;
+}
+
+/* OpenFreeMap's dark style draws streets a shade off its background: brightened, they read on a dark Palette. */
+.dark {
+  filter: brightness(2.2) contrast(1.15);
+}
+
+/* The map is always centered on the Place, so the pin's tip stands at the center. */
+.pin {
+  position: absolute;
+  inset-inline-start: 50%;
+  inset-block-start: 50%;
+  translate: -50% -100%;
+  width: auto;
+  height: var(--text-2xl);
+  color: var(--color-accent-ink);
+  /*
+   * A halo of the surface color all around the outline: whatever street lies under the pin, its edge meets the
+   * surface, a pairing every Palette's contrast check covers.
+   */
+  filter: drop-shadow(0.1rem 0 0 var(--color-surface)) drop-shadow(-0.1rem 0 0 var(--color-surface))
+    drop-shadow(0 0.1rem 0 var(--color-surface)) drop-shadow(0 -0.1rem 0 var(--color-surface));
+}
+
+.address {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-1);
+  font-size: var(--text-sm);
+}
+
+.addressIcon {
+  flex: none;
+  margin-block-start: 0.15em;
+}
+
+.addressText {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  overflow-wrap: anywhere;
+}
+
+/* Sits on the map's bottom edge, the map being a third as tall as the Place is wide. */
+.attribution {
+  position: absolute;
+  inset-block-start: calc(100cqi / 3);
+  inset-inline-end: 0;
+  translate: 0 -100%;
+  margin: 0;
+  padding: 0 var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--color-surface);
+  color: var(--color-text-muted);
+  font-size: var(--text-2xs);
+}
+
+.attribution a {
+  color: inherit;
+}

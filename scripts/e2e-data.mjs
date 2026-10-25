@@ -63,6 +63,8 @@ function siteDoc(spec, ownerId, now) {
           emoji: m.emoji,
           label: m.label,
           date: isoDate(m.inDays, now),
+          // A Milestone without a Place has no `place` key: MongoDB would store an undefined one as null.
+          ...(m.place ? { place: m.place } : {}),
         })),
         languages: [...spec.languages],
         timezone: 'Europe/Rome',

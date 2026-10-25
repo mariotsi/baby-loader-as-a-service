@@ -1,3 +1,4 @@
+import { FIXTURE_PLACE } from './support/data.ts';
 import { BASE_URL } from './support/env.ts';
 import { expect, test } from './support/test.ts';
 
@@ -21,6 +22,24 @@ test.describe('Public page', () => {
     await expect(page.getByText('Length: 50 cm')).toBeVisible();
     await expect(page.getByText(/ days to go$/)).toHaveCount(0);
     await expect(page.getByRole('banner')).toHaveText('Bea & Bob');
+  });
+
+  test('links a Milestone’s Place to its address on Google Maps', async ({ page, addressOf }) => {
+    // The map's style never loads in tests, so the page falls back to the address alone.
+    await page.route('https://tiles.openfreemap.org/**', (route) => route.abort());
+    await page.goto(await addressOf('e2e-waiting'));
+
+    const link = page.getByRole('link', { name: `Open ${FIXTURE_PLACE.address} in Google Maps` });
+    await link.scrollIntoViewIfNeeded();
+    await expect(link).toHaveText(FIXTURE_PLACE.address);
+    await expect(link).toHaveAttribute(
+      'href',
+      `https://www.google.com/maps/search/?${new URLSearchParams({ api: '1', query: FIXTURE_PLACE.address })}`
+    );
+    await expect(link).toHaveAttribute('target', '_blank');
+    await expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+    // The attribution goes with the map it credits.
+    await expect(page.getByRole('link', { name: 'OpenStreetMap' })).toBeHidden();
   });
 
   test('hides the name and Sex when Privacy settings say so', async ({ page, addressOf }) => {
