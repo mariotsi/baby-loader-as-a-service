@@ -1,6 +1,8 @@
 'use client';
 
 import { type CSSProperties, useId } from 'react';
+import { useLang } from '@/components/LangProvider';
+import { uiCopy } from '@/lib/copy/ui';
 import { PALETTES, type Palette } from '@/lib/theme';
 import { Icon } from './Icon';
 import styles from './PalettePicker.module.css';
@@ -18,11 +20,12 @@ interface PalettePickerProps {
  * The options fit one row, or two even rows in a narrow container: six
  * Palettes make two rows of three on a phone.
  */
-export function PalettePicker({ value, onChange, legend = 'Palette', palettes = PALETTES }: PalettePickerProps) {
+export function PalettePicker({ value, onChange, legend, palettes = PALETTES }: PalettePickerProps) {
+  const t = uiCopy[useLang()];
   const name = useId();
   return (
     <fieldset className={styles.root}>
-      <legend className={styles.legend}>{legend}</legend>
+      <legend className={styles.legend}>{legend ?? t.palette}</legend>
       <div
         className={styles.options}
         style={{ '--count': palettes.length, '--half': Math.ceil(palettes.length / 2) } as CSSProperties}

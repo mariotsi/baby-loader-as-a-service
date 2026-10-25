@@ -6,10 +6,11 @@
 
 import type { RouteError } from './routeError.ts';
 
+export type PasswordRuleId = 'length' | 'lower' | 'upper' | 'digit' | 'symbol';
+
+/** A rule's words, under the password field, are in the Platform's dictionary (`auth.passwordRules`). */
 export interface PasswordRule {
-  id: string;
-  /** Shown in the checklist under the password field. */
-  label: string;
+  id: PasswordRuleId;
   met: (password: string) => boolean;
 }
 
@@ -18,16 +19,12 @@ export const PASSWORD_MIN_LENGTH = 10;
 export const PASSWORD_MAX_LENGTH = 128;
 
 export const PASSWORD_RULES: readonly PasswordRule[] = [
-  {
-    id: 'length',
-    label: `At least ${PASSWORD_MIN_LENGTH} characters`,
-    met: (p) => [...p].length >= PASSWORD_MIN_LENGTH,
-  },
-  { id: 'lower', label: 'A lowercase letter', met: (p) => /\p{Ll}/u.test(p) },
-  { id: 'upper', label: 'An uppercase letter', met: (p) => /\p{Lu}/u.test(p) },
-  { id: 'digit', label: 'A number', met: (p) => /\p{Nd}/u.test(p) },
+  { id: 'length', met: (p) => [...p].length >= PASSWORD_MIN_LENGTH },
+  { id: 'lower', met: (p) => /\p{Ll}/u.test(p) },
+  { id: 'upper', met: (p) => /\p{Lu}/u.test(p) },
+  { id: 'digit', met: (p) => /\p{Nd}/u.test(p) },
   // Anything that is not a letter, a number or a space counts. A space is allowed, as any other character.
-  { id: 'symbol', label: 'A symbol, such as ! ? @ # $ % & * - _', met: (p) => /[^\p{L}\p{N}\s]/u.test(p) },
+  { id: 'symbol', met: (p) => /[^\p{L}\p{N}\s]/u.test(p) },
 ];
 
 /** The symbols that meet the symbol rule, in the attribute's syntax: its `special` class, minus the space. */

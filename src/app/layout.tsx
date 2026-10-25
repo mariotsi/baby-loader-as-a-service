@@ -2,11 +2,10 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
 import { LangProvider } from '@/components/LangProvider';
+import { platformCopy } from '@/lib/copy/platform';
 import { addressEnv } from '@/lib/env';
 import { platformLang } from '@/lib/i18nNext';
 import { googleFontsHref, PLATFORM_FONT, platformStyle, rootTokenCss } from '@/lib/theme';
-
-const DESCRIPTION = 'Create a customizable countdown & announcement page for your baby, in minutes.';
 
 /**
  * The Platform's name and how its links look when shared. The favicon,
@@ -17,16 +16,17 @@ const DESCRIPTION = 'Create a customizable countdown & announcement page for you
  * a page is named by `appleWebApp` on iOS and by `manifest.ts` on Android:
  * the name alone, without the tagline the title carries.
  */
-export function generateMetadata(): Metadata {
+export async function generateMetadata(): Promise<Metadata> {
   const { protocol, rootDomain } = addressEnv();
+  const t = platformCopy[await platformLang()].meta;
   return {
     metadataBase: new URL(`${protocol}://${rootDomain}`),
-    title: { default: 'Loading Baby: for the days before the big day', template: '%s · Loading Baby' },
-    description: DESCRIPTION,
+    title: { default: t.title, template: '%s · Loading Baby' },
+    description: t.description,
     applicationName: 'Loading Baby',
     // A saved Platform page opens in Safari, as a bookmark; a Public page overrides this to open full screen.
     appleWebApp: { title: 'Loading Baby', capable: false },
-    openGraph: { siteName: 'Loading Baby', type: 'website', description: DESCRIPTION },
+    openGraph: { siteName: 'Loading Baby', type: 'website', description: t.description },
     twitter: { card: 'summary_large_image' },
   };
 }

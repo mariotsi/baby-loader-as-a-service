@@ -1,6 +1,8 @@
 'use client';
 
 import { createContext, type ReactNode, useContext, useId } from 'react';
+import { useLang } from '@/components/LangProvider';
+import { uiCopy } from '@/lib/copy/ui';
 import { Badge } from './Badge';
 import styles from './Field.module.css';
 import { Icon } from './Icon';
@@ -113,6 +115,7 @@ export function Field({
   children,
   className,
 }: FieldProps) {
+  const t = uiCopy[useLang()];
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
@@ -127,7 +130,7 @@ export function Field({
       ) : (
         <label htmlFor={id} className={styles.label}>
           {label}
-          {optional ? <Badge size="sm"> optional</Badge> : null}
+          {optional ? <Badge size="sm"> {t.optional}</Badge> : null}
         </label>
       )}
       <FieldContext.Provider value={{ id, describedBy, invalid: !!error, required }}>{children}</FieldContext.Provider>

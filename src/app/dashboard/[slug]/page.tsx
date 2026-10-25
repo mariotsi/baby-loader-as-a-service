@@ -3,7 +3,9 @@ import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
 import { siteAddress } from '@/lib/address';
+import { platformCopy } from '@/lib/copy/platform';
 import { addressEnv } from '@/lib/env';
+import { platformLang } from '@/lib/i18nNext';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { toSiteDTO } from '@/lib/site';
 import { FONTS, googleFontsHref } from '@/lib/theme';
@@ -13,13 +15,14 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
   const { slug } = await params;
   const { site } = await pageOwnedSite(slug);
   const address = siteAddress(site.slug, addressEnv());
+  const t = platformCopy[await platformLang()].dashboard;
 
   return (
     <PageShell
       width="wide"
       nav={
         <ButtonLink href="/dashboard" variant="ghost" size="sm">
-          Your sites
+          {t.yourSites}
         </ButtonLink>
       }
     >
@@ -29,17 +32,17 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
         <div className={styles.heading}>
           <h1 className={styles.title}>{site.babyName || site.slug}</h1>
           <p className={styles.lead}>
-            Your page is at{' '}
+            {t.pageIsAt}{' '}
             <a href={address} target="_blank" rel="noreferrer">
               {address.replace(/^https?:\/\//, '')}
             </a>
-            . The address stays the same once the Site exists.
+            {t.addressStays}
           </p>
         </div>
         <Stack direction="row" gap={2}>
-          <ButtonLink href={`/dashboard/${site.slug}/subscriptions`}>Subscribers</ButtonLink>
+          <ButtonLink href={`/dashboard/${site.slug}/subscriptions`}>{t.subscribers}</ButtonLink>
           <ButtonLink href={`/dashboard/${site.slug}/send`} icon="bell">
-            Send notification
+            {t.sendNotification}
           </ButtonLink>
         </Stack>
       </div>

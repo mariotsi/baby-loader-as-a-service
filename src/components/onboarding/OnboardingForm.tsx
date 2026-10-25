@@ -16,6 +16,7 @@ import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Switch } from '@/components/ui/Switch';
 import { type AddressConfig, siteAddress, slugProblem } from '@/lib/address';
 import { errorsCopy } from '@/lib/copy/errors';
+import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
 import { responseErrorText } from '@/lib/errorText';
 import { fallbackLang, type Lang } from '@/lib/i18n';
 import { publicPageView } from '@/lib/publicPageView';
@@ -24,13 +25,13 @@ import { DEFAULT_FONT, DEFAULT_PALETTE } from '@/lib/theme';
 import styles from './OnboardingForm.module.css';
 
 /** Why the Slug cannot be an Address, if it cannot. */
-function slugError(slug: string): string | undefined {
+function slugError(slug: string, t: PlatformCopy['onboarding']): string | undefined {
   const problem = slug ? slugProblem(slug) : null;
   if (problem === 'invalidFormat') {
-    return 'Use 3-32 lowercase letters, numbers or hyphens, with no hyphen at either end.';
+    return t.slugFormat;
   }
   if (problem === 'slugReserved') {
-    return 'This address is reserved.';
+    return t.slugReserved;
   }
   return undefined;
 }
@@ -51,11 +52,13 @@ function Step({ n, children }: { n: number; children: ReactNode }) {
 export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig }) {
   const router = useRouter();
   const lang = useLang();
+  const { onboarding: t, privacy } = platformCopy[lang];
   const previewId = useId();
   const [slug, setSlug] = useState('');
   const [babyName, setBabyName] = useState('');
   const [dueDate, setDueDate] = useState('');
-  const [languages, setLanguages] = useState<Lang[]>(['en']);
+  // A new Site starts in the language its Owner reads the Platform in.
+  const [languages, setLanguages] = useState<Lang[]>([lang]);
   const [palette, setPalette] = useState(DEFAULT_PALETTE);
   const [font, setFont] = useState(DEFAULT_FONT);
   const [showName, setShowName] = useState(true);
@@ -74,7 +77,7 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
   };
   const preview = publicPageView(settings as SiteSettings, fallbackLang(languages));
   const trimmedSlug = slug.trim();
-  const slugProblemText = slugError(trimmedSlug);
+  const slugProblemText = slugError(trimmedSlug, t);
 
   async function onSubmit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -102,20 +105,16 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
   return (
     <PageShell width="wide">
       <div className={styles.intro}>
-        <p className={styles.eyebrow}>Your new page</p>
-        <h1 className={styles.title}>Create your waiting page</h1>
-        <p className={styles.lead}>Three little steps, and everyone can start counting the days with you.</p>
+        <p className={styles.eyebrow}>{t.eyebrow}</p>
+        <h1 className={styles.title}>{t.title}</h1>
+        <p className={styles.lead}>{t.lead}</p>
       </div>
       <form onSubmit={onSubmit} className={styles.layout}>
         <div className={styles.cards}>
-          <Card title={<Step n={1}>The basics</Step>} description="Where your page lives and who it is for.">
+          <Card title={<Step n={1}>{t.basics}</Step>} description={t.basicsDescription}>
             <Field
-              label="Site address"
-              hint={
-                slugProblemText
-                  ? undefined
-                  : `Your page will be at ${siteAddress(trimmedSlug || 'emma', addressConfig)}`
-              }
+              label={t.siteAddress}
+              hint={slugProblemText ? undefined : t.pageWillBeAt(siteAddress(trimmedSlug || 'emma', addressConfig))}
               error={slugProblemText}
               liveHint
               required
@@ -129,43 +128,35 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
                 spellCheck={false}
               />
             </Field>
-            <Field label="Baby's name" required>
+            <Field label={t.babyName} required>
               <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
             </Field>
-            <Field label="Due date" optional hint="Your page counts the days down to it.">
+            <Field label={t.dueDate} optional hint={t.dueDateHint}>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </Field>
           </Card>
-          <Card title={<Step n={2}>Make it yours</Step>} description="Pick the colors and letters your page wears.">
+          <Card title={<Step n={2}>{t.makeItYours}</Step>} description={t.makeItYoursDescription}>
             <PalettePicker value={palette} onChange={setPalette} />
             <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
             <LanguagesPicker value={languages} onChange={setLanguages} />
           </Card>
-          <Card title={<Step n={3}>Who sees what</Step>} description="Until the birth, you decide what the page tells.">
+          <Card title={<Step n={3}>{t.whoSeesWhat}</Step>} description={t.whoSeesWhatDescription}>
             <div>
-              <Switch
-                label="Show the name while waiting"
-                checked={showName}
-                onChange={(e) => setShowName(e.target.checked)}
-              />
-              <Switch
-                label="Show the sex while waiting"
-                checked={showSex}
-                onChange={(e) => setShowSex(e.target.checked)}
-              />
+              <Switch label={privacy.showName} checked={showName} onChange={(e) => setShowName(e.target.checked)} />
+              <Switch label={privacy.showSex} checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
             </div>
           </Card>
         </div>
         <section className={styles.preview} aria-labelledby={previewId}>
           <h2 id={previewId} className={styles.previewTitle}>
-            Your page
+            {t.yourPage}
           </h2>
           <PagePreview view={preview} theme={settings.theme} />
         </section>
         <div className={styles.actions}>
           <StatusMessage tone="danger">{error}</StatusMessage>
           <Button variant="primary" type="submit" icon="sparkles" loading={loading}>
-            {loading ? 'Creating…' : 'Create site'}
+            {loading ? t.creating : t.create}
           </Button>
         </div>
       </form>

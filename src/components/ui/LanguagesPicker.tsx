@@ -1,8 +1,10 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { useLang } from '@/components/LangProvider';
 import { commonCopy } from '@/lib/copy/common';
-import { englishName, inPlatformOrder, LANGS, type Lang } from '@/lib/i18n';
+import { uiCopy } from '@/lib/copy/ui';
+import { inPlatformOrder, LANGS, type Lang, languageName } from '@/lib/i18n';
 import { Checkbox } from './Checkbox';
 import styles from './LanguagesPicker.module.css';
 
@@ -17,13 +19,15 @@ interface LanguagesPickerProps {
  * Picks a Site's Languages: a checkbox per supported language, in the order
  * `LANGS` lists them. The last Language stays ticked, with a note saying why.
  */
-export function LanguagesPicker({ value, onChange, legend = 'Languages' }: LanguagesPickerProps) {
+export function LanguagesPicker({ value, onChange, legend }: LanguagesPickerProps) {
+  const pageLang = useLang();
+  const t = uiCopy[pageLang].languages;
   const hintId = useId();
   const [note, setNote] = useState<string | null>(null);
 
   function toggle(lang: Lang, checked: boolean) {
     if (!checked && value.length === 1) {
-      setNote('Your page needs at least one language.');
+      setNote(t.keepOne);
       return;
     }
     onChange(inPlatformOrder(checked ? [...value, lang] : value.filter((l) => l !== lang)));
@@ -32,15 +36,16 @@ export function LanguagesPicker({ value, onChange, legend = 'Languages' }: Langu
 
   return (
     <fieldset className={styles.root} aria-describedby={hintId}>
-      <legend className={styles.legend}>{legend}</legend>
+      <legend className={styles.legend}>{legend ?? t.legend}</legend>
       <p id={hintId} className={styles.hint}>
-        Tick every language your page speaks. You write your page's words in each of them: your Page name, Milestones
-        and Birth message get a box per language. Visitors get the one their browser asks for, or English if your page
-        has it, and can switch.
+        {t.hint}
       </p>
       <ul className={styles.options}>
         {LANGS.map((lang) => {
-          const name = englishName(lang);
+          // Named in the page's language, then in itself when that differs: "Italian (Italiano)". Italian writes
+          // language names in lowercase, so the label's first letter is raised and the two compare without case.
+          const named = languageName(lang, pageLang);
+          const name = named.charAt(0).toLocaleUpperCase(pageLang) + named.slice(1);
           const native = commonCopy[lang].languageName;
           return (
             <li key={lang}>
@@ -48,7 +53,7 @@ export function LanguagesPicker({ value, onChange, legend = 'Languages' }: Langu
                 label={
                   <>
                     {name}
-                    {native === name ? null : (
+                    {native.toLocaleLowerCase(lang) === named.toLocaleLowerCase(pageLang) ? null : (
                       <span lang={lang} className={styles.native}>
                         {' '}
                         ({native})

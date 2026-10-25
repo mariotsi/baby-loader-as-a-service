@@ -1,7 +1,9 @@
 'use client';
 
 import { type ReactNode, useId } from 'react';
-import { englishName, inPlatformOrder, type Lang } from '@/lib/i18n';
+import { useLang } from '@/components/LangProvider';
+import { uiCopy } from '@/lib/copy/ui';
+import { inPlatformOrder, type Lang, languageName } from '@/lib/i18n';
 import { Badge } from './Badge';
 import { Field } from './Field';
 import styles from './PerLanguageField.module.css';
@@ -57,6 +59,7 @@ export function PerLanguageField({
   optional,
   children,
 }: PerLanguageFieldProps) {
+  const pageLang = useLang();
   const hintId = useId();
   const ordered = inPlatformOrder(languages);
 
@@ -77,7 +80,7 @@ export function PerLanguageField({
     <fieldset className={styles.root} aria-describedby={hint ? hintId : undefined}>
       <legend className={styles.legend}>
         {label}
-        {optional ? <Badge size="sm"> optional</Badge> : null}
+        {optional ? <Badge size="sm"> {uiCopy[pageLang].optional}</Badge> : null}
       </legend>
       {hint ? (
         <p id={hintId} className={styles.hint}>
@@ -90,7 +93,7 @@ export function PerLanguageField({
             <span className={styles.tag} aria-hidden="true">
               {lang.toUpperCase()}
             </span>
-            <Field label={englishName(lang)} labelHidden error={errors[lang]}>
+            <Field label={languageName(lang, pageLang)} labelHidden error={errors[lang]}>
               {control(lang)}
             </Field>
           </div>

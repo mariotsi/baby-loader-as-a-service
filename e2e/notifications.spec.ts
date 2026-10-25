@@ -17,17 +17,17 @@ test('a Visitor subscribes and the Owner sends them a Notification', async ({
 
   const owner = await ownerPage('a');
   await owner.goto(`/dashboard/${slug}/subscriptions`);
-  await expect(owner.getByText('1 device(s) subscribed.')).toBeVisible();
+  await expect(owner.getByText('1 device subscribed.')).toBeVisible();
 
   await owner.goto(`/dashboard/${slug}/send`);
   await owner.getByLabel('Message').fill('Any day now!');
   await owner.getByRole('button', { name: 'Send notification' }).click();
   // The fake push service never answers, so delivery fails; the attempt reaching
   // the one Subscription is what this checks.
-  await expect(owner.getByText(/^Sent to 0 of 1 subscribers\.$/)).toBeVisible();
+  await expect(owner.getByText(/^Sent to 0 of 1 subscriber\.$/)).toBeVisible();
 
   await page.getByRole('button', { name: 'Turn off' }).click();
   await expect(page.getByText('Notifications turned off.')).toBeVisible();
   await owner.goto(`/dashboard/${slug}/subscriptions`);
-  await expect(owner.getByText('0 device(s) subscribed.')).toBeVisible();
+  await expect(owner.getByText('0 devices subscribed.')).toBeVisible();
 });

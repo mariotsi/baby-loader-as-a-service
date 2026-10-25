@@ -9,12 +9,14 @@ import { Input } from '@/components/ui/Input';
 import { Stack } from '@/components/ui/Stack';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Textarea } from '@/components/ui/Textarea';
+import { platformCopy } from '@/lib/copy/platform';
 import { responseErrorText } from '@/lib/errorText';
 import type { Lang } from '@/lib/i18n';
 
 /** Sends one text, in `lang`, the Site's fallback Language (see fallbackLang); every Subscription receives it. */
 export function SendNotificationForm({ slug, lang }: { slug: string; lang: Lang }) {
   const pageLang = useLang();
+  const t = platformCopy[pageLang].send;
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
@@ -32,7 +34,7 @@ export function SendNotificationForm({ slug, lang }: { slug: string; lang: Lang 
     const data = await res.json();
     setSending(false);
     if (res.ok) {
-      setResult({ ok: true, text: `Sent to ${data.sent} of ${data.total} subscribers.` });
+      setResult({ ok: true, text: t.sent(data.sent, data.total) });
       setBody('');
     } else {
       setResult({ ok: false, text: responseErrorText(data, pageLang) });
@@ -43,19 +45,15 @@ export function SendNotificationForm({ slug, lang }: { slug: string; lang: Lang 
     <Card>
       <form onSubmit={onSubmit}>
         <Stack gap={5}>
-          <Field
-            label="Title"
-            optional
-            hint="Left empty, it is the baby's name, unless your Privacy settings hide it before the birth."
-          >
+          <Field label={t.titleField} optional hint={t.titleHint}>
             <Input value={title} onChange={(e) => setTitle(e.target.value)} autoComplete="off" />
           </Field>
-          <Field label="Message" required>
-            <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder="Any day now!" />
+          <Field label={t.message} required>
+            <Textarea value={body} onChange={(e) => setBody(e.target.value)} placeholder={t.messagePlaceholder} />
           </Field>
           <Stack direction="row" gap={3}>
             <Button variant="primary" type="submit" icon="bell" loading={sending}>
-              {sending ? 'Sending…' : 'Send notification'}
+              {sending ? t.sending : t.submit}
             </Button>
             <StatusMessage tone="info">{result?.ok ? result.text : null}</StatusMessage>
             <StatusMessage tone="danger">{result && !result.ok ? result.text : null}</StatusMessage>

@@ -14,32 +14,30 @@ import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { errorsCopy } from '@/lib/copy/errors';
+import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
 import { routeErrorText } from '@/lib/errorText';
-import { PASSWORD_RULES, PASSWORD_RULES_ATTRIBUTE, unmetPasswordRules } from '@/lib/passwordRules';
+import {
+  PASSWORD_MIN_LENGTH,
+  PASSWORD_RULES,
+  PASSWORD_RULES_ATTRIBUTE,
+  type PasswordRuleId,
+  unmetPasswordRules,
+} from '@/lib/passwordRules';
 import styles from './CredentialsForm.module.css';
 
+/** Where each mode sends the form and goes next; its words are in the Platform's dictionary (`auth`). */
 const MODES = {
-  login: {
-    title: 'Log in',
-    description: 'Welcome back! Your page has missed you.',
-    endpoint: '/api/auth/login',
-    next: '/dashboard',
-    submit: 'Log in',
-    submitting: 'Logging in…',
-    switchPrompt: 'No account yet?',
-    switchLink: { href: '/signup', label: 'Sign up' },
-  },
-  signup: {
-    title: 'Create your account',
-    description: "You'll create your first waiting page next.",
-    endpoint: '/api/auth/signup',
-    next: '/onboarding',
-    submit: 'Sign up',
-    submitting: 'Creating account…',
-    switchPrompt: 'Already have an account?',
-    switchLink: { href: '/login', label: 'Log in' },
-  },
+  login: { endpoint: '/api/auth/login', next: '/dashboard', switchHref: '/signup' },
+  signup: { endpoint: '/api/auth/signup', next: '/onboarding', switchHref: '/login' },
 } as const;
+
+type AuthCopy = PlatformCopy['auth'];
+
+/** A password rule's words, as the checklist under the field shows them. */
+function ruleLabel(id: PasswordRuleId, t: AuthCopy): string {
+  const label = t.passwordRules[id];
+  return typeof label === 'function' ? label(PASSWORD_MIN_LENGTH) : label;
+}
 
 /**
  * Asks the browser to save the credentials once the server took them. The
@@ -90,16 +88,14 @@ function textEnd(input: HTMLInputElement): number {
 }
 
 /** What stops a new password from being sent, once the Owner has tried to send it. */
-function newPasswordErrors(password: string, confirm: string) {
+function newPasswordErrors(password: string, confirm: string, t: AuthCopy) {
   const unmet = unmetPasswordRules(password);
   let confirmError: string | undefined;
   if (confirm !== password) {
-    confirmError = confirm
-      ? "The passwords don't match. Type the same password again."
-      : 'Type your password again here.';
+    confirmError = confirm ? t.passwordsDiffer : t.typeAgain;
   }
   return {
-    password: unmet.length > 0 ? `Not met yet: ${unmet.map((rule) => rule.label).join(', ')}.` : undefined,
+    password: unmet.length > 0 ? t.rulesNotMet(unmet.map((rule) => ruleLabel(rule.id, t)).join(', ')) : undefined,
     confirm: confirmError,
   };
 }
@@ -127,14 +123,15 @@ function NewPasswordFields({
   passwordRef: RefObject<HTMLInputElement | null>;
   confirmRef: RefObject<HTMLInputElement | null>;
 }) {
+  const t = platformCopy[useLang()].auth;
   const rulesId = useId();
-  const errors = tried ? newPasswordErrors(password, confirm) : { password: undefined, confirm: undefined };
+  const errors = tried ? newPasswordErrors(password, confirm, t) : { password: undefined, confirm: undefined };
   // Spread, since React's input props do not know `passwordrules`; React passes it to the DOM as it is.
   const passwordRules = { passwordrules: PASSWORD_RULES_ATTRIBUTE };
   return (
     <>
       <div className={styles.newPassword}>
-        <Field label="Password" error={errors.password} errorForScreenReaders required>
+        <Field label={t.password} error={errors.password} errorForScreenReaders required>
           <Input
             ref={passwordRef}
             name="password"
@@ -149,11 +146,11 @@ function NewPasswordFields({
         </Field>
         <Checklist
           id={rulesId}
-          items={PASSWORD_RULES.map((rule) => ({ id: rule.id, label: rule.label, met: rule.met(password) }))}
+          items={PASSWORD_RULES.map((rule) => ({ id: rule.id, label: ruleLabel(rule.id, t), met: rule.met(password) }))}
           flagUnmet={tried}
         />
       </div>
-      <Field label="Confirm password" error={errors.confirm}>
+      <Field label={t.confirmPassword} error={errors.confirm}>
         <Input
           ref={confirmRef}
           name="confirm-password"
@@ -171,9 +168,11 @@ function NewPasswordFields({
 
 /** The email and password form of the login and signup pages. */
 export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
-  const copy = MODES[mode];
+  const route = MODES[mode];
   const router = useRouter();
   const lang = useLang();
+  const t = platformCopy[lang].auth;
+  const copy = t[mode];
   const [email, setEmail] = useState('');
   const [baby, setBaby] = useState<LoginBabyState>('sleeping');
   const [look, setLook] = useState(-1);
@@ -195,7 +194,7 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
   /** On signup, whether the new password can be sent; otherwise it moves focus to what stops it. */
   function newPasswordReady(newPassword: string, newConfirm: string): boolean {
     setTried(true);
-    const errors = newPasswordErrors(newPassword, newConfirm);
+    const errors = newPasswordErrors(newPassword, newConfirm, t);
     if (errors.password) {
       passwordRef.current?.focus();
     } else if (errors.confirm) {
@@ -216,7 +215,7 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
     }
     setLoading(true);
     try {
-      const res = await fetch(copy.endpoint, {
+      const res = await fetch(route.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email: values.email, password: values.password }),
@@ -228,7 +227,7 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
       }
       await rememberCredentials(values.email, values.password);
       startNavigation(() => {
-        router.push(copy.next);
+        router.push(route.next);
         router.refresh();
       });
     } catch {
@@ -248,7 +247,7 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
       <Card title={copy.title} description={copy.description} headingLevel={1}>
         <form onSubmit={onSubmit}>
           <Stack gap={5}>
-            <Field label="Email" required>
+            <Field label={t.email} required>
               <Input
                 name="email"
                 type="email"
@@ -275,7 +274,7 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
                 confirmRef={confirmRef}
               />
             ) : (
-              <Field label="Password" required>
+              <Field label={t.password} required>
                 <Input
                   name="password"
                   type="password"
@@ -294,7 +293,7 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
           </Stack>
         </form>
         <p className={styles.switch}>
-          {copy.switchPrompt} <Link href={copy.switchLink.href}>{copy.switchLink.label}</Link>
+          {copy.switchPrompt} <Link href={route.switchHref}>{copy.switchLink}</Link>
         </p>
       </Card>
     </PageShell>
