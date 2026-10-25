@@ -36,11 +36,19 @@ export type SiteSpec = {
   lengthCm?: number;
   /** The Birth message in each language that has one. */
   birthMessage?: { it?: string; en?: string };
-  /** A label in every Language of the Site. */
-  milestones?: { emoji: string; label: { it?: string; en?: string }; inDays: number }[];
+  /** A label in every Language of the Site, and a Place when there is one. */
+  milestones?: {
+    emoji: string;
+    label: { it?: string; en?: string };
+    inDays: number;
+    place?: { address: string; lat: number; lon: number };
+  }[];
   /** The Page name in each language that has one. */
   pageName?: { it?: string; en?: string };
 };
+
+/** A Place as the editor stores it from a Photon result. */
+export const FIXTURE_PLACE = { address: 'Via Roma 12, 20121 Milano, Italia', lat: 45.4654, lon: 9.1866 };
 
 const waiting = {
   sex: 'female',
@@ -57,7 +65,7 @@ const sharedFixtureSites: SiteSpec[] = [
     slug: 'e2e-waiting',
     owner: 'a',
     babyName: 'Wanda',
-    milestones: [{ emoji: '🩺', label: { en: 'First scan' }, inDays: -60 }],
+    milestones: [{ emoji: '🩺', label: { en: 'First scan' }, inDays: -60, place: FIXTURE_PLACE }],
     pageName: { en: 'Wilma & Walter' },
   },
   {
@@ -84,8 +92,14 @@ const perProjectFixtureBases: Omit<SiteSpec, 'slug'>[] = [
   { ...waiting, owner: 'a', babyName: 'Nora' },
   { ...waiting, owner: 'a', babyName: 'Ruth' },
   { ...waiting, owner: 'a', babyName: 'Marta', languages: ['it', 'en'] },
+  {
+    ...waiting,
+    owner: 'a',
+    babyName: 'Paola',
+    milestones: [{ emoji: '🎈', label: { en: 'Baby shower' }, inDays: 10 }],
+  },
 ];
-const PER_PROJECT_BASES = ['e2e-edit', 'e2e-notify', 'e2e-rules', 'e2e-messages'] as const;
+const PER_PROJECT_BASES = ['e2e-edit', 'e2e-notify', 'e2e-rules', 'e2e-messages', 'e2e-places'] as const;
 export type PerProjectFixture = (typeof PER_PROJECT_BASES)[number];
 
 export function perProjectSlug(base: PerProjectFixture, project: ProjectName): string {
@@ -123,7 +137,12 @@ export const DEMO_SITES: SiteSpec[] = [
     pageName: { it: 'Stefania e Simone', en: 'Stefania & Simone' },
     dueInDays: 45,
     milestones: [
-      { emoji: '🩺', label: { it: 'Prima ecografia', en: 'First scan' }, inDays: -90 },
+      {
+        emoji: '🩺',
+        label: { it: 'Prima ecografia', en: 'First scan' },
+        inDays: -90,
+        place: { address: 'Ospedale Niguarda, Via Renato Donatelli, 20162 Milano, Italia', lat: 45.5093, lon: 9.1899 },
+      },
       { emoji: '🎈', label: { it: 'Baby shower', en: 'Baby shower' }, inDays: 20 },
     ],
   },

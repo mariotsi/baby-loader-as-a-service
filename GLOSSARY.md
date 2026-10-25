@@ -87,8 +87,12 @@ The Owner's own words shown with the Birth details.
 _Avoid_: Announcement, caption
 
 **Milestone**:
-A labelled date in the baby's story that the Owner adds to a Site.
+A labelled date in the baby's story that the Owner adds to a Site, with a Place if the Owner gives it one.
 _Avoid_: Event, timeline entry
+
+**Place**:
+A Milestone's street address and the point on the map it stands for, both taken from the search result the Owner picks. The Public page shows it with a small map.
+_Avoid_: Address, location
 
 **Sex**:
 Girl, boy, or unknown; unknown means the Owner prefers not to say.

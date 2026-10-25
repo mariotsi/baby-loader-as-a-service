@@ -7,6 +7,7 @@ import { Button, ButtonLink } from '../Button';
 import { Card } from '../Card';
 import { Checkbox } from '../Checkbox';
 import { Checklist } from '../Checklist';
+import { Combobox } from '../Combobox';
 import { EmojiPicker } from '../EmojiPicker';
 import { Field } from '../Field';
 import { Input } from '../Input';
@@ -40,6 +41,7 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
   const [sex, setSex] = useState<'female' | 'male' | 'unknown'>('unknown');
   const [languages, setLanguages] = useState<Lang[]>(['it', 'en']);
   const [emoji, setEmoji] = useState('🍼');
+  const [place, setPlace] = useState('Via Roma 12, 20121 Milano, Italia');
   const [label, setLabel] = useState<Partial<Record<Lang, string>>>({ en: 'The first kick' });
   const Heading = headingLevel === 2 ? 'h2' : 'h3';
   return (
@@ -75,6 +77,18 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
           </Field>
           <Field label="Due date" optional>
             <Input type="date" defaultValue="2026-09-12" />
+          </Field>
+          <Field label="Place" optional hint="Everyone who opens your page sees this place on a map.">
+            <Combobox
+              value={place}
+              onValueChange={setPlace}
+              options={[]}
+              getOptionKey={(option: string) => option}
+              renderOption={(option) => option}
+              onSelect={setPlace}
+              clear={{ label: 'Remove the place', onClear: () => setPlace('') }}
+              listLabel="Places"
+            />
           </Field>
           <Field label="Timezone">
             <Select defaultValue="Europe/Rome">
