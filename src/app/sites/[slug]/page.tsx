@@ -1,3 +1,4 @@
+import type { Metadata } from 'next';
 import { cookies, headers } from 'next/headers';
 import { notFound } from 'next/navigation';
 import { PublicPage } from '@/components/PublicPage';
@@ -7,6 +8,16 @@ import { getSiteBySlug } from '@/lib/site';
 import { getFont, googleFontsHref, rootTokenCss, themeStyle } from '@/lib/theme';
 
 export const dynamic = 'force-dynamic';
+
+/**
+ * Saved to an iPhone's home screen, a Public page opens full screen, as an
+ * app of its own. Next.js writes `capable` as `mobile-web-app-capable`; the
+ * `apple-` tag is the one iOS has long read, so the page carries both.
+ */
+export const metadata: Metadata = {
+  appleWebApp: { title: 'Loading Baby', capable: true },
+  other: { 'apple-mobile-web-app-capable': 'yes' },
+};
 
 /** The Visitor's language among the Site's: the cookie first, then Accept-Language, then the fallback. */
 async function initialLang(langs: Lang[]): Promise<Lang> {

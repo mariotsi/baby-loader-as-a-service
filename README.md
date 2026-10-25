@@ -159,6 +159,8 @@ The same run copies what the app serves out of the kit:
 | `src/app/opengraph-image.png`       | `brand/Social/og-marketing-en.png`        |
 | `src/app/admin/opengraph-image.png` | `brand/Social/og-dashboard-en.png`        |
 | `public/icon-192.png`               | `brand/Favicon/icon-192.png`              |
+| `public/icon-512.png`               | `brand/Favicon/icon-512.png`              |
+| `public/icon-maskable-512.png`      | `brand/Favicon/icon-maskable-512.png`     |
 | `public/icon-72.png`                | `brand/Favicon/notification-badge-72.png` |
 
 The `Logo` and `Spinner` components draw the mark in code, with the theme's
