@@ -1,7 +1,9 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
+import { LangProvider } from '@/components/LangProvider';
 import { addressEnv } from '@/lib/env';
+import { platformLang } from '@/lib/i18nNext';
 import { googleFontsHref, PLATFORM_FONT, platformStyle, rootTokenCss } from '@/lib/theme';
 
 const DESCRIPTION = 'Create a customizable countdown & announcement page for your baby, in minutes.';
@@ -29,9 +31,15 @@ export function generateMetadata(): Metadata {
   };
 }
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+/**
+ * Every page starts in the Platform's language. A Public page then switches
+ * `<html lang>` to the Language it shows, which may be another when its Site
+ * does not speak the Platform's.
+ */
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const lang = await platformLang();
   return (
-    <html lang="en">
+    <html lang={lang}>
       <head>
         {/* The Platform's theme; a Public page overrides it with its Site's (see rootTokenCss). */}
         <style>{rootTokenCss(platformStyle())}</style>
@@ -40,7 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="stylesheet" href={googleFontsHref([PLATFORM_FONT])} />
       </head>
       <body>
-        {children}
+        <LangProvider lang={lang}>{children}</LangProvider>
         <EnvironmentRibbon />
       </body>
     </html>

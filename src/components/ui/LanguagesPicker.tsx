@@ -1,8 +1,8 @@
 'use client';
 
 import { useId, useState } from 'react';
+import { commonCopy } from '@/lib/copy/common';
 import { englishName, inPlatformOrder, LANGS, type Lang } from '@/lib/i18n';
-import { messages } from '@/lib/messages';
 import { Checkbox } from './Checkbox';
 import styles from './LanguagesPicker.module.css';
 
@@ -41,7 +41,7 @@ export function LanguagesPicker({ value, onChange, legend = 'Languages' }: Langu
       <ul className={styles.options}>
         {LANGS.map((lang) => {
           const name = englishName(lang);
-          const native = messages[lang].languageName;
+          const native = commonCopy[lang].languageName;
           return (
             <li key={lang}>
               <Checkbox

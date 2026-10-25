@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import type { ReactNode } from 'react';
+import { PlatformLanguageSwitcher } from '@/components/PlatformLanguageSwitcher';
 import { JoyBackground } from './JoyBackground';
 import { Logo } from './Logo';
 import styles from './PageShell.module.css';
@@ -13,9 +14,9 @@ interface PageShellProps {
 }
 
 /**
- * The frame of every Platform page: the Logo, the page's links, the playful
- * circles behind it and one `<main>` for the content. A Public page has its
- * own frame.
+ * The frame of every Platform page: the Logo, the page's links, the Language
+ * switcher, the playful circles behind it and one `<main>` for the content. A
+ * Public page has its own frame.
  */
 export function PageShell({ width = 'medium', nav, children }: PageShellProps) {
   return (
@@ -25,7 +26,10 @@ export function PageShell({ width = 'medium', nav, children }: PageShellProps) {
         <Link href="/" className={styles.wordmark}>
           <Logo />
         </Link>
-        {nav ? <nav className={styles.nav}>{nav}</nav> : null}
+        <div className={styles.end}>
+          {nav ? <nav className={styles.nav}>{nav}</nav> : null}
+          <PlatformLanguageSwitcher />
+        </div>
       </header>
       <main className={`${styles.main} ${styles[width]}`}>{children}</main>
     </div>
