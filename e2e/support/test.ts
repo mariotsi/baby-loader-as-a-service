@@ -38,13 +38,12 @@ const addressCache = new Map<string, string>();
 /**
  * A Site's Address as its Owner's Dashboard links it: `/sites/<slug>` on a
  * preview deployment, `<slug>.<root domain>` elsewhere. Tests reach Public
- * pages through it, never by building the URL themselves.
+ * pages through it, never by building the URL themselves. It reads every
+ * link's href, so it finds the Address whichever language the Dashboard is in.
  */
 export async function dashboardAddress(page: Page, slug: string): Promise<string> {
   await page.goto('/dashboard');
-  const hrefs = await page
-    .getByRole('link', { name: 'View' })
-    .evaluateAll((links) => links.map((a) => (a as HTMLAnchorElement).href));
+  const hrefs = await page.locator('a[href]').evaluateAll((links) => links.map((a) => (a as HTMLAnchorElement).href));
   const pattern = new RegExp(`(//|/sites/)${slug}(\\.|/|$)`);
   const address = hrefs.find((href) => pattern.test(href));
   if (!address) {
