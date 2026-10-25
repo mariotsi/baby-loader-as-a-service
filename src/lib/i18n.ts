@@ -27,12 +27,7 @@ export function inPlatformOrder(languages: readonly Lang[]): Lang[] {
   return LANGS.filter((lang) => languages.includes(lang));
 }
 
-/** A language's name in English, for the Dashboard: "Italian". Any language Intl knows has one. */
-export function englishName(lang: Lang): string {
-  return languageName(lang, 'en');
-}
-
-/** A language's name as `inLang` writes it mid-sentence: "Italian" in English, "inglese" in Italian. */
+/** A language's name as `inLang` writes it mid-sentence: "Italian" in English, "inglese" in Italian. Any language Intl knows has one. */
 export function languageName(lang: string, inLang: Lang): string {
   return new Intl.DisplayNames(inLang, { type: 'language' }).of(lang) ?? lang;
 }

@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  englishName,
   FALLBACK_LANGS,
   fallbackLang,
   inPlatformOrder,
   isLang,
   LANGS,
+  languageName,
   negotiateLang,
   plural,
 } from './i18n.ts';
@@ -70,11 +70,12 @@ test('inPlatformOrder lists Languages as the Platform does, whatever order they 
   assert.deepEqual(inPlatformOrder(['en']), ['en']);
 });
 
-test('isLang and englishName cover the supported languages', () => {
+test('isLang and languageName cover the supported languages', () => {
   assert.equal(isLang('it'), true);
   assert.equal(isLang('fr'), false);
-  assert.equal(englishName('it'), 'Italian');
-  assert.equal(englishName('en'), 'English');
+  assert.equal(languageName('it', 'en'), 'Italian');
+  assert.equal(languageName('en', 'en'), 'English');
+  assert.equal(languageName('en', 'it'), 'inglese');
 });
 
 test('a count takes its plural form by the language’s rules', () => {

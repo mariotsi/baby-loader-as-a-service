@@ -1,8 +1,10 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useLang } from '@/components/LangProvider';
 import { Combobox } from '@/components/ui/Combobox';
 import { Field } from '@/components/ui/Field';
+import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
 import { type PhotonFeature, placeFromPhoton } from '@/lib/place';
 import type { Place } from '@/lib/siteSettings';
 
@@ -62,15 +64,12 @@ function distinct(places: Place[]): Place[] {
   return places.filter((place, i) => places.findIndex((other) => other.address === place.address) === i);
 }
 
-function statusText(search: Search): string | undefined {
+function statusText(search: Search, t: PlatformCopy['settings']): string | undefined {
   switch (search.state) {
     case 'done':
-      if (search.places.length === 0) {
-        return 'No places match. Try a street, a town or a hospital.';
-      }
-      return search.places.length === 1 ? '1 place found' : `${search.places.length} places found`;
+      return search.places.length === 0 ? t.noPlaces : t.placesFound(search.places.length);
     case 'failed':
-      return 'Search is unavailable right now. Clear the field to save without a place.';
+      return t.searchFailed;
     default:
       return undefined;
   }
@@ -92,15 +91,10 @@ interface PlaceFieldProps {
  * picked Place drops it until another is picked.
  */
 export function PlaceField({ text, place, onChange, error, className }: PlaceFieldProps) {
+  const t = platformCopy[useLang()].settings;
   const search = usePlaceSearch(place ? '' : text);
   return (
-    <Field
-      label="Place"
-      optional
-      hint="Everyone who opens your page sees this place on a map."
-      error={error}
-      className={className}
-    >
+    <Field label={t.place} optional hint={t.placeHint} error={error} className={className}>
       <Combobox
         value={text}
         onValueChange={(typed) => onChange(typed, undefined)}
@@ -109,10 +103,10 @@ export function PlaceField({ text, place, onChange, error, className }: PlaceFie
         renderOption={(option) => option.address}
         onSelect={(picked) => onChange(picked.address, picked)}
         loading={search.state === 'searching'}
-        status={statusText(search)}
-        listLabel="Places"
-        clear={{ label: 'Remove the place', onClear: () => onChange('', undefined) }}
-        placeholder="Search for an address"
+        status={statusText(search, t)}
+        listLabel={t.places}
+        clear={{ label: t.removePlace, onClear: () => onChange('', undefined) }}
+        placeholder={t.placePlaceholder}
       />
     </Field>
   );

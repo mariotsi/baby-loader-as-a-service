@@ -20,6 +20,7 @@ import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { errorsCopy } from '@/lib/copy/errors';
+import { platformCopy } from '@/lib/copy/platform';
 import { describeSiteSettingsErrors, inlineErrorText, isInlineError, routeErrorText } from '@/lib/errorText';
 import type { Lang } from '@/lib/i18n';
 import type { Milestone, SiteDTO } from '@/lib/site';
@@ -35,9 +36,6 @@ import { PlaceField } from './PlaceField';
 import styles from './SiteSettingsForm.module.css';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
-
-/** An example label in each Language a Site can speak. */
-const MILESTONE_PLACEHOLDER: Record<Lang, string> = { en: 'The first kick', it: 'Il primo calcio' };
 
 /**
  * The texts written, one per language, as the Birth message, the Page name
@@ -65,6 +63,7 @@ function unpickedPlaces(milestones: MilestoneDraft[]): SiteSettingsError[] {
 export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones: string[] }) {
   const router = useRouter();
   const pageLang = useLang();
+  const { settings: t, privacy } = platformCopy[pageLang];
   const [babyName, setBabyName] = useState(site.babyName);
   const [sex, setSex] = useState(site.sex);
   const [dueDate, setDueDate] = useState(site.dueDate?.slice(0, 10) ?? '');
@@ -85,7 +84,9 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
     site.milestones.map((m) => ({ ...m, placeText: m.place?.address ?? '' }))
   );
   const [saving, setSaving] = useState(false);
+  /** Why the last save failed, when the server refused it for a reason the fields cannot show. */
   const [message, setMessage] = useState<string | null>(null);
+  const [saved, setSaved] = useState(false);
   /** The fields in error at the last failed save, checked again on every edit until they pass. */
   const [failedPaths, setFailedPaths] = useState<string[]>([]);
   /** Counts failed saves, so each one moves the focus to the first field in error. */
@@ -149,6 +150,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
   async function save(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setMessage(null);
+    setSaved(false);
     const found = problems();
     if (found.length > 0) {
       fail(found);
@@ -164,7 +166,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
     });
     setSaving(false);
     if (res.ok) {
-      setMessage('Saved.');
+      setSaved(true);
       router.refresh();
     } else {
       const data = await res.json().catch(() => null);
@@ -176,35 +178,28 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
     }
   }
 
-  const saved = message === 'Saved.';
-
   return (
     <form ref={formRef} onSubmit={save} className={styles.form} noValidate>
       <div className={styles.columns}>
         <div className={styles.column}>
-          <Card title="Baby details" description="What your page says about the little one.">
-            <Field label="Name">
+          <Card title={t.babyDetails} description={t.babyDetailsDescription}>
+            <Field label={t.name}>
               <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
             </Field>
-            <Field label="Sex">
+            <Field label={t.sex}>
               <Select value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
-                <option value="unknown">Prefer not to say</option>
-                <option value="female">Girl</option>
-                <option value="male">Boy</option>
+                <option value="unknown">{t.sexUnknown}</option>
+                <option value="female">{t.sexFemale}</option>
+                <option value="male">{t.sexMale}</option>
               </Select>
             </Field>
-            <Field label="Due date" optional>
+            <Field label={t.dueDate} optional>
               <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
             </Field>
-            <Checkbox
-              label="The baby has been born"
-              hint="Your page switches from the Countdown to the Birth details."
-              checked={born}
-              onChange={(e) => setBorn(e.target.checked)}
-            />
+            <Checkbox label={t.born} hint={t.bornHint} checked={born} onChange={(e) => setBorn(e.target.checked)} />
             {born ? (
               <>
-                <Field label="Birth date & time">
+                <Field label={t.birthDatetime}>
                   <Input
                     type="datetime-local"
                     value={birthDatetime}
@@ -212,7 +207,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
                   />
                 </Field>
                 <div className={styles.pair}>
-                  <Field label="Weight (g)" optional>
+                  <Field label={t.weight} optional>
                     <Input
                       type="number"
                       inputMode="numeric"
@@ -220,7 +215,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
                       onChange={(e) => setWeight(e.target.value)}
                     />
                   </Field>
-                  <Field label="Length (cm)" optional>
+                  <Field label={t.length} optional>
                     <Input
                       type="number"
                       inputMode="decimal"
@@ -230,7 +225,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
                   </Field>
                 </div>
                 <PerLanguageField
-                  label="Message"
+                  label={t.message}
                   languages={languages}
                   value={birthMessage}
                   onChange={(lang, text) => setBirthMessage({ ...birthMessage, [lang]: text })}
@@ -255,13 +250,13 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
         </div>
 
         <div className={styles.column}>
-          <Card title="Appearance" description="The colors, letters and words of your page.">
+          <Card title={t.appearance} description={t.appearanceDescription}>
             <PalettePicker value={palette} onChange={setPalette} />
             <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
             <LanguagesPicker value={languages} onChange={setLanguages} />
             <PerLanguageField
-              label="Page name"
-              hint="Your names, or anything you'd like at the top of your page."
+              label={t.pageName}
+              hint={t.pageNameHint}
               languages={languages}
               value={pageName}
               onChange={(lang, text) => setPageName({ ...pageName, [lang]: text })}
@@ -273,13 +268,13 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
                   lang={lang}
                   value={value}
                   onChange={(e) => onChange(e.target.value)}
-                  placeholder="Stefania & Simone"
+                  placeholder={platformCopy[lang].settings.pageNamePlaceholder}
                   maxLength={60}
                   autoComplete="off"
                 />
               )}
             </PerLanguageField>
-            <Field label="Timezone" hint="The Countdown turns over at midnight here.">
+            <Field label={t.timezone} hint={t.timezoneHint}>
               <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
                 {(timeZones.includes(timezone) ? timeZones : [timezone, ...timeZones]).map((zone) => (
                   <option key={zone} value={zone}>
@@ -289,18 +284,10 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
               </Select>
             </Field>
           </Card>
-          <Card title="Who sees what" description="After the birth your page always shows the name and the sex.">
+          <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription}>
             <div>
-              <Switch
-                label="Show the name while waiting"
-                checked={showName}
-                onChange={(e) => setShowName(e.target.checked)}
-              />
-              <Switch
-                label="Show the sex while waiting"
-                checked={showSex}
-                onChange={(e) => setShowSex(e.target.checked)}
-              />
+              <Switch label={privacy.showName} checked={showName} onChange={(e) => setShowName(e.target.checked)} />
+              <Switch label={privacy.showSex} checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
             </div>
           </Card>
         </div>
@@ -308,12 +295,10 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
 
       <div className={styles.saveBar}>
         <Button variant="primary" type="submit" loading={saving}>
-          {saving ? 'Saving…' : 'Save changes'}
+          {saving ? t.saving : t.save}
         </Button>
-        <StatusMessage tone="success">{saved ? 'Saved. Your page is up to date.' : null}</StatusMessage>
-        <StatusMessage tone="danger">
-          {(message && !saved ? message : null) || problemsText(errors, pageLang)}
-        </StatusMessage>
+        <StatusMessage tone="success">{saved ? t.saved : null}</StatusMessage>
+        <StatusMessage tone="danger">{message || problemsText(errors, pageLang)}</StatusMessage>
       </div>
     </form>
   );
@@ -329,6 +314,8 @@ interface MilestonesCardProps {
 
 /** Every Milestone as a group: its emoji, its date, its label in each of the Site's Languages and its Place. */
 function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPerLanguage }: MilestonesCardProps) {
+  const pageLang = useLang();
+  const t = platformCopy[pageLang].settings;
   function add() {
     onChange([...milestones, { emoji: DEFAULT_MILESTONE_EMOJI, label: {}, date: '', placeText: '' }]);
   }
@@ -340,7 +327,7 @@ function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPe
   }
 
   return (
-    <Card title="Milestones" description="The little moments of your story, in date order on your page.">
+    <Card title={t.milestones} description={t.milestonesDescription}>
       {milestones.length > 0 ? (
         <ol className={styles.milestones}>
           {milestones.map((m, i) => (
@@ -348,17 +335,17 @@ function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPe
             <li key={i} className={styles.milestoneItem}>
               <fieldset className={styles.milestone}>
                 <legend className={styles.milestoneLegend}>
-                  <VisuallyHidden>Milestone {i + 1}</VisuallyHidden>
+                  <VisuallyHidden>{t.milestone(i + 1)}</VisuallyHidden>
                 </legend>
                 <div className={styles.milestoneEmoji}>
                   <EmojiPicker
-                    label={`Milestone ${i + 1} emoji`}
+                    label={t.milestoneEmoji(i + 1)}
                     value={m.emoji}
                     onChange={(emoji) => update(i, { emoji })}
                   />
                 </div>
                 <Field
-                  label="Date"
+                  label={t.date}
                   labelHidden
                   error={inlineError(`milestones.${i}.date`)}
                   className={styles.milestoneDate}
@@ -366,11 +353,11 @@ function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPe
                   <Input type="date" value={m.date} onChange={(e) => update(i, { date: e.target.value })} />
                 </Field>
                 <Button icon="trash" labelHidden className={styles.milestoneRemove} onClick={() => remove(i)}>
-                  Remove milestone {i + 1}
+                  {t.removeMilestone(i + 1)}
                 </Button>
                 <div className={styles.milestoneLabel}>
                   <PerLanguageField
-                    label="Label"
+                    label={t.label}
                     labelHidden
                     languages={languages}
                     value={m.label}
@@ -382,7 +369,7 @@ function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPe
                         lang={lang}
                         value={value}
                         onChange={(e) => setText(e.target.value)}
-                        placeholder={MILESTONE_PLACEHOLDER[lang]}
+                        placeholder={platformCopy[lang].settings.labelPlaceholder}
                       />
                     )}
                   </PerLanguageField>
@@ -401,7 +388,7 @@ function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPe
       ) : null}
       <div>
         <Button variant="ghost" icon="plus" onClick={add}>
-          Add milestone
+          {t.addMilestone}
         </Button>
       </div>
     </Card>

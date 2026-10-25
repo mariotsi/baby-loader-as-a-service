@@ -1,6 +1,8 @@
 'use client';
 
 import { type CSSProperties, useId } from 'react';
+import { useLang } from '@/components/LangProvider';
+import { uiCopy } from '@/lib/copy/ui';
 import { FONTS, type FontOption } from '@/lib/theme';
 import styles from './FontPicker.module.css';
 import { Icon } from './Icon';
@@ -15,11 +17,12 @@ interface FontPickerProps {
 }
 
 /** Picks a Site's Font. Each option writes the sample in the Font's display face. */
-export function FontPicker({ value, onChange, legend = 'Font', sample = 'Aa', fonts = FONTS }: FontPickerProps) {
+export function FontPicker({ value, onChange, legend, sample = 'Aa', fonts = FONTS }: FontPickerProps) {
+  const t = uiCopy[useLang()];
   const name = useId();
   return (
     <fieldset className={styles.root}>
-      <legend className={styles.legend}>{legend}</legend>
+      <legend className={styles.legend}>{legend ?? t.font}</legend>
       <div className={styles.options}>
         {fonts.map((font) => (
           <label key={font.id} className={styles.option}>

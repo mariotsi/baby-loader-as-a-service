@@ -7,6 +7,8 @@ import {
   EmojiPicker as Frimousse,
 } from 'frimousse';
 import { useEffect, useId, useRef, useState } from 'react';
+import { useLang } from '@/components/LangProvider';
+import { uiCopy } from '@/lib/copy/ui';
 import control from './control.module.css';
 import styles from './EmojiPicker.module.css';
 
@@ -26,6 +28,7 @@ const COLUMNS = 6;
  * closes the grid and gives the focus back to the button.
  */
 export function EmojiPicker({ value, onChange, label }: EmojiPickerProps) {
+  const t = uiCopy[useLang()].emoji;
   const [open, setOpen] = useState(false);
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -82,10 +85,15 @@ export function EmojiPicker({ value, onChange, label }: EmojiPickerProps) {
               close();
             }}
           >
-            <Frimousse.Search className={control.control} aria-label="Search emoji" placeholder="Search" autoFocus />
+            <Frimousse.Search
+              className={control.control}
+              aria-label={t.search}
+              placeholder={t.searchPlaceholder}
+              autoFocus
+            />
             <Frimousse.Viewport className={styles.viewport}>
-              <Frimousse.Loading className={styles.note}>Loading emoji…</Frimousse.Loading>
-              <Frimousse.Empty className={styles.note}>No emoji found.</Frimousse.Empty>
+              <Frimousse.Loading className={styles.note}>{t.loading}</Frimousse.Loading>
+              <Frimousse.Empty className={styles.note}>{t.empty}</Frimousse.Empty>
               <Frimousse.List components={{ CategoryHeader, Row, Emoji }} />
             </Frimousse.Viewport>
           </Frimousse.Root>
