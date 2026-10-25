@@ -3,7 +3,7 @@ import { PublicPage } from '@/components/PublicPage';
 import { publicPageViews } from '@/lib/publicPageView';
 import { defaultSiteSettings, type SiteSettings } from '@/lib/siteSettings';
 
-/** A named Site speaking Italian and English, six weeks from its Due date, with a few Milestones. */
+/** A named Site speaking Italian and English, six weeks from its Due date, with a few Milestones, one with a Place. */
 function sampleSettings(state: 'waiting' | 'born'): SiteSettings {
   const now = new Date();
   const day = (offset: number) => format(addDays(now, offset), 'yyyy-MM-dd');
@@ -16,7 +16,12 @@ function sampleSettings(state: 'waiting' | 'born'): SiteSettings {
     timezone: 'Europe/Rome',
     pageName: { en: 'Stefania and Simone', it: 'Stefania e Simone' },
     milestones: [
-      { emoji: '🎉', label: { en: 'We found out!', it: 'Lo abbiamo scoperto!' }, date: day(-200) },
+      {
+        emoji: '🎉',
+        label: { en: 'We found out!', it: 'Lo abbiamo scoperto!' },
+        date: day(-200),
+        place: { address: 'Ospedale Niguarda, Via Renato Donatelli, 20162 Milano, Italia', lat: 45.5093, lon: 9.1899 },
+      },
       { emoji: '🦶', label: { en: 'The first kick', it: 'Il primo calcio' }, date: day(-90) },
       { emoji: '🧸', label: { en: 'Her room is ready', it: 'La sua cameretta è pronta' }, date: day(-10) },
     ],

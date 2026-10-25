@@ -1,0 +1,102 @@
+.root {
+  position: relative;
+  min-width: 0;
+}
+
+/* Room for the Spinner and the clear button at the control's end. */
+.control {
+  padding-inline-end: calc(var(--control-height-sm) + var(--space-6));
+}
+
+.end {
+  position: absolute;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--control-height);
+  padding-inline-end: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+.clear {
+  display: inline-grid;
+  place-items: center;
+  width: var(--control-height-sm);
+  height: var(--control-height-sm);
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+}
+
+.clear:hover {
+  color: var(--color-text);
+}
+
+.clear:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: -2px;
+}
+
+/* Floats over what follows, as wide as the control, so it stays on a 320px screen. */
+.popup {
+  position: absolute;
+  z-index: 2;
+  inset-block-start: calc(100% + var(--space-1));
+  inset-inline: 0;
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-lg);
+}
+
+.popup[hidden] {
+  display: none;
+}
+
+.list {
+  max-height: 18rem;
+  margin: 0;
+  padding: var(--space-1);
+  overflow-y: auto;
+}
+
+.list:empty {
+  display: none;
+}
+
+.option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--control-height-sm);
+  padding: var(--space-2) var(--space-3);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  font-size: var(--text-md);
+  overflow-wrap: anywhere;
+  cursor: pointer;
+}
+
+/* The highlighted option shows by its outline as well as its fill. */
+.option[aria-selected="true"] {
+  background: var(--color-soft);
+  outline: var(--border-width) solid var(--color-accent-ink);
+  outline-offset: -1px;
+}
+
+.status {
+  margin: 0;
+  padding: var(--space-3) var(--space-4);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.list:not(:empty) + .status {
+  border-block-start: var(--border-width) solid var(--color-border);
+}

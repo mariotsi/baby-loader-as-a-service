@@ -135,8 +135,8 @@ test("Milestones come in date order, dated and labelled in the page's language",
   assert.deepEqual(publicPageView(site({ languages, milestones }), 'it', NOW).milestones, {
     title: 'Tappe',
     items: [
-      { emoji: '🩺', date: '2 aprile 2026', label: 'Prima ecografia' },
-      { emoji: '🎀', date: '10 giugno 2026', label: 'Femminuccia!' },
+      { emoji: '🩺', date: '2 aprile 2026', label: 'Prima ecografia', place: null },
+      { emoji: '🎀', date: '10 giugno 2026', label: 'Femminuccia!', place: null },
     ],
   });
   assert.deepEqual(
@@ -144,6 +144,17 @@ test("Milestones come in date order, dated and labelled in the page's language",
     ['First scan', 'It’s a girl!']
   );
   assert.equal(publicPageView(site(), 'en', NOW).milestones, null);
+});
+
+test("a Milestone's Place leads to its address on Google Maps, named in the page's language", () => {
+  const place = { address: 'Via Roma 12, 20121 Milano, Italia', lat: 45.4642, lon: 9.19 };
+  const milestones = [{ emoji: '🩺', label: { it: 'Ecografia', en: 'Scan' }, date: '2026-04-02', place }];
+  const item = publicPageView(site({ languages: ['it', 'en'], milestones }), 'it', NOW).milestones?.items[0];
+  assert.deepEqual(item?.place, {
+    ...place,
+    url: 'https://www.google.com/maps/search/?api=1&query=Via+Roma+12%2C+20121+Milano%2C+Italia',
+    linkLabel: 'Apri Via Roma 12, 20121 Milano, Italia in Google Maps',
+  });
 });
 
 test("the push button copy follows the Site's state", () => {

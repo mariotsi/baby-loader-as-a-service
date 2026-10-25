@@ -21,6 +21,8 @@ const en = {
   lateNote: 'Taking their time...',
   weekOf: (week: number): string => `Week ${week} of 40`,
   milestonesTitle: 'Milestones',
+  /** Names the link from a Milestone's Place to Google Maps. */
+  openInMaps: (address: string): string => `Open ${address} in Google Maps`,
   languageLabel: 'Language',
 
   bornTagline: 'Here at last',
@@ -61,6 +63,7 @@ const it: Messages = {
   lateNote: 'Se la sta prendendo comoda...',
   weekOf: (week: number): string => `Settimana ${week} di 40`,
   milestonesTitle: 'Tappe',
+  openInMaps: (address: string): string => `Apri ${address} in Google Maps`,
   languageLabel: 'Lingua',
 
   bornTagline: 'È arrivato/a',

@@ -30,6 +30,10 @@ function inLanguage(code: string): string {
 
 /** "Milestone 2 label (Italian)", or null when `field` is not a Milestone's. */
 function milestoneLabel(field: string): string | null {
+  const place = /^milestones\.(\d+)\.place(?:\.([a-z]+))?$/.exec(field);
+  if (place) {
+    return `Milestone ${Number(place[1]) + 1} place${place[2] ? ` ${place[2]}` : ''}`;
+  }
   const milestone = /^milestones\.(\d+)\.(emoji|label|date)(?:\.([a-z]+))?$/.exec(field);
   if (!milestone) {
     return null;
@@ -114,6 +118,9 @@ export function inlineErrorText({ path, code, params }: SiteSettingsError, langu
   }
   if (/^milestones\.\d+\.emoji$/.test(path)) {
     return 'Pick an emoji.';
+  }
+  if (/^milestones\.\d+\.place$/.test(path) && code === 'invalidOption') {
+    return 'Pick a place from the list, or clear the field.';
   }
   if (/^milestones\.\d+\.date$/.test(path)) {
     return code === 'required' ? 'Pick the day.' : "That day doesn't exist. Pick another.";
