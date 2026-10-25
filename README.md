@@ -3,7 +3,7 @@
 Multi-Site "waiting page" SaaS: customers create their own customizable
 baby countdown/announcement page — pick a color palette and font, choose
 whether to show the baby's name and/or sex, set the language (English,
-Italian, or both with a switcher) — get an admin dashboard and a shareable
+Italian, or both with a switcher) — get a Dashboard and a shareable
 subdomain link, and push notifications to send updates to visitors.
 
 This is a **separate, independent project** inspired by
@@ -37,7 +37,7 @@ Intended to deploy on Vercel (see "Hosting" below).
   404s inside the page itself. Address also owns which Slugs are allowed:
   their format and the Reserved slugs.
 - **Accounts** (`src/lib/auth.ts`): email/password accounts with hashed
-  passwords (scrypt) and a signed session cookie — no shared admin password.
+  passwords (scrypt) and a signed session cookie — no shared password.
   Every Site has an `ownerId`; Owner access (`src/lib/ownerAccess.ts`) checks
   it for every Dashboard route and page before any read or write.
 - **Theming** (`src/lib/theme.ts`): a curated list of palettes and Google
@@ -52,7 +52,7 @@ Intended to deploy on Vercel (see "Hosting" below).
 Implemented: accounts, Site creation/onboarding, subdomain routing, theming
 (palette + font), name/sex visibility toggles, language mode (mono or
 switcher), due-date countdown + milestones, born-state fields, per-Site
-push notifications and subscriber list.
+push notifications and the list of a Site's Subscriptions.
 
 Deliberately not yet built (see the original planning discussion):
 - **Custom domains (CNAME)** — needs the Vercel Domains API behind a
@@ -151,17 +151,17 @@ npm run brand              # rebuilds brand/ and the app's copies below
 
 The same run copies what the app serves out of the kit:
 
-| App file                            | From                                      |
-| ----------------------------------- | ----------------------------------------- |
-| `src/app/favicon.ico`               | `brand/Favicon/favicon.ico`               |
-| `src/app/icon.svg`                  | `brand/Favicon/icon.svg`                  |
-| `src/app/apple-icon.png`            | `brand/Favicon/apple-touch-icon.png`      |
-| `src/app/opengraph-image.png`       | `brand/Social/og-marketing-en.png`        |
-| `src/app/admin/opengraph-image.png` | `brand/Social/og-dashboard-en.png`        |
-| `public/icon-192.png`               | `brand/Favicon/icon-192.png`              |
-| `public/icon-512.png`               | `brand/Favicon/icon-512.png`              |
-| `public/icon-maskable-512.png`      | `brand/Favicon/icon-maskable-512.png`     |
-| `public/icon-72.png`                | `brand/Favicon/notification-badge-72.png` |
+| App file                                | From                                      |
+| --------------------------------------- | ----------------------------------------- |
+| `src/app/favicon.ico`                   | `brand/Favicon/favicon.ico`               |
+| `src/app/icon.svg`                      | `brand/Favicon/icon.svg`                  |
+| `src/app/apple-icon.png`                | `brand/Favicon/apple-touch-icon.png`      |
+| `src/app/opengraph-image.png`           | `brand/Social/og-marketing-en.png`        |
+| `src/app/dashboard/opengraph-image.png` | `brand/Social/og-dashboard-en.png`        |
+| `public/icon-192.png`                   | `brand/Favicon/icon-192.png`              |
+| `public/icon-512.png`                   | `brand/Favicon/icon-512.png`              |
+| `public/icon-maskable-512.png`          | `brand/Favicon/icon-maskable-512.png`     |
+| `public/icon-72.png`                    | `brand/Favicon/notification-badge-72.png` |
 
 The `Logo` and `Spinner` components draw the mark in code, with the theme's
 tokens (`LogoMark` in `src/components/ui/Logo.tsx`): a change to the mark goes
@@ -172,7 +172,7 @@ favicon; until they do, a Site shows the Platform's.
 
 Playwright tests in `e2e/` cover signup and Site creation, login, the Public
 page in each state, Privacy settings and Languages, Site settings,
-Subscribers and Notifications, and that an Owner cannot reach another
+Subscriptions and Notifications, and that an Owner cannot reach another
 Owner's Sites. They run in Chromium (desktop) and WebKit (iPhone).
 
 ```bash

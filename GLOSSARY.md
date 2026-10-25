@@ -19,8 +19,12 @@ Anyone viewing a Site's Public page; needs no account.
 _Avoid_: Guest, follower, viewer
 
 **Subscriber**:
-A Visitor's device that has opted in to Notifications from one Site. One person on two devices is two Subscribers.
-_Avoid_: Follower, subscription, fan
+A Visitor who has opted in to Notifications from one Site, on one or more devices.
+_Avoid_: Follower, fan
+
+**Subscription**:
+A Subscriber's opt-in on one device, held as the address and keys the browser hands over. One Subscriber on two devices holds two Subscriptions. The Platform cannot tell which Subscriptions belong to the same person, so whatever it counts is Subscriptions. The Dashboard's copy still calls them subscribers ("Sent to 3 of 4 subscribers"): to an Owner they are people, so the copy picks the friendlier word over the exact one.
+_Avoid_: Registration
 
 ### Sites and pages
 
@@ -57,7 +61,7 @@ What a Visitor sees for a Site.
 _Avoid_: Landing page, tenant page
 
 **Dashboard**:
-Where an Owner manages their Sites, Subscribers, and Notifications.
+Where an Owner manages their Sites, Subscriptions, and Notifications.
 _Avoid_: Admin, backoffice, console
 
 ### The baby

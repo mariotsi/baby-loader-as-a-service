@@ -10,7 +10,7 @@ const DESCRIPTION = 'Create a customizable countdown & announcement page for you
  * The Platform's name and how its links look when shared. The favicon,
  * icons and Open Graph images are files beside the routes (`favicon.ico`,
  * `icon.svg`, `apple-icon.png`, `opengraph-image.png`, and the Dashboard's
- * own under `admin/`), which Next.js turns into the tags; `metadataBase`
+ * own under `dashboard/`), which Next.js turns into the tags; `metadataBase`
  * makes their URLs absolute, as link previews need. Saved to a home screen,
  * a page is named by `appleWebApp` on iOS and by `manifest.ts` on Android:
  * the name alone, without the tagline the title carries.

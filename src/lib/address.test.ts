@@ -90,7 +90,7 @@ test("a /sites path away from the Site's subdomain redirects to its Address", ()
 
 test('the root domain, www and localhost serve the Platform', () => {
   for (const host of ['loading.baby', 'www.loading.baby', 'localhost:3000', 'loading.baby:443']) {
-    assert.deepEqual(resolveRequest(host, '/admin', PRODUCTION), { kind: 'platform' }, host);
+    assert.deepEqual(resolveRequest(host, '/dashboard', PRODUCTION), { kind: 'platform' }, host);
   }
   assert.deepEqual(resolveRequest('a.b.loading.baby', '/', PRODUCTION), { kind: 'platform' });
 });
@@ -113,7 +113,7 @@ test('on a preview, Sites are paths and everything else is the Platform', () => 
     slug: 'emma',
     internalPath: '/sites/emma',
   });
-  assert.deepEqual(resolveRequest(host, '/admin', PREVIEW), { kind: 'platform' });
+  assert.deepEqual(resolveRequest(host, '/dashboard', PREVIEW), { kind: 'platform' });
   assert.deepEqual(resolveRequest('baby-loader-abc123.vercel.app', '/', PREVIEW), { kind: 'platform' });
 });
 
@@ -126,4 +126,6 @@ test('slugProblem rejects what a subdomain cannot carry and what the Platform ke
   assert.equal(slugProblem('x'.repeat(33)), 'invalidFormat');
   assert.equal(slugProblem('www'), 'slugReserved');
   assert.equal(slugProblem('staging'), 'slugReserved');
+  assert.equal(slugProblem('admin'), 'slugReserved');
+  assert.equal(slugProblem('dashboard'), 'slugReserved');
 });

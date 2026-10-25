@@ -3,7 +3,7 @@ import { Card } from '@/components/ui/Card';
 import { PageShell } from '@/components/ui/PageShell';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { listSubscriptionsBySite } from '@/lib/subscription';
-import styles from '../../admin.module.css';
+import styles from '../../dashboard.module.css';
 
 export default async function SubscriptionsPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -16,7 +16,7 @@ export default async function SubscriptionsPage({ params }: { params: Promise<{ 
     <PageShell
       width="wide"
       nav={
-        <ButtonLink href={`/admin/${site.slug}`} variant="ghost" size="sm">
+        <ButtonLink href={`/dashboard/${site.slug}`} variant="ghost" size="sm">
           Back to {name}
         </ButtonLink>
       }
@@ -26,7 +26,7 @@ export default async function SubscriptionsPage({ params }: { params: Promise<{ 
           <h1 className={styles.title}>Subscribers</h1>
           <p className={styles.lead}>{subscriptions.length} device(s) subscribed.</p>
         </div>
-        <ButtonLink href={`/admin/${site.slug}/send`} icon="bell">
+        <ButtonLink href={`/dashboard/${site.slug}/send`} icon="bell">
           Send notification
         </ButtonLink>
       </div>

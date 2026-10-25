@@ -89,7 +89,7 @@ function siteDoc(spec, ownerId, now) {
 }
 
 /**
- * Deletes the given Owners and Sites, with the Subscribers of those Sites,
+ * Deletes the given Owners and Sites, with the Subscriptions of those Sites,
  * then inserts them afresh, so every run starts from the same state.
  */
 async function resetData(db, owners, sites, password) {
@@ -134,7 +134,7 @@ async function cleanup(db, runId) {
   const subs = await db.collection('subscriptions').deleteMany({ siteId: { $in: found.map((s) => s._id) } });
   const sites = await db.collection('sites').deleteMany(siteFilter);
   const users = await db.collection('users').deleteMany(userFilter);
-  return { users: users.deletedCount, sites: sites.deletedCount, subscribers: subs.deletedCount };
+  return { users: users.deletedCount, sites: sites.deletedCount, subscriptions: subs.deletedCount };
 }
 
 /** Validates the command line against what the target database allows; returns whether demo data is wanted. */

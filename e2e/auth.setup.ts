@@ -12,7 +12,7 @@ for (const owner of ['a', 'b'] as Owner[]) {
     await page.getByLabel('Email').fill(FIXTURE_OWNERS[owner]);
     await page.getByLabel('Password').fill(e2ePassword());
     await page.getByRole('button', { name: 'Log in' }).click();
-    await expect(page).toHaveURL(/\/admin$/);
+    await expect(page).toHaveURL(/\/dashboard$/);
     await page.context().storageState({ path: ownerStatePath(owner) });
   });
 }

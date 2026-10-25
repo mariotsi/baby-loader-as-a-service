@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { type ReactNode, type SubmitEvent, useId, useState } from 'react';
-import { describeSiteSettingsErrors } from '@/components/admin/siteSettingsErrorText';
+import { describeSiteSettingsErrors } from '@/components/dashboard/siteSettingsErrorText';
 import { PagePreview } from '@/components/PagePreview';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -88,7 +88,7 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
         setError(data.errors ? describeSiteSettingsErrors(data.errors) : data.error || 'Something went wrong.');
         return;
       }
-      router.push(`/admin/${data.site.slug}`);
+      router.push(`/dashboard/${data.site.slug}`);
     } catch {
       setError('Something went wrong.');
     } finally {

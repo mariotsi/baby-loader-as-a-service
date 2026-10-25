@@ -9,5 +9,5 @@ Fixtures stay on staging between runs because staging needs the same starting st
 - Staging always holds the fixture Sites (`e2e-…`) and their two Owners, whose password is the `E2E_PASSWORD` repository secret.
 - Every preview starts with demo data: Owners `demo-owner-a@waitingpages.test` and `demo-owner-b@waitingpages.test`, password `waiting-pages-demo`.
 - The suite never runs against production: it asks the deployment (`/api/version`) which environment it is and stops on production.
-- Browsers in CI have no push service, so the suite replaces it in the page (`fakePushService`): Subscribers and sending are exercised, delivery to a device is not.
+- Browsers in CI have no push service, so the suite replaces it in the page (`fakePushService`): Subscriptions and sending are exercised, delivery to a device is not.
 - Login and signup allow 10 attempts a minute per IP. Fixture Owners log in once per run, and tests of those endpoints run in one browser only.

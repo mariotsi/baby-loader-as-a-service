@@ -32,7 +32,7 @@ export const WithNav: Story = {
   args: {
     width: 'wide',
     nav: (
-      <ButtonLink href="/admin" variant="ghost" size="sm">
+      <ButtonLink href="/dashboard" variant="ghost" size="sm">
         Your sites
       </ButtonLink>
     ),

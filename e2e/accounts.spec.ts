@@ -82,16 +82,16 @@ test('a new User signs up and creates several Sites', async ({ page }, testInfo)
   await expect(page).toHaveURL(/\/onboarding$/);
 
   await createSite(page, first, 'Ada');
-  await expect(page).toHaveURL(new RegExp(`/admin/${first}$`));
+  await expect(page).toHaveURL(new RegExp(`/dashboard/${first}$`));
   await createSite(page, second, 'Otto');
-  await expect(page).toHaveURL(new RegExp(`/admin/${second}$`));
+  await expect(page).toHaveURL(new RegExp(`/dashboard/${second}$`));
 
   await createSite(page, first, 'Copycat');
   await expect(page.getByText('Site address is already taken.')).toBeVisible();
   await createSite(page, 'staging', 'Sneaky');
   await expect(page.getByText('Site address is reserved.')).toBeVisible();
 
-  await page.goto('/admin');
+  await page.goto('/dashboard');
   await expect(page.getByText('Ada', { exact: true })).toBeVisible();
   await expect(page.getByText('Otto', { exact: true })).toBeVisible();
   await expect(page.getByText('Copycat', { exact: true })).toHaveCount(0);
@@ -109,10 +109,10 @@ test('login refuses a wrong password and logout ends the session', async ({ page
 
   await page.getByLabel('Password').fill(e2ePassword());
   await page.getByRole('button', { name: 'Log in' }).click();
-  await expect(page).toHaveURL(/\/admin$/);
+  await expect(page).toHaveURL(/\/dashboard$/);
 
   // The UI has no logout control yet; the endpoint ends the session.
   await page.request.post('/api/auth/logout', { headers: bypassHeaders() });
-  await page.goto('/admin');
+  await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/login$/);
 });

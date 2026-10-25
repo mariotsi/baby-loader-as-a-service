@@ -1,4 +1,4 @@
-import { OnboardingForm } from '@/components/admin/OnboardingForm';
+import { OnboardingForm } from '@/components/onboarding/OnboardingForm';
 import { ADDRESS_CONFIG } from '@/lib/address';
 import { FONTS, googleFontsHref } from '@/lib/theme';
 

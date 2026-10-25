@@ -20,7 +20,7 @@ const MODES = {
     title: 'Log in',
     description: 'Welcome back! Your page has missed you.',
     endpoint: '/api/auth/login',
-    next: '/admin',
+    next: '/dashboard',
     submit: 'Log in',
     submitting: 'Logging in…',
     switchPrompt: 'No account yet?',

@@ -3,7 +3,7 @@ import type { Db, IndexDescription } from 'mongodb';
 /**
  * Every index the app relies on. The unique ones back the uniqueness the
  * code otherwise only checks with a findOne before inserting: one User per
- * email, one Site per Slug and per Custom domain, one Subscriber per device
+ * email, one Site per Slug and per Custom domain, one Subscription per device
  * and Site.
  */
 export const INDEXES: Record<string, IndexDescription[]> = {

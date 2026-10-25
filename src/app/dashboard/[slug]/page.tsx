@@ -1,4 +1,4 @@
-import { SiteSettingsForm } from '@/components/admin/SiteSettingsForm';
+import { SiteSettingsForm } from '@/components/dashboard/SiteSettingsForm';
 import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
@@ -6,9 +6,9 @@ import { siteAddress } from '@/lib/address';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { toSiteDTO } from '@/lib/site';
 import { FONTS, googleFontsHref } from '@/lib/theme';
-import styles from '../admin.module.css';
+import styles from '../dashboard.module.css';
 
-export default async function AdminSitePage({ params }: { params: Promise<{ slug: string }> }) {
+export default async function DashboardSitePage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const { site } = await pageOwnedSite(slug);
   const address = siteAddress(site.slug);
@@ -17,7 +17,7 @@ export default async function AdminSitePage({ params }: { params: Promise<{ slug
     <PageShell
       width="wide"
       nav={
-        <ButtonLink href="/admin" variant="ghost" size="sm">
+        <ButtonLink href="/dashboard" variant="ghost" size="sm">
           Your sites
         </ButtonLink>
       }
@@ -36,8 +36,8 @@ export default async function AdminSitePage({ params }: { params: Promise<{ slug
           </p>
         </div>
         <Stack direction="row" gap={2}>
-          <ButtonLink href={`/admin/${site.slug}/subscriptions`}>Subscribers</ButtonLink>
-          <ButtonLink href={`/admin/${site.slug}/send`} icon="bell">
+          <ButtonLink href={`/dashboard/${site.slug}/subscriptions`}>Subscribers</ButtonLink>
+          <ButtonLink href={`/dashboard/${site.slug}/send`} icon="bell">
             Send notification
           </ButtonLink>
         </Stack>
