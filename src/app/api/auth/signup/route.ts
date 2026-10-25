@@ -1,10 +1,11 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { authRateLimit, createUser, issueSessionToken, sessionCookieOptions } from '@/lib/auth';
+import { authRateLimit, createUser, EmailTakenError, issueSessionToken, sessionCookieOptions } from '@/lib/auth';
 import { newPasswordProblem } from '@/lib/passwordRules';
+import { routeError } from '@/lib/routeError';
 
 export async function POST(req: NextRequest) {
   if (!authRateLimit(req)) {
-    return NextResponse.json({ error: 'Too many attempts, try again in a minute.' }, { status: 429 });
+    return routeError(429, { code: 'rateLimited' });
   }
 
   const body = await req.json().catch(() => null);
@@ -12,11 +13,11 @@ export async function POST(req: NextRequest) {
   const password = typeof body?.password === 'string' ? body.password : '';
 
   if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: 'Enter a valid email address.' }, { status: 400 });
+    return routeError(400, { code: 'invalidEmail' });
   }
   const passwordProblem = newPasswordProblem(password);
   if (passwordProblem) {
-    return NextResponse.json({ error: passwordProblem }, { status: 400 });
+    return routeError(400, passwordProblem);
   }
 
   try {
@@ -26,7 +27,9 @@ export async function POST(req: NextRequest) {
     res.cookies.set({ ...sessionCookieOptions(), value: token });
     return res;
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'Something went wrong.';
-    return NextResponse.json({ error: message }, { status: 409 });
+    if (err instanceof EmailTakenError) {
+      return routeError(409, { code: 'emailTaken' });
+    }
+    throw err;
   }
 }

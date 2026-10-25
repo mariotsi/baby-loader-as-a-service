@@ -1,8 +1,9 @@
 import { cookies } from 'next/headers';
 import { notFound, redirect } from 'next/navigation';
-import { type NextRequest, NextResponse } from 'next/server';
+import type { NextRequest, NextResponse } from 'next/server';
 import { SESSION_COOKIE } from './auth.ts';
 import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
+import { routeError } from './routeError.ts';
 
 /**
  * Owner access for Route Handlers and Dashboard pages. Routes answer 401 with
@@ -10,8 +11,8 @@ import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite }
  * redirect to /login and render the 404 page.
  */
 
-const unauthenticated = () => NextResponse.json({ error: 'Not authenticated.' }, { status: 401 });
-const notFoundResponse = () => NextResponse.json({ error: 'Not found.' }, { status: 404 });
+const unauthenticated = () => routeError(401, { code: 'notAuthenticated' });
+const notFoundResponse = () => routeError(404, { code: 'notFound' });
 
 export function requireUser(req: NextRequest): { user: AuthenticatedUser } | { error: NextResponse } {
   const user = authenticate(req.cookies.get(SESSION_COOKIE)?.value);

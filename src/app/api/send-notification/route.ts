@@ -1,6 +1,7 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { deliverNotification, parseNotification } from '@/lib/notificationDelivery';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
+import { routeError } from '@/lib/routeError';
 import { countSubscriptionsBySite } from '@/lib/subscription';
 import { webPushService } from '@/lib/webpush';
 
@@ -25,7 +26,7 @@ export async function POST(req: NextRequest) {
 
   const push = webPushService();
   if (!push) {
-    return NextResponse.json({ error: 'VAPID keys are not configured on the server.' }, { status: 500 });
+    return routeError(500, { code: 'pushNotConfigured' });
   }
   const parsed = parseNotification(body?.messages, access.owned.site.languages);
   if (!parsed.ok) {

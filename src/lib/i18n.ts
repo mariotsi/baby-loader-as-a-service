@@ -29,7 +29,12 @@ export function inPlatformOrder(languages: readonly Lang[]): Lang[] {
 
 /** A language's name in English, for the Dashboard: "Italian". Any language Intl knows has one. */
 export function englishName(lang: Lang): string {
-  return new Intl.DisplayNames('en', { type: 'language' }).of(lang) ?? lang;
+  return languageName(lang, 'en');
+}
+
+/** A language's name as `inLang` writes it mid-sentence: "Italian" in English, "inglese" in Italian. */
+export function languageName(lang: string, inLang: Lang): string {
+  return new Intl.DisplayNames(inLang, { type: 'language' }).of(lang) ?? lang;
 }
 
 /** A count's words in every plural form a language has; `other` is the one every language has. */

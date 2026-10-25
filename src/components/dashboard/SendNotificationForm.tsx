@@ -1,6 +1,7 @@
 'use client';
 
 import { type SubmitEvent, useState } from 'react';
+import { useLang } from '@/components/LangProvider';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Field } from '@/components/ui/Field';
@@ -8,11 +9,12 @@ import { Input } from '@/components/ui/Input';
 import { Stack } from '@/components/ui/Stack';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Textarea } from '@/components/ui/Textarea';
+import { responseErrorText } from '@/lib/errorText';
 import type { Lang } from '@/lib/i18n';
-import { describeSiteSettingsErrors } from './siteSettingsErrorText';
 
 /** Sends one text, in `lang`, the Site's fallback Language (see fallbackLang); every Subscription receives it. */
 export function SendNotificationForm({ slug, lang }: { slug: string; lang: Lang }) {
+  const pageLang = useLang();
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
   const [sending, setSending] = useState(false);
@@ -33,10 +35,7 @@ export function SendNotificationForm({ slug, lang }: { slug: string; lang: Lang 
       setResult({ ok: true, text: `Sent to ${data.sent} of ${data.total} subscribers.` });
       setBody('');
     } else {
-      setResult({
-        ok: false,
-        text: data.errors ? describeSiteSettingsErrors(data.errors) : data.error || 'Something went wrong.',
-      });
+      setResult({ ok: false, text: responseErrorText(data, pageLang) });
     }
   }
 

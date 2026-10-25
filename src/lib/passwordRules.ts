@@ -4,6 +4,8 @@
  * never does: a password that was valid when it was set stays valid.
  */
 
+import type { RouteError } from './routeError.ts';
+
 export interface PasswordRule {
   id: string;
   /** Shown in the checklist under the password field. */
@@ -43,13 +45,9 @@ export function unmetPasswordRules(password: string): PasswordRule[] {
 }
 
 /** Why the server refuses a new password, or null when it takes it. */
-export function newPasswordProblem(password: string): string | null {
+export function newPasswordProblem(password: string): RouteError | null {
   if ([...password].length > PASSWORD_MAX_LENGTH) {
-    return `Password must be at most ${PASSWORD_MAX_LENGTH} characters.`;
+    return { code: 'passwordTooLong', params: { max: PASSWORD_MAX_LENGTH } };
   }
-  const unmet = unmetPasswordRules(password);
-  if (unmet.length > 0) {
-    return `Password rules not met yet: ${unmet.map((rule) => rule.label).join(', ')}.`;
-  }
-  return null;
+  return unmetPasswordRules(password).length > 0 ? { code: 'passwordRules' } : null;
 }
