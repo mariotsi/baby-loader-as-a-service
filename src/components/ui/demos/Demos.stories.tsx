@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { CredentialsForm } from '@/components/admin/CredentialsForm';
-import { OnboardingForm } from '@/components/admin/OnboardingForm';
+import { CredentialsForm } from '@/components/auth/CredentialsForm';
+import { OnboardingForm } from '@/components/onboarding/OnboardingForm';
 import { addressConfig } from '@/lib/address';
 import { PublicPageDemo } from './PublicPageDemo';
 

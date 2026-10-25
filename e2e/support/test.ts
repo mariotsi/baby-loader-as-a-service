@@ -41,7 +41,7 @@ const addressCache = new Map<string, string>();
  * pages through it, never by building the URL themselves.
  */
 export async function dashboardAddress(page: Page, slug: string): Promise<string> {
-  await page.goto('/admin');
+  await page.goto('/dashboard');
   const hrefs = await page
     .getByRole('link', { name: 'View' })
     .evaluateAll((links) => links.map((a) => (a as HTMLAnchorElement).href));
@@ -103,7 +103,7 @@ export const test = base.extend<Fixtures>({
  * Stands in for the browser's push service: Playwright's browsers cannot
  * reach Google's or Apple's, and WebKit has none. The page gets a granted
  * permission and a subscription to an endpoint that never resolves, so
- * everything up to the delivery itself runs for real: the Subscriber is
+ * everything up to the delivery itself runs for real: the Subscription is
  * stored, and sending a Notification attempts it.
  */
 export async function fakePushService(page: Page): Promise<void> {

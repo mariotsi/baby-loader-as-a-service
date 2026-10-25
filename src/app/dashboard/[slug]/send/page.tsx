@@ -1,9 +1,9 @@
-import { SendNotificationForm } from '@/components/admin/SendNotificationForm';
+import { SendNotificationForm } from '@/components/dashboard/SendNotificationForm';
 import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { fallbackLang } from '@/lib/i18n';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
-import styles from '../../admin.module.css';
+import styles from '../../dashboard.module.css';
 
 export default async function SendPage({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -14,7 +14,7 @@ export default async function SendPage({ params }: { params: Promise<{ slug: str
     <PageShell
       width="medium"
       nav={
-        <ButtonLink href={`/admin/${site.slug}`} variant="ghost" size="sm">
+        <ButtonLink href={`/dashboard/${site.slug}`} variant="ghost" size="sm">
           Back to {name}
         </ButtonLink>
       }

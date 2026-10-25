@@ -5,9 +5,9 @@ import { Stack } from '@/components/ui/Stack';
 import { siteAddress } from '@/lib/address';
 import { pageUser } from '@/lib/ownerAccessNext';
 import { listSitesByOwner } from '@/lib/site';
-import styles from './admin.module.css';
+import styles from './dashboard.module.css';
 
-export default async function AdminPage() {
+export default async function DashboardPage() {
   const sites = await listSitesByOwner(await pageUser());
 
   return (
@@ -39,7 +39,7 @@ export default async function AdminPage() {
                     <p className={styles.itemTitle}>{name}</p>
                     <p className={styles.itemMeta}>{address.replace(/^https?:\/\//, '')}</p>
                     <Stack direction="row" gap={2}>
-                      <ButtonLink href={`/admin/${site.slug}`} size="sm" aria-label={`Manage ${name}`}>
+                      <ButtonLink href={`/dashboard/${site.slug}`} size="sm" aria-label={`Manage ${name}`}>
                         Manage
                       </ButtonLink>
                       <ButtonLink

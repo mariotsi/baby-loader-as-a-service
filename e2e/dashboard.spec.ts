@@ -6,7 +6,7 @@ test.use({ storageState: ownerStatePath('a') });
 
 test.describe('Dashboard', () => {
   test('lists the Owner’s Sites with their Addresses', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto('/dashboard');
     await expect(page.getByRole('heading', { name: 'Your sites' })).toBeVisible();
     for (const name of ['Wanda', 'Bruno', 'Bianca']) {
       await expect(page.getByText(name, { exact: true })).toBeVisible();
@@ -31,14 +31,14 @@ test.describe('Dashboard', () => {
 
   test('links a Site’s Address on its page', async ({ page, addressOf }) => {
     const address = await addressOf('e2e-waiting');
-    await page.goto('/admin/e2e-waiting');
+    await page.goto('/dashboard/e2e-waiting');
     const link = page.getByRole('link', { name: address.replace(/^https?:\/\//, '').replace(/\/$/, '') });
     expect(await link.evaluate((a) => (a as HTMLAnchorElement).href)).toBe(address);
   });
 
   test('saves Site settings and marks the baby as born', async ({ page, project }) => {
     const slug = perProjectSlug('e2e-edit', project);
-    await page.goto(`/admin/${slug}`);
+    await page.goto(`/dashboard/${slug}`);
 
     await page.getByLabel('Name', { exact: true }).fill('Edith Rose');
     await page.getByLabel('Sex', { exact: true }).selectOption('female');
@@ -79,7 +79,7 @@ test.describe('Dashboard', () => {
   });
 
   test('explains a missing birth date and time and a weight in fractions of a gram', async ({ page, project }) => {
-    await page.goto(`/admin/${perProjectSlug('e2e-rules', project)}`);
+    await page.goto(`/dashboard/${perProjectSlug('e2e-rules', project)}`);
 
     await page.getByLabel('The baby has been born').check();
     await page.getByRole('button', { name: 'Save changes' }).click();
@@ -95,7 +95,7 @@ test.describe('Dashboard', () => {
   });
 
   test('keeps a Birth message in a Language the Site no longer speaks', async ({ page, project }) => {
-    await page.goto(`/admin/${perProjectSlug('e2e-messages', project)}`);
+    await page.goto(`/dashboard/${perProjectSlug('e2e-messages', project)}`);
 
     await page.getByLabel('The baby has been born').check();
     await page.getByLabel('Birth date & time').fill('2026-01-15T08:30');
@@ -121,7 +121,7 @@ test.describe('Dashboard', () => {
   test('saves a Milestone’s Place only once it is picked from the search', async ({ page, project }) => {
     // Photon never sees a test: it is unreachable first, then answers from here.
     await page.route(PHOTON, (route) => route.abort());
-    await page.goto(`/admin/${perProjectSlug('e2e-places', project)}`);
+    await page.goto(`/dashboard/${perProjectSlug('e2e-places', project)}`);
     const milestone = page.getByRole('group', { name: 'Milestone 1' });
     const place = milestone.getByRole('combobox', { name: /^Place/ });
 

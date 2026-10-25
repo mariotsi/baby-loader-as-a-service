@@ -44,6 +44,7 @@ const RESERVED_SLUGS = new Set([
   'www',
   'api',
   'admin',
+  'dashboard',
   'app',
   'mail',
   'ftp',

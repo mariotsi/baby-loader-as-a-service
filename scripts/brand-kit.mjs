@@ -27,7 +27,7 @@ const APP_COPIES = [
   ['src/app/icon.svg', 'Favicon/icon.svg'],
   ['src/app/apple-icon.png', 'Favicon/apple-touch-icon.png'],
   ['src/app/opengraph-image.png', 'Social/og-marketing-en.png'],
-  ['src/app/admin/opengraph-image.png', 'Social/og-dashboard-en.png'],
+  ['src/app/dashboard/opengraph-image.png', 'Social/og-dashboard-en.png'],
   ['public/icon-192.png', 'Favicon/icon-192.png'],
   ['public/icon-512.png', 'Favicon/icon-512.png'],
   ['public/icon-maskable-512.png', 'Favicon/icon-maskable-512.png'],

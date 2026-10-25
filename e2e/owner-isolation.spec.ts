@@ -10,12 +10,12 @@ test.describe('Owner B, logged in', () => {
   test.use({ storageState: ownerStatePath('b') });
 
   test('does not see Owner A’s Sites in the Dashboard', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto('/dashboard');
     await expect(page.getByText('Beatrice', { exact: true })).toBeVisible();
     await expect(page.getByText('Wanda', { exact: true })).toHaveCount(0);
   });
 
-  for (const path of [`/admin/${A_SITE}`, `/admin/${A_SITE}/subscriptions`, `/admin/${A_SITE}/send`]) {
+  for (const path of [`/dashboard/${A_SITE}`, `/dashboard/${A_SITE}/subscriptions`, `/dashboard/${A_SITE}/send`]) {
     test(`gets the 404 page for ${path.replace(A_SITE, '<A’s Site>')}`, async ({ page }) => {
       const response = await page.goto(path);
       expect(response?.status()).toBe(404);
@@ -40,7 +40,7 @@ test.describe('Owner B, logged in', () => {
       expect(put.status()).toBe(404);
     });
 
-    test('cannot count or notify Owner A’s Subscribers', async () => {
+    test('cannot count Owner A’s Subscriptions or notify their Subscribers', async () => {
       expect((await api.get(`/api/send-notification?slug=${A_SITE}`)).status()).toBe(404);
       const send = await api.post('/api/send-notification', { data: { slug: A_SITE, body: 'Hello from B' } });
       expect(send.status()).toBe(404);
@@ -50,7 +50,7 @@ test.describe('Owner B, logged in', () => {
 
 test.describe('without a session', () => {
   test('the Dashboard sends to the login page', async ({ page }) => {
-    await page.goto('/admin');
+    await page.goto('/dashboard');
     await expect(page).toHaveURL(/\/login$/);
   });
 
