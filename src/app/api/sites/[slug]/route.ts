@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
+import { routeError } from '@/lib/routeError';
 import { saveSiteSettings, toSiteDTO } from '@/lib/site';
 import { parseSiteSettings } from '@/lib/siteSettings';
 
@@ -26,7 +27,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
   }
   const saved = await saveSiteSettings(access.owned, parsed.value);
   if (!saved) {
-    return NextResponse.json({ error: 'Not found.' }, { status: 404 });
+    return routeError(404, { code: 'notFound' });
   }
   return NextResponse.json({ site: toSiteDTO(saved) });
 }

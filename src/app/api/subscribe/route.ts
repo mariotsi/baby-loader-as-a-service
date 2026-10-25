@@ -4,12 +4,13 @@ import { buildDeviceInfo } from '@/lib/deviceInfo';
 import { lookupGeo } from '@/lib/geoip';
 import { isLang } from '@/lib/i18n';
 import { rateLimit } from '@/lib/rateLimit';
+import { routeError } from '@/lib/routeError';
 import { getSiteBySlug } from '@/lib/site';
 import { deleteSubscription, upsertSubscription } from '@/lib/subscription';
 
 export async function POST(req: NextRequest) {
   if (!rateLimit(`subscribe:${clientIp(req)}`, 20, 60_000)) {
-    return NextResponse.json({ error: 'Too many attempts, try again in a minute.' }, { status: 429 });
+    return routeError(429, { code: 'rateLimited' });
   }
 
   const body = await req.json().catch(() => null);
@@ -17,12 +18,12 @@ export async function POST(req: NextRequest) {
   const subscription = body?.subscription;
 
   if (!slug || !subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
-    return NextResponse.json({ error: 'Invalid subscription payload.' }, { status: 400 });
+    return routeError(400, { code: 'invalidRequest' });
   }
 
   const site = await getSiteBySlug(slug);
   if (!site) {
-    return NextResponse.json({ error: 'Unknown site.' }, { status: 404 });
+    return routeError(404, { code: 'unknownSite' });
   }
 
   const ip = clientIp(req);
@@ -48,12 +49,12 @@ export async function DELETE(req: NextRequest) {
   const endpoint = typeof body?.endpoint === 'string' ? body.endpoint : '';
 
   if (!slug || !endpoint) {
-    return NextResponse.json({ error: 'Invalid request.' }, { status: 400 });
+    return routeError(400, { code: 'invalidRequest' });
   }
 
   const site = await getSiteBySlug(slug);
   if (!site) {
-    return NextResponse.json({ error: 'Unknown site.' }, { status: 404 });
+    return routeError(404, { code: 'unknownSite' });
   }
 
   await deleteSubscription(site._id, endpoint);

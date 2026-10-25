@@ -1,9 +1,10 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { authRateLimit, getUserByEmail, issueSessionToken, sessionCookieOptions, verifyPassword } from '@/lib/auth';
+import { routeError } from '@/lib/routeError';
 
 export async function POST(req: NextRequest) {
   if (!authRateLimit(req)) {
-    return NextResponse.json({ error: 'Too many attempts, try again in a minute.' }, { status: 429 });
+    return routeError(429, { code: 'rateLimited' });
   }
 
   const body = await req.json().catch(() => null);
@@ -12,7 +13,7 @@ export async function POST(req: NextRequest) {
 
   const user = await getUserByEmail(email);
   if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    return NextResponse.json({ error: 'Invalid email or password.' }, { status: 401 });
+    return routeError(401, { code: 'wrongCredentials' });
   }
 
   const token = issueSessionToken(user._id.toHexString());

@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { type RefObject, type SubmitEvent, useId, useRef, useState, useTransition } from 'react';
+import { useLang } from '@/components/LangProvider';
 import { LoginBaby, type LoginBabyState } from '@/components/LoginBaby';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -12,6 +13,8 @@ import { Input } from '@/components/ui/Input';
 import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
 import { StatusMessage } from '@/components/ui/StatusMessage';
+import { errorsCopy } from '@/lib/copy/errors';
+import { routeErrorText } from '@/lib/errorText';
 import { PASSWORD_RULES, PASSWORD_RULES_ATTRIBUTE, unmetPasswordRules } from '@/lib/passwordRules';
 import styles from './CredentialsForm.module.css';
 
@@ -170,6 +173,7 @@ function NewPasswordFields({
 export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
   const copy = MODES[mode];
   const router = useRouter();
+  const lang = useLang();
   const [email, setEmail] = useState('');
   const [baby, setBaby] = useState<LoginBabyState>('sleeping');
   const [look, setLook] = useState(-1);
@@ -219,7 +223,7 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || 'Something went wrong.');
+        setError(routeErrorText(data.error, lang));
         return;
       }
       await rememberCredentials(values.email, values.password);
@@ -228,7 +232,7 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
         router.refresh();
       });
     } catch {
-      setError('Something went wrong.');
+      setError(errorsCopy[lang].generic);
     } finally {
       setLoading(false);
     }

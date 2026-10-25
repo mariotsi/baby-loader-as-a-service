@@ -38,12 +38,15 @@ export async function getUserById(id: string): Promise<User | null> {
   return col.findOne({ _id: new ObjectId(id) });
 }
 
+/** Thrown by createUser when the email already has an account. */
+export class EmailTakenError extends Error {}
+
 export async function createUser(email: string, password: string): Promise<User> {
   const normalizedEmail = email.trim().toLowerCase();
   const col = await usersCollection();
   const existing = await col.findOne({ email: normalizedEmail });
   if (existing) {
-    throw new Error('An account with this email already exists.');
+    throw new EmailTakenError();
   }
   const user: User = {
     _id: new ObjectId(),

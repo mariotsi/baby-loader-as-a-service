@@ -3,6 +3,7 @@
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { type SubmitEvent, useEffect, useRef, useState } from 'react';
+import { useLang } from '@/components/LangProvider';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Checkbox } from '@/components/ui/Checkbox';
@@ -18,6 +19,8 @@ import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Switch } from '@/components/ui/Switch';
 import { Textarea } from '@/components/ui/Textarea';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
+import { errorsCopy } from '@/lib/copy/errors';
+import { describeSiteSettingsErrors, inlineErrorText, isInlineError, routeErrorText } from '@/lib/errorText';
 import type { Lang } from '@/lib/i18n';
 import type { Milestone, SiteDTO } from '@/lib/site';
 import {
@@ -30,7 +33,6 @@ import {
 } from '@/lib/siteSettings';
 import { PlaceField } from './PlaceField';
 import styles from './SiteSettingsForm.module.css';
-import { describeSiteSettingsErrors, inlineErrorText, isInlineError } from './siteSettingsErrorText';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
 
@@ -62,6 +64,7 @@ function unpickedPlaces(milestones: MilestoneDraft[]): SiteSettingsError[] {
 /** `timeZones` comes from the server, so the list the page renders matches the one it hydrates. */
 export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones: string[] }) {
   const router = useRouter();
+  const pageLang = useLang();
   const [babyName, setBabyName] = useState(site.babyName);
   const [sex, setSex] = useState(site.sex);
   const [dueDate, setDueDate] = useState(site.dueDate?.slice(0, 10) ?? '');
@@ -131,7 +134,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
 
   function inlineError(path: string): string | undefined {
     const error = errors.find((e) => e.path === path);
-    return error ? inlineErrorText(error, languages) : undefined;
+    return error ? inlineErrorText(error, languages, pageLang) : undefined;
   }
 
   function errorsPerLanguage(path: string): Partial<Record<Lang, string>> {
@@ -168,7 +171,7 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
       if (data?.errors) {
         fail(data.errors);
       } else {
-        setMessage(data?.error || 'Something went wrong.');
+        setMessage(routeErrorText(data?.error, pageLang));
       }
     }
   }
@@ -308,7 +311,9 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
           {saving ? 'Saving…' : 'Save changes'}
         </Button>
         <StatusMessage tone="success">{saved ? 'Saved. Your page is up to date.' : null}</StatusMessage>
-        <StatusMessage tone="danger">{(message && !saved ? message : null) || problemsText(errors)}</StatusMessage>
+        <StatusMessage tone="danger">
+          {(message && !saved ? message : null) || problemsText(errors, pageLang)}
+        </StatusMessage>
       </div>
     </form>
   );
@@ -404,11 +409,11 @@ function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPe
 }
 
 /** The status message for the errors still showing: a pointer to the fields marked, then every other error in words. */
-function problemsText(errors: SiteSettingsError[]): string | null {
+function problemsText(errors: SiteSettingsError[], lang: Lang): string | null {
   const elsewhere = errors.filter((error) => !isInlineError(error.path));
   const parts = [
-    errors.length > elsewhere.length ? 'Check the fields marked in red.' : null,
-    elsewhere.length > 0 ? describeSiteSettingsErrors(elsewhere) : null,
+    errors.length > elsewhere.length ? errorsCopy[lang].checkMarkedFields : null,
+    elsewhere.length > 0 ? describeSiteSettingsErrors(elsewhere, lang) : null,
   ];
   return parts.filter(Boolean).join(' ') || null;
 }

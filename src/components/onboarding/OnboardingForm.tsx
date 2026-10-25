@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { type ReactNode, type SubmitEvent, useId, useState } from 'react';
-import { describeSiteSettingsErrors } from '@/components/dashboard/siteSettingsErrorText';
+import { useLang } from '@/components/LangProvider';
 import { PagePreview } from '@/components/PagePreview';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -15,6 +15,8 @@ import { PalettePicker } from '@/components/ui/PalettePicker';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Switch } from '@/components/ui/Switch';
 import { type AddressConfig, siteAddress, slugProblem } from '@/lib/address';
+import { errorsCopy } from '@/lib/copy/errors';
+import { responseErrorText } from '@/lib/errorText';
 import { fallbackLang, type Lang } from '@/lib/i18n';
 import { publicPageView } from '@/lib/publicPageView';
 import { defaultSiteSettings, type SiteSettings } from '@/lib/siteSettings';
@@ -48,6 +50,7 @@ function Step({ n, children }: { n: number; children: ReactNode }) {
 /** `addressConfig` comes from the server page: only the server knows the root domain. */
 export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig }) {
   const router = useRouter();
+  const lang = useLang();
   const previewId = useId();
   const [slug, setSlug] = useState('');
   const [babyName, setBabyName] = useState('');
@@ -85,12 +88,12 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.errors ? describeSiteSettingsErrors(data.errors) : data.error || 'Something went wrong.');
+        setError(responseErrorText(data, lang));
         return;
       }
       router.push(`/dashboard/${data.site.slug}`);
     } catch {
-      setError('Something went wrong.');
+      setError(errorsCopy[lang].generic);
     } finally {
       setLoading(false);
     }
