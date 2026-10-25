@@ -57,6 +57,12 @@
   width: auto;
   height: var(--text-2xl);
   color: var(--color-accent-ink);
+  /*
+   * A halo of the surface color all around the outline: whatever street lies under the pin, its edge meets the
+   * surface, a pairing every Palette's contrast check covers.
+   */
+  filter: drop-shadow(0.1rem 0 0 var(--color-surface)) drop-shadow(-0.1rem 0 0 var(--color-surface))
+    drop-shadow(0 0.1rem 0 var(--color-surface)) drop-shadow(0 -0.1rem 0 var(--color-surface));
 }
 
 .address {
