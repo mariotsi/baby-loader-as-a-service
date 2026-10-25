@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type RefObject, type SubmitEvent, useId, useRef, useState } from 'react';
+import { type RefObject, type SubmitEvent, useId, useRef, useState, useTransition } from 'react';
 import { LoginBaby, type LoginBabyState } from '@/components/LoginBaby';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -182,6 +182,9 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
   const [tried, setTried] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  // router.push returns before the next page arrives; its transition stays pending until then.
+  const [navigating, startNavigation] = useTransition();
+  const busy = loading || navigating;
   const passwordRef = useRef<HTMLInputElement>(null);
   const confirmRef = useRef<HTMLInputElement>(null);
 
@@ -220,8 +223,10 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
         return;
       }
       await rememberCredentials(values.email, values.password);
-      router.push(copy.next);
-      router.refresh();
+      startNavigation(() => {
+        router.push(copy.next);
+        router.refresh();
+      });
     } catch {
       setError('Something went wrong.');
     } finally {
@@ -279,8 +284,8 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
               </Field>
             )}
             <StatusMessage tone="danger">{error}</StatusMessage>
-            <Button variant="primary" type="submit" fullWidth loading={loading}>
-              {loading ? copy.submitting : copy.submit}
+            <Button variant="primary" type="submit" fullWidth loading={busy}>
+              {busy ? copy.submitting : copy.submit}
             </Button>
           </Stack>
         </form>
