@@ -68,7 +68,7 @@ Deliberately not yet built (see the original planning discussion):
 ## Isolation from baby-loader
 
 - Separate GitHub repo, separate `package.json`, no shared imports.
-- Separate **database**: its own D1 databases (`waitingpages` and the
+- Separate **database**: its own D1 databases (`loading-baby` and the
   others in "Environments"), sharing nothing with baby-loader's MongoDB.
 - Separate VAPID keypair, separate `SESSION_SECRET`, separate deployment.
 

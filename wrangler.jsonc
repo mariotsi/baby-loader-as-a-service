@@ -11,7 +11,7 @@
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby-staging" }],
   "observability": { "enabled": true },
   "vars": { "APP_ENV": "staging", "ROOT_DOMAIN": "staging-loading-baby.fyi" },
-  "d1_databases": [{ "binding": "DB", "database_name": "waitingpages-staging", "migrations_dir": "migrations" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "loading-baby-staging", "migrations_dir": "migrations" }],
   "routes": [
     { "pattern": "staging-loading-baby.fyi/*", "zone_name": "staging-loading-baby.fyi" },
     { "pattern": "*.staging-loading-baby.fyi/*", "zone_name": "staging-loading-baby.fyi" }
@@ -23,6 +23,6 @@
     "vars": { "APP_ENV": "preview" },
     "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby-staging" }],
     // The deploy workflow points each Preview at its branch's own database.
-    "d1_databases": [{ "binding": "DB", "database_name": "waitingpages-staging", "migrations_dir": "migrations" }]
+    "d1_databases": [{ "binding": "DB", "database_name": "loading-baby-staging", "migrations_dir": "migrations" }]
   }
 }

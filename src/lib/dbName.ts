@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto';
 
 /** Production's D1 database, bound only by the production Worker (wrangler.production.jsonc). */
-export const PRODUCTION_DB_NAME = 'waitingpages';
+export const PRODUCTION_DB_NAME = 'loading-baby';
 
 /** Staging's D1 database, also the local one `npm run dev` and the local E2E server use. */
 export const STAGING_DB_NAME = `${PRODUCTION_DB_NAME}-staging`;
@@ -11,7 +11,7 @@ const PREVIEW_PREFIX = `${PRODUCTION_DB_NAME}-`;
 const MAX_DB_NAME_LENGTH = 38;
 
 /**
- * D1 database of one Git branch's Preview: "waitingpages-<branch>",
+ * D1 database of one Git branch's Preview: "loading-baby-<branch>",
  * lowercased, with each run of characters outside [a-z0-9] turned into one
  * "-". Branches that differ only in punctuation (feat/x, feat-x) therefore
  * share a database. A name over MAX_DB_NAME_LENGTH is truncated and suffixed
