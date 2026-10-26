@@ -10,7 +10,7 @@
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby" }],
   "observability": { "enabled": true },
   "vars": { "APP_ENV": "production", "ROOT_DOMAIN": "loading.baby" },
-  "d1_databases": [{ "binding": "DB", "database_name": "waitingpages", "migrations_dir": "migrations" }],
+  "d1_databases": [{ "binding": "DB", "database_name": "loading-baby", "migrations_dir": "migrations" }],
   "routes": [
     { "pattern": "loading.baby/*", "zone_name": "loading.baby" },
     { "pattern": "*.loading.baby/*", "zone_name": "loading.baby" }
