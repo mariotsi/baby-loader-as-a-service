@@ -4,7 +4,7 @@ name: CI
 # that carries the move to Cloudflare Workers, ADR-0009): that the workflows' Playwright
 # images match @playwright/test, types, lint and formatting (Biome), unit
 # tests (src/**/*.test.ts, some starting their own MongoDB with
-# mongodb-memory-server), and every Storybook story rendered in Chromium
+# mongodb-memory-server), the Cloudflare Worker build, and every Storybook story rendered in Chromium
 # with no axe violation. The Playwright suite runs on the pull request's
 # preview deployment (cd.yml).
 
@@ -40,6 +40,8 @@ jobs:
       - name: Lint and format check
         run: npx biome ci
       - run: npm test
+      - name: Build the Cloudflare Worker
+        run: npm run cf:build
 
   # Renders every story in Chromium and fails on any axe violation, in every
   # Palette (vitest.config.ts, the "storybook" project).
