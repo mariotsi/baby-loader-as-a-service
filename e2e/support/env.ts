@@ -1,19 +1,19 @@
 /**
  * Where a run points, from the environment:
- * - E2E_BASE_URL: the deployment under test. Unset, Playwright builds and
- *   starts the app on LOCAL_BASE_URL against the local MongoDB.
- * - E2E_MONGODB_URI: where the run's test data goes; the local MongoDB when
- *   unset and the deployment is a local one.
+ * - E2E_BASE_URL: the deployment under test. Unset, Playwright builds the
+ *   Worker and runs it on LOCAL_BASE_URL with a local D1.
  * - E2E_PASSWORD: password of the fixture Owners.
+ * - CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID: let the data script
+ *   write to a deployed environment's D1 database.
  * - VERCEL_AUTOMATION_BYPASS_SECRET: lets requests through Vercel's
  *   Deployment Protection on preview deployments.
+ * The global setup picks the database from the deployment's environment.
  */
 
 export const LOCAL_PORT = 3100;
 export const LOCAL_BASE_URL = `http://localhost:${LOCAL_PORT}`;
-export const LOCAL_MONGODB_URI = 'mongodb://localhost:27017';
-/** Database of the app Playwright starts locally, apart from the one `npm run dev` uses. */
-export const LOCAL_E2E_DB_NAME = 'waitingpages-e2e';
+/** State of the local Worker's D1, apart from the one `npm run dev` uses. */
+export const LOCAL_D1_PERSIST_TO = '.wrangler/e2e';
 const LOCAL_E2E_PASSWORD = 'local-e2e-password';
 
 export const BASE_URL = process.env.E2E_BASE_URL || LOCAL_BASE_URL;

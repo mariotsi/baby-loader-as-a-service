@@ -1,20 +1,20 @@
 import { createHash } from 'node:crypto';
 
-/** Production's database, on the production cluster. No fallback ever resolves to it. */
+/** Production's D1 database, bound only by the production Worker (wrangler.production.jsonc). */
 export const PRODUCTION_DB_NAME = 'waitingpages';
 
-/** Staging's database, on the non-production cluster; also the fallback when nothing names one. */
+/** Staging's D1 database, also the local one `npm run dev` and the local E2E server use. */
 export const STAGING_DB_NAME = `${PRODUCTION_DB_NAME}-staging`;
 
 const PREVIEW_PREFIX = `${PRODUCTION_DB_NAME}-`;
-/** Atlas rejects longer database names on the shared tiers the non-production cluster runs on (MongoDB itself allows 64). */
+/** Keeps a branch's names short: its database, and its Preview alias next to the Worker's name in one DNS label. */
 const MAX_DB_NAME_LENGTH = 38;
 
 /**
- * Database of one Git branch's preview deployments: "waitingpages-<branch>",
+ * D1 database of one Git branch's Preview: "waitingpages-<branch>",
  * lowercased, with each run of characters outside [a-z0-9] turned into one
  * "-". Branches that differ only in punctuation (feat/x, feat-x) therefore
- * share a database. A name over Atlas's limit is truncated and suffixed
+ * share a database. A name over MAX_DB_NAME_LENGTH is truncated and suffixed
  * with a hash of the full branch name, so long branches sharing a prefix get
  * distinct databases.
  */
@@ -45,51 +45,21 @@ export function isPreviewDbName(name: string): boolean {
 }
 
 /**
- * The database a deployment uses: MONGODB_DB_NAME when set, the branch's
- * previewDbName on a Vercel preview deployment, STAGING_DB_NAME otherwise.
- * A production deployment must set MONGODB_DB_NAME: without it the app
- * refuses to start, so a missing variable never resolves to production's
- * database, nor sends production traffic to staging's. MongoDB creates a
- * database on its first write, so a new branch needs no provisioning.
- */
-export function databaseName(env: Record<string, string | undefined>): string {
-  if (env.MONGODB_DB_NAME) {
-    return env.MONGODB_DB_NAME;
-  }
-  if (env.VERCEL_ENV === 'preview' && env.VERCEL_GIT_COMMIT_REF) {
-    return previewDbName(env.VERCEL_GIT_COMMIT_REF);
-  }
-  if (env.VERCEL_ENV === 'production') {
-    throw new Error('MONGODB_DB_NAME must be set on production deployments');
-  }
-  return STAGING_DB_NAME;
-}
-
-/** Whether a MongoDB connection string points only at this machine. */
-export function isLocalMongoUri(uri: string): boolean {
-  const match = /^mongodb:\/\/(?:[^@/]*@)?([^/?]+)/.exec(uri);
-  if (!match) {
-    return false;
-  }
-  return match[1].split(',').every((host) => /^(localhost|127\.0\.0\.1|\[::1\])(:\d+)?$/.test(host));
-}
-
-/**
  * Which test data the E2E data script may write to a database:
  * - fixtures: the fixed set of `e2e-` Users and Sites, reset on every run;
  * - demo: Users and Sites for people reviewing a preview by hand.
- * A local server takes both. Elsewhere a preview database takes both, staging
- * takes fixtures only, and any other database, production's included, takes
+ * A local database takes both. Remotely a Preview's database takes both,
+ * staging's takes fixtures only, and any other, production's included, takes
  * nothing.
  */
-export function testDataPolicy(uri: string, dbName: string): { fixtures: boolean; demo: boolean } {
-  if (isLocalMongoUri(uri)) {
+export function testDataPolicy(target: { local: boolean; dbName: string }): { fixtures: boolean; demo: boolean } {
+  if (target.local) {
     return { fixtures: true, demo: true };
   }
-  if (dbName === STAGING_DB_NAME) {
+  if (target.dbName === STAGING_DB_NAME) {
     return { fixtures: true, demo: false };
   }
-  if (isPreviewDbName(dbName)) {
+  if (isPreviewDbName(target.dbName)) {
     return { fixtures: true, demo: true };
   }
   return { fixtures: false, demo: false };

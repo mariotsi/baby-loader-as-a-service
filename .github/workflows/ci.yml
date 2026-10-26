@@ -1,11 +1,11 @@
 name: CI
 
 # Checks every pull request into staging, and into cloudflare (the branch
-# that carries the move to Cloudflare Workers, ADR-0009): that the workflows' Playwright
-# images match @playwright/test, types, lint and formatting (Biome), unit
-# tests (src/**/*.test.ts, some starting their own MongoDB with
-# mongodb-memory-server), the Cloudflare Worker build, and every Storybook story rendered in Chromium
-# with no axe violation. The Playwright suite runs on the pull request's
+# that carries the move to Cloudflare Workers, ADR-0009): that the
+# workflows' Playwright images match @playwright/test, types, lint and
+# formatting (Biome), unit tests (src/**/*.test.ts, some on an in-memory D1),
+# the Cloudflare Worker build, and every Storybook story rendered in
+# Chromium with no axe violation. The Playwright suite runs on the pull request's
 # preview deployment (cd.yml).
 
 on:
@@ -29,10 +29,6 @@ jobs:
         with:
           node-version: 24
           cache: npm
-      - uses: actions/cache@v4
-        with:
-          path: ~/.cache/mongodb-binaries
-          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Check the Playwright image matches package.json
         run: node scripts/check-playwright-image.mjs
       - run: npm ci
