@@ -18,6 +18,7 @@ import { promisify } from 'node:util';
  * - `retired`: a right password no longer proves who types it, for example once hashes leaked and the
  *   scheme is weak enough to crack. A login is refused, and the password has to be reset. The scheme
  *   still verifies, so only someone who types the right password learns that the account exists.
+ *   The Platform has no password reset yet (#80): retiring a generation locks its Owners out.
  */
 export type PasswordPolicy = 'current' | 'rehash' | 'change' | 'retired';
 
