@@ -15,7 +15,9 @@ import { promisify } from 'node:util';
  * - `current`: new hashes use it. Exactly one generation is current.
  * - `rehash`: still safe. A login rehashes the password with the current generation, unnoticed.
  * - `change`: verifiable but no longer trusted. After a login the Owner must choose a new password.
- * - `retired`: no longer verified. A login is refused, and the password has to be reset.
+ * - `retired`: a right password no longer proves who types it, for example once hashes leaked and the
+ *   scheme is weak enough to crack. A login is refused, and the password has to be reset. The scheme
+ *   still verifies, so only someone who types the right password learns that the account exists.
  */
 export type PasswordPolicy = 'current' | 'rehash' | 'change' | 'retired';
 
@@ -36,7 +38,7 @@ export interface PasswordGeneration {
  * What a login does after `verifyPassword`: `valid`, `rehash` and `change`
  * mean the password is right, `rehash` and `change` adding the step their
  * policy asks for. `invalid` is a wrong password or a hash no generation
- * reads; `reset` is a hash of a retired generation, whatever the password.
+ * reads; `reset` is the right password for a hash of a retired generation.
  */
 export type PasswordCheck = 'valid' | 'rehash' | 'change' | 'invalid' | 'reset';
 
@@ -125,11 +127,11 @@ export async function verifyPassword(
   if (!generation) {
     return 'invalid';
   }
-  if (generation.policy === 'retired') {
-    return 'reset';
-  }
   if (!(await generation.scheme.verify(password, split.fields))) {
     return 'invalid';
+  }
+  if (generation.policy === 'retired') {
+    return 'reset';
   }
   return generation.policy === 'current' ? 'valid' : generation.policy;
 }

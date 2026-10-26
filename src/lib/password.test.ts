@@ -51,11 +51,12 @@ test('a generation whose policy is change verifies with change', async () => {
   assert.equal(await verifyPassword(WRONG, stored, generations), 'invalid');
 });
 
-test('a generation whose policy is retired asks for a reset, whatever the password', async () => {
+test('a generation whose policy is retired asks for a reset only for the right password', async () => {
   const generations = withPolicy(1, 'retired');
   const stored = await hashPassword(PASSWORD, generation(1));
   assert.equal(await verifyPassword(PASSWORD, stored, generations), 'reset');
-  assert.equal(await verifyPassword(WRONG, stored, generations), 'reset');
+  // A wrong password reads like any other, so it reveals nothing about the account.
+  assert.equal(await verifyPassword(WRONG, stored, generations), 'invalid');
 });
 
 test('an unknown generation is invalid', async () => {

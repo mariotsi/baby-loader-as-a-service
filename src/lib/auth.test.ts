@@ -73,11 +73,16 @@ test('a hash whose generation has policy change logs in with a password change p
   assert.equal(await storedHash('change@example.test'), stored);
 });
 
-test('a hash whose generation is retired is refused with passwordResetRequired', async () => {
+test('the right password for a retired hash is refused with passwordResetRequired, a wrong one with wrongCredentials', async () => {
   const stored = await generationOneUser('retired@example.test');
-  assert.deepEqual(await logIn('retired@example.test', PASSWORD, withGenerationOne('retired')), {
+  const retired = withGenerationOne('retired');
+  assert.deepEqual(await logIn('retired@example.test', PASSWORD, retired), {
     ok: false,
     code: 'passwordResetRequired',
+  });
+  assert.deepEqual(await logIn('retired@example.test', 'Wrong horse 9!', retired), {
+    ok: false,
+    code: 'wrongCredentials',
   });
   assert.equal(await storedHash('retired@example.test'), stored);
 });

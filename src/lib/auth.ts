@@ -70,7 +70,8 @@ export type LogInResult =
 /**
  * Checks an email and password, and does what the stored hash's generation
  * asks: a `rehash` hash is replaced with a current one, a `change` hash
- * signs in with a password change pending, a `retired` hash is refused.
+ * signs in with a password change pending, and the right password for a
+ * `retired` hash is refused with passwordResetRequired.
  */
 export async function logIn(
   email: string,
