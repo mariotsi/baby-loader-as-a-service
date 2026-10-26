@@ -22,6 +22,8 @@ if (vapid) {
     LOCAL_VARS_FILE,
     [
       `ROOT_DOMAIN=localhost:${LOCAL_PORT}`,
+      // wrangler.jsonc says staging; this server is a local one, whose fixtures stay local.
+      'APP_ENV=development',
       `SESSION_SECRET=${LOCAL_SESSION_SECRET}`,
       `NEXT_PUBLIC_VAPID_PUBLIC_KEY=${vapid.publicKey}`,
       `VAPID_PRIVATE_KEY=${vapid.privateKey}`,

@@ -38,12 +38,12 @@ test('validateEnv names malformed variables', () => {
       ...VALID,
       ROOT_DOMAIN: 'https://loading.baby',
       VAPID_EMAIL: 'you@example.com',
-      VERCEL_ENV: 'prod',
+      APP_ENV: 'prod',
     }),
     [
       '- VAPID_EMAIL must be a mailto: or https: URL',
       '- ROOT_DOMAIN must be a host, with a port only for localhost',
-      '- VERCEL_ENV must be production, preview or development',
+      '- APP_ENV must be production, staging, preview or development',
     ]
   );
 });

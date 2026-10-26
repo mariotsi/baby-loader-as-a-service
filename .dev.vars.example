@@ -7,3 +7,5 @@ VAPID_EMAIL="mailto:you@example.com"
 SESSION_SECRET=""
 # Sites at <slug>.localhost:8787; the config's staging domain would not reach this machine.
 ROOT_DOMAIN="localhost:8787"
+# wrangler.jsonc says staging; a local run is development.
+APP_ENV="development"

@@ -28,12 +28,11 @@ const envSchema = z.object({
     z.string().check(z.regex(VAPID_PRIVATE_KEY, 'must be a VAPID private key (npm run generate-vapid)'))
   ),
   ROOT_DOMAIN: z.optional(z.string().check(z.regex(HOST, 'must be a host, with a port only for localhost'))),
-  VERCEL_ENV: z.optional(
-    z.enum(['production', 'preview', 'development'], 'must be production, preview or development')
+  APP_ENV: z.optional(
+    z.enum(['production', 'staging', 'preview', 'development'], 'must be production, staging, preview or development')
   ),
-  VERCEL_GIT_COMMIT_REF: z.optional(z.string()),
-  VERCEL_GIT_COMMIT_SHA: z.optional(z.string()),
-  VERCEL_BRANCH_URL: z.optional(z.string()),
+  GIT_COMMIT_SHA: z.optional(z.string()),
+  GIT_BRANCH: z.optional(z.string()),
 });
 
 type Env = z.output<typeof envSchema>;
@@ -107,17 +106,14 @@ export const vapidEnv = lazy(
 );
 
 /** Where this deployment serves each Site (see address.ts). */
-export const addressEnv = lazy(
-  { ROOT_DOMAIN: true, VERCEL_BRANCH_URL: true },
-  (env): AddressConfig => addressConfig(env)
-);
+export const addressEnv = lazy({ ROOT_DOMAIN: true }, (env): AddressConfig => addressConfig(env));
 
-/** Which deployment this is, and the commit and branch it was built from. */
+/** Which deployment this is, and the commit and branch it was built from, as the deploy sets them. */
 export const deploymentEnv = lazy(
-  { VERCEL_ENV: true, VERCEL_GIT_COMMIT_REF: true, VERCEL_GIT_COMMIT_SHA: true },
+  { APP_ENV: true, GIT_COMMIT_SHA: true, GIT_BRANCH: true },
   (env): { appEnv: AppEnv; commit: string | null; branch: string | null } => ({
     appEnv: appEnv(env),
-    commit: env.VERCEL_GIT_COMMIT_SHA ?? null,
-    branch: env.VERCEL_GIT_COMMIT_REF ?? null,
+    commit: env.GIT_COMMIT_SHA ?? null,
+    branch: env.GIT_BRANCH ?? null,
   })
 );

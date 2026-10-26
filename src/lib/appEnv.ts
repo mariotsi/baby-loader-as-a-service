@@ -1,19 +1,14 @@
 /** Which deployment of the Platform this is (see "Environments" in the README). */
 export type AppEnv = 'production' | 'staging' | 'preview' | 'development';
 
+const DEPLOYED: readonly AppEnv[] = ['production', 'staging', 'preview'];
+
 /**
- * Derived from the system variables Vercel sets on every deployment, so no
- * environment needs extra configuration: a Vercel preview deployment is
- * "preview", a production deployment of the `staging` branch is "staging",
- * any other production deployment is "production", and anything off Vercel
- * is "development".
+ * APP_ENV, which each Worker's wrangler config sets: "production" on
+ * loading-baby, "staging" on loading-baby-staging and "preview" on its
+ * Previews. Anything else, unset included, is "development".
  */
 export function appEnv(env: Record<string, string | undefined>): AppEnv {
-  if (env.VERCEL_ENV === 'preview') {
-    return 'preview';
-  }
-  if (env.VERCEL_ENV === 'production') {
-    return env.VERCEL_GIT_COMMIT_REF === 'staging' ? 'staging' : 'production';
-  }
-  return 'development';
+  const value = env.APP_ENV as AppEnv | undefined;
+  return value && DEPLOYED.includes(value) ? value : 'development';
 }

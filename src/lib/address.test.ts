@@ -11,7 +11,7 @@ import {
 
 const PRODUCTION = addressConfig({ ROOT_DOMAIN: 'loading.baby' });
 const LOCAL = addressConfig({ ROOT_DOMAIN: 'localhost:3100' });
-const PREVIEW = addressConfig({ VERCEL_BRANCH_URL: 'baby-loader-git-feat-x.vercel.app' });
+const PREVIEW = addressConfig({ ROOT_DOMAIN: 'feat-x-loading-baby-staging.example.workers.dev' });
 const SLUGS = ['emma', 'emma-rose', 'a1b', 'x'.repeat(32)];
 
 /** What the browser sends for an Address: its Host header and pathname. */
@@ -23,12 +23,13 @@ function requestFor(address: string): [string, string] {
 test('addressConfig picks the mode and protocol from the root domain', () => {
   assert.deepEqual(PRODUCTION, { rootDomain: 'loading.baby', mode: 'subdomain', protocol: 'https' });
   assert.deepEqual(LOCAL, { rootDomain: 'localhost:3100', mode: 'subdomain', protocol: 'http' });
-  assert.deepEqual(PREVIEW, { rootDomain: 'baby-loader-git-feat-x.vercel.app', mode: 'path', protocol: 'https' });
+  assert.deepEqual(PREVIEW, {
+    rootDomain: 'feat-x-loading-baby-staging.example.workers.dev',
+    mode: 'path',
+    protocol: 'https',
+  });
   assert.deepEqual(addressConfig({}), { rootDomain: 'localhost', mode: 'subdomain', protocol: 'http' });
-  assert.equal(
-    addressConfig({ ROOT_DOMAIN: 'Loading.Baby', VERCEL_BRANCH_URL: 'x.vercel.app' }).rootDomain,
-    'loading.baby'
-  );
+  assert.equal(addressConfig({ ROOT_DOMAIN: 'Loading.Baby' }).rootDomain, 'loading.baby');
 });
 
 for (const [name, config] of [
@@ -48,7 +49,7 @@ for (const [name, config] of [
 test('Addresses are subdomains, or paths on a preview', () => {
   assert.equal(siteAddress('emma', PRODUCTION), 'https://emma.loading.baby');
   assert.equal(siteAddress('emma', LOCAL), 'http://emma.localhost:3100');
-  assert.equal(siteAddress('emma', PREVIEW), 'https://baby-loader-git-feat-x.vercel.app/sites/emma');
+  assert.equal(siteAddress('emma', PREVIEW), 'https://feat-x-loading-baby-staging.example.workers.dev/sites/emma');
   assert.equal(siteAddressPath('emma', PRODUCTION), '/');
   assert.equal(siteAddressPath('emma', PREVIEW), '/sites/emma');
 });
@@ -76,7 +77,7 @@ test("a /sites path away from the Site's subdomain redirects to its Address", ()
     kind: 'redirect',
     location: 'https://emma.loading.baby/',
   });
-  assert.deepEqual(resolveRequest('baby-loader-as-a-service.vercel.app', '/sites/emma/icon.png', PRODUCTION), {
+  assert.deepEqual(resolveRequest('loading-baby.example.workers.dev', '/sites/emma/icon.png', PRODUCTION), {
     kind: 'redirect',
     location: 'https://emma.loading.baby/icon.png',
   });
@@ -107,14 +108,16 @@ test('any other host is a candidate Custom domain', () => {
 });
 
 test('on a preview, Sites are paths and everything else is the Platform', () => {
-  const host = 'baby-loader-git-feat-x.vercel.app';
+  const host = 'feat-x-loading-baby-staging.example.workers.dev';
   assert.deepEqual(resolveRequest(host, '/sites/emma', PREVIEW), {
     kind: 'site',
     slug: 'emma',
     internalPath: '/sites/emma',
   });
   assert.deepEqual(resolveRequest(host, '/dashboard', PREVIEW), { kind: 'platform' });
-  assert.deepEqual(resolveRequest('baby-loader-abc123.vercel.app', '/', PREVIEW), { kind: 'platform' });
+  assert.deepEqual(resolveRequest('abc123-loading-baby-staging.example.workers.dev', '/', PREVIEW), {
+    kind: 'platform',
+  });
 });
 
 test('slugProblem rejects what a subdomain cannot carry and what the Platform keeps', () => {
