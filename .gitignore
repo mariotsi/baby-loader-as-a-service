@@ -17,3 +17,8 @@ next-env.d.ts
 # Storybook
 /storybook-static/
 *storybook.log
+
+# Cloudflare Workers build (opennextjs-cloudflare, wrangler)
+/.open-next/
+/.wrangler/
+.dev.vars

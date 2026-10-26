@@ -1,0 +1,20 @@
+// The loading-baby Worker: production, built from main (ADR-0009). Secrets are
+// set in the account, never here.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "loading-baby",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-20",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby" }],
+  "observability": { "enabled": true },
+  "vars": { "APP_ENV": "production", "ROOT_DOMAIN": "loading.baby" },
+  "d1_databases": [{ "binding": "DB", "database_name": "loading-baby", "migrations_dir": "migrations" }],
+  "routes": [
+    { "pattern": "loading.baby/*", "zone_name": "loading.baby" },
+    { "pattern": "*.loading.baby/*", "zone_name": "loading.baby" }
+  ],
+  "workers_dev": false,
+  "preview_urls": false
+}

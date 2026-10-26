@@ -1,0 +1,28 @@
+// The loading-baby-staging Worker: staging at the top level, and one Preview
+// per branch in `previews` (ADR-0009). Production lives in
+// wrangler.production.jsonc. Secrets are set in the account, never here.
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "loading-baby-staging",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-20",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby-staging" }],
+  "observability": { "enabled": true },
+  "vars": { "APP_ENV": "staging", "ROOT_DOMAIN": "staging-loading-baby.fyi" },
+  "d1_databases": [{ "binding": "DB", "database_name": "loading-baby-staging", "migrations_dir": "migrations" }],
+  "routes": [
+    { "pattern": "staging-loading-baby.fyi/*", "zone_name": "staging-loading-baby.fyi" },
+    { "pattern": "*.staging-loading-baby.fyi/*", "zone_name": "staging-loading-baby.fyi" }
+  ],
+  // Routes would switch workers.dev off by default; Previews need it on.
+  "workers_dev": true,
+  "preview_urls": true,
+  "previews": {
+    "vars": { "APP_ENV": "preview" },
+    "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby-staging" }],
+    // The deploy workflow points each Preview at its branch's own database.
+    "d1_databases": [{ "binding": "DB", "database_name": "loading-baby-staging", "migrations_dir": "migrations" }]
+  }
+}
