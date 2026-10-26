@@ -1,6 +1,7 @@
 name: CI
 
-# Checks every pull request into staging: that the workflows' Playwright
+# Checks every pull request into staging, and into cloudflare (the branch
+# that carries the move to Cloudflare Workers, ADR-0009): that the workflows' Playwright
 # images match @playwright/test, types, lint and formatting (Biome), unit
 # tests (src/**/*.test.ts, some starting their own MongoDB with
 # mongodb-memory-server), and every Storybook story rendered in Chromium
@@ -9,7 +10,7 @@ name: CI
 
 on:
   pull_request:
-    branches: [staging]
+    branches: [staging, cloudflare]
 
 permissions:
   contents: read
