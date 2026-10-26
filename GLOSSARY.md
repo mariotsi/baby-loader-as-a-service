@@ -37,7 +37,7 @@ One baby's waiting page together with everything the Owner configured for it.
 _Avoid_: Tenant, waiting page, account, project
 
 **Site settings**:
-Everything an Owner configures for a Site: the baby's name and Sex, Due date, Birth details, Milestones, Theme, Privacy settings, Languages, Timezone and Page name. The Slug is chosen once, at creation, and is not a Site setting.
+Everything an Owner configures for a Site: the baby's name and Sex, Due date, Birth details, Milestones, Theme, Privacy settings, Languages, Timezone, Page name and Site icon. The Slug is chosen once, at creation, and is not a Site setting.
 _Avoid_: Tenant settings, configuration, preferences
 
 **Slug**:
@@ -115,6 +115,14 @@ _Avoid_: Colour scheme, colours
 **Font**:
 One of the Platform's curated pairs of typefaces: a display face for the baby's name, the Countdown and headings, and a body face for everything else.
 _Avoid_: Typeface, typography
+
+**Site icon**:
+What stands for a Site in a browser tab, on a home screen and in its Share image: the Platform's loading baby, or one emoji the Owner picks, drawn on the Site's Palette. Never an uploaded image.
+_Avoid_: Favicon, logo, avatar
+
+**Share image**:
+The picture a link to a Site's Public page shows in a chat or a feed: the Site icon beside the page's headline and Countdown, generated from the Site settings and changing at midnight in the Site's Timezone. It follows the Privacy settings and never shows a photo.
+_Avoid_: OG image, preview image, thumbnail
 
 **Platform theme**:
 The Platform's own fixed Palette and Font, worn by its marketing, auth, onboarding and Dashboard pages. Owners cannot pick it.

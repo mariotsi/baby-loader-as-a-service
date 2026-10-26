@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { LanguagesPicker } from '@/components/ui/LanguagesPicker';
 import { PalettePicker } from '@/components/ui/PalettePicker';
 import { PerLanguageField } from '@/components/ui/PerLanguageField';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Switch } from '@/components/ui/Switch';
@@ -27,12 +28,15 @@ import type { Milestone, SiteDTO } from '@/lib/site';
 import {
   type BirthDetails,
   DEFAULT_MILESTONE_EMOJI,
+  DEFAULT_SITE_ICON_EMOJI,
   type PageName,
   parseSiteSettings,
+  type SiteSettings,
   type SiteSettingsError,
   type SiteSettingsInput,
 } from '@/lib/siteSettings';
 import { PlaceField } from './PlaceField';
+import { SitePreviews } from './SitePreviews';
 import styles from './SiteSettingsForm.module.css';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
@@ -59,8 +63,19 @@ function unpickedPlaces(milestones: MilestoneDraft[]): SiteSettingsError[] {
   );
 }
 
-/** `timeZones` comes from the server, so the list the page renders matches the one it hydrates. */
-export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones: string[] }) {
+/**
+ * `timeZones` comes from the server, so the list the page renders matches the
+ * one it hydrates. `address` is the Site's, which only the server knows.
+ */
+export function SiteSettingsForm({
+  site,
+  timeZones,
+  address,
+}: {
+  site: SiteDTO;
+  timeZones: string[];
+  address: string;
+}) {
   const router = useRouter();
   const pageLang = useLang();
   const { settings: t, privacy } = platformCopy[pageLang];
@@ -80,6 +95,9 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
   const [showName, setShowName] = useState(site.privacy.showName);
   const [showSex, setShowSex] = useState(site.privacy.showSex);
   const [pageName, setPageName] = useState<PageName>(site.pageName);
+  const [iconIsEmoji, setIconIsEmoji] = useState(site.icon !== null);
+  /** Kept while the loading baby is picked, so switching back brings the emoji back. */
+  const [iconEmoji, setIconEmoji] = useState(site.icon ?? DEFAULT_SITE_ICON_EMOJI);
   const [milestones, setMilestones] = useState<MilestoneDraft[]>(() =>
     site.milestones.map((m) => ({ ...m, placeText: m.place?.address ?? '' }))
   );
@@ -121,7 +139,15 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
       theme: { palette, font },
       privacy: { showName, showSex },
       pageName: writtenTexts(pageName),
+      icon: iconIsEmoji ? iconEmoji : null,
     };
+  }
+
+  /** The previews draw the Site settings as they stand, or as they last stood valid while a field is half filled. */
+  const lastValid = useRef<SiteSettings>(site);
+  const checkedNow = parseSiteSettings(currentSettings());
+  if (checkedNow.ok) {
+    lastValid.current = checkedNow.value;
   }
 
   /** Everything that stops a save: the Site settings rules, then Places typed and never picked. */
@@ -290,6 +316,14 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
               <Switch label={privacy.showSex} checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
             </div>
           </Card>
+          <IconAndSharingCard
+            isEmoji={iconIsEmoji}
+            onIsEmojiChange={setIconIsEmoji}
+            emoji={iconEmoji}
+            onEmojiChange={setIconEmoji}
+            preview={lastValid.current}
+            address={address}
+          />
         </div>
       </div>
 
@@ -301,6 +335,45 @@ export function SiteSettingsForm({ site, timeZones }: { site: SiteDTO; timeZones
         <StatusMessage tone="danger">{message || problemsText(errors, pageLang)}</StatusMessage>
       </div>
     </form>
+  );
+}
+
+interface IconAndSharingCardProps {
+  isEmoji: boolean;
+  onIsEmojiChange: (isEmoji: boolean) => void;
+  emoji: string;
+  onEmojiChange: (emoji: string) => void;
+  /** The Site settings the previews draw. */
+  preview: SiteSettings;
+  address: string;
+}
+
+/** The Site icon, the loading baby or an emoji, above the previews of the page outside itself. */
+function IconAndSharingCard({
+  isEmoji,
+  onIsEmojiChange,
+  emoji,
+  onEmojiChange,
+  preview,
+  address,
+}: IconAndSharingCardProps) {
+  const t = platformCopy[useLang()].settings;
+  return (
+    <Card title={t.iconAndSharing} description={t.iconAndSharingDescription}>
+      <div className={styles.icon}>
+        <SegmentedControl
+          legend={t.siteIcon}
+          options={[
+            { value: 'loadingBaby', label: t.siteIconLoadingBaby },
+            { value: 'emoji', label: t.siteIconEmoji },
+          ]}
+          value={isEmoji ? 'emoji' : 'loadingBaby'}
+          onChange={(value) => onIsEmojiChange(value === 'emoji')}
+        />
+        {isEmoji ? <EmojiPicker label={t.siteIconEmojiLabel} value={emoji} onChange={onEmojiChange} /> : null}
+      </div>
+      <SitePreviews settings={preview} address={address} />
+    </Card>
   );
 }
 
