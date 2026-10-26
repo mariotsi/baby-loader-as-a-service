@@ -9,7 +9,7 @@ subdomain link, and push notifications to send updates to visitors.
 This is a **separate, independent project** inspired by
 [`baby-loader`](https://github.com/mariotsi/baby-loader), a single-Site
 personal project. `baby-loader` is not modified by this repo in any way, and
-the two apps use **separate MongoDB databases** — see "Isolation from
+the two apps keep **separate data** — see "Isolation from
 baby-loader" below. A handful of framework-agnostic utilities
 (`webpush.ts`, `vapid.ts`, `geoip.ts`, `deviceInfo.ts`, `rateLimit.ts`,
 `i18n.ts`, `public/sw.js`) were copied over from baby-loader as a starting
@@ -17,15 +17,15 @@ point and adapted; from here the two codebases evolve independently.
 
 ## Stack
 
-Next.js 16 (App Router) + TypeScript, MongoDB Atlas, Web Push (VAPID).
-Intended to deploy on Vercel (see "Hosting" below).
+Next.js 16 (App Router) + TypeScript on Cloudflare Workers, Cloudflare D1
+through Drizzle ORM, Web Push (VAPID). See ADR-0009.
 
 ## How Sites work
 
-- **Site data model** (`src/lib/site.ts`): a `sites` collection holds
-  each Site's Slug, Owner, Site settings (`src/lib/siteSettings.ts`), and
-  (future) Custom domain. `subscriptions` (`src/lib/subscription.ts`) is
-  scoped by `siteId`.
+- **Site data model** (`src/db/schema.ts`, `src/lib/site.ts`): a `sites`
+  table holds each Site's Slug, Owner, Site settings
+  (`src/lib/siteSettings.ts`, one JSON column), and (future) Custom domain.
+  `subscriptions` (`src/lib/subscription.ts`) is scoped by `site_id`.
 - **Addresses** (`src/lib/address.ts`, applied by `src/proxy.ts`): one
   module turns a Slug into its Address and a request's `Host` and path back
   into a Site. `slug.yourdomain.com/*` is rewritten to the internal
@@ -68,25 +68,24 @@ Deliberately not yet built (see the original planning discussion):
 ## Isolation from baby-loader
 
 - Separate GitHub repo, separate `package.json`, no shared imports.
-- Separate MongoDB **database** by default (`waitingpages`, see
-  `src/lib/mongodb.ts`, vs. baby-loader's `pushnotify`) — use a genuinely
-  separate cluster/Atlas project too if you want stronger isolation than a
-  same-cluster, different-database setup provides.
+- Separate **database**: its own D1 databases (`loading-baby` and the
+  others in "Environments"), sharing nothing with baby-loader's MongoDB.
 - Separate VAPID keypair, separate `SESSION_SECRET`, separate deployment.
 
 ## Local development
 
-Needs Docker (on macOS, [Colima](https://github.com/abiosoft/colima) works:
-`brew install colima docker docker-compose && colima start`).
-
 ```bash
 npm install
-npm run db:up                       # MongoDB in Docker, data kept in a volume
+npm run db:migrate                  # creates the local D1 in .wrangler/state
 cp .env.local.example .env.local    # then fill in SESSION_SECRET and the VAPID keys
 npm run generate-vapid              # prints VAPID keys to paste into .env.local
-npm run seed                        # optional: demo Owners and Sites
 npm run dev
 ```
+
+`npm run dev` gets the Worker's bindings from `wrangler.jsonc`, with the
+local D1 that `npm run db:migrate` prepares; no database server runs.
+`npm run cf:preview` builds and runs the app as the Worker it deploys as,
+with the variables in `.dev.vars` (see `.dev.vars.example`).
 
 The server checks its environment variables when it starts
 (`src/lib/env.ts`) and refuses to start, naming each one, when a variable is
@@ -94,8 +93,6 @@ missing or malformed; `next build` needs none of them.
 
 `localhost:3000` serves the Platform, and each Site its Address at
 `<slug>.localhost:3000` (browsers resolve `*.localhost` to this machine).
-`npm run seed` creates `demo-owner-a@waitingpages.test` and
-`demo-owner-b@waitingpages.test`, password `waiting-pages-demo`.
 
 [Biome](https://biomejs.dev) lints and formats the code (`biome.json`):
 `npm run lint` checks, `npm run format` fixes what it can. `npm install`
@@ -103,9 +100,8 @@ sets up a [lefthook](https://lefthook.dev) pre-commit hook (`lefthook.yml`)
 that runs Biome on the staged files, and CI runs the same checks with
 `biome ci`.
 
-`npm run dev:staging` runs the local app on staging's database instead, with
-the credentials in `.env.staging.local` (see `.env.staging.local.example`).
-No local setup reaches production's database.
+No local setup reaches a remote database: `npm run dev` and `npm run
+cf:preview` both use the local D1.
 
 ## Design system
 
@@ -312,26 +308,16 @@ the failed run is re-run.
 
 ### Data migrations
 
-A data migration lives in `src/migrations/` as `NNNN-short-name.ts`,
-exporting a `Migration` (`src/lib/migrations.ts`) whose id is its file
-name, and is appended to the list in `src/migrations/index.ts`. Every
-deployment applies the ones its database has no record of, in order, on the
-first request of each process (`getDb` in `src/lib/mongodb.ts`), before
-creating indexes and before any query: production, staging, each preview's
-database and local ones alike, with the credentials the deployment already
-has.
-- **Once per database**: the `migrations` collection records each applied
-  id and holds a lock, so among processes starting together one applies
-  them and the others wait for it. A holder that dies stops renewing its
-  30-second lease, and the next process takes over.
-- **Failure**: a migration that throws stays unrecorded and fails the
-  request; the next request tries again. Code never runs on data its
-  migrations have not reached.
-- **Compatibility**: while Vercel moves traffic to a new deployment, the
-  previous one keeps serving on the migrated data, and an instant rollback
-  runs it there for good. So a migration only makes changes the previous
-  code still reads correctly (add a field before reading it, stop writing
-  one before removing it), is safe to rerun, and is quick: the first
-  requests wait for it. `0001-rename-tenants-to-sites` is the one
-  exception: it renames storage the previous deployment reads, so an
-  instant rollback past it does not work.
+The schema lives in `src/db/schema.ts`. `npm run db:generate` turns a change
+there into a SQL migration in `migrations/`, named `NNNN_short_name.sql`,
+which is committed with the change. `npm run db:migrate` applies new ones to
+the local D1, and every deploy applies them to its environment's database
+with `wrangler d1 migrations apply` before the new code goes live; D1 records
+each applied migration in its `d1_migrations` table, so each runs once per
+database.
+- **Compatibility**: a gradual deployment or `wrangler rollback` runs the
+  previous code on the migrated schema. So a migration only makes changes the
+  previous code still reads correctly: add a column before reading it, stop
+  writing one before dropping it.
+- **No interactive transactions**: D1 has none.
+  Writes that belong together go in one `db.batch()`.

@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { isId } from '../db/index.ts';
 import { verifySessionToken } from './auth.ts';
 import { getSiteBySlug, type Site } from './site.ts';
 
@@ -19,12 +19,12 @@ declare const owned: unique symbol;
  * enough to set a new password and nothing else.
  */
 export type SignedInUser = {
-  readonly id: ObjectId;
+  readonly id: string;
   readonly passwordChangePending: boolean;
   readonly [signedIn]: true;
 };
 /** A signed-in User with no password change pending. */
-export type AuthenticatedUser = { readonly id: ObjectId; readonly [authenticated]: true };
+export type AuthenticatedUser = { readonly id: string; readonly [authenticated]: true };
 export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Site; readonly [owned]: true };
 
 /**
@@ -35,10 +35,10 @@ export type AccessDenial = 'unauthenticated' | 'passwordChangePending' | 'notFou
 
 export function signIn(sessionToken: string | undefined): SignedInUser | null {
   const session = verifySessionToken(sessionToken);
-  if (!session || !ObjectId.isValid(session.userId)) {
+  if (!session || !isId(session.userId)) {
     return null;
   }
-  return { id: new ObjectId(session.userId), passwordChangePending: session.passwordChangePending } as SignedInUser;
+  return { id: session.userId, passwordChangePending: session.passwordChangePending } as SignedInUser;
 }
 
 /** The session's User, or why there is none. */
@@ -69,7 +69,7 @@ export async function accessOwnedSite(
     return owner;
   }
   const site = await getSiteBySlug(slug);
-  if (!site?.ownerId.equals(owner.id)) {
+  if (site?.ownerId !== owner.id) {
     return 'notFound';
   }
   return { owner, site } as OwnedSite;

@@ -35,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const name = siteShortName(site, lang);
   const { title, description } = shareText(site, lang);
   const image = {
-    url: `${address}${SITE_PATHS.shareImage}?d=${shareImageDay(site.timezone)}&l=${lang}&v=${site.updatedAt.getTime()}`,
+    url: `${address}${SITE_PATHS.shareImage}?d=${shareImageDay(site.timezone)}&l=${lang}&v=${Date.parse(site.updatedAt)}`,
     width: 1200,
     height: 630,
     alt: title,

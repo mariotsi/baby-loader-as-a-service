@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
+import { startTestDb } from '../db/testDb.ts';
 import { createUser, getUserByEmail, logIn, updatePasswordHash } from './auth.ts';
 import {
   hashPassword,
@@ -8,7 +9,6 @@ import {
   type PasswordPolicy,
   verifyPassword,
 } from './password.ts';
-import { startTestDb } from './testDb.ts';
 
 const PASSWORD = 'Correct horse 9!';
 
@@ -29,7 +29,7 @@ function withGenerationOne(policy: PasswordPolicy): PasswordGeneration[] {
 async function generationOneUser(email: string): Promise<string> {
   const user = await createUser(email, PASSWORD);
   const stored = await hashPassword(PASSWORD, generationOne);
-  await updatePasswordHash(user._id, stored);
+  await updatePasswordHash(user.id, stored);
   return stored;
 }
 

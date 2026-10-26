@@ -26,6 +26,6 @@ export async function POST(req: NextRequest) {
 
   await updatePasswordHash(auth.user.id, await hashPassword(password));
   const res = NextResponse.json({ ok: true });
-  res.cookies.set({ ...sessionCookieOptions(), value: issueSessionToken(auth.user.id.toHexString()) });
+  res.cookies.set({ ...sessionCookieOptions(), value: issueSessionToken(auth.user.id) });
   return res;
 }
