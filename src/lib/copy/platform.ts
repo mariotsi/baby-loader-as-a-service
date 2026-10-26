@@ -37,8 +37,16 @@ const en = {
       switchPrompt: 'Already have an account?',
       switchLink: 'Log in',
     },
+    changePassword: {
+      title: 'Choose a new password',
+      description: 'You will use it the next time you log in.',
+      pendingDescription: 'Your password needs an update. Choose a new one to keep using your account.',
+      submit: 'Save password',
+      submitting: 'Saving…',
+    },
     email: 'Email',
     password: 'Password',
+    newPassword: 'New password',
     confirmPassword: 'Confirm password',
     passwordRules: {
       length: (min: number) => `At least ${min} characters`,
@@ -213,8 +221,16 @@ const it: PlatformCopy = {
       switchPrompt: 'Hai già un account?',
       switchLink: 'Accedi',
     },
+    changePassword: {
+      title: 'Scegli una nuova password',
+      description: 'La userai la prossima volta che accedi.',
+      pendingDescription: 'La tua password va aggiornata. Scegline una nuova per continuare a usare il tuo account.',
+      submit: 'Salva la password',
+      submitting: 'Salvataggio…',
+    },
     email: 'Email',
     password: 'Password',
+    newPassword: 'Nuova password',
     confirmPassword: 'Conferma la password',
     passwordRules: {
       length: (min) => `Almeno ${min} caratteri`,
