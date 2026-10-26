@@ -3,10 +3,10 @@ import { ObjectId } from 'mongodb';
 import type { NextRequest } from 'next/server';
 import { addressEnv, sessionSecret } from './env.ts';
 import { getDb } from './mongodb.ts';
-import { hashPassword, verifyPassword } from './password.ts';
+import { hashPassword, needsRehash, verifyPassword } from './password.ts';
 import { rateLimit } from './rateLimit.ts';
 
-export { hashPassword, verifyPassword };
+export { hashPassword, needsRehash, verifyPassword };
 
 export const SESSION_COOKIE = 'session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -56,6 +56,11 @@ export async function createUser(email: string, password: string): Promise<User>
   };
   await col.insertOne(user);
   return user;
+}
+
+export async function updatePasswordHash(userId: ObjectId, passwordHash: string): Promise<void> {
+  const col = await usersCollection();
+  await col.updateOne({ _id: userId }, { $set: { passwordHash } });
 }
 
 // --- Sessions ----------------------------------------------------------------
