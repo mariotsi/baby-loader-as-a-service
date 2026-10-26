@@ -113,7 +113,12 @@ export function sessionCookieOptions(maxAge = SESSION_TTL_MS / 1000) {
   };
 }
 
+/** Cloudflare's own header first, which a client can't set; then the first proxy hop, which `next dev` sees. */
 export function clientIp(req: NextRequest): string {
+  const connecting = req.headers.get('cf-connecting-ip');
+  if (connecting) {
+    return connecting;
+  }
   const forwarded = req.headers.get('x-forwarded-for');
   if (forwarded) {
     return forwarded.split(',')[0].trim();

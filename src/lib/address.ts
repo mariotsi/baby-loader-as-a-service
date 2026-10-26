@@ -15,20 +15,20 @@ export type AddressConfig = {
 };
 
 /**
- * Vercel never serves wildcard subdomains under vercel.app, so a preview,
- * whose root domain is its branch URL, serves every Site by path at
+ * A Preview's root domain is its own workers.dev host, under which Cloudflare
+ * serves no wildcard subdomains, so a Preview serves every Site by path at
  * /sites/<slug>. Everywhere else a Site has a subdomain of its own.
  *
  * Known limit of path mode: every Site shares the Platform's origin, so a
  * browser holds one push Subscription for all of them, and opting in or out
- * on one Site reads the same on the others. Only previews run in path mode.
+ * on one Site reads the same on the others. Only Previews run in path mode.
  */
 export function addressConfig(env: Record<string, string | undefined>): AddressConfig {
-  const rootDomain = (env.ROOT_DOMAIN || env.VERCEL_BRANCH_URL || 'localhost').toLowerCase();
+  const rootDomain = (env.ROOT_DOMAIN || 'localhost').toLowerCase();
   const hostname = hostnameOf(rootDomain);
   return {
     rootDomain,
-    mode: hostname.endsWith('.vercel.app') ? 'path' : 'subdomain',
+    mode: hostname.endsWith('.workers.dev') ? 'path' : 'subdomain',
     protocol: hostname === 'localhost' ? 'http' : 'https',
   };
 }
