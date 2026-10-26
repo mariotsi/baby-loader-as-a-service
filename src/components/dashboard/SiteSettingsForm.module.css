@@ -21,6 +21,14 @@
   gap: var(--space-5);
 }
 
+/* The icon's choice, with the emoji beside it once picked. */
+.icon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: var(--space-4);
+}
+
 .pair {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));

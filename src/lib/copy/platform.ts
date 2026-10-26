@@ -165,6 +165,17 @@ const en = {
     placesFound: (n: number) => plural('en', n, { one: '1 place found', other: `${n} places found` }),
     noPlaces: 'No places match. Try a street, a town or a hospital.',
     searchFailed: 'Search is unavailable right now. Clear the field to save without a place.',
+    iconAndSharing: 'Icon and sharing',
+    iconAndSharingDescription: 'How your page looks in a browser tab, on a home screen and in a chat.',
+    siteIcon: 'Icon',
+    siteIconLoadingBaby: 'Loading Baby',
+    siteIconEmoji: 'An emoji',
+    siteIconEmojiLabel: 'Icon emoji',
+    previewTab: 'In a browser tab',
+    previewHomeScreen: 'On an iPhone home screen',
+    previewChat: 'In a WhatsApp message',
+    previewChatNote:
+      'Links already sent on WhatsApp keep the preview they were sent with, because WhatsApp makes it on the sender’s phone. New messages show the day’s countdown.',
   },
 };
 
@@ -330,6 +341,18 @@ const it: PlatformCopy = {
     placesFound: (n) => plural('it', n, { one: '1 luogo trovato', other: `${n} luoghi trovati` }),
     noPlaces: 'Nessun luogo trovato. Prova con una via, una città o un ospedale.',
     searchFailed: 'La ricerca non è disponibile ora. Svuota il campo per salvare senza un luogo.',
+    iconAndSharing: 'Icona e condivisione',
+    iconAndSharingDescription:
+      'Come appare la tua pagina in una scheda del browser, sulla schermata Home e in una chat.',
+    siteIcon: 'Icona',
+    siteIconLoadingBaby: 'Loading Baby',
+    siteIconEmoji: 'Un’emoji',
+    siteIconEmojiLabel: 'Emoji dell’icona',
+    previewTab: 'In una scheda del browser',
+    previewHomeScreen: 'Sulla schermata Home di un iPhone',
+    previewChat: 'In un messaggio WhatsApp',
+    previewChatNote:
+      'I link già inviati su WhatsApp mantengono l’anteprima con cui sono partiti, perché WhatsApp la crea sul telefono di chi invia. I nuovi messaggi mostrano il conto alla rovescia del giorno.',
   },
 };
 

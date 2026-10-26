@@ -71,6 +71,7 @@ function siteDoc(spec, ownerId, now) {
         theme: { palette: 'blush', font: 'inter' },
         privacy: { showName: spec.showName, showSex: spec.showSex },
         pageName: spec.pageName ?? {},
+        icon: spec.icon ?? null,
       },
     },
     now
