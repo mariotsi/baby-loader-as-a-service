@@ -6,7 +6,7 @@ import type { Lang } from '../lib/i18n.ts';
 import type { SiteSettings } from '../lib/siteSettings.ts';
 
 /**
- * The D1 schema (ADR-0009). Ids are 24 lowercase hex characters (newId) and
+ * The D1 schema (ADR-0009). Ids are random UUIDs (newId) and
  * dates are ISO 8601 UTC text, which sorts in time order. `npm run
  * db:generate` turns a change here into a migration in migrations/.
  */

@@ -17,7 +17,7 @@ after(() => stopDb());
 
 test('an email has one account, whatever its case', async () => {
   const user = await createUser('Ada@Example.com ', 'Correct-horse-1');
-  assert.match(user.id, /^[0-9a-f]{24}$/);
+  assert.match(user.id, /^[0-9a-f-]{36}$/);
   assert.equal((await getUserByEmail('ada@example.com'))?.id, user.id);
   assert.equal((await getUserById(user.id))?.email, 'ada@example.com');
   await assert.rejects(createUser('ADA@example.com', 'Another-horse-2'), EmailTakenError);
