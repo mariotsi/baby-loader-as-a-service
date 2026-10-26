@@ -12,7 +12,14 @@
 // nothing on production, fixtures only on staging.
 
 import { MongoClient, ObjectId } from 'mongodb';
-import { DEMO_OWNERS, DEMO_SITES, FIXTURE_OWNERS, FIXTURE_SITES, RUN_PREFIX } from '../e2e/support/data.ts';
+import {
+  DEMO_OWNERS,
+  DEMO_SITES,
+  FIXTURE_OWNERS,
+  FIXTURE_SITES,
+  PASSWORD_USERS,
+  RUN_PREFIX,
+} from '../e2e/support/data.ts';
 import { databaseName, testDataPolicy } from '../src/lib/dbName.ts';
 import { applyMigrations } from '../src/lib/migrations.ts';
 import { hashPassword } from '../src/lib/password.ts';
@@ -119,6 +126,20 @@ async function resetData(db, owners, sites, password) {
   await db.collection('sites').insertMany(sites.map((spec) => siteDoc(spec, ownerIds[spec.owner], now)));
 }
 
+/** Recreates the Users the password tests change, with the fixed ids those tests sign sessions for. */
+async function resetPasswordUsers(db, password) {
+  const users = Object.values(PASSWORD_USERS);
+  await db.collection('users').deleteMany({
+    $or: [{ email: { $in: users.map((u) => u.email) } }, { _id: { $in: users.map((u) => new ObjectId(u.id)) } }],
+  });
+  const now = new Date();
+  for (const { email, id } of users) {
+    await db
+      .collection('users')
+      .insertOne({ _id: new ObjectId(id), email, passwordHash: await hashPassword(password), createdAt: now });
+  }
+}
+
 /** Removes one run's Users and Sites, and those of any run older than a day. */
 async function cleanup(db, runId) {
   const thisRun = `^${RUN_PREFIX}${runId}-`;
@@ -166,6 +187,7 @@ async function run(db, dbName, { command, arg, withDemo }) {
   }
   if (command === 'reset') {
     await resetData(db, FIXTURE_OWNERS, FIXTURE_SITES, e2ePassword());
+    await resetPasswordUsers(db, e2ePassword());
     console.log(`E2E fixtures reset in ${dbName}: ${FIXTURE_SITES.length} Sites.`);
   }
   if (withDemo) {

@@ -10,30 +10,63 @@ import { getSiteBySlug, type Site } from './site.ts';
  * and pages.
  */
 
+declare const signedIn: unique symbol;
 declare const authenticated: unique symbol;
 declare const owned: unique symbol;
 
+/**
+ * Anyone with a valid session, a password change pending or not. It is
+ * enough to set a new password and nothing else.
+ */
+export type SignedInUser = {
+  readonly id: ObjectId;
+  readonly passwordChangePending: boolean;
+  readonly [signedIn]: true;
+};
+/** A signed-in User with no password change pending. */
 export type AuthenticatedUser = { readonly id: ObjectId; readonly [authenticated]: true };
 export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Site; readonly [owned]: true };
 
-/** A missing Site and another Owner's Site are the same denial: neither is yours. */
-export type AccessDenial = 'unauthenticated' | 'notFound';
+/**
+ * A missing Site and another Owner's Site are the same denial: neither is
+ * yours. A session whose password change is pending reaches no Site at all.
+ */
+export type AccessDenial = 'unauthenticated' | 'passwordChangePending' | 'notFound';
 
-export function authenticate(sessionToken: string | undefined): AuthenticatedUser | null {
-  const userId = verifySessionToken(sessionToken);
-  if (!userId || !ObjectId.isValid(userId)) {
+export function signIn(sessionToken: string | undefined): SignedInUser | null {
+  const session = verifySessionToken(sessionToken);
+  if (!session || !ObjectId.isValid(session.userId)) {
     return null;
   }
-  return { id: new ObjectId(userId) } as AuthenticatedUser;
+  return { id: new ObjectId(session.userId), passwordChangePending: session.passwordChangePending } as SignedInUser;
+}
+
+/** The session's User, or why there is none. */
+export function authenticateOrDeny(
+  sessionToken: string | undefined
+): AuthenticatedUser | 'unauthenticated' | 'passwordChangePending' {
+  const user = signIn(sessionToken);
+  if (!user) {
+    return 'unauthenticated';
+  }
+  if (user.passwordChangePending) {
+    return 'passwordChangePending';
+  }
+  return { id: user.id } as AuthenticatedUser;
+}
+
+export function authenticate(sessionToken: string | undefined): AuthenticatedUser | null {
+  const user = authenticateOrDeny(sessionToken);
+  return typeof user === 'string' ? null : user;
 }
 
 export async function accessOwnedSite(
   sessionToken: string | undefined,
   slug: string
 ): Promise<OwnedSite | AccessDenial> {
-  const owner = authenticate(sessionToken);
-  if (!owner) {
-    return 'unauthenticated';
+  const owner = authenticateOrDeny(sessionToken);
+  if (typeof owner === 'string') {
+    return owner;
   }
   const site = await getSiteBySlug(slug);
   if (!site?.ownerId.equals(owner.id)) {

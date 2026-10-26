@@ -16,6 +16,9 @@ const en = {
     passwordRules: 'Password rules not met yet: check the list under the password.',
     emailTaken: 'An account with this email already exists.',
     wrongCredentials: 'Invalid email or password.',
+    passwordResetRequired:
+      'This password can no longer be used to log in, because the way it was stored is out of date. It has to be reset.',
+    passwordChangePending: 'Choose a new password before you continue.',
     notAuthenticated: 'Your session has ended: log in again.',
     notFound: 'Not found.',
     pushNotConfigured: 'VAPID keys are not configured on the server.',
@@ -92,6 +95,9 @@ const it: ErrorsCopy = {
     passwordRules: 'La password non rispetta ancora tutte le regole: controlla l’elenco sotto.',
     emailTaken: 'Esiste già un account con questa email.',
     wrongCredentials: 'Email o password non validi.',
+    passwordResetRequired:
+      'Questa password non può più essere usata per accedere, perché il modo in cui è conservata non è più attuale. Va reimpostata.',
+    passwordChangePending: 'Scegli una nuova password prima di continuare.',
     notAuthenticated: 'La sessione è scaduta: accedi di nuovo.',
     notFound: 'Non trovato.',
     pushNotConfigured: 'Le chiavi VAPID non sono configurate sul server.',

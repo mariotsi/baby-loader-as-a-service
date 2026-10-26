@@ -2,20 +2,21 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { ObjectId } from 'mongodb';
 import { issueSessionToken } from './auth.ts';
-import { type AuthenticatedUser, accessOwnedSite, authenticate } from './ownerAccess.ts';
+import { type AuthenticatedUser, accessOwnedSite, authenticate, signIn } from './ownerAccess.ts';
 import { createSite } from './site.ts';
 import { defaultSiteSettings, parseNewSite } from './siteSettings.ts';
 import { startTestDb } from './testDb.ts';
 
 let stopDb: () => Promise<void>;
-const ownerToken = issueSessionTokenLater();
-const otherToken = issueSessionTokenLater();
+const ownerId = new ObjectId().toHexString();
+const ownerToken = issueSessionTokenLater(ownerId);
+const otherToken = issueSessionTokenLater(new ObjectId().toHexString());
+const pendingToken = issueSessionTokenLater(ownerId, true);
 
 /** Tokens need SESSION_SECRET, which startTestDb sets; issue them on first use. */
-function issueSessionTokenLater() {
-  const id = new ObjectId().toHexString();
+function issueSessionTokenLater(id: string, passwordChangePending = false) {
   let token: string | undefined;
-  return () => (token ??= issueSessionToken(id));
+  return () => (token ??= issueSessionToken(id, { passwordChangePending }));
 }
 
 before(async () => {
@@ -45,4 +46,19 @@ test("the Owner gets their Site, whatever the Slug's case", async () => {
   assert.ok(typeof access === 'object');
   assert.equal(access.site.slug, 'emma');
   assert.ok(access.site.ownerId.equals(access.owner.id));
+});
+
+test("a session with a password change pending is signed in, but reaches no Site, not even the Owner's", async () => {
+  assert.equal(signIn(pendingToken())?.passwordChangePending, true);
+  assert.equal(signIn(ownerToken())?.passwordChangePending, false);
+  assert.equal(authenticate(pendingToken()), null);
+  assert.equal(await accessOwnedSite(pendingToken(), 'emma'), 'passwordChangePending');
+});
+
+test('the pending mark cannot be added to or removed from a signed token', () => {
+  const [userId, expiresAt, signature] = ownerToken().split('.');
+  assert.equal(signIn(`${userId}.${expiresAt}.change.${signature}`), null);
+  const [pendingId, pendingExpiresAt, , pendingSignature] = pendingToken().split('.');
+  assert.equal(signIn(`${pendingId}.${pendingExpiresAt}.${pendingSignature}`), null);
+  assert.equal(signIn(`${userId}.${expiresAt}.other.${signature}`), null);
 });

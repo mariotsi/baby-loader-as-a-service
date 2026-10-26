@@ -15,6 +15,8 @@ export const LOCAL_MONGODB_URI = 'mongodb://localhost:27017';
 /** Database of the app Playwright starts locally, apart from the one `npm run dev` uses. */
 export const LOCAL_E2E_DB_NAME = 'waitingpages-e2e';
 const LOCAL_E2E_PASSWORD = 'local-e2e-password';
+/** SESSION_SECRET of the app Playwright starts locally. */
+export const LOCAL_SESSION_SECRET = 'local-e2e-session-secret';
 
 export const BASE_URL = process.env.E2E_BASE_URL || LOCAL_BASE_URL;
 export const STARTS_LOCAL_SERVER = !process.env.E2E_BASE_URL;
@@ -25,6 +27,14 @@ export function e2ePassword(): string {
     throw new Error('Set E2E_PASSWORD, the fixture Owners password of the deployment under test');
   }
   return password;
+}
+
+/**
+ * The secret the deployment under test signs sessions with, known only for
+ * the local server: tests that sign a session themselves run there alone.
+ */
+export function sessionSecret(): string | undefined {
+  return STARTS_LOCAL_SERVER ? LOCAL_SESSION_SECRET : undefined;
 }
 
 /** Sent only to the deployment under test, never to third parties such as Google Fonts. */

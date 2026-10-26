@@ -19,6 +19,16 @@ export const FIXTURE_OWNERS: Record<Owner, string> = {
   b: `e2e-owner-b@${TEST_EMAIL_DOMAIN}`,
 };
 
+/**
+ * Users the password tests change, with no Site. `legacy` gets a generation 1
+ * hash from its test; `pending` is signed in by a session the test signs
+ * itself, so it has a fixed id.
+ */
+export const PASSWORD_USERS = {
+  legacy: { email: `e2e-password-legacy@${TEST_EMAIL_DOMAIN}`, id: '0000000000000000000e2e01' },
+  pending: { email: `e2e-password-pending@${TEST_EMAIL_DOMAIN}`, id: '0000000000000000000e2e02' },
+} as const;
+
 export type SiteSpec = {
   slug: string;
   owner: Owner;
