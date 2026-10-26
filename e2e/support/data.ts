@@ -25,8 +25,8 @@ export const FIXTURE_OWNERS: Record<Owner, string> = {
  * itself, so it has a fixed id.
  */
 export const PASSWORD_USERS = {
-  legacy: { email: `e2e-password-legacy@${TEST_EMAIL_DOMAIN}`, id: '0000000000000000000e2e01' },
-  pending: { email: `e2e-password-pending@${TEST_EMAIL_DOMAIN}`, id: '0000000000000000000e2e02' },
+  legacy: { email: `e2e-password-legacy@${TEST_EMAIL_DOMAIN}`, id: '00000000-0000-4000-8000-000000000e01' },
+  pending: { email: `e2e-password-pending@${TEST_EMAIL_DOMAIN}`, id: '00000000-0000-4000-8000-000000000e02' },
 } as const;
 
 export type SiteSpec = {

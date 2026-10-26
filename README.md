@@ -84,6 +84,9 @@ npm run dev
 
 `npm run dev` gets the Worker's bindings from `wrangler.jsonc`, with the
 local D1 that `npm run db:migrate` prepares; no database server runs.
+`npm run seed` adds demo Owners and Sites to it:
+`demo-owner-a@waitingpages.test` and `demo-owner-b@waitingpages.test`,
+password `waiting-pages-demo`.
 `npm run cf:preview` builds and runs the app as the Worker it deploys as,
 with the variables in `.dev.vars` (see `.dev.vars.example`).
 
@@ -177,16 +180,18 @@ Subscriptions and Notifications, and that an Owner cannot reach another
 Owner's Sites. They run in Chromium (desktop) and WebKit (iPhone).
 
 ```bash
-npm run db:up
-npm run e2e              # builds and starts the app on :3100, database waitingpages-e2e
-npm run e2e:staging      # against staging.loading.baby, needs .env.staging.local
+npm run e2e              # builds the Worker and runs it on :3100, with its own local D1
+npm run e2e:staging      # against staging, needs .env.staging.local
 npm run e2e:report       # opens the last HTML report
 ```
 
 Before a run the suite asks the deployment which environment it is
 (`/api/version`), refuses production, and resets its fixtures in that
-deployment's database; afterwards it deletes what it created. ADR-0006 has
-the data rules.
+deployment's D1 database through `wrangler d1 execute`
+(`scripts/e2e-data.mjs`); afterwards it deletes what it created. A local run
+uses the local D1 in `.wrangler/e2e`, apart from the one `npm run dev` uses;
+a deployed one needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
+ADR-0006 has the data rules.
 
 In CI, `.github/workflows/cd.yml` runs the suite on every deployment of
 the `baby-loader-staging` project once Vercel reports it to GitHub as ready:
