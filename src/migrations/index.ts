@@ -4,6 +4,7 @@ import { addSiteTimezone } from './0002-add-site-timezone.ts';
 import { addSiteLanguages } from './0003-add-site-languages.ts';
 import { addSitePageName } from './0004-add-site-page-name.ts';
 import { addMilestoneEmojiAndLabels } from './0005-add-milestone-emoji-and-labels.ts';
+import { addSiteIcon } from './0006-add-site-icon.ts';
 
 /**
  * Every data migration, in the order they run (see applyMigrations). Add one
@@ -16,4 +17,5 @@ export const MIGRATIONS: Migration[] = [
   addSiteLanguages,
   addSitePageName,
   addMilestoneEmojiAndLabels,
+  addSiteIcon,
 ];

@@ -8,10 +8,12 @@ import { platformLang } from '@/lib/i18nNext';
 import { googleFontsHref, PLATFORM_FONT, platformStyle, rootTokenCss } from '@/lib/theme';
 
 /**
- * The Platform's name and how its links look when shared. The favicon,
- * icons and Open Graph images are files beside the routes (`favicon.ico`,
- * `icon.svg`, `apple-icon.png`, `opengraph-image.png`, and the Dashboard's
- * own under `dashboard/`), which Next.js turns into the tags; `metadataBase`
+ * The Platform's name and how its links look when shared. The icons and Open
+ * Graph images are files beside the routes (`icon.svg`, `apple-icon.png`,
+ * `opengraph-image.png`, and the Dashboard's own under `dashboard/`), which
+ * Next.js turns into the tags. `favicon.ico` sits in `public/`, which browsers
+ * ask for on their own: in `app/`, Next.js would link it from every page,
+ * a Public page with its Site's emoji icon included. `metadataBase`
  * makes their URLs absolute, as link previews need. Saved to a home screen,
  * a page is named by `appleWebApp` on iOS and by `manifest.ts` on Android:
  * the name alone, without the tagline the title carries.
