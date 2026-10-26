@@ -10,9 +10,13 @@
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby-staging" }],
   "observability": { "enabled": true },
-  "vars": { "APP_ENV": "staging" },
+  "vars": { "APP_ENV": "staging", "ROOT_DOMAIN": "staging-loading-baby.fyi" },
   "d1_databases": [{ "binding": "DB", "database_name": "waitingpages-staging", "migrations_dir": "migrations" }],
-  // Staging's routes and ROOT_DOMAIN join once its domain is registered (#68).
+  "routes": [
+    { "pattern": "staging-loading-baby.fyi/*", "zone_name": "staging-loading-baby.fyi" },
+    { "pattern": "*.staging-loading-baby.fyi/*", "zone_name": "staging-loading-baby.fyi" }
+  ],
+  // Routes would switch workers.dev off by default; Previews need it on.
   "workers_dev": true,
   "preview_urls": true,
   "previews": {
