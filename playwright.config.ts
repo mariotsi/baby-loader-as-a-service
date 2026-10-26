@@ -1,6 +1,13 @@
 import { defineConfig, devices } from '@playwright/test';
 import webpush from 'web-push';
-import { BASE_URL, LOCAL_E2E_DB_NAME, LOCAL_MONGODB_URI, LOCAL_PORT, STARTS_LOCAL_SERVER } from './e2e/support/env.ts';
+import {
+  BASE_URL,
+  LOCAL_E2E_DB_NAME,
+  LOCAL_MONGODB_URI,
+  LOCAL_PORT,
+  LOCAL_SESSION_SECRET,
+  STARTS_LOCAL_SERVER,
+} from './e2e/support/env.ts';
 
 const CI = !!process.env.CI;
 
@@ -46,7 +53,7 @@ export default defineConfig({
           MONGODB_URI: LOCAL_MONGODB_URI,
           MONGODB_DB_NAME: LOCAL_E2E_DB_NAME,
           ROOT_DOMAIN: `localhost:${LOCAL_PORT}`,
-          SESSION_SECRET: 'local-e2e-session-secret',
+          SESSION_SECRET: LOCAL_SESSION_SECRET,
           NEXT_PUBLIC_VAPID_PUBLIC_KEY: vapid.publicKey,
           VAPID_PRIVATE_KEY: vapid.privateKey,
           VAPID_EMAIL: 'mailto:e2e@waitingpages.test',

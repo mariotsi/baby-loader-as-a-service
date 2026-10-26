@@ -30,7 +30,9 @@ export const config = {
     /*
      * Skip Next internals, API routes, and static files — none of these are
      * ever a Site's Public page. The Platform's icons and manifest are among
-     * them, so a Site's subdomain uses them too until Sites have their own.
+     * them, so a Site's subdomain serves them as they are, for the loading
+     * baby. A Site's own icons, manifest and share image use other paths
+     * (SITE_PATHS in siteMeta.ts), which reach its /sites/<slug> routes.
      */
     '/((?!api|_next/static|_next/image|favicon.ico|icon.svg|apple-icon.png|manifest.webmanifest|sw.js|icon-.*\\.png).*)',
   ],

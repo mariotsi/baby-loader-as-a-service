@@ -87,6 +87,9 @@ const emoji = requiredString((value) => ONE_EMOJI.test(value), 'invalidFormat');
 /** What a new Milestone starts with, until the Owner picks its own emoji. */
 export const DEFAULT_MILESTONE_EMOJI = '✨';
 
+/** What the Site icon starts with when the Owner swaps the loading baby for an emoji. */
+export const DEFAULT_SITE_ICON_EMOJI = '🐣';
+
 /** A Milestone's Place: its street address, the same in every Language, and the point it stands for (see place.ts). */
 const placeSchema = z.strictObject({
   address: z.string().check(z.trim(), z.minLength(1), z.maxLength(200)),
@@ -130,6 +133,8 @@ const siteSettingsSchema = z
     privacy: z.strictObject({ showName: z.boolean(), showSex: z.boolean() }),
     /** The Owner's line in the Public page's header, one per language that has one, kept for a language the Site no longer speaks. */
     pageName: textPerLanguage(60),
+    /** The Site icon: one emoji drawn on the Palette's background, or null for the Platform's loading baby. */
+    icon: z.nullable(emoji),
   })
   .check(
     z.superRefine(
@@ -206,6 +211,7 @@ export const defaultSiteSettings: SiteSettingsInput = {
   theme: { palette: DEFAULT_PALETTE, font: DEFAULT_FONT },
   privacy: { showName: true, showSex: true },
   pageName: {},
+  icon: null,
 };
 
 /**

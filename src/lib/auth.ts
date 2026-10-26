@@ -1,12 +1,12 @@
-import { createHmac, timingSafeEqual } from 'node:crypto';
 import { ObjectId } from 'mongodb';
 import type { NextRequest } from 'next/server';
 import { addressEnv, sessionSecret } from './env.ts';
 import { getDb } from './mongodb.ts';
-import { hashPassword, verifyPassword } from './password.ts';
+import { hashPassword, PASSWORD_GENERATIONS, type PasswordGeneration, verifyPassword } from './password.ts';
 import { rateLimit } from './rateLimit.ts';
+import { readSessionToken, type Session, signSessionToken } from './sessionToken.ts';
 
-export { hashPassword, verifyPassword };
+export { hashPassword };
 
 export const SESSION_COOKIE = 'session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
@@ -58,38 +58,54 @@ export async function createUser(email: string, password: string): Promise<User>
   return user;
 }
 
+export async function updatePasswordHash(userId: ObjectId, passwordHash: string): Promise<void> {
+  const col = await usersCollection();
+  await col.updateOne({ _id: userId }, { $set: { passwordHash } });
+}
+
+export type LogInResult =
+  | { ok: true; user: User; passwordChangePending: boolean }
+  | { ok: false; code: 'wrongCredentials' | 'passwordResetRequired' };
+
+/**
+ * Checks an email and password, and does what the stored hash's generation
+ * asks: a `rehash` hash is replaced with a current one, a `change` hash
+ * signs in with a password change pending, and the right password for a
+ * `retired` hash is refused with passwordResetRequired.
+ */
+export async function logIn(
+  email: string,
+  password: string,
+  generations: readonly PasswordGeneration[] = PASSWORD_GENERATIONS
+): Promise<LogInResult> {
+  const user = await getUserByEmail(email);
+  const check = user ? await verifyPassword(password, user.passwordHash, generations) : 'invalid';
+  if (!user || check === 'invalid') {
+    return { ok: false, code: 'wrongCredentials' };
+  }
+  if (check === 'reset') {
+    return { ok: false, code: 'passwordResetRequired' };
+  }
+  if (check === 'rehash') {
+    // The old hash still verifies, so a failed save only puts the upgrade off to the next login.
+    try {
+      await updatePasswordHash(user._id, await hashPassword(password));
+    } catch (err) {
+      console.error('Failed to rehash a password', err);
+    }
+  }
+  return { ok: true, user, passwordChangePending: check === 'change' };
+}
+
 // --- Sessions ----------------------------------------------------------------
 
-function sign(value: string): string {
-  return createHmac('sha256', sessionSecret()).update(value).digest('base64url');
+export function issueSessionToken(userId: string, { passwordChangePending = false } = {}): string {
+  return signSessionToken({ userId, passwordChangePending }, Date.now() + SESSION_TTL_MS, sessionSecret());
 }
 
-export function issueSessionToken(userId: string): string {
-  const expiresAt = String(Date.now() + SESSION_TTL_MS);
-  const payload = `${userId}.${expiresAt}`;
-  return `${payload}.${sign(payload)}`;
-}
-
-/** Returns the authenticated user's id, or null if the token is missing/invalid/expired. */
-export function verifySessionToken(token: string | undefined): string | null {
-  if (!token) {
-    return null;
-  }
-  const [userId, expiresAt, signature] = token.split('.');
-  if (!userId || !expiresAt || !signature) {
-    return null;
-  }
-  const payload = `${userId}.${expiresAt}`;
-  const expected = sign(payload);
-  const a = Buffer.from(signature, 'utf8');
-  const b = Buffer.from(expected, 'utf8');
-  if (a.length !== b.length || !timingSafeEqual(a, b)) {
-    return null;
-  }
-  if (Number(expiresAt) <= Date.now()) {
-    return null;
-  }
-  return userId;
+/** Returns the session a token carries, or null if the token is missing/invalid/expired. */
+export function verifySessionToken(token: string | undefined): Session | null {
+  return readSessionToken(token, sessionSecret());
 }
 
 export function sessionCookieOptions(maxAge = SESSION_TTL_MS / 1000) {

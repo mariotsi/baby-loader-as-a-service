@@ -190,6 +190,15 @@ test("a Milestone's emoji is exactly one emoji, joined sequences and skin tones 
   }
 });
 
+test('the Site icon is the loading baby, or exactly one emoji', () => {
+  assert.equal(parseSiteSettings(settings({ icon: null }), NOW).ok, true);
+  assert.equal(parseSiteSettings(settings({ icon: '🐣' }), NOW).ok, true);
+  assert.deepEqual(errorsOf(settings({ icon: '' })), [{ path: 'icon', code: 'required' }]);
+  assert.deepEqual(errorsOf(settings({ icon: '🐣🐣' })), [{ path: 'icon', code: 'invalidFormat' }]);
+  const { icon: _, ...withoutIcon } = settings();
+  assert.deepEqual(errorsOf(withoutIcon), [{ path: 'icon', code: 'required' }]);
+});
+
 test("a Milestone's label is needed in every Language of the Site, and kept in one it no longer speaks", () => {
   const scan = (label: Record<string, string>) => ({ emoji: '✨', label, date: '2026-05-01' });
   assert.deepEqual(

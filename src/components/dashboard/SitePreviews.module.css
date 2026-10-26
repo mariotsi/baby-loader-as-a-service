@@ -1,0 +1,278 @@
+.previews {
+  display: grid;
+  gap: var(--space-5);
+}
+
+.figure {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+}
+
+.caption {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.note {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+/* A Chrome window's top: the tab strip with the Site's tab in front, then the toolbar with the address. */
+.browser {
+  overflow: hidden;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: var(--text-xs);
+}
+
+.tabStrip {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-2) var(--space-3) 0;
+  background: color-mix(in srgb, var(--color-text) 10%, var(--color-surface));
+}
+
+/* The front tab joins the toolbar below it, its bottom corners curving out into the strip as Chrome's do. */
+.tab {
+  --flare: 0.5rem;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 1 15rem;
+  min-width: 0;
+  padding: var(--space-2) var(--space-2) var(--space-2) var(--space-3);
+  border-radius: var(--flare) var(--flare) 0 0;
+  background: var(--color-surface);
+}
+
+.tab::before,
+.tab::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  width: var(--flare);
+  height: var(--flare);
+}
+
+.tab::before {
+  left: calc(-1 * var(--flare));
+  background: radial-gradient(circle at 0 0, transparent var(--flare), var(--color-surface) calc(var(--flare) + 0.5px));
+}
+
+.tab::after {
+  right: calc(-1 * var(--flare));
+  background: radial-gradient(
+    circle at 100% 0,
+    transparent var(--flare),
+    var(--color-surface) calc(var(--flare) + 0.5px)
+  );
+}
+
+.tabClose {
+  flex-shrink: 0;
+  width: 0.875rem;
+  height: 0.875rem;
+  margin-left: auto;
+  color: var(--color-text-muted);
+}
+
+.newTab {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+  margin-left: var(--space-1);
+  color: var(--color-text-muted);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  color: var(--color-text-muted);
+}
+
+.back,
+.forward {
+  flex-shrink: 0;
+  width: 1rem;
+  height: 1rem;
+}
+
+.back {
+  transform: scaleX(-1);
+}
+
+/* Chrome greys out the forward arrow until there is a page to go forward to. */
+.forward {
+  opacity: 0.4;
+}
+
+.omnibox {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-pill);
+  background: color-mix(in srgb, var(--color-text) 7%, var(--color-surface));
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* An emoji icon is drawn on the Palette's background, as the generated favicon is. */
+.faviconFrame {
+  display: grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 1rem;
+  height: 1rem;
+  overflow: hidden;
+  border-radius: 0.1875rem;
+  background: var(--color-bg);
+}
+
+.favicon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.favicon[data-emoji] {
+  width: 80%;
+  height: 80%;
+}
+
+.tabTitle {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* A slice of a home screen: the Site's app among others. */
+.homeScreen {
+  display: flex;
+  gap: var(--space-5);
+  padding: var(--space-5);
+  border-radius: var(--radius-lg);
+  background:
+    radial-gradient(circle at 10% 20%, var(--color-joy-1) 0 30%, transparent 31%),
+    radial-gradient(circle at 90% 80%, var(--color-joy-3) 0 35%, transparent 36%), var(--color-joy-2);
+}
+
+.app {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  width: 4rem;
+}
+
+/* iOS rounds every home-screen icon to the same squircle. */
+.appIconFrame {
+  display: grid;
+  place-items: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  overflow: hidden;
+  border-radius: 0.875rem;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-sm);
+}
+
+.appIcon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* The emoji fills 70% of the square, as in the generated icon. */
+.appIcon[data-emoji] {
+  width: 70%;
+  height: 70%;
+}
+
+.appName {
+  max-width: 100%;
+  overflow: hidden;
+  font-size: var(--text-2xs);
+  color: var(--color-text);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.otherApp {
+  width: 3.75rem;
+  height: 3.75rem;
+  border-radius: 0.875rem;
+  background: var(--color-surface);
+  opacity: 0.6;
+}
+
+/* A sent message in a chat, carrying the link preview above the link. */
+.chat {
+  display: grid;
+  justify-items: end;
+  padding: var(--space-4);
+  border-radius: var(--radius-lg);
+  background: var(--color-soft);
+}
+
+.bubble {
+  display: grid;
+  gap: var(--space-2);
+  width: min(100%, 20rem);
+  padding: var(--space-1) var(--space-1) var(--space-2);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.linkPreview {
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: var(--color-bg);
+}
+
+.shareImage {
+  container-type: inline-size;
+  aspect-ratio: 1200 / 630;
+}
+
+.shareIcon {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* The emoji is set at 190 of the tile's 280 pixels, as in the share image. */
+.shareIcon[data-emoji] {
+  width: 68%;
+  height: 68%;
+}
+
+.linkText {
+  display: grid;
+  gap: var(--space-1);
+  padding: var(--space-2) var(--space-3);
+  font-size: var(--text-xs);
+  color: var(--color-text-muted);
+}
+
+.linkTitle {
+  font-weight: var(--weight-bold);
+  color: var(--color-text);
+}
+
+.url {
+  padding: 0 var(--space-2);
+  font-size: var(--text-sm);
+  color: var(--color-accent-ink);
+  overflow-wrap: anywhere;
+}

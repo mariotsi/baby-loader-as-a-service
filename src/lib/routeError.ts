@@ -12,6 +12,8 @@ export type RouteErrorCode =
   | 'passwordRules'
   | 'emailTaken'
   | 'wrongCredentials'
+  | 'passwordResetRequired'
+  | 'passwordChangePending'
   | 'notAuthenticated'
   | 'notFound'
   | 'pushNotConfigured'
