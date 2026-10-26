@@ -16,7 +16,7 @@
     {
       "name": "worker",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["wrangler", "dev", "--port", "8787"],
+      "runtimeArgs": ["wrangler", "dev", "--port", "8787", "--infer-origin-from-routes=false"],
       "port": 8787
     }
   ]
