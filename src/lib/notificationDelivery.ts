@@ -110,7 +110,7 @@ export async function deliverNotification(
 ): Promise<DeliveryResult> {
   const { site } = owned;
   const payloadFor = payloads(site, notification);
-  const subscriptions = await listSubscriptionsBySite(site._id);
+  const subscriptions = await listSubscriptionsBySite(site.id);
 
   let sent = 0;
   const gone = new Set<string>();

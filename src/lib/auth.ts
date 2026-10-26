@@ -1,8 +1,9 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
-import { ObjectId } from 'mongodb';
+import { eq } from 'drizzle-orm';
 import type { NextRequest } from 'next/server';
+import { getDb, isId, isUniqueViolation, newId } from '../db/index.ts';
+import { users } from '../db/schema.ts';
 import { addressEnv, sessionSecret } from './env.ts';
-import { getDb } from './mongodb.ts';
 import { hashPassword, verifyPassword } from './password.ts';
 import { rateLimit } from './rateLimit.ts';
 
@@ -11,50 +12,42 @@ export { hashPassword, verifyPassword };
 export const SESSION_COOKIE = 'session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-export interface User {
-  _id: ObjectId;
-  email: string;
-  passwordHash: string;
-  createdAt: Date;
-}
-
-async function usersCollection() {
-  const db = await getDb();
-  return db.collection<User>('users');
-}
+export type User = typeof users.$inferSelect;
 
 // --- Accounts ----------------------------------------------------------------
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const col = await usersCollection();
-  return col.findOne({ email: email.trim().toLowerCase() });
+  const user = await getDb().query.users.findFirst({ where: eq(users.email, email.trim().toLowerCase()) });
+  return user ?? null;
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-  if (!ObjectId.isValid(id)) {
+  if (!isId(id)) {
     return null;
   }
-  const col = await usersCollection();
-  return col.findOne({ _id: new ObjectId(id) });
+  const user = await getDb().query.users.findFirst({ where: eq(users.id, id) });
+  return user ?? null;
 }
 
 /** Thrown by createUser when the email already has an account. */
 export class EmailTakenError extends Error {}
 
+/** The unique email column decides whether an email is taken. */
 export async function createUser(email: string, password: string): Promise<User> {
-  const normalizedEmail = email.trim().toLowerCase();
-  const col = await usersCollection();
-  const existing = await col.findOne({ email: normalizedEmail });
-  if (existing) {
-    throw new EmailTakenError();
-  }
   const user: User = {
-    _id: new ObjectId(),
-    email: normalizedEmail,
+    id: newId(),
+    email: email.trim().toLowerCase(),
     passwordHash: await hashPassword(password),
-    createdAt: new Date(),
+    createdAt: new Date().toISOString(),
   };
-  await col.insertOne(user);
+  try {
+    await getDb().insert(users).values(user);
+  } catch (err) {
+    if (isUniqueViolation(err, 'users.email')) {
+      throw new EmailTakenError(undefined, { cause: err });
+    }
+    throw err;
+  }
   return user;
 }
 

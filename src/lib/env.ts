@@ -1,7 +1,6 @@
 import * as z from 'zod/mini';
 import { type AddressConfig, addressConfig } from './address.ts';
 import { type AppEnv, appEnv } from './appEnv.ts';
-import { databaseName } from './dbName.ts';
 
 /**
  * Every environment variable the server reads, and the only place that reads
@@ -20,10 +19,6 @@ const VAPID_PRIVATE_KEY = /^[A-Za-z0-9_-]{43}$/;
 const HOST = /^[a-z0-9.-]+(:\d+)?$/i;
 
 const envSchema = z.object({
-  MONGODB_URI: z
-    .string()
-    .check(z.regex(/^mongodb(\+srv)?:\/\/\S+$/, 'must be a mongodb:// or mongodb+srv:// connection string')),
-  MONGODB_DB_NAME: z.optional(z.string()),
   SESSION_SECRET: z.string(),
   VAPID_EMAIL: z.optional(z.string().check(z.regex(/^(mailto:|https:\/\/)\S+$/, 'must be a mailto: or https: URL'))),
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.optional(
@@ -47,9 +42,8 @@ type RawEnv = Record<string, string | undefined>;
 const VAPID_VARS = ['VAPID_EMAIL', 'NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'] as const;
 
 /**
- * The rules across variables: the VAPID keypair comes whole or not at all,
- * and databaseName must resolve. They run even when a variable already
- * failed, so one start names every problem.
+ * The rule across variables: the VAPID keypair comes whole or not at all. It
+ * runs even when a variable already failed, so one start names every problem.
  */
 const fullSchema = envSchema.check(
   z.superRefine(
@@ -59,12 +53,6 @@ const fullSchema = envSchema.check(
         for (const name of missing) {
           ctx.addIssue({ code: 'custom', path: [name], message: 'is not set, while the rest of the VAPID keypair is' });
         }
-      }
-      try {
-        databaseName(env);
-      } catch (err) {
-        // Its message names the variable.
-        ctx.addIssue({ code: 'custom', path: [], message: (err as Error).message });
       }
     },
     { when: () => true }
@@ -107,12 +95,6 @@ function lazy<K extends keyof Env, T>(mask: Record<K, true>, read: (env: Pick<En
     return value.current;
   };
 }
-
-/** The MongoDB connection string and this deployment's database (see databaseName). */
-export const mongoEnv = lazy(
-  { MONGODB_URI: true, MONGODB_DB_NAME: true, VERCEL_ENV: true, VERCEL_GIT_COMMIT_REF: true },
-  (env) => ({ uri: env.MONGODB_URI, dbName: databaseName(env) })
-);
 
 /** The key that signs session cookies (ADR-0003). */
 export const sessionSecret = lazy({ SESSION_SECRET: true }, (env) => env.SESSION_SECRET);

@@ -3,8 +3,6 @@ import { test } from 'node:test';
 import { EnvError, validateEnv } from './env.ts';
 
 const VALID = {
-  MONGODB_URI: 'mongodb://localhost:27017',
-  MONGODB_DB_NAME: 'waitingpages-dev',
   SESSION_SECRET: 'a-secret',
   VAPID_EMAIL: 'mailto:you@example.com',
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: `B${'A'.repeat(86)}`,
@@ -28,9 +26,9 @@ test('validateEnv accepts a complete environment', () => {
 });
 
 test('validateEnv names every missing variable, an empty one included', () => {
-  assert.deepEqual(problems({ ...VALID, SESSION_SECRET: undefined, MONGODB_URI: '' }), [
-    '- MONGODB_URI is not set',
+  assert.deepEqual(problems({ ...VALID, SESSION_SECRET: undefined, VAPID_EMAIL: '' }), [
     '- SESSION_SECRET is not set',
+    '- VAPID_EMAIL is not set, while the rest of the VAPID keypair is',
   ]);
 });
 
@@ -38,13 +36,11 @@ test('validateEnv names malformed variables', () => {
   assert.deepEqual(
     problems({
       ...VALID,
-      MONGODB_URI: 'localhost:27017',
       ROOT_DOMAIN: 'https://loading.baby',
       VAPID_EMAIL: 'you@example.com',
       VERCEL_ENV: 'prod',
     }),
     [
-      '- MONGODB_URI must be a mongodb:// or mongodb+srv:// connection string',
       '- VAPID_EMAIL must be a mailto: or https: URL',
       '- ROOT_DOMAIN must be a host, with a port only for localhost',
       '- VERCEL_ENV must be production, preview or development',
@@ -58,12 +54,6 @@ test('validateEnv takes no VAPID keypair, but not half of one', () => {
   assert.deepEqual(problems({ ...withoutVapid, VAPID_EMAIL }), [
     '- NEXT_PUBLIC_VAPID_PUBLIC_KEY is not set, while the rest of the VAPID keypair is',
     '- VAPID_PRIVATE_KEY is not set, while the rest of the VAPID keypair is',
-  ]);
-});
-
-test('validateEnv requires MONGODB_DB_NAME on production', () => {
-  assert.deepEqual(problems({ ...VALID, MONGODB_DB_NAME: undefined, VERCEL_ENV: 'production' }), [
-    '- MONGODB_DB_NAME must be set on production deployments',
   ]);
 });
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { ObjectId } from 'mongodb';
+import { insertTestUser, startTestDb } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import type { Lang } from './i18n.ts';
 import {
@@ -14,14 +14,13 @@ import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite }
 import { createSite } from './site.ts';
 import { defaultSiteSettings, parseNewSite, type SiteSettingsInput } from './siteSettings.ts';
 import { countSubscriptionsBySite, upsertSubscription } from './subscription.ts';
-import { startTestDb } from './testDb.ts';
 
 let stopDb: () => Promise<void>;
 let token: string;
 
 before(async () => {
   stopDb = await startTestDb();
-  token = issueSessionToken(new ObjectId().toHexString());
+  token = issueSessionToken(await insertTestUser());
 });
 
 after(() => stopDb());
@@ -37,7 +36,7 @@ async function ownedSite(slug: string, settings: Partial<SiteSettingsInput> = {}
 
 async function subscribe(owned: OwnedSite, endpoint: string, lang: Lang | null = null) {
   await upsertSubscription({
-    siteId: owned.site._id,
+    siteId: owned.site.id,
     endpoint,
     keys: { p256dh: 'p256dh', auth: 'auth' },
     lang,
@@ -157,8 +156,8 @@ test('a gone endpoint is forgotten on every Site, a failed one is kept', async (
   const result = await deliverNotification(site, valid({ en: { body: 'Hi' } }), push.service);
 
   assert.deepEqual(result, { sent: 1, removed: 1, total: 3 });
-  assert.equal(await countSubscriptionsBySite(site.site._id), 2);
-  assert.equal(await countSubscriptionsBySite(other.site._id), 0);
+  assert.equal(await countSubscriptionsBySite(site.site.id), 2);
+  assert.equal(await countSubscriptionsBySite(other.site.id), 0);
 });
 
 test('sends at most 20 at a time', async () => {

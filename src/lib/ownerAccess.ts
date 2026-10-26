@@ -1,4 +1,4 @@
-import { ObjectId } from 'mongodb';
+import { isId } from '../db/index.ts';
 import { verifySessionToken } from './auth.ts';
 import { getSiteBySlug, type Site } from './site.ts';
 
@@ -13,7 +13,7 @@ import { getSiteBySlug, type Site } from './site.ts';
 declare const authenticated: unique symbol;
 declare const owned: unique symbol;
 
-export type AuthenticatedUser = { readonly id: ObjectId; readonly [authenticated]: true };
+export type AuthenticatedUser = { readonly id: string; readonly [authenticated]: true };
 export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Site; readonly [owned]: true };
 
 /** A missing Site and another Owner's Site are the same denial: neither is yours. */
@@ -21,10 +21,10 @@ export type AccessDenial = 'unauthenticated' | 'notFound';
 
 export function authenticate(sessionToken: string | undefined): AuthenticatedUser | null {
   const userId = verifySessionToken(sessionToken);
-  if (!userId || !ObjectId.isValid(userId)) {
+  if (!userId || !isId(userId)) {
     return null;
   }
-  return { id: new ObjectId(userId) } as AuthenticatedUser;
+  return { id: userId } as AuthenticatedUser;
 }
 
 export async function accessOwnedSite(
@@ -36,7 +36,7 @@ export async function accessOwnedSite(
     return 'unauthenticated';
   }
   const site = await getSiteBySlug(slug);
-  if (!site?.ownerId.equals(owner.id)) {
+  if (site?.ownerId !== owner.id) {
     return 'notFound';
   }
   return { owner, site } as OwnedSite;

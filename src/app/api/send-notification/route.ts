@@ -11,7 +11,7 @@ export async function GET(req: NextRequest) {
   if ('error' in access) {
     return access.error;
   }
-  const count = await countSubscriptionsBySite(access.owned.site._id);
+  const count = await countSubscriptionsBySite(access.owned.site.id);
   return NextResponse.json({ count });
 }
 

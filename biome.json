@@ -7,7 +7,7 @@
   },
   "files": {
     "ignoreUnknown": true,
-    "includes": ["**", "!brand"]
+    "includes": ["**", "!brand", "!cloudflare-env.d.ts", "!migrations/meta"]
   },
   "formatter": {
     "enabled": true,

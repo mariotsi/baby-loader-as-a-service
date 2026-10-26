@@ -1,103 +1,99 @@
-import { MongoServerError, ObjectId } from 'mongodb';
-import { getDb } from './mongodb.ts';
+import { and, desc, eq } from 'drizzle-orm';
+import { getDb, isId, isUniqueViolation, newId } from '../db/index.ts';
+import { sites } from '../db/schema.ts';
 import type { AuthenticatedUser, OwnedSite } from './ownerAccess.ts';
 import type { SiteSettings, SiteSettingsError, ValidNewSite, ValidSiteSettings } from './siteSettings.ts';
 
 export type { Milestone } from './siteSettings.ts';
 
-/** One Site's document: its Site settings plus what the Owner never edits directly. */
+/** One Site: its Site settings plus what the Owner never edits directly. */
 export type Site = SiteSettings & {
-  _id: ObjectId;
+  id: string;
   slug: string;
-  ownerId: ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
+  ownerId: string;
+  /** ISO 8601 UTC. */
+  createdAt: string;
+  /** ISO 8601 UTC. */
+  updatedAt: string;
 
   /** Populated once custom-domain support (plan phase 7) is built. */
   customDomain: string | null;
   customDomainVerified: boolean;
 };
 
-/** Serializable form, safe to send to the client (ids/dates as strings). */
-export type SiteDTO = Omit<Site, '_id' | 'ownerId' | 'createdAt' | 'updatedAt'> & {
-  id: string;
-  ownerId: string;
-  createdAt: string;
-  updatedAt: string;
-};
+/** Serializable form, safe to send to the client. */
+export type SiteDTO = Site;
 
 export function toSiteDTO(site: Site): SiteDTO {
-  const { _id, ownerId, createdAt, updatedAt, ...rest } = site;
-  return {
-    ...rest,
-    id: _id.toHexString(),
-    ownerId: ownerId.toHexString(),
-    createdAt: createdAt.toISOString(),
-    updatedAt: updatedAt.toISOString(),
-  };
+  return site;
 }
 
-async function collection() {
-  const db = await getDb();
-  return db.collection<Site>('sites');
+type SiteRow = typeof sites.$inferSelect;
+
+function fromRow({ settings, ...row }: SiteRow): Site {
+  return { ...settings, ...row };
 }
 
 export async function getSiteBySlug(slug: string): Promise<Site | null> {
-  const col = await collection();
-  return col.findOne({ slug: slug.toLowerCase() });
+  const row = await getDb().query.sites.findFirst({ where: eq(sites.slug, slug.toLowerCase()) });
+  return row ? fromRow(row) : null;
 }
 
 export async function getSiteByCustomDomain(domain: string): Promise<Site | null> {
-  const col = await collection();
-  return col.findOne({ customDomain: domain.toLowerCase(), customDomainVerified: true });
+  const row = await getDb().query.sites.findFirst({
+    where: and(eq(sites.customDomain, domain.toLowerCase()), eq(sites.customDomainVerified, true)),
+  });
+  return row ? fromRow(row) : null;
 }
 
 export async function getSiteById(id: string): Promise<Site | null> {
-  if (!ObjectId.isValid(id)) {
+  if (!isId(id)) {
     return null;
   }
-  const col = await collection();
-  return col.findOne({ _id: new ObjectId(id) });
+  const row = await getDb().query.sites.findFirst({ where: eq(sites.id, id) });
+  return row ? fromRow(row) : null;
 }
 
 export async function listSitesByOwner(owner: AuthenticatedUser): Promise<Site[]> {
-  const col = await collection();
-  return col.find({ ownerId: owner.id }).sort({ createdAt: -1 }).toArray();
+  const rows = await getDb().query.sites.findMany({
+    where: eq(sites.ownerId, owner.id),
+    orderBy: desc(sites.createdAt),
+  });
+  return rows.map(fromRow);
 }
 
 export type CreateSiteResult = { ok: true; site: Site } | { ok: false; errors: SiteSettingsError[] };
 
-/** The unique index on `slug` (see indexes.ts) decides whether a Slug is taken. */
+/** The unique `slug` column decides whether a Slug is taken. */
 export async function createSite(owner: AuthenticatedUser, newSite: ValidNewSite): Promise<CreateSiteResult> {
-  const now = new Date();
-  const site: Site = {
-    ...newSite.settings,
-    _id: new ObjectId(),
+  const now = new Date().toISOString();
+  const row: SiteRow = {
+    id: newId(),
     slug: newSite.slug,
     ownerId: owner.id,
-    createdAt: now,
-    updatedAt: now,
+    settings: newSite.settings,
     customDomain: null,
     customDomainVerified: false,
+    createdAt: now,
+    updatedAt: now,
   };
-  const col = await collection();
   try {
-    await col.insertOne(site);
+    await getDb().insert(sites).values(row);
   } catch (err) {
-    if (err instanceof MongoServerError && err.code === 11000 && err.keyPattern?.slug) {
+    if (isUniqueViolation(err, 'sites.slug')) {
       return { ok: false, errors: [{ path: 'slug', code: 'slugTaken' }] };
     }
     throw err;
   }
-  return { ok: true, site };
+  return { ok: true, site: fromRow(row) };
 }
 
 /** Replaces every Site setting at once. Null when the Site no longer exists. */
 export async function saveSiteSettings(owned: OwnedSite, settings: ValidSiteSettings): Promise<Site | null> {
-  const col = await collection();
-  return col.findOneAndUpdate(
-    { _id: owned.site._id, ownerId: owned.owner.id },
-    { $set: { ...settings, updatedAt: new Date() } },
-    { returnDocument: 'after' }
-  );
+  const [row] = await getDb()
+    .update(sites)
+    .set({ settings, updatedAt: new Date().toISOString() })
+    .where(and(eq(sites.id, owned.site.id), eq(sites.ownerId, owned.owner.id)))
+    .returning();
+  return row ? fromRow(row) : null;
 }

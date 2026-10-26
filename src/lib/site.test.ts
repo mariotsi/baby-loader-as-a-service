@@ -1,11 +1,10 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { ObjectId } from 'mongodb';
+import { insertTestUser, startTestDb } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
 import { createSite, getSiteBySlug, listSitesByOwner, saveSiteSettings } from './site.ts';
 import { defaultSiteSettings, parseNewSite, parseSiteSettings, type SiteSettingsInput } from './siteSettings.ts';
-import { startTestDb } from './testDb.ts';
 
 let stopDb: () => Promise<void>;
 let token: string;
@@ -13,7 +12,7 @@ let owner: AuthenticatedUser;
 
 before(async () => {
   stopDb = await startTestDb();
-  token = issueSessionToken(new ObjectId().toHexString());
+  token = issueSessionToken(await insertTestUser());
   owner = authenticate(token) as AuthenticatedUser;
 });
 
@@ -37,7 +36,7 @@ test('createSite stores the Site settings under the Owner', async () => {
   const stored = await getSiteBySlug('noah');
   assert.equal(stored?.babyName, 'Noah');
   assert.deepEqual(stored?.birth, { born: false, details: null });
-  assert.ok(stored?.ownerId.equals(owner.id));
+  assert.equal(stored?.ownerId, owner.id);
   assert.deepEqual(
     (await listSitesByOwner(owner)).map((site) => site.slug),
     ['noah']

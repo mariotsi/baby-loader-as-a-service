@@ -1,0 +1,6 @@
+// The bindings unit tests run against (testDb.ts): one in-memory D1, nothing else.
+{
+  "name": "loading-baby-test",
+  "compatibility_date": "2026-10-20",
+  "d1_databases": [{ "binding": "DB", "database_name": "waitingpages-test" }]
+}
