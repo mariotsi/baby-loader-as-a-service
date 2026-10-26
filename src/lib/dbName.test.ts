@@ -3,9 +3,9 @@ import { test } from 'node:test';
 import { isPreviewDbName, PRODUCTION_DB_NAME, previewDbName, STAGING_DB_NAME, testDataPolicy } from './dbName.ts';
 
 test('previewDbName lowercases the branch and replaces separators', () => {
-  assert.equal(previewDbName('Feat/Staging_Env'), 'waitingpages-feat-staging-env');
-  assert.equal(previewDbName('fix--double..dots'), 'waitingpages-fix-double-dots');
-  assert.equal(previewDbName('/leading-and-trailing/'), 'waitingpages-leading-and-trailing');
+  assert.equal(previewDbName('Feat/Staging_Env'), 'loading-baby-feat-staging-env');
+  assert.equal(previewDbName('fix--double..dots'), 'loading-baby-fix-double-dots');
+  assert.equal(previewDbName('/leading-and-trailing/'), 'loading-baby-leading-and-trailing');
 });
 
 test('previewDbName keeps long names within 38 characters and apart', () => {
@@ -13,7 +13,7 @@ test('previewDbName keeps long names within 38 characters and apart', () => {
   const b = previewDbName(`feature/${'x'.repeat(80)}-b`);
   assert.ok(a.length <= 38 && b.length <= 38);
   assert.notEqual(a, b);
-  assert.match(a, /^waitingpages-feature-x+-[0-9a-f]{8}$/);
+  assert.match(a, /^loading-baby-feature-x+-[0-9a-f]{8}$/);
 });
 
 test('previewDbName rejects a branch with no usable characters', () => {
@@ -45,6 +45,6 @@ test('testDataPolicy allows everything on a local database', () => {
 test('previewDbName fits a branch name that just overflows the limit', () => {
   const name = previewDbName('real-address-in-slug-field');
   assert.ok(name.length <= 38, name);
-  assert.match(name, /^waitingpages-real-address-.*-[0-9a-f]{8}$/);
+  assert.match(name, /^loading-baby-real-address-.*-[0-9a-f]{8}$/);
   assert.equal(isPreviewDbName(name), true);
 });

@@ -2,5 +2,5 @@
 {
   "name": "loading-baby-test",
   "compatibility_date": "2026-10-20",
-  "d1_databases": [{ "binding": "DB", "database_name": "waitingpages-test" }]
+  "d1_databases": [{ "binding": "DB", "database_name": "loading-baby-test" }]
 }

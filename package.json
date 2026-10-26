@@ -21,7 +21,7 @@
     "e2e:staging": "node --env-file=.env.staging.local node_modules/.bin/playwright test",
     "e2e:report": "playwright show-report",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "wrangler d1 migrations apply waitingpages-staging --local",
+    "db:migrate": "wrangler d1 migrations apply loading-baby-staging --local",
     "seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/e2e-data.mjs demo",
     "format": "biome check --write",
     "prepare": "test ! -e .git || lefthook install"
