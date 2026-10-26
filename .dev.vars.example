@@ -5,3 +5,5 @@ NEXT_PUBLIC_VAPID_PUBLIC_KEY=""
 VAPID_PRIVATE_KEY=""
 VAPID_EMAIL="mailto:you@example.com"
 SESSION_SECRET=""
+# Sites at <slug>.localhost:8787; the config's staging domain would not reach this machine.
+ROOT_DOMAIN="localhost:8787"

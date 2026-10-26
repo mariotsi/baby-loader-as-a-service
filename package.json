@@ -7,7 +7,7 @@
     "build": "next build",
     "start": "next start",
     "cf:build": "opennextjs-cloudflare build",
-    "cf:preview": "opennextjs-cloudflare build && opennextjs-cloudflare preview",
+    "cf:preview": "opennextjs-cloudflare build && wrangler dev --infer-origin-from-routes=false",
     "cf:typegen": "wrangler types --env-interface CloudflareEnv --include-runtime=false cloudflare-env.d.ts",
     "storybook": "storybook dev -p 6006 --no-open",
     "build-storybook": "storybook build",
