@@ -112,7 +112,7 @@ test('the copy gives every row a new id and keeps every relation', async () => {
   const [user] = query('SELECT id, email, password_hash FROM users');
   assert.match(user.id, /^[0-9a-f-]{36}$/);
   assert.equal(user.email, 'ada@example.com');
-  assert.equal((await verifyPassword('Copied-horse-1', user.password_hash)).status, 'valid');
+  assert.equal(await verifyPassword('Copied-horse-1', user.password_hash), 'valid');
 
   const [site] = query('SELECT id, owner_id, settings FROM sites');
   assert.equal(site.owner_id, user.id);

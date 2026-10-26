@@ -44,7 +44,8 @@ export function userStatement(user) {
   const values = [randomUUID(), user.email.trim().toLowerCase(), user.passwordHash, iso(user.createdAt)].map(sql);
   return `INSERT INTO users (id, email, password_hash, created_at) VALUES (${values.join(', ')})
   ON CONFLICT(email) DO UPDATE SET password_hash = excluded.password_hash
-  WHERE users.password_hash IS NOT excluded.password_hash;`;
+  WHERE users.password_hash IS NOT excluded.password_hash
+  RETURNING id;`;
 }
 
 /** The Site's row, or the reason it can't be copied: its settings must pass the rules that held when it was saved. */
@@ -72,7 +73,8 @@ export function siteStatement(site, ownerEmail) {
     statement: `INSERT INTO sites (id, slug, owner_id, settings, custom_domain, custom_domain_verified, created_at, updated_at) VALUES (${values.join(', ')})
   ON CONFLICT(slug) DO UPDATE SET owner_id = excluded.owner_id, settings = excluded.settings, custom_domain = excluded.custom_domain,
     custom_domain_verified = excluded.custom_domain_verified, updated_at = excluded.updated_at
-  WHERE sites.updated_at IS NOT excluded.updated_at OR sites.owner_id IS NOT excluded.owner_id;`,
+  WHERE sites.updated_at IS NOT excluded.updated_at OR sites.owner_id IS NOT excluded.owner_id
+  RETURNING id;`,
   };
 }
 
@@ -99,7 +101,8 @@ export function subscriptionStatement(sub, slug) {
     statement: `INSERT INTO subscriptions (id, site_id, endpoint, p256dh, auth, lang, device_info, geo, created_at, updated_at) VALUES (${values.join(', ')})
   ON CONFLICT(site_id, endpoint) DO UPDATE SET p256dh = excluded.p256dh, auth = excluded.auth, lang = excluded.lang,
     device_info = excluded.device_info, geo = excluded.geo, updated_at = excluded.updated_at
-  WHERE subscriptions.updated_at IS NOT excluded.updated_at;`,
+  WHERE subscriptions.updated_at IS NOT excluded.updated_at
+  RETURNING id;`,
   };
 }
 
@@ -136,7 +139,7 @@ export async function plan(db) {
   };
 }
 
-/** Runs the statements in batches and returns how many rows they wrote. */
+/** Runs the statements in batches and returns how many rows they wrote: each upsert returns a row only when it writes one. */
 function execute(target, location, statements) {
   const dir = mkdtempSync(join(tmpdir(), 'copy-to-d1-'));
   let written = 0;
@@ -150,7 +153,7 @@ function execute(target, location, statements) {
         { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }
       );
       for (const result of JSON.parse(out)) {
-        written += result.meta?.changes ?? 0;
+        written += result.results?.length ?? 0;
       }
     }
   } finally {
