@@ -29,6 +29,11 @@ jobs:
         with:
           node-version: 24
           cache: npm
+      # MongoDB binaries for the copy script's tests (scripts/copy-mongo-to-d1.test.mjs).
+      - uses: actions/cache@v4
+        with:
+          path: ~/.cache/mongodb-binaries
+          key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
       - name: Check the Playwright image matches package.json
         run: node scripts/check-playwright-image.mjs
       - run: npm ci
