@@ -23,7 +23,7 @@ const FONT_CACHE = join(ROOT, 'node_modules/.cache/brand-kit');
 
 /** Where the app serves kit files from: the destination, then the kit file it copies. */
 const APP_COPIES = [
-  ['src/app/favicon.ico', 'Favicon/favicon.ico'],
+  ['public/favicon.ico', 'Favicon/favicon.ico'],
   ['src/app/icon.svg', 'Favicon/icon.svg'],
   ['src/app/apple-icon.png', 'Favicon/apple-touch-icon.png'],
   ['src/app/opengraph-image.png', 'Social/og-marketing-en.png'],

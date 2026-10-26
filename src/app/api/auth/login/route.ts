@@ -1,5 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import { authRateLimit, getUserByEmail, issueSessionToken, sessionCookieOptions, verifyPassword } from '@/lib/auth';
+import { authRateLimit, issueSessionToken, logIn, sessionCookieOptions } from '@/lib/auth';
 import { routeError } from '@/lib/routeError';
 
 export async function POST(req: NextRequest) {
@@ -11,12 +11,14 @@ export async function POST(req: NextRequest) {
   const email = typeof body?.email === 'string' ? body.email.trim() : '';
   const password = typeof body?.password === 'string' ? body.password : '';
 
-  const user = await getUserByEmail(email);
-  if (!user || !(await verifyPassword(password, user.passwordHash))) {
-    return routeError(401, { code: 'wrongCredentials' });
+  const result = await logIn(email, password);
+  if (!result.ok) {
+    return routeError(401, { code: result.code });
   }
 
-  const token = issueSessionToken(user.id);
+  const token = issueSessionToken(result.user.id, {
+    passwordChangePending: result.passwordChangePending,
+  });
   const res = NextResponse.json({ ok: true });
   res.cookies.set({ ...sessionCookieOptions(), value: token });
   return res;

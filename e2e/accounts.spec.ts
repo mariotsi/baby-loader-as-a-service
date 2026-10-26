@@ -1,6 +1,9 @@
 import type { Page } from '@playwright/test';
-import { FIXTURE_OWNERS, runEmail, runSlug } from './support/data.ts';
-import { bypassHeaders, e2ePassword, runId } from './support/env.ts';
+import { hashPassword, PASSWORD_GENERATIONS } from '../src/lib/password.ts';
+import { signSessionToken } from '../src/lib/sessionToken.ts';
+import { FIXTURE_OWNERS, PASSWORD_USERS, runEmail, runSlug } from './support/data.ts';
+import { setPasswordHash, storedPasswordHash } from './support/db.ts';
+import { BASE_URL, bypassHeaders, e2ePassword, runId, sessionSecret } from './support/env.ts';
 import { dashboardAddress, expect, test } from './support/test.ts';
 
 async function createSite(page: Page, slug: string, babyName: string) {
@@ -115,4 +118,51 @@ test('login refuses a wrong password and logout ends the session', async ({ page
   await page.request.post('/api/auth/logout', { headers: bypassHeaders() });
   await page.goto('/dashboard');
   await expect(page).toHaveURL(/\/login$/);
+});
+
+test('a User whose password hash is generation 1 logs in, and the hash becomes generation 2', async ({ page }) => {
+  const { email } = PASSWORD_USERS.legacy;
+  const generationOne = PASSWORD_GENERATIONS.find((g) => g.id === 1);
+  if (!generationOne) {
+    throw new Error('No password generation 1');
+  }
+  await setPasswordHash(email, await hashPassword(e2ePassword(), generationOne));
+  expect(await storedPasswordHash(email)).toMatch(/^scrypt\$65536\$8\$2\$/);
+
+  await page.goto('/login');
+  await page.getByLabel('Email').fill(email);
+  await page.getByLabel('Password').fill(e2ePassword());
+  await page.getByRole('button', { name: 'Log in' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  expect(await storedPasswordHash(email)).toMatch(/^v2\$scrypt\$16384\$8\$5\$/);
+});
+
+test('a session with a password change pending reaches the Dashboard only after a new password', async ({
+  page,
+  context,
+}) => {
+  // A login sets the pending mark only for a generation with policy change, and none has one, so the
+  // test signs the session itself, with the local server's secret: the only one the suite knows.
+  const secret = sessionSecret();
+  test.skip(!secret, 'Signing a session needs the SESSION_SECRET of the local server');
+  const { email, id } = PASSWORD_USERS.pending;
+  const token = signSessionToken({ userId: id, passwordChangePending: true }, Date.now() + 60_000, secret ?? '');
+  await context.addCookies([{ name: 'session', value: token, url: BASE_URL }]);
+
+  await page.goto('/dashboard');
+  await expect(page).toHaveURL(/\/account\/password$/);
+  await expect(page.getByText('Your password needs an update.', { exact: false })).toBeVisible();
+  await page.goto('/dashboard/e2e-waiting');
+  await expect(page).toHaveURL(/\/account\/password$/);
+
+  const before = await storedPasswordHash(email);
+  await page.getByLabel('New password', { exact: true }).fill(NEW_PASSWORD);
+  await page.getByLabel('Confirm password').fill(NEW_PASSWORD);
+  await page.getByRole('button', { name: 'Save password' }).click();
+  await expect(page).toHaveURL(/\/dashboard$/);
+  await expect(page.getByRole('heading', { name: 'Your sites' })).toBeVisible();
+
+  const after = await storedPasswordHash(email);
+  expect(after).toMatch(/^v2\$scrypt\$16384\$8\$5\$/);
+  expect(after).not.toEqual(before);
 });

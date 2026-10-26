@@ -1,7 +1,13 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 import webpush from 'web-push';
-import { BASE_URL, LOCAL_D1_PERSIST_TO, LOCAL_PORT, STARTS_LOCAL_SERVER } from './e2e/support/env.ts';
+import {
+  BASE_URL,
+  LOCAL_D1_PERSIST_TO,
+  LOCAL_PORT,
+  LOCAL_SESSION_SECRET,
+  STARTS_LOCAL_SERVER,
+} from './e2e/support/env.ts';
 
 const CI = !!process.env.CI;
 
@@ -16,7 +22,7 @@ if (vapid) {
     LOCAL_VARS_FILE,
     [
       `ROOT_DOMAIN=localhost:${LOCAL_PORT}`,
-      'SESSION_SECRET=local-e2e-session-secret',
+      `SESSION_SECRET=${LOCAL_SESSION_SECRET}`,
       `NEXT_PUBLIC_VAPID_PUBLIC_KEY=${vapid.publicKey}`,
       `VAPID_PRIVATE_KEY=${vapid.privateKey}`,
       'VAPID_EMAIL=mailto:e2e@waitingpages.test',

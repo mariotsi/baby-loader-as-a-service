@@ -19,7 +19,14 @@ import { randomUUID } from 'node:crypto';
 import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { DEMO_OWNERS, DEMO_SITES, FIXTURE_OWNERS, FIXTURE_SITES, RUN_PREFIX } from '../e2e/support/data.ts';
+import {
+  DEMO_OWNERS,
+  DEMO_SITES,
+  FIXTURE_OWNERS,
+  FIXTURE_SITES,
+  PASSWORD_USERS,
+  RUN_PREFIX,
+} from '../e2e/support/data.ts';
 import { STAGING_DB_NAME, testDataPolicy } from '../src/lib/dbName.ts';
 import { hashPassword } from '../src/lib/password.ts';
 import { parseNewSite } from '../src/lib/siteSettings.ts';
@@ -127,6 +134,20 @@ async function resetStatements(owners, sites, password) {
   return statements;
 }
 
+/** Recreates the Users the password tests change, with the fixed ids those tests sign sessions for. */
+async function passwordUserStatements(password) {
+  const users = Object.values(PASSWORD_USERS);
+  const passwordHash = await hashPassword(password);
+  const at = new Date().toISOString();
+  return [
+    `DELETE FROM users WHERE email IN (${list(users.map((u) => u.email))}) OR id IN (${list(users.map((u) => u.id))});`,
+    ...users.map(
+      ({ email, id }) =>
+        `INSERT INTO users (id, email, password_hash, created_at) VALUES (${list([id, email, passwordHash, at])});`
+    ),
+  ];
+}
+
 /** Removes one run's Users and Sites, and those of any run older than a day. */
 function cleanupStatements(runId) {
   const thisRun = `${RUN_PREFIX}${runId}-%`;
@@ -195,6 +216,7 @@ async function main() {
   const statements = [];
   if (command === 'reset') {
     statements.push(...(await resetStatements(FIXTURE_OWNERS, FIXTURE_SITES, e2ePassword())));
+    statements.push(...(await passwordUserStatements(e2ePassword())));
   }
   if (withDemo) {
     statements.push(

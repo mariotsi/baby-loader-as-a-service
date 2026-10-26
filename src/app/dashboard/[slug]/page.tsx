@@ -46,7 +46,7 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
           </ButtonLink>
         </Stack>
       </div>
-      <SiteSettingsForm site={toSiteDTO(site)} timeZones={Intl.supportedValuesOf('timeZone')} />
+      <SiteSettingsForm site={toSiteDTO(site)} timeZones={Intl.supportedValuesOf('timeZone')} address={address} />
     </PageShell>
   );
 }

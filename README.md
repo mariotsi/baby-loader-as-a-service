@@ -156,7 +156,7 @@ The same run copies what the app serves out of the kit:
 
 | App file                                | From                                      |
 | --------------------------------------- | ----------------------------------------- |
-| `src/app/favicon.ico`                   | `brand/Favicon/favicon.ico`               |
+| `public/favicon.ico`                    | `brand/Favicon/favicon.ico`               |
 | `src/app/icon.svg`                      | `brand/Favicon/icon.svg`                  |
 | `src/app/apple-icon.png`                | `brand/Favicon/apple-touch-icon.png`      |
 | `src/app/opengraph-image.png`           | `brand/Social/og-marketing-en.png`        |
@@ -168,8 +168,9 @@ The same run copies what the app serves out of the kit:
 
 The `Logo` and `Spinner` components draw the mark in code, with the theme's
 tokens (`LogoMark` in `src/components/ui/Logo.tsx`): a change to the mark goes
-in both the script and that component. Sites bring their own images and
-favicon; until they do, a Site shows the Platform's.
+in both the script and that component. A Site's icon is the Platform's
+loading baby, or an emoji its Owner picks, drawn on the Site's Palette (see
+`src/lib/siteMeta.ts`).
 
 ## End-to-end tests
 
