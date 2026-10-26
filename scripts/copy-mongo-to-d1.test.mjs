@@ -9,7 +9,7 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { hashPassword, verifyPassword } from '../src/lib/password.ts';
 import { defaultSiteSettings } from '../src/lib/siteSettings.ts';
 
-const TARGET = 'waitingpages-staging';
+const TARGET = 'loading-baby-staging';
 let mongo;
 let client;
 let persistTo;
