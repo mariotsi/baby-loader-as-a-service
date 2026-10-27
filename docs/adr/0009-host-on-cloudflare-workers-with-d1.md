@@ -4,7 +4,7 @@ The app is a Cloudflare Worker built with `@opennextjs/cloudflare`, on the Worke
 
 D1 replaces MongoDB because a Worker can't reuse a socket across requests: a MongoDB client would open a new TCP, TLS and SCRAM connection on every request, measured at about 270 ms against Atlas, while D1 is reached through a binding with no connection to open. Workers KV doesn't fit the data, being eventually consistent with no unique constraints or queries, and Durable Objects would leave the data's partitioning to the app.
 
-Two Workers keep production apart from unreviewed branch code: `loading-baby` serves `main` on `loading.baby` and binds the database `loading-baby`; `loading-baby-staging` serves `staging` on its own staging domain with `loading-baby-staging`, and runs one Preview per other branch, each with its own database `loading-baby-<branch>`. Previews sit behind Cloudflare Access and serve Sites by path, since `workers.dev` has no wildcard subdomains.
+Two Workers keep production apart from unreviewed branch code: `loading-baby` serves `main` on `loading.baby` and binds the database `loading-baby`; `loading-baby-staging` serves `staging` on its own staging domain with `loading-baby-staging`, and runs one Preview per other branch, each lent a database of its own from a fixed pool, `loading-baby-preview-<n>`, which CI claims on the branch's first push and empties when its pull request closes, without ever creating or deleting a database. Previews sit behind Cloudflare Access and serve Sites by path, since `workers.dev` has no wildcard subdomains.
 
 ## Consequences
 

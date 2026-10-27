@@ -21,4 +21,6 @@ next-env.d.ts
 # Cloudflare Workers build (opennextjs-cloudflare, wrangler)
 /.open-next/
 /.wrangler/
+# The CI-only Preview config (scripts/preview-pool.mjs config).
+/wrangler.preview.json
 .dev.vars

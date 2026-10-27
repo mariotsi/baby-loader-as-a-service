@@ -3,6 +3,7 @@
  * - E2E_BASE_URL: the deployment under test. Unset, Playwright builds the
  *   Worker and runs it on LOCAL_BASE_URL with a local D1.
  * - E2E_PASSWORD: password of the fixture Owners.
+ * - E2E_D1_DATABASE: on a Preview, the pool database its branch holds.
  * - CLOUDFLARE_API_TOKEN: lets the data script write to a deployed
  *   environment's D1 database.
  * - CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET: an Access service token,
