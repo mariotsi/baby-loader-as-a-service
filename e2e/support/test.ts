@@ -13,16 +13,15 @@ import { BASE_URL, bypassHeaders, ownerStatePath } from './env.ts';
 export { expect };
 
 /**
- * Adds the Deployment Protection bypass header to requests for the
- * deployment under test only. On preview deployments Sites are served by
- * path, so every page a test opens is on that origin.
+ * Adds the Access service token headers to requests for the deployment under
+ * test only: its root host and the Sites on its subdomains.
  */
 export async function withBypass(context: BrowserContext): Promise<BrowserContext> {
   const headers = bypassHeaders();
   if (Object.keys(headers).length > 0) {
-    const origin = new URL(BASE_URL).origin;
+    const { protocol, host } = new URL(BASE_URL);
     await context.route(
-      (url) => url.origin === origin,
+      (url) => url.protocol === protocol && (url.host === host || url.host.endsWith(`.${host}`)),
       (route) => route.continue({ headers: { ...route.request().headers(), ...headers } })
     );
   }

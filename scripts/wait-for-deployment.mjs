@@ -4,18 +4,17 @@
 //
 //   DEPLOYMENT_URL=https://... COMMIT=<sha> node scripts/wait-for-deployment.mjs >> "$GITHUB_ENV"
 //
-// DEPLOYMENT_URL is the deployment's own vercel.app URL, from Vercel's
-// deployment event. The Dashboard builds Addresses on rootDomain instead (a
-// preview's branch URL, or staging.loading.baby), so tests run there, once
-// that host has been pointed at the commit: Vercel moves the alias right
-// after reporting the deployment ready.
+// DEPLOYMENT_URL is where the deploy put the Worker. The Dashboard builds
+// Addresses on rootDomain, so tests run there, once that host serves the
+// commit too. CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET get the requests
+// through Cloudflare Access.
 
 const TIMEOUT_MS = 15 * 60 * 1000;
 const INTERVAL_MS = 10 * 1000;
 
-const headers = process.env.VERCEL_AUTOMATION_BYPASS_SECRET
-  ? { 'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET }
-  : {};
+const { CF_ACCESS_CLIENT_ID: accessId, CF_ACCESS_CLIENT_SECRET: accessSecret } = process.env;
+const headers =
+  accessId && accessSecret ? { 'CF-Access-Client-Id': accessId, 'CF-Access-Client-Secret': accessSecret } : {};
 
 async function version(baseUrl) {
   try {
