@@ -131,9 +131,11 @@ jobs:
           output=$(npx wrangler preview --config wrangler.preview.json --name "$PREVIEW_NAME" --json \
             --var "GIT_COMMIT_SHA:$SHA" --var "GIT_BRANCH:$BRANCH" --var "ROOT_DOMAIN:$host")
           printf '%s\n' "$output"
-          # Where wrangler says the Preview is; the E2E wait step fails if
-          # that isn't the root domain passed above.
-          echo "url=$(printf '%s' "$output" | jq -er '.preview.urls[0]')" >> "$GITHUB_OUTPUT"
+          # Where wrangler says the Preview is, from the JSON that follows its
+          # upload log; the E2E wait step fails if that isn't the root domain
+          # passed above.
+          url=$(printf '%s\n' "$output" | sed -n '/^{/,$p' | jq -er '.preview.urls[0]')
+          echo "url=$url" >> "$GITHUB_OUTPUT"
 
       # Like Vercel's bot: one comment per pull request, edited on each push.
       - name: Comment the Preview link on the branch's pull requests
