@@ -16,25 +16,31 @@ const { CF_ACCESS_CLIENT_ID: accessId, CF_ACCESS_CLIENT_SECRET: accessSecret } =
 const headers =
   accessId && accessSecret ? { 'CF-Access-Client-Id': accessId, 'CF-Access-Client-Secret': accessSecret } : {};
 
+/** The deployment's /api/version, or why it isn't there: an HTTP status, a redirect or a network error. */
 async function version(baseUrl) {
   try {
     const res = await fetch(new URL('/api/version', baseUrl), { headers, redirect: 'manual' });
-    return res.ok ? await res.json() : null;
-  } catch {
-    return null;
+    if (res.ok) {
+      return { version: await res.json() };
+    }
+    const location = res.headers.get('location');
+    return { problem: `HTTP ${res.status}${location ? ` to ${new URL(location, baseUrl).origin}` : ''}` };
+  } catch (err) {
+    return { problem: err.message };
   }
 }
 
 async function waitForCommit(baseUrl, commit, deadline) {
   for (;;) {
-    const v = await version(baseUrl);
+    const { version: v, problem } = await version(baseUrl);
     if (v?.commit === commit) {
       return v;
     }
+    const serves = v ? v.commit : `nothing (${problem})`;
     if (Date.now() > deadline) {
-      throw new Error(`${baseUrl} still serves ${v?.commit ?? 'nothing'}, not ${commit}`);
+      throw new Error(`${baseUrl} still serves ${serves}, not ${commit}`);
     }
-    console.error(`${baseUrl} serves ${v?.commit ?? 'nothing yet'}; waiting for ${commit}`);
+    console.error(`${baseUrl} serves ${serves}; waiting for ${commit}`);
     await new Promise((resolve) => setTimeout(resolve, INTERVAL_MS));
   }
 }
