@@ -1,6 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
-import { previewDbName, STAGING_DB_NAME } from '../src/lib/dbName.ts';
+import { isPreviewDbName, STAGING_DB_NAME } from '../src/lib/dbName.ts';
 import { BASE_URL, bypassHeaders, e2ePassword, LOCAL_D1_PERSIST_TO } from './support/env.ts';
 
 type Version = { env: 'production' | 'staging' | 'preview' | 'development'; branch: string | null };
@@ -27,10 +27,12 @@ export default async function globalSetup() {
       process.env.E2E_D1_REMOTE = '1';
       break;
     case 'preview':
-      if (!version.branch) {
-        throw new Error('The preview deployment reports no branch');
+      // The pool database the deploy lent this branch (scripts/preview-pool.mjs).
+      if (!isPreviewDbName(process.env.E2E_D1_DATABASE ?? '')) {
+        throw new Error(
+          `Set E2E_D1_DATABASE to the Preview pool database of ${version.branch ?? 'this Preview'}: node scripts/preview-pool.mjs claim <branch> names it`
+        );
       }
-      process.env.E2E_D1_DATABASE = previewDbName(version.branch);
       process.env.E2E_D1_REMOTE = '1';
       break;
     default:

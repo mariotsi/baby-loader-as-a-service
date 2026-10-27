@@ -1,35 +1,46 @@
 name: CD
 
-# Deploys staging to the Cloudflare Worker loading-baby-staging and runs the
-# Playwright suite (e2e/) against it, on every push to the staging branch
-# (ADR-0009). While the migration is built on the cloudflare branch, that
-# branch plays staging's part; it becomes staging in #71. Previews and
-# production join this workflow in #70.
+# Deploys every push to Cloudflare Workers (ADR-0009) and runs the Playwright
+# suite (e2e/) against the deployment:
+# - the staging branch: the loading-baby-staging Worker on staging's domain.
+#   While the migration is built on the cloudflare branch, that branch plays
+#   staging's part; it becomes staging in #71.
+# - any other branch, main included: a Preview of loading-baby-staging, with a
+#   D1 database lent from the Preview pool (scripts/preview-pool.mjs).
+# - main, once production runs on Cloudflare (the repository variable
+#   PRODUCTION_ON_CLOUDFLARE, set by #72): also the loading-baby Worker.
+# Every deploy migrates its database before the new code goes live.
 
 on:
   push:
-    branches: [cloudflare, staging]
+    branches: ["**"]
   workflow_dispatch:
 
 permissions:
   contents: read
 
-# One staging deploy at a time; a newer push replaces a waiting or running one.
+# One run per branch at a time; a newer push replaces a waiting or running one.
 concurrency:
-  group: cd-staging
+  group: cd-${{ github.ref_name }}
   cancel-in-progress: true
 
 env:
   STAGING_URL: https://staging-loading-baby.fyi
+  # The account's workers.dev subdomain, under which each Preview gets
+  # <preview name>-loading-baby-staging.
+  WORKERS_DEV: simone-716.workers.dev
 
 jobs:
-  deploy:
+  staging:
+    if: github.ref_name == 'cloudflare' || github.ref_name == 'staging'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # Holds the staging Worker's API token (CLOUDFLARE_API_TOKEN).
     environment: Preview
     env:
       CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    outputs:
+      url: ${{ env.STAGING_URL }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -60,14 +71,128 @@ jobs:
           path: ~/.config/.wrangler/logs/
           retention-days: 7
 
+  preview:
+    if: github.ref_name != 'cloudflare' && github.ref_name != 'staging'
+    runs-on: ubuntu-latest
+    # Writes the Preview link on the branch's pull requests.
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    timeout-minutes: 15
+    # Holds the staging Worker's API token, which Previews belong to.
+    environment: Preview
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # Passed through the environment, never interpolated into a script: a
+      # branch name is user-controlled input.
+      BRANCH: ${{ github.ref_name }}
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+      database: ${{ steps.pool.outputs.database }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # Keeps the database the branch already holds, with its data, or
+      # claims a free one. Fails here, before anything is deployed, when every
+      # pool database belongs to another branch.
+      - name: Take a database from the Preview pool
+        id: pool
+        run: node scripts/preview-pool.mjs claim "$BRANCH"
+
+      # Never committed: binds DB to the pool database alone, so neither the
+      # migrations nor the Preview can reach staging's.
+      - name: Write the Preview's wrangler config
+        env:
+          DATABASE: ${{ steps.pool.outputs.database }}
+        run: node scripts/preview-pool.mjs config "$DATABASE" wrangler.preview.json
+
+      - name: Apply D1 migrations to the Preview's database
+        env:
+          DATABASE: ${{ steps.pool.outputs.database }}
+        run: npx wrangler d1 migrations apply "$DATABASE" --remote --config wrangler.preview.json
+
+      - run: npm run cf:build
+
+      - name: Deploy the Preview
+        id: deploy
+        env:
+          PREVIEW_NAME: ${{ steps.pool.outputs.preview_name }}
+          SHA: ${{ github.sha }}
+        run: |
+          set -o pipefail
+          # The Preview's own host is its root domain, so it serves Sites by path.
+          host="$PREVIEW_NAME-loading-baby-staging.$WORKERS_DEV"
+          output=$(npx wrangler preview --config wrangler.preview.json --name "$PREVIEW_NAME" --json \
+            --var "GIT_COMMIT_SHA:$SHA" --var "GIT_BRANCH:$BRANCH" --var "ROOT_DOMAIN:$host")
+          printf '%s\n' "$output"
+          # Where wrangler says the Preview is; the E2E wait step fails if
+          # that isn't the root domain passed above.
+          echo "url=$(printf '%s' "$output" | jq -er '.preview.urls[0]')" >> "$GITHUB_OUTPUT"
+
+      # Like Vercel's bot: one comment per pull request, edited on each push.
+      - name: Comment the Preview link on the branch's pull requests
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+        run: node scripts/preview-comment.mjs ready "$BRANCH" "$SHA"
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: wrangler-logs
+          path: ~/.config/.wrangler/logs/
+          retention-days: 7
+
+  production:
+    if: github.ref_name == 'main' && vars.PRODUCTION_ON_CLOUDFLARE == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Restricted to main, the only place the production token is available.
+    environment: Production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Apply D1 migrations to loading-baby
+        run: npx wrangler d1 migrations apply loading-baby --remote --config wrangler.production.jsonc
+
+      - run: npm run cf:build
+
+      - name: Deploy the production Worker
+        run: >-
+          npx wrangler deploy --config wrangler.production.jsonc
+          --var GIT_COMMIT_SHA:${{ github.sha }}
+          --var GIT_BRANCH:main
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: wrangler-logs
+          path: ~/.config/.wrangler/logs/
+          retention-days: 7
+
   # The rulesets "Require E2E on main" and "Require CI and E2E on staging"
   # require a check named e2e from GitHub Actions: keep this job's name.
   e2e:
-    needs: deploy
+    needs: [staging, preview]
+    # Whichever of the two deployed this push.
+    if: ${{ !cancelled() && (needs.staging.result == 'success' || needs.preview.result == 'success') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
     # Holds the Access service token and the staging Worker's API token, which
-    # the data script uses to write fixtures to staging's D1.
+    # the data script uses to write fixtures to staging's or the Preview's D1.
     environment: Preview
     # Playwright's image ships its browsers and their system dependencies.
     # Its version must equal @playwright/test in package.json, which CI
@@ -83,6 +208,8 @@ jobs:
       # Gets the suite through Cloudflare Access, which guards staging.
       CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
       CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      # Empty on staging, whose database the global setup knows.
+      E2E_D1_DATABASE: ${{ needs.preview.outputs.database }}
     steps:
       - uses: actions/checkout@v7
       # The image's Node (24) runs the suite.
@@ -92,9 +219,9 @@ jobs:
           key: npm-playwright-${{ hashFiles('package-lock.json') }}
       - run: npm ci
 
-      - name: Wait until staging serves this commit
+      - name: Wait until the deployment serves this commit
         env:
-          DEPLOYMENT_URL: ${{ env.STAGING_URL }}
+          DEPLOYMENT_URL: ${{ needs.staging.outputs.url || needs.preview.outputs.url }}
           COMMIT: ${{ github.sha }}
         run: node scripts/wait-for-deployment.mjs >> "$GITHUB_ENV"
 
