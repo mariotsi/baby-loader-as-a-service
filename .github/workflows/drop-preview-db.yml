@@ -39,10 +39,19 @@ jobs:
           node-version: 24
           cache: npm
       - run: npm ci
-      - name: Delete the branch's Preview
+      - name: Name the branch's Preview
+        id: preview
         run: |
           name=$(node --input-type=module -e "import { previewName } from './src/lib/dbName.ts'; console.log(previewName(process.argv[1]))" "$BRANCH")
-          npx wrangler preview delete --name "$name" --skip-confirmation || echo "No Preview named $name"
+          echo "name=$name" >> "$GITHUB_OUTPUT"
+      # Fails when the branch never had a Preview, or the other event of the
+      # pair already deleted it: the database is released either way.
+      - name: Delete the branch's Preview
+        continue-on-error: true
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: preview delete --name ${{ steps.preview.outputs.name }} --skip-confirmation
       - name: Release the branch's pool database
         run: node scripts/preview-pool.mjs release "$BRANCH"
       - name: Say so on the pull request
