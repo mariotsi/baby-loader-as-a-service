@@ -2,7 +2,7 @@
 // Keeps one comment with a branch's Preview link on each of its open pull
 // requests, the way Vercel's bot did: written once, then edited in place.
 //
-//   node scripts/preview-comment.mjs ready <branch> <commit>   the Preview serves <commit>
+//   node scripts/preview-comment.mjs ready <branch> <commit> [deployment url]   the Preview serves <commit>
 //   node scripts/preview-comment.mjs opened <branch>           a new pull request, for a branch that may already have one
 //   node scripts/preview-comment.mjs deleted <branch>          the Preview and its database are gone
 //
@@ -19,14 +19,20 @@ export function previewUrl(branch, workersDev) {
   return `https://${previewName(branch)}-loading-baby-staging.${workersDev}`;
 }
 
-/** The comment's body; `commit` is null when the run that writes it didn't deploy. */
-export function commentBody(state, url, commit) {
+/**
+ * The comment's body; `commit` is null when the run that writes it didn't
+ * deploy, and `deploymentUrl` is that one deployment's own address.
+ */
+export function commentBody(state, url, commit, deploymentUrl = null) {
   const lines = [MARKER, '### Cloudflare Preview', ''];
   if (state === 'deleted') {
     lines.push('The Preview and its D1 database were removed when the branch closed.');
   } else {
     lines.push(`**Preview:** ${url}`);
     lines.push(`**Sites:** \`${url}/sites/<slug>\``);
+    if (deploymentUrl) {
+      lines.push(`**This deployment:** ${deploymentUrl}`);
+    }
     lines.push('');
     lines.push(
       commit
@@ -66,10 +72,12 @@ async function upsert(repo, number, body, create) {
 }
 
 async function main() {
-  const [state, branch, commit] = process.argv.slice(2);
+  const [state, branch, commit, deploymentUrl] = process.argv.slice(2);
   const { GITHUB_REPOSITORY: repo, GITHUB_TOKEN: token, WORKERS_DEV: workersDev } = process.env;
   if (!['ready', 'opened', 'deleted'].includes(state) || !branch || (state === 'ready' && !commit)) {
-    throw new Error('Usage: preview-comment.mjs ready <branch> <commit> | opened <branch> | deleted <branch>');
+    throw new Error(
+      'Usage: preview-comment.mjs ready <branch> <commit> [deployment url] | opened <branch> | deleted <branch>'
+    );
   }
   if (!repo || !token || !workersDev) {
     throw new Error('Set GITHUB_REPOSITORY, GITHUB_TOKEN and WORKERS_DEV');
@@ -81,7 +89,12 @@ async function main() {
   const pulls = await github(
     `/repos/${repo}/pulls?state=${prState}&head=${encodeURIComponent(`${owner}:${branch}`)}&per_page=100`
   );
-  const body = commentBody(state, previewUrl(branch, workersDev), state === 'ready' ? commit : null);
+  const body = commentBody(
+    state,
+    previewUrl(branch, workersDev),
+    state === 'ready' ? commit : null,
+    state === 'ready' ? deploymentUrl || null : null
+  );
   for (const pr of pulls) {
     await upsert(repo, pr.number, body, state !== 'deleted');
     console.log(`Preview comment on #${pr.number}: ${state}`);

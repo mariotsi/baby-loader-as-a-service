@@ -134,15 +134,19 @@ jobs:
           # Where wrangler says the Preview is, from the JSON that follows its
           # upload log; the E2E wait step fails if that isn't the root domain
           # passed above.
-          url=$(printf '%s\n' "$output" | sed -n '/^{/,$p' | jq -er '.preview.urls[0]')
+          json=$(printf '%s\n' "$output" | sed -n '/^{/,$p')
+          url=$(printf '%s' "$json" | jq -er '.preview.urls[0]')
           echo "url=$url" >> "$GITHUB_OUTPUT"
+          # This deployment alone, at an address the next push doesn't move.
+          echo "deployment_url=$(printf '%s' "$json" | jq -er '.deployment.urls[0]')" >> "$GITHUB_OUTPUT"
 
       # Like Vercel's bot: one comment per pull request, edited on each push.
       - name: Comment the Preview link on the branch's pull requests
         env:
           GITHUB_TOKEN: ${{ github.token }}
           SHA: ${{ github.sha }}
-        run: node scripts/preview-comment.mjs ready "$BRANCH" "$SHA"
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.deployment_url }}
+        run: node scripts/preview-comment.mjs ready "$BRANCH" "$SHA" "$DEPLOYMENT_URL"
 
       - uses: actions/upload-artifact@v7
         if: failure()

@@ -11,6 +11,12 @@ test('a ready comment names the link and the commit it serves', () => {
   assert.ok(body.startsWith('<!-- loading-baby-preview -->'));
   assert.match(body, /\*\*Preview:\*\* https:\/\/x\.workers\.dev/);
   assert.match(body, /Serves `0123456`/);
+  assert.doesNotMatch(body, /This deployment/);
+});
+
+test('a ready comment links the deployment itself when it is known', () => {
+  const body = commentBody('ready', 'https://x.workers.dev', '0123456789abcdef', 'https://abc-x.workers.dev');
+  assert.match(body, /\*\*This deployment:\*\* https:\/\/abc-x\.workers\.dev/);
 });
 
 test('a deleted comment drops the link', () => {
