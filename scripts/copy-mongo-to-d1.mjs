@@ -139,6 +139,20 @@ export async function plan(db) {
   };
 }
 
+/**
+ * The JSON `wrangler d1 execute --json` prints. On a remote target Wrangler
+ * prints progress lines first ("├ Checking if file needs uploading"), so the
+ * JSON starts at the first line that opens an array or object.
+ */
+export function parseWranglerJson(out) {
+  const lines = out.split('\n');
+  const start = lines.findIndex((line) => /^\s*[[{]/.test(line));
+  if (start === -1) {
+    throw new Error(`wrangler printed no JSON: ${out.slice(0, 200)}`);
+  }
+  return JSON.parse(lines.slice(start).join('\n'));
+}
+
 /** Runs the statements in batches and returns how many rows they wrote: each upsert returns a row only when it writes one. */
 function execute(target, location, statements) {
   const dir = mkdtempSync(join(tmpdir(), 'copy-to-d1-'));
@@ -152,7 +166,7 @@ function execute(target, location, statements) {
         ['wrangler', 'd1', 'execute', target, ...location, '--file', file, '--json', '--yes'],
         { encoding: 'utf8', stdio: ['ignore', 'pipe', 'inherit'] }
       );
-      for (const result of JSON.parse(out)) {
+      for (const result of parseWranglerJson(out)) {
         written += result.results?.length ?? 0;
       }
     }

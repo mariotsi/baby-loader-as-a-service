@@ -8,6 +8,7 @@ import { MongoClient, ObjectId } from 'mongodb';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { hashPassword, verifyPassword } from '../src/lib/password.ts';
 import { defaultSiteSettings } from '../src/lib/siteSettings.ts';
+import { parseWranglerJson } from './copy-mongo-to-d1.mjs';
 
 const TARGET = 'loading-baby-staging';
 let mongo;
@@ -130,4 +131,10 @@ test('a second run writes nothing and keeps the ids', () => {
     query('SELECT id FROM users UNION ALL SELECT id FROM sites UNION ALL SELECT id FROM subscriptions'),
     idsBefore
   );
+});
+
+test('the JSON of a remote execute is read past the progress lines before it', () => {
+  const out = '├ Checking if file needs uploading\n│\n[\n  { "results": [{ "id": "a" }], "success": true }\n]\n';
+  assert.deepEqual(parseWranglerJson(out), [{ results: [{ id: 'a' }], success: true }]);
+  assert.throws(() => parseWranglerJson('├ Checking\n'), /no JSON/);
 });
