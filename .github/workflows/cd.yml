@@ -5,10 +5,13 @@ name: CD
 # - the staging branch: the loading-baby-staging Worker on staging's domain.
 #   While the migration is built on the cloudflare branch, that branch plays
 #   staging's part; it becomes staging in #71.
-# - any other branch, main included: a Preview of loading-baby-staging, with a
-#   D1 database lent from the Preview pool (scripts/preview-pool.mjs).
+# - any other branch but main: a Preview of loading-baby-staging, with a D1
+#   database lent from the Preview pool (scripts/preview-pool.mjs).
 # - main, once production runs on Cloudflare (the repository variable
-#   PRODUCTION_ON_CLOUDFLARE, set by #72): also the loading-baby Worker.
+#   PRODUCTION_ON_CLOUDFLARE, set by #72): the loading-baby Worker. main only
+#   ever receives the staging commit whose e2e passed (promote), and that
+#   check run on the same commit is what "Require E2E on main" reads, so main
+#   gets no Preview and no e2e of its own.
 # Every deploy migrates its database before the new code goes live.
 
 on:
@@ -72,7 +75,7 @@ jobs:
           retention-days: 7
 
   preview:
-    if: github.ref_name != 'cloudflare' && github.ref_name != 'staging'
+    if: github.ref_name != 'cloudflare' && github.ref_name != 'staging' && github.ref_name != 'main'
     runs-on: ubuntu-latest
     # Writes the Preview link on the branch's pull requests.
     permissions:
