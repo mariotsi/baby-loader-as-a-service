@@ -260,10 +260,11 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
-  # Staging only.
+  # Staging only. A bare `if` would also require every job e2e needs to have
+  # succeeded, and on staging preview is always skipped.
   promote:
     needs: e2e
-    if: github.ref_name == 'staging'
+    if: ${{ !cancelled() && needs.e2e.result == 'success' && github.ref_name == 'staging' }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # One push to main at a time. The push is a fast-forward, so main never
