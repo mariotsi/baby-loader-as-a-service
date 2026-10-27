@@ -14,7 +14,12 @@
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby-staging" }],
   "observability": { "enabled": true },
-  "vars": { "APP_ENV": "staging", "ROOT_DOMAIN": "staging-loading-baby.fyi" },
+  "vars": {
+    "APP_ENV": "staging",
+    "ROOT_DOMAIN": "staging-loading-baby.fyi",
+    // Push notifications' sender contact, which web-push requires as a URL.
+    "VAPID_EMAIL": "mailto:notify@staging-loading-baby.fyi"
+  },
   "d1_databases": [
     {
       "binding": "DB",
