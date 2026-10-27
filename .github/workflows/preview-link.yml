@@ -16,7 +16,7 @@ permissions:
 jobs:
   comment:
     # Staging and main have no Preview.
-    if: github.head_ref != 'cloudflare' && github.head_ref != 'staging' && github.head_ref != 'main'
+    if: github.head_ref != 'staging' && github.head_ref != 'main'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:

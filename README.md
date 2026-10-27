@@ -193,20 +193,16 @@ uses the local D1 in `.wrangler/e2e`, apart from the one `npm run dev` uses;
 a deployed one needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 ADR-0006 has the data rules.
 
-In CI, `.github/workflows/cd.yml` runs the suite on every deployment of
-the `baby-loader-staging` project once Vercel reports it to GitHub as ready:
-each preview, whose check shows on the pull request, and staging, where a
-pass promotes the commit to production (see "Environments"). Both Vercel
-projects create GitHub Deployments; the workflow ignores the production
-project's. Each run writes its test data where the deployment under test
-reads it, so the suite needs four repository secrets: `STAGING_MONGODB_URI`
-(the staging project's Production-scope `MONGODB_URI`, for staging runs),
-`PREVIEW_MONGODB_URI` (its Preview-scope `MONGODB_URI`, for preview runs),
-`E2E_PASSWORD` (fixture Owners) and `VERCEL_AUTOMATION_BYPASS_SECRET` (the
-staging project's Protection Bypass for Automation, to get past Deployment
-Protection on its `vercel.app` URLs). On staging the test data goes to
-`waitingpages-staging`, which must be the staging project's Production-scope
-`MONGODB_DB_NAME`.
+In CI, `.github/workflows/cd.yml` runs the suite after every deploy it
+makes: each pull request branch's Preview, whose check shows on the pull
+request, and staging, where a pass promotes the commit to production (see
+"Environments"). The job runs in the GitHub environment `Preview`, which
+holds `CLOUDFLARE_API_TOKEN` (the data script writes the fixtures to the
+deployment's D1 database), `E2E_PASSWORD` (fixture Owners), and
+`CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` (an Access service
+token, to get through Cloudflare Access on staging and Previews). On a
+Preview the workflow passes the pool database its branch holds as
+`E2E_D1_DATABASE`.
 
 The job runs in Playwright's Docker image
 (`mcr.microsoft.com/playwright:v<version>-noble`), which ships the browsers
@@ -217,77 +213,77 @@ both together.
 
 ## Hosting
 
-Intended for Vercel, which has native support for the wildcard-subdomain +
-per-Site custom-domain pattern this app is built around. Before relying on
-custom domains for real customers, confirm current Vercel pricing/limits for
-programmatic domain management against expected Site volume — this was
-flagged as a cost item to verify, not yet done.
+Cloudflare Workers, through the `@opennextjs/cloudflare` adapter, with data
+in Cloudflare D1 (ADR-0009). Staging and Previews run there; production
+moves there from Vercel and MongoDB Atlas in #72. Custom domains per Site
+are meant for Cloudflare for SaaS custom hostnames (#16).
 
 ## Environments
 
-Two Vercel projects keep production apart from everything else: the
-production project builds only `main`, and the staging project builds
-`staging` and every other branch. Changes reach production through staging
-only: pull requests merge into `staging`, the default branch, and `main`
-receives the exact commit that passed the E2E suite on staging.
+Two Workers keep production apart from everything else: `loading-baby`
+(`wrangler.production.jsonc`) serves `main`, and `loading-baby-staging`
+(`wrangler.jsonc`) serves `staging` and a Preview of every other branch.
+Changes reach production through staging only: pull requests merge into
+`staging`, the default branch, and `main` receives the exact commit that
+passed the E2E suite on staging. `.github/workflows/cd.yml` deploys them
+all from GitHub Actions.
 
-| Environment | Vercel project                                  | Branch                     | Addresses                                                                        | MongoDB                                                  |
-| ----------- | ----------------------------------------------- | -------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------- |
-| Production  | `baby-loader-as-a-service`                      | `main`                     | `loading.baby`, Sites at `<slug>.loading.baby`                                   | production cluster, database `waitingpages`              |
-| Staging     | `baby-loader-staging` (its production branch)   | `staging`                  | `staging.loading.baby`, Sites at `<slug>.staging.loading.baby`                   | non-production cluster, database `waitingpages-staging`  |
-| Preview     | `baby-loader-staging` (its preview deployments) | any other, `main` included | the branch's `baby-loader-staging-git-…vercel.app` URL, Sites at `/sites/<slug>` | non-production cluster, database `waitingpages-<branch>` |
-| Local       | none                                            | any                        | `localhost:3000`, Sites at `<slug>.localhost:3000`                               | Docker MongoDB, database `waitingpages-dev`              |
-- **Who builds what**: the production project's Ignored Build Step skips
-  every deployment but production, so it never builds a preview. The staging
-  project has `staging` as its production branch and builds a preview of
-  every other push.
-- **Credentials**: preview deployments run unreviewed branch code, so
-  production's `MONGODB_URI`, `SESSION_SECRET` and VAPID keypair exist only in
-  the production project, Production scope. The staging project holds a
-  non-production `MONGODB_URI`, a `SESSION_SECRET` and a VAPID keypair in
-  each of its scopes: Production for staging, Preview for pull requests'
-  previews. Within a deployment every Site shares one keypair (ADR-0002).
-- **Database per deployment** (`src/lib/dbName.ts`): production and staging
-  set `MONGODB_DB_NAME`; a preview, which does not, uses
-  `waitingpages-<branch>`. Production refuses to start without
-  `MONGODB_DB_NAME`, and anywhere else an unset name falls back to
-  `waitingpages-staging`, never to production's. MongoDB creates a database
-  on its first write, and the first request of each process creates the
-  indexes (`src/lib/indexes.ts`), so a new branch needs no setup. The
-  workflow `.github/workflows/drop-preview-db.yml` drops a preview's database
-  when its pull request closes or its branch is deleted, using the repository
-  secret `PREVIEW_MONGODB_URI` (non-production cluster).
-- **Root domain** (`src/lib/address.ts`): production and staging set
-  `ROOT_DOMAIN`. A preview leaves it unset and uses its branch URL, a
-  `vercel.app` host without wildcard subdomains, so it serves Sites by path;
-  subdomain routing is exercised on staging.
-- **Deployment Protection**: both projects require a Vercel login on every
-  `vercel.app` URL and leave their custom domains public, so staging is
-  public and previews are not. CI gets past the protection on previews with
-  the staging project's Protection Bypass for Automation, stored as the
-  repository secret `VERCEL_AUTOMATION_BYPASS_SECRET`.
+| Environment | Worker                                 | Branch               | Addresses                                                                        | D1 database                                                 |
+| ----------- | -------------------------------------- | -------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
+| Production  | `loading-baby` (Vercel until #72)      | `main`               | `loading.baby`, Sites at `<slug>.loading.baby`                                   | `loading-baby` (MongoDB Atlas `waitingpages` until #72)     |
+| Staging     | `loading-baby-staging`                 | `staging`            | `staging-loading-baby.fyi`, Sites at `<slug>.staging-loading-baby.fyi`           | `loading-baby-staging`                                      |
+| Preview     | `loading-baby-staging`, one per branch | any other but `main` | `<branch>-loading-baby-staging.simone-716.workers.dev`, Sites at `/sites/<slug>` | one of `loading-baby-preview-1` to `-5`, lent to the branch |
+| Local       | none                                   | any                  | `localhost:3000`, Sites at `<slug>.localhost:3000`                               | local D1 in `.wrangler/state`                               |
+- **Who deploys what**: a push to `staging` migrates `loading-baby-staging`
+  and runs `wrangler deploy`; a push to any other branch but `main` claims a
+  pool database, migrates it and runs `wrangler preview`. `main` gets no
+  Preview: it only receives commits whose `e2e` passed on staging. Once the
+  repository variable `PRODUCTION_ON_CLOUDFLARE` is `true` (#72), a push to
+  `main` migrates `loading-baby` and deploys the production Worker.
+- **Credentials**: Previews run unreviewed branch code, so production's
+  secrets (`SESSION_SECRET`, the VAPID keypair) exist only on `loading-baby`,
+  and its API token only in the GitHub environment `Production`, restricted
+  to `main`. Staging's token, the Access service token and `E2E_PASSWORD` sit
+  in the environment `Preview`. Within a deployment every Site shares one
+  keypair (ADR-0002).
+- **Preview pool** (`PREVIEW_POOL` in `src/lib/dbName.ts`,
+  `scripts/preview-pool.mjs`): five D1 databases created once by hand. A
+  branch's first push takes the first free one, recorded in its
+  `preview_slot` table, and later pushes keep it and its data.
+  `.github/workflows/drop-preview-db.yml` deletes the Preview and empties the
+  database (every table, the migrations table included) when the pull
+  request closes or the branch is deleted. With every database taken, a new
+  branch's deploy fails before deploying, naming the branches that hold them;
+  grow the pool by creating `loading-baby-preview-6` and adding it to
+  `PREVIEW_POOL`. CI never creates or deletes a database.
+- **Preview link**: each pull request gets one comment with its Preview's
+  link and the latest deployment's own address, edited on every push
+  (`scripts/preview-comment.mjs`).
+- **Root domain** (`src/lib/address.ts`): every Worker sets `ROOT_DOMAIN`; a
+  Preview gets its own `workers.dev` host, which has no wildcard subdomains,
+  so it serves Sites by path. Subdomain routing is exercised on staging.
+- **Cloudflare Access**: staging, its Sites and every Preview sit behind
+  Access (Zero Trust team `loading-baby`): only the owner signs in, by email
+  code, and CI gets through with the service token.
 - **Environment ribbon** (`src/lib/appEnv.ts`): every page names its
   environment in a corner ribbon, except in production.
-- **Reserved slug**: `staging` is a Reserved slug, since `staging.loading.baby`
-  serves the staging Platform.
+- **Reserved slug**: `staging` stays a Reserved slug.
 
 ### From pull request to production
 
 1. A pull request targets `staging`. `.github/workflows/ci.yml` runs type
-   checking, Biome's lint and format check, and unit tests (job `ci`), and the staging project deploys
-   a preview, on which `.github/workflows/cd.yml` runs the E2E suite (job
-   `e2e`). Both are required before it merges.
-2. Merging deploys `staging` to `staging.loading.baby`, whose first request
-   applies the new data migrations (see "Data migrations" below). Once
-   Vercel reports that deployment ready, `cd.yml` runs the E2E suite against
-   `staging.loading.baby` once it serves that commit.
+   checking, Biome's lint and format check, unit tests and the Worker build
+   (job `ci`), and `cd.yml` deploys the branch's Preview and runs the E2E
+   suite on it (job `e2e`). Both are required before it merges.
+2. Merging deploys `staging`: `cd.yml` applies the new D1 migrations to
+   `loading-baby-staging`, deploys the Worker, then runs the E2E suite against
+   `staging-loading-baby.fyi` once it serves that commit.
 3. When the suite passes, job `promote` fast-forwards `main` to that commit
-   (`git push origin <sha>:main`), and the production project deploys it to
-   `loading.baby`, whose first request applies the same migrations to
-   production's database. Nothing is merged or rebuilt from other sources on the
-   way: production runs the commit staging tested.
+   (`git push origin <sha>:main`), which production deploys. Nothing is
+   merged or rebuilt from other sources on the way: production runs the
+   commit staging tested.
 
-Staging runs one at a time: a newer staging deployment cancels the run of an
+Staging runs one at a time: a newer push to `staging` cancels the run of an
 older one, and its promotion carries the older commits along. A failed E2E
 run leaves `main` where it is until a later staging commit passes, or until
 the failed run is re-run.
@@ -304,7 +300,7 @@ the failed run is re-run.
   deploy key would let it bypass too.
 - **Ruleset "Require CI and E2E on staging"**: a pull request merges into
   `staging` only once its head commit has a successful `ci` check and a
-  successful `e2e` check from its preview, and force pushes and deletion are
+  successful `e2e` check from its Preview, and force pushes and deletion are
   blocked. Pull requests merge by squash only, titled after the pull
   request.
 - **Fast-forward only**: `promote` never force pushes. If `main` holds a

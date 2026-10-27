@@ -1,16 +1,14 @@
 name: CI
 
-# Checks every pull request into staging, and into cloudflare (the branch
-# that carries the move to Cloudflare Workers, ADR-0009): that the
-# workflows' Playwright images match @playwright/test, types, lint and
+# Checks every pull request into staging: that the workflows' Playwright images match @playwright/test, types, lint and
 # formatting (Biome), unit tests (src/**/*.test.ts, some on an in-memory D1),
 # the Cloudflare Worker build, and every Storybook story rendered in
 # Chromium with no axe violation. The Playwright suite runs on the pull request's
-# preview deployment (cd.yml).
+# Preview (cd.yml).
 
 on:
   pull_request:
-    branches: [staging, cloudflare]
+    branches: [staging]
 
 permissions:
   contents: read

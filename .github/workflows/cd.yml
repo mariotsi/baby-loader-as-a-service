@@ -2,9 +2,7 @@ name: CD
 
 # Deploys every push to Cloudflare Workers (ADR-0009) and runs the Playwright
 # suite (e2e/) against the deployment:
-# - the staging branch: the loading-baby-staging Worker on staging's domain.
-#   While the migration is built on the cloudflare branch, that branch plays
-#   staging's part; it becomes staging in #71.
+# - staging: the loading-baby-staging Worker on staging's domain.
 # - any other branch but main: a Preview of loading-baby-staging, with a D1
 #   database lent from the Preview pool (scripts/preview-pool.mjs).
 # - main, once production runs on Cloudflare (the repository variable
@@ -35,7 +33,7 @@ env:
 
 jobs:
   staging:
-    if: github.ref_name == 'cloudflare' || github.ref_name == 'staging'
+    if: github.ref_name == 'staging'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     # Holds the staging Worker's API token (CLOUDFLARE_API_TOKEN).
@@ -84,7 +82,7 @@ jobs:
           retention-days: 7
 
   preview:
-    if: github.ref_name != 'cloudflare' && github.ref_name != 'staging' && github.ref_name != 'main'
+    if: github.ref_name != 'staging' && github.ref_name != 'main'
     runs-on: ubuntu-latest
     # Writes the Preview link on the branch's pull requests.
     permissions:
@@ -262,7 +260,7 @@ jobs:
           path: playwright-report/
           retention-days: 14
 
-  # Staging only: the cloudflare branch never promotes.
+  # Staging only.
   promote:
     needs: e2e
     if: github.ref_name == 'staging'
