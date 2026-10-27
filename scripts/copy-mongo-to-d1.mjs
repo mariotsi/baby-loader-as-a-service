@@ -9,7 +9,7 @@
 // the same User and Site, found by their natural keys (email, Slug, Site and
 // endpoint). A run inserts what's missing and updates what changed, keeping
 // the D1 row's id, so it can run again during a cutover; it never deletes. A
-// remote target needs CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID.
+// remote target needs CLOUDFLARE_API_TOKEN.
 
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';

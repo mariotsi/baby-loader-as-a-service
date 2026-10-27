@@ -3,10 +3,10 @@
  * - E2E_BASE_URL: the deployment under test. Unset, Playwright builds the
  *   Worker and runs it on LOCAL_BASE_URL with a local D1.
  * - E2E_PASSWORD: password of the fixture Owners.
- * - CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID: let the data script
- *   write to a deployed environment's D1 database.
- * - VERCEL_AUTOMATION_BYPASS_SECRET: lets requests through Vercel's
- *   Deployment Protection on preview deployments.
+ * - CLOUDFLARE_API_TOKEN: lets the data script write to a deployed
+ *   environment's D1 database.
+ * - CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET: an Access service token,
+ *   which gets requests through Cloudflare Access on staging and Previews.
  * The global setup picks the database from the deployment's environment.
  */
 
@@ -39,8 +39,8 @@ export function sessionSecret(): string | undefined {
 
 /** Sent only to the deployment under test, never to third parties such as Google Fonts. */
 export function bypassHeaders(): Record<string, string> {
-  const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-  return secret ? { 'x-vercel-protection-bypass': secret } : {};
+  const { CF_ACCESS_CLIENT_ID: id, CF_ACCESS_CLIENT_SECRET: secret } = process.env;
+  return id && secret ? { 'CF-Access-Client-Id': id, 'CF-Access-Client-Secret': secret } : {};
 }
 
 export function ownerStatePath(owner: 'a' | 'b'): string {

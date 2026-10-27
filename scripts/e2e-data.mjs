@@ -11,8 +11,7 @@
 // (Wrangler's default state directory, which `npm run dev` uses, when unset).
 // testDataPolicy (src/lib/dbName.ts) decides what may be written there:
 // nothing on production, fixtures only on staging. The statements run
-// through `wrangler d1 execute`, so a remote target needs CLOUDFLARE_API_TOKEN
-// and CLOUDFLARE_ACCOUNT_ID.
+// through `wrangler d1 execute`, so a remote target needs CLOUDFLARE_API_TOKEN.
 
 import { execFileSync } from 'node:child_process';
 import { randomUUID } from 'node:crypto';
