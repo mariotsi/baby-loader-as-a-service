@@ -37,9 +37,9 @@ function waitForHydration(page: Page) {
 
 /**
  * Prepares a context for the deployment under test: every page it opens
- * waits for hydration after navigating, and requests to the deployment carry
- * the Deployment Protection bypass header. On preview deployments Sites are
- * served by path, so every page a test opens is on that origin.
+ * waits for hydration after navigating, and requests to the deployment under
+ * test only, its root host and the Sites on its subdomains, carry the Access
+ * service token headers.
  */
 export async function prepareContext(context: BrowserContext): Promise<BrowserContext> {
   context.on('page', waitForHydration);
@@ -48,9 +48,9 @@ export async function prepareContext(context: BrowserContext): Promise<BrowserCo
   }
   const headers = bypassHeaders();
   if (Object.keys(headers).length > 0) {
-    const origin = new URL(BASE_URL).origin;
+    const { protocol, host } = new URL(BASE_URL);
     await context.route(
-      (url) => url.origin === origin,
+      (url) => url.protocol === protocol && (url.host === host || url.host.endsWith(`.${host}`)),
       (route) => route.continue({ headers: { ...route.request().headers(), ...headers } })
     );
   }

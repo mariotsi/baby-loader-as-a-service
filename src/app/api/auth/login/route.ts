@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
     return routeError(401, { code: result.code });
   }
 
-  const token = issueSessionToken(result.user._id.toHexString(), {
+  const token = issueSessionToken(result.user.id, {
     passwordChangePending: result.passwordChangePending,
   });
   const res = NextResponse.json({ ok: true });

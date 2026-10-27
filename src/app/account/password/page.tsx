@@ -5,7 +5,7 @@ import { pageSignedIn } from '@/lib/ownerAccessNext';
 
 export default async function ChangePasswordPage() {
   const signedIn = await pageSignedIn();
-  const user = await getUserById(signedIn.id.toHexString());
+  const user = await getUserById(signedIn.id);
   if (!user) {
     redirect('/login');
   }

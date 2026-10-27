@@ -1,9 +1,9 @@
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { defineConfig, devices } from '@playwright/test';
 import webpush from 'web-push';
 import {
   BASE_URL,
-  LOCAL_E2E_DB_NAME,
-  LOCAL_MONGODB_URI,
+  LOCAL_D1_PERSIST_TO,
   LOCAL_PORT,
   LOCAL_SESSION_SECRET,
   STARTS_LOCAL_SERVER,
@@ -13,6 +13,25 @@ const CI = !!process.env.CI;
 
 // Throwaway keys for the local server: no Notification ever reaches a real device.
 const vapid = STARTS_LOCAL_SERVER ? webpush.generateVAPIDKeys() : null;
+
+/** The local Worker's variables, in place of .dev.vars, so a developer's own never leak into a run. */
+const LOCAL_VARS_FILE = `${LOCAL_D1_PERSIST_TO}.vars`;
+if (vapid) {
+  mkdirSync(LOCAL_D1_PERSIST_TO, { recursive: true });
+  writeFileSync(
+    LOCAL_VARS_FILE,
+    [
+      `ROOT_DOMAIN=localhost:${LOCAL_PORT}`,
+      // wrangler.jsonc says staging; this server is a local one, whose fixtures stay local.
+      'APP_ENV=development',
+      `SESSION_SECRET=${LOCAL_SESSION_SECRET}`,
+      `NEXT_PUBLIC_VAPID_PUBLIC_KEY=${vapid.publicKey}`,
+      `VAPID_PRIVATE_KEY=${vapid.privateKey}`,
+      'VAPID_EMAIL=mailto:e2e@waitingpages.test',
+      'NEXTJS_ENV=production',
+    ].join('\n')
+  );
+}
 
 export default defineConfig({
   testDir: './e2e',
@@ -43,21 +62,16 @@ export default defineConfig({
       testIgnore: ['accounts.spec.ts', 'owner-isolation.spec.ts'],
     },
   ],
+  // The Worker build under wrangler dev, the runtime staging and production
+  // run, with its own local D1 apart from the one `npm run dev` uses.
   webServer: vapid
     ? {
-        command: `npm run build && npm run start -- --port ${LOCAL_PORT}`,
+        command: `npm run cf:build && npx wrangler dev --port ${LOCAL_PORT} --persist-to ${LOCAL_D1_PERSIST_TO} --env-file ${LOCAL_VARS_FILE} --infer-origin-from-routes=false`,
         url: `${BASE_URL}/api/version`,
         reuseExistingServer: !CI,
-        timeout: 240_000,
-        env: {
-          MONGODB_URI: LOCAL_MONGODB_URI,
-          MONGODB_DB_NAME: LOCAL_E2E_DB_NAME,
-          ROOT_DOMAIN: `localhost:${LOCAL_PORT}`,
-          SESSION_SECRET: LOCAL_SESSION_SECRET,
-          NEXT_PUBLIC_VAPID_PUBLIC_KEY: vapid.publicKey,
-          VAPID_PRIVATE_KEY: vapid.privateKey,
-          VAPID_EMAIL: 'mailto:e2e@waitingpages.test',
-        },
+        timeout: 300_000,
+        // next build inlines the public key into the browser bundle.
+        env: { NEXT_PUBLIC_VAPID_PUBLIC_KEY: vapid.publicKey },
       }
     : undefined,
 });

@@ -22,7 +22,7 @@ export async function POST(req: NextRequest) {
 
   try {
     const user = await createUser(email, password);
-    const token = issueSessionToken(user._id.toHexString());
+    const token = issueSessionToken(user.id);
     const res = NextResponse.json({ ok: true });
     res.cookies.set({ ...sessionCookieOptions(), value: token });
     return res;

@@ -1,11 +1,10 @@
 name: CI
 
-# Checks every pull request into staging: that the workflows' Playwright
-# images match @playwright/test, types, lint and formatting (Biome), unit
-# tests (src/**/*.test.ts, some starting their own MongoDB with
-# mongodb-memory-server), and every Storybook story rendered in Chromium
-# with no axe violation. The Playwright suite runs on the pull request's
-# preview deployment (cd.yml).
+# Checks every pull request into staging: that the workflows' Playwright images match @playwright/test, types, lint and
+# formatting (Biome), unit tests (src/**/*.test.ts, some on an in-memory D1),
+# the Cloudflare Worker build, and every Storybook story rendered in
+# Chromium with no axe violation. The Playwright suite runs on the pull request's
+# Preview (cd.yml).
 
 on:
   pull_request:
@@ -23,12 +22,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
           node-version: 24
           cache: npm
-      - uses: actions/cache@v4
+      # MongoDB binaries for the copy script's tests (scripts/copy-mongo-to-d1.test.mjs).
+      - uses: actions/cache@v6
         with:
           path: ~/.cache/mongodb-binaries
           key: mongodb-binaries-${{ runner.os }}-${{ hashFiles('package-lock.json') }}
@@ -39,6 +39,8 @@ jobs:
       - name: Lint and format check
         run: npx biome ci
       - run: npm test
+      - name: Build the Cloudflare Worker
+        run: npm run cf:build
 
   # Renders every story in Chromium and fails on any axe violation, in every
   # Palette (vitest.config.ts, the "storybook" project).
@@ -53,9 +55,9 @@ jobs:
       # The runner's user, which owns the mounted workspace and home.
       options: --user 1001
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # The image's Node (24) runs the tests.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.npm
           key: npm-playwright-${{ hashFiles('package-lock.json') }}

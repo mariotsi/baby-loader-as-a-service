@@ -15,7 +15,7 @@ export default async function SubscriptionsPage({ params }: { params: Promise<{ 
   const { dashboard, subscriptions: t } = platformCopy[lang];
   const when = new Intl.DateTimeFormat(lang, { dateStyle: 'medium', timeStyle: 'short' });
 
-  const subscriptions = await listSubscriptionsBySite(site._id);
+  const subscriptions = await listSubscriptionsBySite(site.id);
 
   return (
     <PageShell
@@ -38,14 +38,14 @@ export default async function SubscriptionsPage({ params }: { params: Promise<{ 
       {subscriptions.length > 0 ? (
         <ul className={styles.list}>
           {subscriptions.map((sub) => (
-            <li key={sub._id.toHexString()}>
+            <li key={sub.id}>
               <Card>
                 <div className={styles.item}>
                   <p className={styles.itemTitle}>{sub.deviceInfo?.label ?? t.unknownDevice}</p>
                   <p className={styles.itemMeta}>
                     {[sub.geo?.city, sub.geo?.country].filter(Boolean).join(', ') || t.unknownLocation}
                   </p>
-                  <p className={styles.itemMeta}>{t.subscribedOn(when.format(sub.createdAt))}</p>
+                  <p className={styles.itemMeta}>{t.subscribedOn(when.format(new Date(sub.createdAt)))}</p>
                 </div>
               </Card>
             </li>

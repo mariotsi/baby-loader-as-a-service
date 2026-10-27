@@ -1,19 +1,20 @@
 /**
  * Where a run points, from the environment:
- * - E2E_BASE_URL: the deployment under test. Unset, Playwright builds and
- *   starts the app on LOCAL_BASE_URL against the local MongoDB.
- * - E2E_MONGODB_URI: where the run's test data goes; the local MongoDB when
- *   unset and the deployment is a local one.
+ * - E2E_BASE_URL: the deployment under test. Unset, Playwright builds the
+ *   Worker and runs it on LOCAL_BASE_URL with a local D1.
  * - E2E_PASSWORD: password of the fixture Owners.
- * - VERCEL_AUTOMATION_BYPASS_SECRET: lets requests through Vercel's
- *   Deployment Protection on preview deployments.
+ * - E2E_D1_DATABASE: on a Preview, the pool database its branch holds.
+ * - CLOUDFLARE_API_TOKEN: lets the data script write to a deployed
+ *   environment's D1 database.
+ * - CF_ACCESS_CLIENT_ID and CF_ACCESS_CLIENT_SECRET: an Access service token,
+ *   which gets requests through Cloudflare Access on staging and Previews.
+ * The global setup picks the database from the deployment's environment.
  */
 
 export const LOCAL_PORT = 3100;
 export const LOCAL_BASE_URL = `http://localhost:${LOCAL_PORT}`;
-export const LOCAL_MONGODB_URI = 'mongodb://localhost:27017';
-/** Database of the app Playwright starts locally, apart from the one `npm run dev` uses. */
-export const LOCAL_E2E_DB_NAME = 'waitingpages-e2e';
+/** State of the local Worker's D1, apart from the one `npm run dev` uses. */
+export const LOCAL_D1_PERSIST_TO = '.wrangler/e2e';
 const LOCAL_E2E_PASSWORD = 'local-e2e-password';
 /** SESSION_SECRET of the app Playwright starts locally. */
 export const LOCAL_SESSION_SECRET = 'local-e2e-session-secret';
@@ -39,8 +40,8 @@ export function sessionSecret(): string | undefined {
 
 /** Sent only to the deployment under test, never to third parties such as Google Fonts. */
 export function bypassHeaders(): Record<string, string> {
-  const secret = process.env.VERCEL_AUTOMATION_BYPASS_SECRET;
-  return secret ? { 'x-vercel-protection-bypass': secret } : {};
+  const { CF_ACCESS_CLIENT_ID: id, CF_ACCESS_CLIENT_SECRET: secret } = process.env;
+  return id && secret ? { 'CF-Access-Client-Id': id, 'CF-Access-Client-Secret': secret } : {};
 }
 
 export function ownerStatePath(owner: 'a' | 'b'): string {

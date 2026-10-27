@@ -1,7 +1,8 @@
-import { ObjectId } from 'mongodb';
+import { eq } from 'drizzle-orm';
 import type { NextRequest } from 'next/server';
+import { getDb, isId, isUniqueViolation, newId } from '../db/index.ts';
+import { users } from '../db/schema.ts';
 import { addressEnv, sessionSecret } from './env.ts';
-import { getDb } from './mongodb.ts';
 import { hashPassword, PASSWORD_GENERATIONS, type PasswordGeneration, verifyPassword } from './password.ts';
 import { rateLimit } from './rateLimit.ts';
 import { readSessionToken, type Session, signSessionToken } from './sessionToken.ts';
@@ -11,56 +12,47 @@ export { hashPassword };
 export const SESSION_COOKIE = 'session';
 const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000; // 30 days
 
-export interface User {
-  _id: ObjectId;
-  email: string;
-  passwordHash: string;
-  createdAt: Date;
-}
-
-async function usersCollection() {
-  const db = await getDb();
-  return db.collection<User>('users');
-}
+export type User = typeof users.$inferSelect;
 
 // --- Accounts ----------------------------------------------------------------
 
 export async function getUserByEmail(email: string): Promise<User | null> {
-  const col = await usersCollection();
-  return col.findOne({ email: email.trim().toLowerCase() });
+  const user = await getDb().query.users.findFirst({ where: eq(users.email, email.trim().toLowerCase()) });
+  return user ?? null;
 }
 
 export async function getUserById(id: string): Promise<User | null> {
-  if (!ObjectId.isValid(id)) {
+  if (!isId(id)) {
     return null;
   }
-  const col = await usersCollection();
-  return col.findOne({ _id: new ObjectId(id) });
+  const user = await getDb().query.users.findFirst({ where: eq(users.id, id) });
+  return user ?? null;
 }
 
 /** Thrown by createUser when the email already has an account. */
 export class EmailTakenError extends Error {}
 
+/** The unique email column decides whether an email is taken. */
 export async function createUser(email: string, password: string): Promise<User> {
-  const normalizedEmail = email.trim().toLowerCase();
-  const col = await usersCollection();
-  const existing = await col.findOne({ email: normalizedEmail });
-  if (existing) {
-    throw new EmailTakenError();
-  }
   const user: User = {
-    _id: new ObjectId(),
-    email: normalizedEmail,
+    id: newId(),
+    email: email.trim().toLowerCase(),
     passwordHash: await hashPassword(password),
-    createdAt: new Date(),
+    createdAt: new Date().toISOString(),
   };
-  await col.insertOne(user);
+  try {
+    await getDb().insert(users).values(user);
+  } catch (err) {
+    if (isUniqueViolation(err, 'users.email')) {
+      throw new EmailTakenError(undefined, { cause: err });
+    }
+    throw err;
+  }
   return user;
 }
 
-export async function updatePasswordHash(userId: ObjectId, passwordHash: string): Promise<void> {
-  const col = await usersCollection();
-  await col.updateOne({ _id: userId }, { $set: { passwordHash } });
+export async function updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+  await getDb().update(users).set({ passwordHash }).where(eq(users.id, userId));
 }
 
 export type LogInResult =
@@ -89,7 +81,7 @@ export async function logIn(
   if (check === 'rehash') {
     // The old hash still verifies, so a failed save only puts the upgrade off to the next login.
     try {
-      await updatePasswordHash(user._id, await hashPassword(password));
+      await updatePasswordHash(user.id, await hashPassword(password));
     } catch (err) {
       console.error('Failed to rehash a password', err);
     }
@@ -121,7 +113,12 @@ export function sessionCookieOptions(maxAge = SESSION_TTL_MS / 1000) {
   };
 }
 
+/** Cloudflare's own header first, which a client can't set; then the first proxy hop, which `next dev` sees. */
 export function clientIp(req: NextRequest): string {
+  const connecting = req.headers.get('cf-connecting-ip');
+  if (connecting) {
+    return connecting;
+  }
   const forwarded = req.headers.get('x-forwarded-for');
   if (forwarded) {
     return forwarded.split(',')[0].trim();

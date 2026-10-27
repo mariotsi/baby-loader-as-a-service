@@ -1,37 +1,225 @@
 name: CD
 
-# Runs on every deployment of the Vercel project baby-loader-staging once
-# Vercel reports it ready:
-# - a preview: the Playwright suite (e2e/), whose check lands on the pull
-#   request's commit;
-# - staging, the project's production branch: the suite, then promotion of
-#   that same commit to main, which the production project
-#   baby-loader-as-a-service builds.
-# The production project's deployments are never tested: the jobs filter
-# them out, and the suite refuses a deployment that reports production
-# (e2e/global-setup.ts).
+# Deploys every push to Cloudflare Workers (ADR-0009) and runs the Playwright
+# suite (e2e/) against the deployment:
+# - staging: the loading-baby-staging Worker on staging's domain.
+# - any other branch but main: a Preview of loading-baby-staging, with a D1
+#   database lent from the Preview pool (scripts/preview-pool.mjs).
+# - main, once production runs on Cloudflare (the repository variable
+#   PRODUCTION_ON_CLOUDFLARE, set by #72): the loading-baby Worker. main only
+#   ever receives the staging commit whose e2e passed (promote), and that
+#   check run on the same commit is what "Require E2E on main" reads, so main
+#   gets no Preview and no e2e of its own.
+# Every deploy migrates its database before the new code goes live.
 
 on:
-  deployment_status:
+  push:
+    branches: ["**"]
+  workflow_dispatch:
 
 permissions:
   contents: read
 
-# Vercel's deployment events carry no branch: staging runs one at a time,
-# the newest deployment winning, and previews are grouped per commit.
+# One run per branch at a time; a newer push replaces a waiting or running one.
 concurrency:
-  group: cd-${{ startsWith(github.event.deployment.environment, 'Production') && 'staging' || github.sha }}
+  group: cd-${{ github.ref_name }}
   cancel-in-progress: true
 
+env:
+  STAGING_URL: https://staging-loading-baby.fyi
+  # The account's workers.dev subdomain, under which each Preview gets
+  # <preview name>-loading-baby-staging.
+  WORKERS_DEV: simone-716.workers.dev
+
 jobs:
-  # The ruleset "Require E2E on main" requires a check named e2e from GitHub
-  # Actions on every commit main receives: keep this job's name.
+  staging:
+    if: github.ref_name == 'staging'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Holds the staging Worker's API token (CLOUDFLARE_API_TOKEN).
+    environment: Preview
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    outputs:
+      url: ${{ env.STAGING_URL }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # Before the new code goes live, so it never runs on a schema it
+      # doesn't know. A migration keeps working with the code still serving.
+      - name: Apply D1 migrations to loading-baby-staging
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: d1 migrations apply loading-baby-staging --remote
+
+      - run: npm run cf:build
+
+      - name: Deploy the staging Worker
+        uses: cloudflare/wrangler-action@v4
+        env:
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.ref_name }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy
+          vars: |
+            GIT_COMMIT_SHA
+            GIT_BRANCH
+
+      # Wrangler's log files hold each Cloudflare API call and its error,
+      # which the step's own output leaves out.
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: wrangler-logs
+          path: ~/.config/.wrangler/logs/
+          retention-days: 7
+
+  preview:
+    if: github.ref_name != 'staging' && github.ref_name != 'main'
+    runs-on: ubuntu-latest
+    # Writes the Preview link on the branch's pull requests.
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    timeout-minutes: 15
+    # Holds the staging Worker's API token, which Previews belong to.
+    environment: Preview
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # Passed through the environment, never interpolated into a script: a
+      # branch name is user-controlled input.
+      BRANCH: ${{ github.ref_name }}
+    outputs:
+      # Where wrangler says the Preview is: the E2E wait step fails if that
+      # isn't the ROOT_DOMAIN the deploy passed.
+      url: ${{ steps.deploy.outputs.preview-url }}
+      database: ${{ steps.pool.outputs.database }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      # Keeps the database the branch already holds, with its data, or
+      # claims a free one. Fails here, before anything is deployed, when every
+      # pool database belongs to another branch.
+      - name: Take a database from the Preview pool
+        id: pool
+        run: node scripts/preview-pool.mjs claim "$BRANCH"
+
+      # Never committed: binds DB to the pool database alone, so neither the
+      # migrations nor the Preview can reach staging's.
+      - name: Write the Preview's wrangler config
+        env:
+          DATABASE: ${{ steps.pool.outputs.database }}
+        run: node scripts/preview-pool.mjs config "$DATABASE" wrangler.preview.json
+
+      # The pool database's name is one of PREVIEW_POOL's, never the branch's.
+      - name: Apply D1 migrations to the Preview's database
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: d1 migrations apply ${{ steps.pool.outputs.database }} --remote --config wrangler.preview.json
+
+      - run: npm run cf:build
+
+      # The branch name reaches the Worker through `vars`, as its own
+      # argument, never inside the command; the Preview's name is sanitized.
+      # The Preview's own host is its root domain, so it serves Sites by path.
+      - name: Deploy the Preview
+        id: deploy
+        uses: cloudflare/wrangler-action@v4
+        env:
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: ${{ github.ref_name }}
+          ROOT_DOMAIN: ${{ steps.pool.outputs.preview_name }}-loading-baby-staging.${{ env.WORKERS_DEV }}
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: preview --config wrangler.preview.json --name ${{ steps.pool.outputs.preview_name }}
+          vars: |
+            GIT_COMMIT_SHA
+            GIT_BRANCH
+            ROOT_DOMAIN
+
+      # Like Vercel's bot: one comment per pull request, edited on each push.
+      - name: Comment the Preview link on the branch's pull requests
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          SHA: ${{ github.sha }}
+          DEPLOYMENT_URL: ${{ steps.deploy.outputs.preview-deployment-url }}
+        run: node scripts/preview-comment.mjs ready "$BRANCH" "$SHA" "$DEPLOYMENT_URL"
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: wrangler-logs
+          path: ~/.config/.wrangler/logs/
+          retention-days: 7
+
+  production:
+    if: github.ref_name == 'main' && vars.PRODUCTION_ON_CLOUDFLARE == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    # Restricted to main, the only place the production token is available.
+    environment: Production
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+
+      - name: Apply D1 migrations to loading-baby
+        uses: cloudflare/wrangler-action@v4
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: d1 migrations apply loading-baby --remote --config wrangler.production.jsonc
+
+      - run: npm run cf:build
+
+      - name: Deploy the production Worker
+        uses: cloudflare/wrangler-action@v4
+        env:
+          GIT_COMMIT_SHA: ${{ github.sha }}
+          GIT_BRANCH: main
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          command: deploy --config wrangler.production.jsonc
+          vars: |
+            GIT_COMMIT_SHA
+            GIT_BRANCH
+
+      - uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: wrangler-logs
+          path: ~/.config/.wrangler/logs/
+          retention-days: 7
+
+  # The rulesets "Require E2E on main" and "Require CI and E2E on staging"
+  # require a check named e2e from GitHub Actions: keep this job's name.
   e2e:
-    if: >-
-      github.event.deployment_status.state == 'success' &&
-      endsWith(github.event.deployment.environment, 'baby-loader-staging')
+    needs: [staging, preview]
+    # Whichever of the two deployed this push.
+    if: ${{ !cancelled() && (needs.staging.result == 'success' || needs.preview.result == 'success') }}
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    # Holds the Access service token and the staging Worker's API token, which
+    # the data script uses to write fixtures to staging's or the Preview's D1.
+    environment: Preview
     # Playwright's image ships its browsers and their system dependencies.
     # Its version must equal @playwright/test in package.json, which CI
     # checks (scripts/check-playwright-image.mjs).
@@ -42,57 +230,40 @@ jobs:
     env:
       CI: true
       E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
-      # baby-loader-staging's Protection Bypass for Automation: its vercel.app
-      # URLs sit behind Deployment Protection, staging.loading.baby does not.
-      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # Gets the suite through Cloudflare Access, which guards staging.
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      # Empty on staging, whose database the global setup knows.
+      E2E_D1_DATABASE: ${{ needs.preview.outputs.database }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # The image's Node (24) runs the suite.
-      - uses: actions/cache@v4
+      - uses: actions/cache@v6
         with:
           path: ~/.npm
           key: npm-playwright-${{ hashFiles('package-lock.json') }}
       - run: npm ci
 
-      # The run's test data goes where the deployment under test reads it:
-      # inside a pull request (a preview) PREVIEW_MONGODB_URI, otherwise
-      # (staging) STAGING_MONGODB_URI.
-      - name: Pick the database of the deployment under test
+      - name: Wait until the deployment serves this commit
         env:
-          ENVIRONMENT: ${{ github.event.deployment.environment }}
-          STAGING_MONGODB_URI: ${{ secrets.STAGING_MONGODB_URI }}
-          PREVIEW_MONGODB_URI: ${{ secrets.PREVIEW_MONGODB_URI }}
-        run: |
-          case "$ENVIRONMENT" in
-            Preview*) secret=PREVIEW_MONGODB_URI uri=$PREVIEW_MONGODB_URI ;;
-            *) secret=STAGING_MONGODB_URI uri=$STAGING_MONGODB_URI ;;
-          esac
-          if [ -z "$uri" ]; then
-            echo "::error::Set the repository secret $secret"
-            exit 1
-          fi
-          echo "E2E_MONGODB_URI=$uri" >> "$GITHUB_ENV"
-
-      - name: Find where the deployment serves this commit
-        env:
-          DEPLOYMENT_URL: ${{ github.event.deployment_status.environment_url }}
+          DEPLOYMENT_URL: ${{ needs.staging.outputs.url || needs.preview.outputs.url }}
           COMMIT: ${{ github.sha }}
         run: node scripts/wait-for-deployment.mjs >> "$GITHUB_ENV"
 
       - run: npx playwright test
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
 
+  # Staging only.
   promote:
     needs: e2e
-    if: >-
-      startsWith(github.event.deployment.environment, 'Production') &&
-      endsWith(github.event.deployment.environment, 'baby-loader-staging')
+    if: github.ref_name == 'staging'
     runs-on: ubuntu-latest
     timeout-minutes: 5
     # One push to main at a time. The push is a fast-forward, so main never
@@ -101,7 +272,7 @@ jobs:
       group: promote-main
       cancel-in-progress: false
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           fetch-depth: 0
           # Write deploy key, the only bypass actor of the ruleset that
@@ -110,7 +281,7 @@ jobs:
 
       - name: Fast-forward main to this commit
         env:
-          SHA: ${{ github.event.deployment.sha }}
+          SHA: ${{ github.sha }}
         run: |
           git fetch origin main
           if git merge-base --is-ancestor "$SHA" origin/main; then

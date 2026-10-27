@@ -1,0 +1,34 @@
+name: Preview link
+
+# A pull request opened after its branch's first push has a Preview already,
+# deployed by cd.yml before the pull request existed: this writes its link
+# there. Every later push edits the same comment (scripts/preview-comment.mjs).
+
+on:
+  pull_request:
+    types: [opened]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  comment:
+    # Staging and main have no Preview.
+    if: github.head_ref != 'staging' && github.head_ref != 'main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Comment the Preview link
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          # Passed through the environment, never interpolated into the
+          # script: a branch name is user-controlled input.
+          BRANCH: ${{ github.head_ref }}
+          WORKERS_DEV: simone-716.workers.dev
+        run: node scripts/preview-comment.mjs opened "$BRANCH"

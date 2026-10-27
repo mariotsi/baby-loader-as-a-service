@@ -1,7 +1,6 @@
 import * as z from 'zod/mini';
 import { type AddressConfig, addressConfig } from './address.ts';
 import { type AppEnv, appEnv } from './appEnv.ts';
-import { databaseName } from './dbName.ts';
 
 /**
  * Every environment variable the server reads, and the only place that reads
@@ -20,10 +19,6 @@ const VAPID_PRIVATE_KEY = /^[A-Za-z0-9_-]{43}$/;
 const HOST = /^[a-z0-9.-]+(:\d+)?$/i;
 
 const envSchema = z.object({
-  MONGODB_URI: z
-    .string()
-    .check(z.regex(/^mongodb(\+srv)?:\/\/\S+$/, 'must be a mongodb:// or mongodb+srv:// connection string')),
-  MONGODB_DB_NAME: z.optional(z.string()),
   SESSION_SECRET: z.string(),
   VAPID_EMAIL: z.optional(z.string().check(z.regex(/^(mailto:|https:\/\/)\S+$/, 'must be a mailto: or https: URL'))),
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: z.optional(
@@ -33,12 +28,11 @@ const envSchema = z.object({
     z.string().check(z.regex(VAPID_PRIVATE_KEY, 'must be a VAPID private key (npm run generate-vapid)'))
   ),
   ROOT_DOMAIN: z.optional(z.string().check(z.regex(HOST, 'must be a host, with a port only for localhost'))),
-  VERCEL_ENV: z.optional(
-    z.enum(['production', 'preview', 'development'], 'must be production, preview or development')
+  APP_ENV: z.optional(
+    z.enum(['production', 'staging', 'preview', 'development'], 'must be production, staging, preview or development')
   ),
-  VERCEL_GIT_COMMIT_REF: z.optional(z.string()),
-  VERCEL_GIT_COMMIT_SHA: z.optional(z.string()),
-  VERCEL_BRANCH_URL: z.optional(z.string()),
+  GIT_COMMIT_SHA: z.optional(z.string()),
+  GIT_BRANCH: z.optional(z.string()),
 });
 
 type Env = z.output<typeof envSchema>;
@@ -47,9 +41,8 @@ type RawEnv = Record<string, string | undefined>;
 const VAPID_VARS = ['VAPID_EMAIL', 'NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'] as const;
 
 /**
- * The rules across variables: the VAPID keypair comes whole or not at all,
- * and databaseName must resolve. They run even when a variable already
- * failed, so one start names every problem.
+ * The rule across variables: the VAPID keypair comes whole or not at all. It
+ * runs even when a variable already failed, so one start names every problem.
  */
 const fullSchema = envSchema.check(
   z.superRefine(
@@ -59,12 +52,6 @@ const fullSchema = envSchema.check(
         for (const name of missing) {
           ctx.addIssue({ code: 'custom', path: [name], message: 'is not set, while the rest of the VAPID keypair is' });
         }
-      }
-      try {
-        databaseName(env);
-      } catch (err) {
-        // Its message names the variable.
-        ctx.addIssue({ code: 'custom', path: [], message: (err as Error).message });
       }
     },
     { when: () => true }
@@ -108,12 +95,6 @@ function lazy<K extends keyof Env, T>(mask: Record<K, true>, read: (env: Pick<En
   };
 }
 
-/** The MongoDB connection string and this deployment's database (see databaseName). */
-export const mongoEnv = lazy(
-  { MONGODB_URI: true, MONGODB_DB_NAME: true, VERCEL_ENV: true, VERCEL_GIT_COMMIT_REF: true },
-  (env) => ({ uri: env.MONGODB_URI, dbName: databaseName(env) })
-);
-
 /** The key that signs session cookies (ADR-0003). */
 export const sessionSecret = lazy({ SESSION_SECRET: true }, (env) => env.SESSION_SECRET);
 
@@ -125,17 +106,14 @@ export const vapidEnv = lazy(
 );
 
 /** Where this deployment serves each Site (see address.ts). */
-export const addressEnv = lazy(
-  { ROOT_DOMAIN: true, VERCEL_BRANCH_URL: true },
-  (env): AddressConfig => addressConfig(env)
-);
+export const addressEnv = lazy({ ROOT_DOMAIN: true }, (env): AddressConfig => addressConfig(env));
 
-/** Which deployment this is, and the commit and branch it was built from. */
+/** Which deployment this is, and the commit and branch it was built from, as the deploy sets them. */
 export const deploymentEnv = lazy(
-  { VERCEL_ENV: true, VERCEL_GIT_COMMIT_REF: true, VERCEL_GIT_COMMIT_SHA: true },
+  { APP_ENV: true, GIT_COMMIT_SHA: true, GIT_BRANCH: true },
   (env): { appEnv: AppEnv; commit: string | null; branch: string | null } => ({
     appEnv: appEnv(env),
-    commit: env.VERCEL_GIT_COMMIT_SHA ?? null,
-    branch: env.VERCEL_GIT_COMMIT_REF ?? null,
+    commit: env.GIT_COMMIT_SHA ?? null,
+    branch: env.GIT_BRANCH ?? null,
   })
 );

@@ -32,7 +32,7 @@ export async function POST(req: NextRequest) {
   const lang = isLang(body?.lang) && site.languages.includes(body.lang) ? body.lang : null;
 
   await upsertSubscription({
-    siteId: site._id,
+    siteId: site.id,
     endpoint: subscription.endpoint,
     keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth },
     lang,
@@ -57,6 +57,6 @@ export async function DELETE(req: NextRequest) {
     return routeError(404, { code: 'unknownSite' });
   }
 
-  await deleteSubscription(site._id, endpoint);
+  await deleteSubscription(site.id, endpoint);
   return NextResponse.json({ ok: true });
 }
