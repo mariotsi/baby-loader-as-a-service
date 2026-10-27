@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import './globals.css';
 import { EnvironmentRibbon } from '@/components/EnvironmentRibbon';
+import { HydrationMarker } from '@/components/HydrationMarker';
 import { LangProvider } from '@/components/LangProvider';
 import { platformCopy } from '@/lib/copy/platform';
 import { addressEnv } from '@/lib/env';
@@ -52,6 +53,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body>
         <LangProvider lang={lang}>{children}</LangProvider>
         <EnvironmentRibbon />
+        <HydrationMarker />
       </body>
     </html>
   );

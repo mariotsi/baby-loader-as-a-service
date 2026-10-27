@@ -7,16 +7,45 @@ import {
   expect,
   type Page,
 } from '@playwright/test';
+import { HYDRATED_ATTRIBUTE } from '../../src/components/HydrationMarker.tsx';
 import { fixtureSite, type Owner, type ProjectName } from './data.ts';
 import { BASE_URL, bypassHeaders, ownerStatePath } from './env.ts';
 
 export { expect };
 
 /**
- * Adds the Access service token headers to requests for the deployment under
- * test only: its root host and the Sites on its subdomains.
+ * Makes `goto` and `reload` resolve only once React has hydrated the page
+ * (HydrationMarker in the root layout). Typing into a page that has not
+ * hydrated yet shows the text, but a controlled form keeps its old state and
+ * saves that.
  */
-export async function withBypass(context: BrowserContext): Promise<BrowserContext> {
+function waitForHydration(page: Page) {
+  const hydrated = () => page.locator(`html[${HYDRATED_ATTRIBUTE}]`).waitFor({ state: 'attached' });
+  const goto = page.goto.bind(page);
+  const reload = page.reload.bind(page);
+  page.goto = async (...args) => {
+    const response = await goto(...args);
+    await hydrated();
+    return response;
+  };
+  page.reload = async (...args) => {
+    const response = await reload(...args);
+    await hydrated();
+    return response;
+  };
+}
+
+/**
+ * Prepares a context for the deployment under test: every page it opens
+ * waits for hydration after navigating, and requests to the deployment under
+ * test only, its root host and the Sites on its subdomains, carry the Access
+ * service token headers.
+ */
+export async function prepareContext(context: BrowserContext): Promise<BrowserContext> {
+  context.on('page', waitForHydration);
+  for (const page of context.pages()) {
+    waitForHydration(page);
+  }
   const headers = bypassHeaders();
   if (Object.keys(headers).length > 0) {
     const { protocol, host } = new URL(BASE_URL);
@@ -29,7 +58,7 @@ export async function withBypass(context: BrowserContext): Promise<BrowserContex
 }
 
 export async function newContext(browser: Browser, options: BrowserContextOptions = {}): Promise<BrowserContext> {
-  return withBypass(await browser.newContext({ baseURL: BASE_URL, ...options }));
+  return prepareContext(await browser.newContext({ baseURL: BASE_URL, ...options }));
 }
 
 const addressCache = new Map<string, string>();
@@ -61,7 +90,7 @@ type Fixtures = {
 
 export const test = base.extend<Fixtures>({
   context: async ({ context }, use) => {
-    await use(await withBypass(context));
+    await use(await prepareContext(context));
   },
 
   // biome-ignore lint/correctness/noEmptyPattern: Playwright reads a fixture's dependencies from this destructuring.
