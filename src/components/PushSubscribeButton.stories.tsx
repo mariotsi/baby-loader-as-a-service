@@ -1,8 +1,11 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useEffect, useState } from 'react';
+import type { Lang } from '@/lib/i18n';
 import { publicPageView } from '@/lib/publicPageView';
 import { defaultSiteSettings } from '@/lib/siteSettings';
+import { LanguageSwitcher } from './LanguageSwitcher';
 import { PushSubscribeView } from './PushSubscribeButton';
+import { Stack } from './ui/Stack';
 
 const desktop = { ios: false, android: false, chrome: true, standalone: false, iosVersion: null };
 const iphone = { ...desktop, ios: true, chrome: false, iosVersion: '18.0' };
@@ -38,6 +41,8 @@ const meta = {
     onConfirmOpenChange: () => {},
   },
   render: function Interactive(args, { parameters }) {
+    const [lang, setLang] = useState<Lang>(parameters.language ?? 'en');
+    const translated = { ...copy(lang, parameters.born ?? false), appName: args.t.appName, appIcon: args.t.appIcon };
     const [status, setStatus] = useState(args.status);
     const [open, setOpen] = useState(args.confirmOpen ?? false);
     const [celebrate, setCelebrate] = useState(false);
@@ -49,21 +54,32 @@ const meta = {
       return () => window.clearTimeout(timer);
     }, [celebrate]);
     return (
-      <PushSubscribeView
-        {...args}
-        status={status}
-        confirmOpen={open}
-        celebrate={celebrate}
-        onSubscribe={() => {
-          setStatus('subscribed');
-          setCelebrate(!parameters.reducedMotion && !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
-        }}
-        onUnsubscribe={() => {
-          setStatus('unsubscribed');
-          setOpen(false);
-        }}
-        onConfirmOpenChange={setOpen}
-      />
+      <Stack gap={4} align="stretch">
+        <Stack direction="row" justify="end">
+          <LanguageSwitcher
+            langs={['en', 'it']}
+            current={lang}
+            label={lang === 'it' ? 'Lingua' : 'Language'}
+            onChange={setLang}
+          />
+        </Stack>
+        <PushSubscribeView
+          {...args}
+          t={translated}
+          status={status}
+          confirmOpen={open}
+          celebrate={celebrate}
+          onSubscribe={() => {
+            setStatus('subscribed');
+            setCelebrate(!parameters.reducedMotion && !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+          }}
+          onUnsubscribe={() => {
+            setStatus('unsubscribed');
+            setOpen(false);
+          }}
+          onConfirmOpenChange={setOpen}
+        />
+      </Stack>
     );
   },
 } satisfies Meta<typeof PushSubscribeView>;
@@ -73,9 +89,9 @@ type Story = StoryObj<typeof meta>;
 /** Simulates opting in and celebrates without requesting browser permission or saving a subscription. */
 export const Subscribe: Story = {};
 /** Shows the same controls in Italian. */
-export const Italian: Story = { args: { t: copy('it') } };
+export const Italian: Story = { parameters: { language: 'it' } };
 /** Offers updates after the birth. */
-export const Born: Story = { args: { t: copy('en', true) } };
+export const Born: Story = { parameters: { born: true } };
 /** Shows the confirmed subscription with its deactivation link. */
 export const Subscribed: Story = { args: { status: 'subscribed' } };
 /** Opens the deactivation confirmation from the link. */
