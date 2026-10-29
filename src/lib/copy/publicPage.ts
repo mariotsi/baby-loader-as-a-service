@@ -146,7 +146,7 @@ const it: PublicPageCopy = {
   unsubscribeDescription: 'Non riceverai più le notifiche di questa pagina su questo dispositivo.',
   keepNotifications: 'Mantieni le notifiche attive',
   subscribeBorn: 'Ricevi i prossimi aggiornamenti',
-  subscribeWaiting: (_sex: Sex): string => 'Avvisami alla nascita',
+  subscribeWaiting: (): string => 'Avvisami alla nascita',
   subscribing: 'Attivazione...',
 
   subscribeOk: 'Iscrizione completata.',

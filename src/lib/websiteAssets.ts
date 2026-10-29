@@ -8,5 +8,11 @@ const MEDIA_ORIGINS: Record<Exclude<AppEnv, 'development'>, string> = {
 
 export function websiteAssetUrl(path: string, appEnv: AppEnv): string {
   const assetPath = `/website-assets/${path}`;
-  return appEnv === 'development' ? assetPath : `${MEDIA_ORIGINS[appEnv]}${assetPath}`;
+  if (appEnv === 'development') {
+    return assetPath;
+  }
+  if (appEnv === 'preview' || appEnv === 'staging') {
+    return `/api/website-assets/${path}`;
+  }
+  return `${MEDIA_ORIGINS[appEnv]}${assetPath}`;
 }
