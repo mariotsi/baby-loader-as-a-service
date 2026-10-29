@@ -1,8 +1,7 @@
 type Bucket = { count: number; resetAt: number };
 
-// Best-effort in-process limiter. Serverless instances are not shared, so this
-// slows down bursts rather than guaranteeing a global limit. Good enough here;
-// swap for a Mongo/Redis counter if stronger guarantees are needed.
+// Best-effort in-process limiter. Worker instances do not share memory, so
+// this slows down bursts without guaranteeing a global limit.
 const buckets = new Map<string, Bucket>();
 
 export function rateLimit(key: string, limit: number, windowMs: number): boolean {

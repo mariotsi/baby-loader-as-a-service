@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Keeps one comment with a branch's Preview link on each of its open pull
-// requests, the way Vercel's bot did: written once, then edited in place.
+// requests, updating the same comment for each deployment.
 //
 //   node scripts/preview-comment.mjs ready <branch> <commit> [deployment url]   the Preview serves <commit>
 //   node scripts/preview-comment.mjs opened <branch>           a new pull request, for a branch that may already have one
