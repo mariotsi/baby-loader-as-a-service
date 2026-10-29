@@ -25,6 +25,7 @@ export type PushButtonCopy = {
   subscribeOk: string;
   unsubscribeOk: string;
   errorGeneric: string;
+  errorUnsubscribe: string;
   errorUnsupported: string;
   errorDenied: string;
   iosHomeScreen: string;
@@ -210,6 +211,7 @@ function pushButtonCopy(t: PublicPageCopy, born: boolean, sex: SiteSettings['sex
     subscribeOk: t.subscribeOk,
     unsubscribeOk: t.unsubscribeOk,
     errorGeneric: t.errorGeneric,
+    errorUnsubscribe: t.errorUnsubscribe,
     errorUnsupported: t.errorUnsupported,
     errorDenied: t.errorDenied,
     iosHomeScreen: t.iosHomeScreen,

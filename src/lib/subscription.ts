@@ -74,3 +74,12 @@ export async function countSubscriptionsBySite(siteId: string): Promise<number> 
   const [row] = await getDb().select({ n: count() }).from(subscriptions).where(eq(subscriptions.siteId, siteId));
   return row?.n ?? 0;
 }
+
+/** Whether this Site has a saved Subscription for the browser endpoint. */
+export async function hasSubscription(siteId: string, endpoint: string): Promise<boolean> {
+  const row = await getDb().query.subscriptions.findFirst({
+    where: and(eq(subscriptions.siteId, siteId), eq(subscriptions.endpoint, endpoint)),
+    columns: { id: true },
+  });
+  return !!row;
+}

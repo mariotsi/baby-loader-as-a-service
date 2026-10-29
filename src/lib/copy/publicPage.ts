@@ -80,6 +80,7 @@ const en = {
   subscribeOk: 'You are all set.',
   unsubscribeOk: 'Notifications turned off.',
   errorGeneric: 'Something went wrong.',
+  errorUnsubscribe: 'Could not turn off notifications. Please try again.',
   errorUnsupported: 'Your browser does not support push notifications.',
   errorDenied: 'Notifications are blocked in your browser settings.',
   iosHomeScreen:
@@ -130,6 +131,7 @@ const it: PublicPageCopy = {
   subscribeOk: 'Iscrizione completata.',
   unsubscribeOk: 'Notifiche disattivate.',
   errorGeneric: 'Qualcosa è andato storto.',
+  errorUnsubscribe: 'Non è stato possibile disattivare le notifiche. Riprova.',
   errorUnsupported: 'Il tuo browser non supporta le notifiche push.',
   errorDenied: 'Le notifiche sono bloccate nelle impostazioni del browser.',
   iosHomeScreen:

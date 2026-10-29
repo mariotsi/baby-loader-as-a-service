@@ -118,7 +118,7 @@ function clientDeviceHints() {
 }
 
 /** Where this browser stands with push notifications, before the Visitor does anything. */
-async function detectStatus(device: DeviceContext): Promise<Status> {
+async function detectStatus(device: DeviceContext, slug: string): Promise<Status> {
   if (device.ios && device.iosVersion) {
     const [major = 0, minor = 0] = device.iosVersion.split('.').map(Number);
     if (major < 16 || (major === 16 && minor < 4)) {
@@ -136,7 +136,16 @@ async function detectStatus(device: DeviceContext): Promise<Status> {
   }
   try {
     const reg = await navigator.serviceWorker.register('/sw.js');
-    return (await reg.pushManager.getSubscription()) ? 'subscribed' : 'unsubscribed';
+    const sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      return 'unsubscribed';
+    }
+    const query = new URLSearchParams({ slug, endpoint: sub.endpoint });
+    const response = await fetch(`/api/subscribe?${query}`, { cache: 'no-store' });
+    if (!response.ok) {
+      return 'unsubscribed';
+    }
+    return (await response.json()).subscribed ? 'subscribed' : 'unsubscribed';
   } catch {
     return 'unsubscribed';
   }
@@ -145,7 +154,7 @@ async function detectStatus(device: DeviceContext): Promise<Status> {
 export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
   const [status, setStatus] = useState<Status>('checking');
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<'unsubscribeOk' | 'errorGeneric' | null>(null);
+  const [feedback, setFeedback] = useState<'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe' | null>(null);
   const [device, setDevice] = useState<DeviceContext | null>(null);
   const [celebrate, setCelebrate] = useState(false);
 
@@ -153,11 +162,11 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
     let cancelled = false;
     const detectedDevice = deviceContext();
     setDevice(detectedDevice);
-    void detectStatus(detectedDevice).then((detected) => !cancelled && setStatus(detected));
+    void detectStatus(detectedDevice, slug).then((detected) => !cancelled && setStatus(detected));
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [slug]);
 
   useEffect(() => {
     if (!celebrate) {
@@ -192,6 +201,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
       if (Notification.permission === 'denied') {
         setStatus('denied');
       } else {
+        setStatus('unsubscribed');
         setFeedback('errorGeneric');
       }
     } finally {
@@ -206,17 +216,19 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
       const reg = await navigator.serviceWorker.getRegistration();
       const sub = await reg?.pushManager.getSubscription();
       if (sub) {
-        await fetch('/api/subscribe', {
+        const response = await fetch('/api/subscribe', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ slug, endpoint: sub.endpoint }),
         });
-        await sub.unsubscribe();
+        if (!response.ok) {
+          throw new Error('server');
+        }
       }
       setStatus('unsubscribed');
       setFeedback('unsubscribeOk');
     } catch {
-      setFeedback('errorGeneric');
+      setFeedback('errorUnsubscribe');
     } finally {
       setBusy(false);
     }
@@ -232,7 +244,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
   }
 
   const success = feedback === 'unsubscribeOk' ? t.unsubscribeOk : null;
-  const failure = feedback !== null && feedback !== 'unsubscribeOk' ? t.errorGeneric : null;
+  const failure = feedback !== null && feedback !== 'unsubscribeOk' ? t[feedback] : null;
 
   return (
     <div className={styles.push}>
