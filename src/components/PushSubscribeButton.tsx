@@ -256,12 +256,14 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
         <StatusMessage tone="info">{t.androidUseChrome}</StatusMessage>
       ) : null}
       {status === 'subscribed' ? (
-        <>
-          <StatusMessage tone="success">{t.subscribed}</StatusMessage>
-          <Button variant="link" size="sm" onClick={() => setConfirmOpen(true)} loading={busy}>
-            {t.unsubscribe}
-          </Button>
-        </>
+        <StatusMessage tone="success">
+          <span className={styles.subscribedContent}>
+            <span>{t.subscribed}</span>
+            <Button variant="link" size="sm" onClick={() => setConfirmOpen(true)} loading={busy}>
+              {t.unsubscribe}
+            </Button>
+          </span>
+        </StatusMessage>
       ) : (
         <Button variant="primary" icon="bell" onClick={subscribe} loading={busy}>
           {busy ? t.subscribing : t.subscribe}
