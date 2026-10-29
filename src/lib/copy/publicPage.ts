@@ -65,8 +65,8 @@ const en = {
   sexMale: 'It’s a boy',
 
   checking: 'Checking notification status...',
-  subscribedBorn: 'Notifications active on this device:',
-  subscribedWaiting: 'Notifications active on this device:',
+  subscribedBorn: 'Notifications active on this device',
+  subscribedWaiting: 'Notifications active on this device',
   unsubscribe: 'Turn off notifications',
   unsubscribeLink: 'Turn them off',
   unsubscribeTitle: 'Turn off notifications?',
@@ -125,8 +125,8 @@ const it: PublicPageCopy = {
   sexMale: 'È un maschio',
 
   checking: 'Controllo stato notifiche...',
-  subscribedBorn: 'Notifiche attive su questo dispositivo:',
-  subscribedWaiting: 'Notifiche attive su questo dispositivo:',
+  subscribedBorn: 'Notifiche attive su questo dispositivo',
+  subscribedWaiting: 'Notifiche attive su questo dispositivo',
   unsubscribe: 'Disattiva le notifiche',
   unsubscribeLink: 'Disattivale',
   unsubscribeTitle: 'Disattivare le notifiche?',
