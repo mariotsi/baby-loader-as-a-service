@@ -11,7 +11,7 @@ export function websiteAssetUrl(path: string, appEnv: AppEnv): string {
   if (appEnv === 'development') {
     return assetPath;
   }
-  if (appEnv === 'preview' || appEnv === 'staging') {
+  if (appEnv === 'preview') {
     return `/api/website-assets/${path}`;
   }
   return `${MEDIA_ORIGINS[appEnv]}${assetPath}`;
