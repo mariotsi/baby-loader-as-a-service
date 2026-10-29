@@ -10,7 +10,9 @@ const ROUTES = {
 };
 
 const token = process.env.CLOUDFLARE_API_TOKEN;
-if (!token) throw new Error('CLOUDFLARE_API_TOKEN is required.');
+if (!token) {
+  throw new Error('CLOUDFLARE_API_TOKEN is required.');
+}
 
 async function api(zoneId, route = '', options = {}) {
   const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/workers/routes${route}`, {

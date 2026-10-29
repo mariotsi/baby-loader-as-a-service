@@ -53,7 +53,9 @@ export function websiteAssetKey(path: string): string {
 
 function validateMedia(file: Blob): void {
   const limit = MEDIA_TYPE_LIMITS[file.type];
-  if (!limit) throw new UnsupportedMediaTypeError('This media type is not supported.');
+  if (!limit) {
+    throw new UnsupportedMediaTypeError('This media type is not supported.');
+  }
   if (file.size === 0 || file.size > limit) {
     throw new MediaTooLargeError('This media file is empty or exceeds its size limit.');
   }
@@ -85,9 +87,7 @@ function encodeKey(key: string): string {
 class R2StorageProvider implements StorageProvider {
   private readonly client: AwsClient;
 
-  constructor(
-    private readonly config: NonNullable<ReturnType<typeof mediaStorageEnv>>
-  ) {
+  constructor(private readonly config: NonNullable<ReturnType<typeof mediaStorageEnv>>) {
     this.client = new AwsClient({
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,
@@ -109,7 +109,9 @@ class R2StorageProvider implements StorageProvider {
       },
       body: await file.arrayBuffer(),
     });
-    if (!response.ok) throw new Error(`Media upload failed with status ${response.status}.`);
+    if (!response.ok) {
+      throw new Error(`Media upload failed with status ${response.status}.`);
+    }
     return { key, url: this.publicUrl(key) };
   }
 
@@ -119,7 +121,9 @@ class R2StorageProvider implements StorageProvider {
       throw new MediaOwnershipError('This media does not belong to the authenticated Site Owner.');
     }
     const response = await this.client.fetch(this.objectUrl(key), { method: 'DELETE' });
-    if (!response.ok) throw new Error(`Media deletion failed with status ${response.status}.`);
+    if (!response.ok) {
+      throw new Error(`Media deletion failed with status ${response.status}.`);
+    }
     await this.purge(this.publicUrl(key));
   }
 
