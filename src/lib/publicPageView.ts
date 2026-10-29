@@ -132,7 +132,7 @@ export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = n
     push: {
       ...pushButtonCopy(t, birth.born, settings.privacy.showSex ? settings.sex : 'unknown'),
       appName: siteShortName(settings, lang),
-      appIcon: settings.icon ? twemojiUrl(settings.icon) : '/apple-icon.png',
+      appIcon: settings.icon ? twemojiUrl(settings.icon) : '/icon-192.png',
     },
   };
 }
@@ -249,7 +249,7 @@ function pushButtonCopy(t: PublicPageCopy, born: boolean, sex: SiteSettings['sex
     iosStepsGeneric: t.iosStepsGeneric,
     iosOpenApp: t.iosOpenApp,
     appName: 'Loading Baby',
-    appIcon: '/apple-icon.png',
+    appIcon: '/icon-192.png',
     iosOpenSafari: t.iosOpenSafari,
     iosShare: t.iosShare,
     iosMenu26: t.iosMenu26,

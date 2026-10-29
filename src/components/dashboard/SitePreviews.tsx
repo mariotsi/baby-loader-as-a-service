@@ -104,7 +104,7 @@ function SiteIcon({ icon, className }: { icon: string | null; className: string 
     // biome-ignore lint/performance/noImgElement: a remote Twemoji or a fixed icon, shown small; next/image adds nothing.
     <img
       className={className}
-      src={icon ? twemojiUrl(icon) : '/apple-icon.png'}
+      src={icon ? twemojiUrl(icon) : '/icon-192.png'}
       alt=""
       data-emoji={icon ? true : undefined}
     />

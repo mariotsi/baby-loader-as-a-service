@@ -128,3 +128,20 @@ export const IPhoneIOS27: Story = {
 export const IPhoneFutureVersion: Story = {
   args: { status: 'ios-home-screen', device: { ...iphone, iosVersion: '28.0' } },
 };
+
+/** Shows an emoji app icon, with the brand icon as its image failure fallback. */
+export const IPhoneEmojiApp: Story = {
+  args: {
+    status: 'ios-home-screen',
+    device: { ...iphone, iosVersion: '27.0' },
+    t: publicPageView({ ...defaultSiteSettings, babyName: 'Emma', icon: '🐣' }, 'en').push,
+  },
+};
+/** Keeps the app preview visible when an image cannot load. */
+export const IPhoneMissingAppIcon: Story = {
+  args: {
+    status: 'ios-home-screen',
+    device: { ...iphone, iosVersion: '27.0' },
+    t: { ...copy('en'), appIcon: '/missing-app-icon.png' },
+  },
+};

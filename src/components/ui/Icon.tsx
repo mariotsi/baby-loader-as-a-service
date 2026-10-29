@@ -65,7 +65,6 @@ const PATHS = {
   'page-menu': (
     <>
       <path d="M4 5h16M4 10h10M4 15h7" />
-      <circle cx="18" cy="17" r="3" />
     </>
   ),
   plus: <path d="M12 5v14M5 12h14" />,

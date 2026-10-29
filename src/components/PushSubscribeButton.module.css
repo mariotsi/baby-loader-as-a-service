@@ -97,3 +97,10 @@
 .appPreview img {
   border-radius: var(--radius-md);
 }
+
+.instructionAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  vertical-align: baseline;
+}

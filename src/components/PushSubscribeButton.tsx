@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ExternalLink } from '@/components/ui/ExternalLink';
-import { Icon } from '@/components/ui/Icon';
+import { Icon, type IconName } from '@/components/ui/Icon';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import type { Lang } from '@/lib/i18n';
@@ -110,26 +110,47 @@ function StatusNotice({ status, device, t }: { status: Status; device: DeviceCon
   );
 }
 
+const INSTRUCTION_ICONS: Record<string, IconName> = {
+  Share: 'share-ios',
+  Condividi: 'share-ios',
+  More: 'more-ios',
+  Altro: 'more-ios',
+  'Page Menu': 'page-menu',
+  'Menu pagina': 'page-menu',
+  'Add to Home Screen': 'home-add',
+  'Aggiungi alla schermata Home': 'home-add',
+};
+
+function Instruction({ text }: { text: string }) {
+  let offset = 0;
+  return (
+    <>
+      {text
+        .split(/(Add to Home Screen|Aggiungi alla schermata Home|Page Menu|Menu pagina|Share|Condividi|More|Altro)/g)
+        .map((part) => {
+          const position = offset;
+          offset += part.length;
+          const icon = INSTRUCTION_ICONS[part];
+          return icon ? (
+            <span className={styles.instructionAction} key={`${position}-${part}`}>
+              {part} <Icon name={icon} />
+            </span>
+          ) : (
+            part
+          );
+        })}
+    </>
+  );
+}
+
 function IPhoneInstructions({ device, t }: { device: DeviceContext | null; t: PushButtonCopy }) {
   const major = Number(device?.iosVersion?.split('.')[0]);
   const known = (major >= 16 && major <= 18) || major === 26 || major === 27;
-  let share = (
-    <>
-      <Icon name="share-ios" /> {t.iosShare}
-    </>
-  );
+  let share = t.iosShare;
   if (major === 26) {
-    share = (
-      <>
-        <Icon name="more-ios" /> {t.iosMenu26} <Icon name="share-ios" />
-      </>
-    );
+    share = t.iosMenu26;
   } else if (major === 27) {
-    share = (
-      <>
-        <Icon name="page-menu" /> {t.iosMenu27} <Icon name="share-ios" />
-      </>
-    );
+    share = t.iosMenu27;
   }
   return (
     <>
@@ -137,9 +158,11 @@ function IPhoneInstructions({ device, t }: { device: DeviceContext | null; t: Pu
       {known ? (
         <ol className={styles.steps}>
           <li>{t.iosOpenSafari}</li>
-          <li>{share}</li>
           <li>
-            <Icon name="home-add" /> {t.iosAddHome}
+            <Instruction text={share} />
+          </li>
+          <li>
+            <Instruction text={t.iosAddHome} />
           </li>
           {major >= 26 ? <li>{t.iosEnableApp}</li> : null}
           <li>{t.iosAdd}</li>
@@ -153,7 +176,18 @@ function IPhoneInstructions({ device, t }: { device: DeviceContext | null; t: Pu
       )}
       <span className={styles.appPreview}>
         {/* biome-ignore lint/performance/noImgElement: the preview uses the Site's fixed icon or Twemoji. */}
-        <img src={t.appIcon} alt="" width={60} height={60} />
+        <img
+          src={t.appIcon}
+          alt=""
+          width={60}
+          height={60}
+          onError={(event) => {
+            const image = event.currentTarget;
+            if (!image.src.endsWith('/icon-192.png')) {
+              image.src = '/icon-192.png';
+            }
+          }}
+        />
         <span>{t.appName}</span>
       </span>
     </>
