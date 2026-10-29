@@ -1,12 +1,18 @@
-import { spawnSync } from 'node:child_process';
-import { readdir } from 'node:fs/promises';
+import { readdir, readFile } from 'node:fs/promises';
 import { extname, join, relative, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { AwsClient } from 'aws4fetch';
 
-const bucket = process.env.R2_BUCKET;
-if (!bucket) {
-  throw new Error('R2_BUCKET must name the destination bucket');
+const {
+  R2_BUCKET: bucket,
+  R2_ENDPOINT: endpoint,
+  R2_ACCESS_KEY_ID: accessKeyId,
+  R2_SECRET_ACCESS_KEY: secretAccessKey,
+} = process.env;
+if (!bucket || !endpoint || !accessKeyId || !secretAccessKey) {
+  throw new Error('R2_BUCKET, R2_ENDPOINT, R2_ACCESS_KEY_ID and R2_SECRET_ACCESS_KEY are required');
 }
+const client = new AwsClient({ accessKeyId, secretAccessKey, service: 's3', region: 'auto' });
 
 const assetRoot = fileURLToPath(new URL('../public/website-assets/', import.meta.url));
 const contentTypes = new Map([
@@ -42,29 +48,17 @@ for (const file of files) {
   }
 
   const key = relative(assetRoot, file).split(sep).join('/');
-  const result = spawnSync(
-    'npx',
-    [
-      'wrangler',
-      'r2',
-      'object',
-      'put',
-      `${bucket}/website-assets/${key}`,
-      '--file',
-      file,
-      '--remote',
-      '--content-type',
-      contentType,
-      '--cache-control',
-      'public, max-age=31536000, immutable',
-    ],
-    { stdio: 'inherit' }
+  const url = new URL(
+    `${encodeURIComponent(bucket)}/website-assets/${key.split('/').map(encodeURIComponent).join('/')}`,
+    `${endpoint.replace(/\/$/, '')}/`
   );
-
-  if (result.error) {
-    throw result.error;
+  const response = await client.fetch(url.toString(), {
+    method: 'PUT',
+    headers: { 'Content-Type': contentType, 'Cache-Control': 'public, max-age=31536000, immutable' },
+    body: await readFile(file),
+  });
+  if (!response.ok) {
+    throw new Error(`Website asset upload failed (${response.status}): ${key}`);
   }
-  if (result.status !== 0) {
-    process.exit(result.status ?? 1);
-  }
+  console.log(`Uploaded website-assets/${key}`);
 }
