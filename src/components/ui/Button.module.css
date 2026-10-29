@@ -115,5 +115,9 @@
 }
 
 .link.sm {
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 0;
   font-size: var(--text-xs);
 }
