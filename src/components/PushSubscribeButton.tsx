@@ -126,14 +126,16 @@ function Instruction({ text }: { text: string }) {
   return (
     <>
       {text
-        .split(/(Add to Home Screen|Aggiungi alla schermata Home|Page Menu|Menu pagina|Share|Condividi|More|Altro)/g)
+        .split(
+          /(Add to Home Screen|Aggiungi alla schermata Home|Open as Web App|Apri come app web|Page Menu|Menu pagina|Share|Condividi|More|Altro|Add|Aggiungi|Safari)/g
+        )
         .map((part) => {
           const position = offset;
           offset += part.length;
           const icon = INSTRUCTION_ICONS[part];
-          return icon ? (
+          return icon || ['Open as Web App', 'Apri come app web', 'Add', 'Aggiungi', 'Safari'].includes(part) ? (
             <span className={styles.instructionAction} key={`${position}-${part}`}>
-              {part} <Icon name={icon} />
+              <em>{part}</em> {icon ? <Icon name={icon} /> : null}
             </span>
           ) : (
             part
@@ -157,21 +159,31 @@ function IPhoneInstructions({ device, t }: { device: DeviceContext | null; t: Pu
       <ExternalLink href="https://webkit.org/blog/13878/">{t.iosHomeScreen}</ExternalLink>
       {known ? (
         <ol className={styles.steps}>
-          <li>{t.iosOpenSafari}</li>
+          <li>
+            <Instruction text={t.iosOpenSafari} />
+          </li>
           <li>
             <Instruction text={share} />
           </li>
           <li>
             <Instruction text={t.iosAddHome} />
           </li>
-          {major >= 26 ? <li>{t.iosEnableApp}</li> : null}
-          <li>{t.iosAdd}</li>
+          {major >= 26 ? (
+            <li>
+              <Instruction text={t.iosEnableApp} />
+            </li>
+          ) : null}
+          <li>
+            <Instruction text={t.iosAdd} />
+          </li>
           <li>{t.iosOpenApp}</li>
         </ol>
       ) : (
         <>
-          <span>{t.iosStepsGeneric}</span>
-          <span>{t.iosOpenApp}</span>
+          <span className={styles.instructionBody}>
+            <Instruction text={t.iosStepsGeneric} />
+          </span>
+          <span className={styles.instructionBody}>{t.iosOpenApp}</span>
         </>
       )}
       <span className={styles.appPreview}>
