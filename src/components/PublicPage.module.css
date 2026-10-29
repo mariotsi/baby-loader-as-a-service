@@ -85,6 +85,10 @@
   overflow-wrap: anywhere;
 }
 
+.titleLead {
+  color: var(--color-text);
+}
+
 .sex {
   margin: 0;
   font-family: var(--font-display);
@@ -98,8 +102,34 @@
   color: var(--color-text-muted);
 }
 
+.age {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+}
+
+.ageNumber {
+  font-family: var(--font-display);
+  font-size: calc(var(--text-hero) * 0.8);
+  font-weight: var(--font-display-weight);
+  line-height: var(--leading-tight);
+  color: var(--color-accent-ink);
+}
+
+.ageLabel {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}
+
+.shareMessage {
+  margin: 0;
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
 .cta {
   display: grid;
+  gap: var(--space-4);
   justify-items: inherit;
   margin-top: var(--space-3);
 }
@@ -107,6 +137,13 @@
 .aside {
   display: grid;
   gap: var(--space-5);
+}
+
+.bornImage {
+  display: block;
+  width: min(100%, 14rem);
+  height: auto;
+  margin-inline: auto;
 }
 
 .stats {
@@ -119,22 +156,29 @@
 }
 
 .stat {
+  display: grid;
+  gap: var(--space-1);
   padding: var(--space-4);
   border-radius: var(--radius-md);
   background: var(--color-surface);
   box-shadow: var(--shadow-sm);
-  font-family: var(--font-display);
-  font-weight: var(--font-display-weight);
-  font-size: var(--text-lg);
-  color: var(--color-accent-ink);
   text-align: center;
+}
+
+.statLabel {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.statValue {
+  font-family: var(--font-display);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-display-weight);
+  color: var(--color-accent-ink);
 }
 
 .message {
   margin: 0;
-  padding: var(--space-4) var(--space-5);
-  border-radius: var(--radius-lg);
-  background: var(--color-surface);
   font-style: italic;
   text-align: center;
 }

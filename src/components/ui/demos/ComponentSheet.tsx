@@ -8,7 +8,9 @@ import { Card } from '../Card';
 import { Checkbox } from '../Checkbox';
 import { Checklist } from '../Checklist';
 import { Combobox } from '../Combobox';
+import { ConfirmDialog } from '../ConfirmDialog';
 import { EmojiPicker } from '../EmojiPicker';
+import { ExternalLink } from '../ExternalLink';
 import { Field } from '../Field';
 import { Input } from '../Input';
 import { LanguagesPicker } from '../LanguagesPicker';
@@ -38,6 +40,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
  * renders once per Palette.
  */
 export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?: 2 | 3; themeName?: string }) {
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [sex, setSex] = useState<'female' | 'male' | 'unknown'>('unknown');
   const [languages, setLanguages] = useState<Lang[]>(['it', 'en']);
   const [emoji, setEmoji] = useState('🍼');
@@ -47,6 +50,23 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
   return (
     <div className={styles.sheet}>
       <Heading className={styles.heading}>Components</Heading>
+      <Group title="External links">
+        <ExternalLink href="https://support.apple.com/">Open Apple Support</ExternalLink>
+      </Group>
+      <Group title="Confirmation">
+        <Button variant="link" inline onClick={() => setConfirmOpen(true)}>
+          Turn off notifications
+        </Button>
+        <ConfirmDialog
+          open={confirmOpen}
+          title="Turn off notifications?"
+          description="You will stop receiving notifications from this page on this device."
+          confirmLabel="Turn off notifications"
+          dismissLabel="Keep notifications on"
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={() => setConfirmOpen(false)}
+        />
+      </Group>
       <Group title="Buttons">
         <Stack direction="row" gap={3}>
           <Button variant="primary" icon="sparkles">

@@ -7,7 +7,7 @@ test.describe('Public page', () => {
     await page.goto(await addressOf('e2e-waiting'));
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for Wanda');
-    await expect(page.getByText('It’s a girl')).toBeVisible();
+    await expect(page.getByText('It’s a girl')).toHaveCount(0);
     await expect(page.getByText(/^Due date:/)).toBeVisible();
     await expect(page.getByText(/^\d+ days to go$/)).toBeVisible();
     await expect(page.getByRole('banner')).toHaveText('Wilma & Walter');
@@ -18,8 +18,8 @@ test.describe('Public page', () => {
 
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Welcome Bruno');
     await expect(page.getByText(/^Born on /)).toBeVisible();
-    await expect(page.getByText('Weight: 3250 g')).toBeVisible();
-    await expect(page.getByText('Length: 50 cm')).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: 'Weight' }).getByText('3250 g')).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: 'Length' }).getByText('50 cm')).toBeVisible();
     await expect(page.getByText(/ days to go$/)).toHaveCount(0);
     await expect(page.getByRole('banner')).toHaveText('Bea & Bob');
   });

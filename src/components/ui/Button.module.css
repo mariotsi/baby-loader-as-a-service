@@ -105,3 +105,21 @@
     transform: translateX(3px);
   }
 }
+
+.link {
+  background: transparent;
+  color: var(--color-text-muted);
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+  font-weight: var(--font-body-weight);
+}
+
+.link.sm {
+  font-size: var(--text-xs);
+}
+
+.button.inline {
+  min-height: 0;
+  min-width: 0;
+  padding: 0;
+}

@@ -1,0 +1,14 @@
+.link {
+  color: var(--color-accent-ink);
+  text-underline-offset: 0.15em;
+}
+.link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+.icon {
+  display: inline-block;
+  vertical-align: middle;
+  width: 1em;
+  height: 1em;
+}

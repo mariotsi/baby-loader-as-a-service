@@ -1,6 +1,110 @@
 /* Lines up with whatever holds it: centred on a phone, at the start beside the Countdown on a wide screen. */
 .push {
   display: grid;
-  justify-items: inherit;
-  gap: var(--space-3);
+  justify-items: stretch;
+  width: 100%;
+  gap: var(--space-1);
+}
+
+.confetti {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.confettiPiece {
+  position: absolute;
+  top: -1rem;
+  width: 0.65rem;
+  height: 0.9rem;
+  border-radius: var(--radius-sm);
+  background: var(--color-joy-1);
+}
+
+.confettiPiece:nth-child(3n + 1) {
+  background: var(--color-joy-2);
+}
+
+.confettiPiece:nth-child(3n + 2) {
+  background: var(--color-joy-3);
+}
+
+.confettiPiece:nth-child(4n) {
+  background: var(--color-accent);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .confettiPiece {
+    animation: confetti-fall 2.6s var(--ease-out) both;
+  }
+
+  @keyframes confetti-fall {
+    from {
+      opacity: 0;
+      translate: 0 -1rem;
+      rotate: 0;
+    }
+
+    12% {
+      opacity: 1;
+    }
+
+    to {
+      opacity: 0;
+      translate: 0 105vh;
+      rotate: 540deg;
+    }
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
+}
+
+.subscribedContent {
+  display: inline-grid;
+  justify-items: center;
+  gap: 0;
+}
+
+.instructions {
+  display: grid;
+  gap: var(--space-2);
+}
+.subscribedContent {
+  width: 100%;
+}
+
+.steps {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  font-weight: var(--font-body-weight);
+}
+.steps li + li {
+  margin-top: var(--space-2);
+}
+.appPreview {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  font-weight: var(--font-body-weight);
+  font-size: var(--text-xs);
+}
+.appPreview img {
+  border-radius: var(--radius-md);
+}
+
+.instructionAction {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  vertical-align: baseline;
+}
+
+.instructionBody {
+  font-weight: var(--font-body-weight);
 }

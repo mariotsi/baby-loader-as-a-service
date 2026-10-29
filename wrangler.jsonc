@@ -15,6 +15,7 @@
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby-staging" }],
   "observability": { "enabled": true },
   "vars": { "APP_ENV": "staging", "ROOT_DOMAIN": "staging-loading-baby.fyi" },
+  "r2_buckets": [{ "binding": "WEBSITE_ASSETS", "bucket_name": "loading-baby-staging-media" }],
   "d1_databases": [
     {
       "binding": "DB",
@@ -34,6 +35,7 @@
     "vars": { "APP_ENV": "preview" },
     "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby-staging" }],
     // The deploy workflow points each Preview at its branch's own database.
+    "r2_buckets": [{ "binding": "WEBSITE_ASSETS", "bucket_name": "loading-baby-staging-media" }],
     "d1_databases": [
       {
         "binding": "DB",

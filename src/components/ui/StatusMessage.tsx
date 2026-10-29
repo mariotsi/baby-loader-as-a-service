@@ -8,6 +8,8 @@ const ICONS: Record<Tone, IconName> = { success: 'circle-check', danger: 'alert'
 
 interface StatusMessageProps {
   tone: Tone;
+  /** Fills the available width to align with adjacent controls. */
+  fullWidth?: boolean;
   /** The message, or nothing while there is none to show. */
   children?: ReactNode;
   className?: string;
@@ -19,14 +21,17 @@ interface StatusMessageProps {
  * message the moment it appears: keep it mounted and change its children.
  * A `danger` message interrupts; the others wait for a pause.
  */
-export function StatusMessage({ tone, children, className }: StatusMessageProps) {
+export function StatusMessage({ tone, children, className, fullWidth = false }: StatusMessageProps) {
   return (
-    <div role={tone === 'danger' ? 'alert' : 'status'} className={className}>
+    <div
+      role={tone === 'danger' ? 'alert' : 'status'}
+      className={[className, fullWidth && styles.fullWidth].filter(Boolean).join(' ')}
+    >
       {children ? (
-        <p className={[styles.message, styles[tone]].join(' ')}>
+        <div className={[styles.message, styles[tone]].join(' ')}>
           <Icon name={ICONS[tone]} className={styles.icon} />
-          <span>{children}</span>
-        </p>
+          <div>{children}</div>
+        </div>
       ) : null}
     </div>
   );

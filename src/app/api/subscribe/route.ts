@@ -6,7 +6,7 @@ import { isLang } from '@/lib/i18n';
 import { rateLimit } from '@/lib/rateLimit';
 import { routeError } from '@/lib/routeError';
 import { getSiteBySlug } from '@/lib/site';
-import { deleteSubscription, upsertSubscription } from '@/lib/subscription';
+import { deleteSubscription, hasSubscription, upsertSubscription } from '@/lib/subscription';
 
 export async function POST(req: NextRequest) {
   if (!rateLimit(`subscribe:${clientIp(req)}`, 20, 60_000)) {
@@ -59,4 +59,22 @@ export async function DELETE(req: NextRequest) {
 
   await deleteSubscription(site.id, endpoint);
   return NextResponse.json({ ok: true });
+}
+
+export async function GET(req: NextRequest) {
+  const slug = req.nextUrl.searchParams.get('slug');
+  const endpoint = req.nextUrl.searchParams.get('endpoint');
+  if (!slug || !endpoint) {
+    return routeError(400, { code: 'invalidRequest' });
+  }
+  const site = await getSiteBySlug(slug);
+  if (!site) {
+    return routeError(404, { code: 'unknownSite' });
+  }
+  return NextResponse.json(
+    { subscribed: await hasSubscription(site.id, endpoint) },
+    {
+      headers: { 'Cache-Control': 'no-store' },
+    }
+  );
 }

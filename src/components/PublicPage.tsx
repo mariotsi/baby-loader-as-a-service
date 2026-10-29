@@ -5,6 +5,8 @@ import { Countdown } from '@/components/Countdown';
 import { LanguageSwitcher, rememberLang } from '@/components/LanguageSwitcher';
 import { MilestonePlace } from '@/components/MilestonePlace';
 import { PushSubscribeButton } from '@/components/PushSubscribeButton';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
 import { Icon } from '@/components/ui/Icon';
 import { JoyBackground } from '@/components/ui/JoyBackground';
 import type { Lang } from '@/lib/i18n';
@@ -26,11 +28,17 @@ export function PublicPage({
   initialLang,
   slug,
   vapidPublicKey,
+  bornImageUrl = '/website-assets/born-placeholder-v1.png',
+  disableNotifications = false,
+  disableVideoAutoplay = false,
 }: {
   views: PublicPageView[];
   initialLang: Lang;
   slug: string;
   vapidPublicKey: string | undefined;
+  bornImageUrl?: string;
+  disableNotifications?: boolean;
+  disableVideoAutoplay?: boolean;
 }) {
   const [lang, setLang] = useState(initialLang);
   const view = views.find((v) => v.lang === lang) ?? views[0];
@@ -45,7 +53,7 @@ export function PublicPage({
   }
 
   return (
-    <div className={styles.page}>
+    <div className={styles.page} data-video-autoplay={disableVideoAutoplay ? 'disabled' : 'enabled'}>
       <JoyBackground />
       {view.pageName || views.length > 1 ? (
         <header className={styles.header}>
@@ -68,17 +76,23 @@ export function PublicPage({
       <main className={styles.hero}>
         <div className={styles.intro}>
           <p className={styles.tagline}>{view.tagline}</p>
-          <h1 className={styles.title}>{view.title}</h1>
+          <h1 className={styles.title}>
+            <span className={styles.titleLead}>{view.titleLead}</span> {view.titleName}
+          </h1>
           {view.sex ? <p className={styles.sex}>{view.sex}</p> : null}
           {view.waiting ? <p className={styles.lead}>{view.waiting.dueDate}</p> : null}
-          {view.born ? <p className={styles.lead}>{view.born.bornOn}</p> : null}
           <div className={styles.cta}>
-            <PushSubscribeButton slug={slug} lang={view.lang} vapidPublicKey={vapidPublicKey} t={view.push} />
+            <PublicPageActions
+              view={view}
+              slug={slug}
+              vapidPublicKey={vapidPublicKey}
+              disableNotifications={disableNotifications}
+            />
           </div>
         </div>
         <div className={styles.aside}>
           {view.waiting ? <Countdown waiting={view.waiting} /> : null}
-          {view.born ? <Born born={view.born} /> : null}
+          {view.born ? <Born born={view.born} view={view} imageUrl={bornImageUrl} /> : null}
           {view.milestones ? <Milestones milestones={view.milestones} /> : null}
         </div>
       </main>
@@ -86,20 +100,90 @@ export function PublicPage({
   );
 }
 
-function Born({ born }: { born: NonNullable<PublicPageView['born']> }) {
-  const lines = [born.weightLine, born.lengthLine].filter((line): line is string => !!line);
+function PublicPageActions({
+  view,
+  slug,
+  vapidPublicKey,
+  disableNotifications,
+}: {
+  view: PublicPageView;
+  slug: string;
+  vapidPublicKey: string | undefined;
+  disableNotifications: boolean;
+}) {
   return (
     <>
-      {lines.length > 0 ? (
+      {disableNotifications ? null : (
+        <PushSubscribeButton slug={slug} lang={view.lang} vapidPublicKey={vapidPublicKey} t={view.push} />
+      )}
+      {view.waiting ? <ShareButton view={view} /> : null}
+    </>
+  );
+}
+
+function ShareButton({ view }: { view: PublicPageView }) {
+  const [shareMessage, setShareMessage] = useState('');
+
+  async function share() {
+    const url = window.location.href;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: view.title, url });
+      } else {
+        await navigator.clipboard.writeText(url);
+        setShareMessage('Link copied');
+      }
+    } catch {
+      setShareMessage('');
+    }
+  }
+
+  return (
+    <>
+      <Button onClick={share}>{view.share}</Button>
+      {shareMessage ? (
+        <p role="status" className={styles.shareMessage}>
+          {shareMessage}
+        </p>
+      ) : null}
+    </>
+  );
+}
+
+function Born({
+  born,
+  view,
+  imageUrl,
+}: {
+  born: NonNullable<PublicPageView['born']>;
+  view: PublicPageView;
+  imageUrl: string;
+}) {
+  return (
+    <>
+      {/* biome-ignore lint/performance/noImgElement: R2 serves the pre-sized website asset directly. */}
+      <img className={styles.bornImage} src={imageUrl} alt="" width={750} height={900} />
+      <p className={styles.lead}>{born.bornOn}</p>
+      <div className={styles.age}>
+        <span className={styles.ageNumber}>{born.age}</span>
+        <span className={styles.ageLabel}>{born.ageLabel}</span>
+      </div>
+      {born.stats.length > 0 ? (
         <ul className={styles.stats}>
-          {lines.map((line) => (
-            <li key={line} className={styles.stat}>
-              {line}
+          {born.stats.map((stat) => (
+            <li key={stat.label} className={styles.stat}>
+              <span className={styles.statLabel}>{stat.label}</span>
+              <span className={styles.statValue}>{stat.value}</span>
             </li>
           ))}
         </ul>
       ) : null}
-      {born.message ? <p className={styles.message}>{born.message}</p> : null}
+      {born.message ? (
+        <Card>
+          <p className={styles.message}>{born.message}</p>
+        </Card>
+      ) : null}
+      <ShareButton view={view} />
     </>
   );
 }

@@ -14,6 +14,7 @@
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby" }],
   "observability": { "enabled": true },
   "vars": { "APP_ENV": "production", "ROOT_DOMAIN": "loading.baby" },
+  "r2_buckets": [{ "binding": "WEBSITE_ASSETS", "bucket_name": "loading-baby-media" }],
   "d1_databases": [
     {
       "binding": "DB",

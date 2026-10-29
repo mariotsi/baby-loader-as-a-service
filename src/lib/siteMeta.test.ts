@@ -1,14 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import {
-  secondsUntilMidnight,
-  shareImageDay,
-  shareImageLang,
-  shareText,
-  siteIconUrl,
-  siteShortName,
-  twemojiUrl,
-} from './siteMeta.ts';
+import { siteShortName, twemojiUrl } from './siteAppIdentity.ts';
+import { secondsUntilMidnight, shareImageDay, shareImageLang, shareText, siteIconUrl } from './siteMeta.ts';
 import { defaultSiteSettings, type SiteSettings } from './siteSettings.ts';
 
 const NOW = new Date('2026-10-20T10:00:00Z');

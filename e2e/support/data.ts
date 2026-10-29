@@ -171,6 +171,7 @@ export const DEMO_SITES: SiteSpec[] = [
   },
   { ...waiting, slug: 'demo-sofia', owner: 'a', babyName: 'Sofia', showName: false, showSex: false, dueInDays: 80 },
   { ...waiting, slug: 'demo-nina', owner: 'b', babyName: 'Nina', dueInDays: 12 },
+  { ...waiting, slug: 'demo-late', owner: 'a', babyName: 'Late', languages: ['it', 'en'], dueInDays: -7 },
 ];
 
 /**

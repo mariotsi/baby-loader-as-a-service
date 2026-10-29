@@ -5,7 +5,8 @@ import { Icon } from '@/components/ui/Icon';
 import { platformCopy } from '@/lib/copy/platform';
 import { fallbackLang } from '@/lib/i18n';
 import { publicPageView } from '@/lib/publicPageView';
-import { shareText, siteShortName, twemojiUrl } from '@/lib/siteMeta';
+import { siteShortName, twemojiUrl } from '@/lib/siteAppIdentity';
+import { shareText } from '@/lib/siteMeta';
 import type { SiteSettings } from '@/lib/siteSettings';
 import { themeStyle } from '@/lib/theme';
 import styles from './SitePreviews.module.css';
@@ -103,7 +104,7 @@ function SiteIcon({ icon, className }: { icon: string | null; className: string 
     // biome-ignore lint/performance/noImgElement: a remote Twemoji or a fixed icon, shown small; next/image adds nothing.
     <img
       className={className}
-      src={icon ? twemojiUrl(icon) : '/apple-icon.png'}
+      src={icon ? twemojiUrl(icon) : '/icon-192.png'}
       alt=""
       data-emoji={icon ? true : undefined}
     />

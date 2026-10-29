@@ -37,14 +37,24 @@ export function commentBody(state, url, commit, deploymentUrl = null) {
   const actions = state === 'deleted' ? 'n/a' : `[Preview](${url})`;
   const updated = `<relative-time datetime="${timestamp}">${new Date(timestamp).toUTCString()}</relative-time>`;
 
-  return [
+  const lines = [
     MARKER,
     'Latest updates on your Cloudflare Workers project. Learn more about [Cloudflare Workers](https://developers.cloudflare.com/workers/).',
     '',
     '| Project | Deployment | Actions | Updated |',
     '| :--- | :--- | :--- | :--- |',
     `| ${worker} | ${deployment} | ${actions} | ${updated} |`,
-  ].join('\n');
+  ];
+  if (state !== 'deleted') {
+    lines.push('', '| Site | State | Timing at seed |', '| :--- | :--- | :--- |');
+    lines.push(`| [Emma](${url}/sites/demo-emma) | Waiting, Italian/English | Due in 45 days |`);
+    lines.push(`| [Leo](${url}/sites/demo-leo) | Born, Italian | Born 4 days ago; 3480 g, 52 cm |`);
+    lines.push(`| [Sofia](${url}/sites/demo-sofia) | Waiting, name and sex hidden | Due in 80 days |`);
+    lines.push(`| [Nina](${url}/sites/demo-nina) | Waiting | Due in 12 days |`);
+    lines.push(`| [Late](${url}/sites/demo-late) | Waiting, Italian/English | Due 7 days ago |`);
+    lines.push('', 'Dates are relative to the latest demo seed.');
+  }
+  return lines.join('\n');
 }
 
 async function github(path, init = {}) {

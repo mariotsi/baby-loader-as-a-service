@@ -162,6 +162,8 @@ export async function fakePushService(page: Page): Promise<void> {
       getRegistration: async () => registration,
       ready: Promise.resolve(registration),
     };
+    // iPhone web push requires an installed Home Screen app.
+    Object.defineProperty(navigator, 'standalone', { configurable: true, value: true });
     Object.defineProperty(navigator, 'serviceWorker', { configurable: true, value: serviceWorker });
     Object.defineProperty(window, 'PushManager', { configurable: true, value: function PushManager() {} });
     // biome-ignore lint/correctness/noComponentHookFactories: a stand-in for the browser's Notification constructor, not a React component.
