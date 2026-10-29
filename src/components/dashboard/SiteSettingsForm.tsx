@@ -72,10 +72,12 @@ export function SiteSettingsForm({
   site,
   timeZones,
   address,
+  mediaPreviewSlug,
 }: {
   site: SiteDTO;
   timeZones: string[];
   address: string;
+  mediaPreviewSlug?: string;
 }) {
   const router = useRouter();
   const pageLang = useLang();
@@ -318,7 +320,14 @@ export function SiteSettingsForm({
           </Card>
 
           {born ? (
-            <BirthMediaEditor videoOnly photo={photo} video={video} onPhoto={setPhoto} onVideo={setVideo} />
+            <BirthMediaEditor
+              previewSlug={mediaPreviewSlug}
+              videoOnly
+              photo={photo}
+              video={video}
+              onPhoto={setPhoto}
+              onVideo={setVideo}
+            />
           ) : null}
 
           <MilestonesCard

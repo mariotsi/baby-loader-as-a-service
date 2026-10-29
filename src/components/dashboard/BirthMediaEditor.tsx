@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { FilePicker, type PickedFile } from '@/components/ui/FilePicker';
 import { Stack } from '@/components/ui/Stack';
+import { birthMediaPreviewPath } from '@/lib/birthMedia';
 import type { BirthDetails } from '@/lib/siteSettings';
 import styles from './BirthMediaEditor.module.css';
 
@@ -57,8 +58,10 @@ export function BirthMediaEditor({
   onPhoto,
   onVideo,
   videoOnly = false,
+  previewSlug,
 }: {
   videoOnly?: boolean;
+  previewSlug?: string;
   photo: MediaDraft;
   video: MediaDraft;
   onPhoto: (value: MediaDraft) => void;
@@ -67,8 +70,10 @@ export function BirthMediaEditor({
   const lang = useLang();
   const t = mediaCopy[lang];
   const [preview, setPreview] = useState(false);
-  const photoUrl = useMediaUrl(photo);
-  const videoUrl = useMediaUrl(video);
+  const previewPhoto = previewMedia(photo, previewSlug, 'photo');
+  const previewVideo = previewMedia(video, previewSlug, 'video');
+  const photoUrl = useMediaUrl(previewPhoto);
+  const videoUrl = useMediaUrl(previewVideo);
 
   return (
     <Card title={t.title} description={videoOnly ? t.videoDescription : photoDescription(lang)}>
@@ -80,7 +85,7 @@ export function BirthMediaEditor({
             optional
             accept={['image/avif', 'image/jpeg', 'image/png', 'image/webp']}
             maxBytes={5 * 1024 * 1024}
-            value={pickerValue(photo, t.photo, 'image')}
+            value={pickerValue(previewPhoto, t.photo, 'image')}
             onChange={onPhoto}
           />
           {photoUrl ? (
@@ -102,7 +107,7 @@ export function BirthMediaEditor({
         optional
         accept={['video/mp4', 'video/webm']}
         maxBytes={50 * 1024 * 1024}
-        value={pickerValue(video, t.savedVideo, 'video')}
+        value={pickerValue(previewVideo, t.savedVideo, 'video')}
         onChange={onVideo}
       />
       {videoUrl ? (
@@ -137,4 +142,11 @@ function pickerValue(media: MediaDraft, name: string, type: string): PickedFile 
     return media;
   }
   return { url: media.url, name: media.name ?? name, type: media.type ?? type, size: media.size };
+}
+
+function previewMedia(media: MediaDraft, slug: string | undefined, kind: 'photo' | 'video'): MediaDraft {
+  if (!slug || !media || media instanceof File) {
+    return media;
+  }
+  return { ...media, url: birthMediaPreviewPath(slug, kind, media.key) };
 }
