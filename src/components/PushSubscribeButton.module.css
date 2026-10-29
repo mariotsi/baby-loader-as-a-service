@@ -2,7 +2,7 @@
 .push {
   display: grid;
   justify-items: inherit;
-  gap: var(--space-3);
+  gap: var(--space-1);
 }
 
 .helpLink {

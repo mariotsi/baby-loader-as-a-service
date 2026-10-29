@@ -24,6 +24,7 @@
 }
 
 .unit {
+  color: var(--color-text-muted);
   font-size: var(--text-lg);
   font-weight: var(--weight-bold);
 }
@@ -84,6 +85,7 @@
 }
 
 .sm .unit {
+  color: var(--color-text-muted);
   font-size: var(--text-md);
 }
 
