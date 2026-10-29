@@ -3,7 +3,8 @@ import { siteAddress, siteAddressPath } from '@/lib/address';
 import { addressEnv } from '@/lib/env';
 import { requestLang } from '@/lib/i18nNext';
 import { getSiteBySlug } from '@/lib/site';
-import { SITE_ICON_VARIANTS, siteIconUrl, siteShortName } from '@/lib/siteMeta';
+import { siteShortName } from '@/lib/siteAppIdentity';
+import { SITE_ICON_VARIANTS, siteIconUrl } from '@/lib/siteMeta';
 import { getPalette } from '@/lib/theme';
 
 /**

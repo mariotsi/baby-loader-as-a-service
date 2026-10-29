@@ -7,7 +7,8 @@ import { addressEnv, deploymentEnv, vapidEnv } from '@/lib/env';
 import { requestLang } from '@/lib/i18nNext';
 import { publicPageViews } from '@/lib/publicPageView';
 import { getSiteBySlug } from '@/lib/site';
-import { SITE_PATHS, shareImageDay, shareText, siteIconUrl, siteShortName } from '@/lib/siteMeta';
+import { siteShortName } from '@/lib/siteAppIdentity';
+import { SITE_PATHS, shareImageDay, shareText, siteIconUrl } from '@/lib/siteMeta';
 import { getFont, googleFontsHref, rootTokenCss, themeStyle } from '@/lib/theme';
 import { websiteAssetUrl } from '@/lib/websiteAssets';
 

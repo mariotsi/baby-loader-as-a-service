@@ -102,8 +102,6 @@ export const IPhoneOlderIOS: Story = { args: { status: 'unsupported', device: { 
 export const IPhoneBlocked: Story = { args: { status: 'denied', device: { ...iphone, standalone: true } } };
 /** Links to Chrome's Android notification settings help. */
 export const AndroidChromeBlocked: Story = { args: { status: 'denied', device: android } };
-/** Offers subscribing in any supported Android browser. */
-export const AndroidOtherBrowser: Story = { args: { device: { ...android, chrome: false } } };
 /** Unsupported Android browsers receive browser guidance. */
 export const AndroidUnsupported: Story = { args: { status: 'unsupported', device: { ...android, chrome: false } } };
 /** Opting in skips confetti when reduced motion is enabled. */
@@ -121,7 +119,12 @@ export const IPhoneIOS26: Story = { args: { status: 'ios-home-screen', device: {
 export const IPhoneUnknownVersion: Story = {
   args: { status: 'ios-home-screen', device: { ...iphone, iosVersion: null } },
 };
-/** Uses generic guidance for versions without verified installation steps. */
-export const IPhoneFutureVersion: Story = {
+/** Shows the verified iOS 27 Page Menu instructions. */
+export const IPhoneIOS27: Story = {
   args: { status: 'ios-home-screen', device: { ...iphone, iosVersion: '27.0' } },
+};
+
+/** Falls back to generic instructions for an unverified version. */
+export const IPhoneFutureVersion: Story = {
+  args: { status: 'ios-home-screen', device: { ...iphone, iosVersion: '28.0' } },
 };

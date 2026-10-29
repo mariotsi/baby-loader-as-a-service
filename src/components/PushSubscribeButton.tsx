@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ExternalLink } from '@/components/ui/ExternalLink';
+import { Icon } from '@/components/ui/Icon';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import type { Lang } from '@/lib/i18n';
@@ -93,30 +94,69 @@ function statusHelpLink(status: Status, device: DeviceContext | null, t: PushBut
 
 function StatusNotice({ status, device, t }: { status: Status; device: DeviceContext | null; t: PushButtonCopy }) {
   const link = statusHelpLink(status, device, t);
-  const major = Number(device?.iosVersion?.split('.')[0]);
-  let steps = t.iosStepsGeneric;
-  if (major >= 16 && major <= 18) {
-    steps = t.iosStepsClassic;
-  } else if (major === 26) {
-    steps = t.iosSteps26;
-  }
   return (
     <div className={styles.push}>
       <StatusMessage tone="info" fullWidth>
-        <span className={styles.instructions}>
+        <div className={styles.instructions}>
           {status === 'ios-home-screen' ? (
-            <>
-              <ExternalLink href="https://webkit.org/blog/13878/">{t.iosHomeScreen}</ExternalLink>
-              <span>{steps}</span>
-              <span>{t.iosOpenApp}</span>
-            </>
+            <IPhoneInstructions device={device} t={t} />
           ) : (
             statusNotice(status, device, t)
           )}
           {link ? <ExternalLink href={link.href}>{link.label}</ExternalLink> : null}
-        </span>
+        </div>
       </StatusMessage>
     </div>
+  );
+}
+
+function IPhoneInstructions({ device, t }: { device: DeviceContext | null; t: PushButtonCopy }) {
+  const major = Number(device?.iosVersion?.split('.')[0]);
+  const known = (major >= 16 && major <= 18) || major === 26 || major === 27;
+  let share = (
+    <>
+      <Icon name="share-ios" /> {t.iosShare}
+    </>
+  );
+  if (major === 26) {
+    share = (
+      <>
+        <Icon name="more-ios" /> {t.iosMenu26} <Icon name="share-ios" />
+      </>
+    );
+  } else if (major === 27) {
+    share = (
+      <>
+        <Icon name="page-menu" /> {t.iosMenu27} <Icon name="share-ios" />
+      </>
+    );
+  }
+  return (
+    <>
+      <ExternalLink href="https://webkit.org/blog/13878/">{t.iosHomeScreen}</ExternalLink>
+      {known ? (
+        <ol className={styles.steps}>
+          <li>{t.iosOpenSafari}</li>
+          <li>{share}</li>
+          <li>
+            <Icon name="home-add" /> {t.iosAddHome}
+          </li>
+          {major >= 26 ? <li>{t.iosEnableApp}</li> : null}
+          <li>{t.iosAdd}</li>
+          <li>{t.iosOpenApp}</li>
+        </ol>
+      ) : (
+        <>
+          <span>{t.iosStepsGeneric}</span>
+          <span>{t.iosOpenApp}</span>
+        </>
+      )}
+      <span className={styles.appPreview}>
+        {/* biome-ignore lint/performance/noImgElement: the preview uses the Site's fixed icon or Twemoji. */}
+        <img src={t.appIcon} alt="" width={60} height={60} />
+        <span>{t.appName}</span>
+      </span>
+    </>
   );
 }
 

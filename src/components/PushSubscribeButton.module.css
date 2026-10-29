@@ -78,3 +78,22 @@
 .subscribedContent {
   width: 100%;
 }
+
+.steps {
+  margin: 0;
+  padding-inline-start: var(--space-5);
+  font-weight: var(--font-body-weight);
+}
+.steps li + li {
+  margin-top: var(--space-2);
+}
+.appPreview {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-1);
+  font-weight: var(--font-body-weight);
+  font-size: var(--text-xs);
+}
+.appPreview img {
+  border-radius: var(--radius-md);
+}

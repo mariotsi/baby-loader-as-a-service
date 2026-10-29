@@ -28,10 +28,10 @@ export function StatusMessage({ tone, children, className, fullWidth = false }: 
       className={[className, fullWidth && styles.fullWidth].filter(Boolean).join(' ')}
     >
       {children ? (
-        <p className={[styles.message, styles[tone]].join(' ')}>
+        <div className={[styles.message, styles[tone]].join(' ')}>
           <Icon name={ICONS[tone]} className={styles.icon} />
-          <span>{children}</span>
-        </p>
+          <div>{children}</div>
+        </div>
       ) : null}
     </div>
   );

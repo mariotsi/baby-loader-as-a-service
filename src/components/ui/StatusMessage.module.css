@@ -50,7 +50,7 @@
   box-sizing: border-box;
   width: 100%;
 }
-.fullWidth .message > span {
+.fullWidth .message > div {
   flex: 1;
   min-width: 0;
 }

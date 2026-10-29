@@ -6,6 +6,7 @@ import { type PublicPageCopy, publicPageCopy } from './copy/publicPage.ts';
 import { countdownDays } from './countdown.ts';
 import { inPlatformOrder, type Lang } from './i18n.ts';
 import { googleMapsUrl } from './place.ts';
+import { siteShortName, twemojiUrl } from './siteAppIdentity.ts';
 import type { BirthDetails, SiteSettings } from './siteSettings.ts';
 
 /**
@@ -37,6 +38,16 @@ export type PushButtonCopy = {
   iosSteps26: string;
   iosStepsGeneric: string;
   iosOpenApp: string;
+  appName: string;
+  appIcon: string;
+  iosOpenSafari: string;
+  iosShare: string;
+  iosMenu26: string;
+  iosMenu27: string;
+  iosAddHome: string;
+  iosEnableApp: string;
+  iosAdd: string;
+
   androidUnsupported: string;
 
   iosHomeScreenLink: string;
@@ -118,7 +129,11 @@ export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = n
     milestones: milestonesView(settings.milestones, lang),
     languageLabel: commonCopy[lang].languageLabel,
     share: t.share,
-    push: pushButtonCopy(t, birth.born, settings.privacy.showSex ? settings.sex : 'unknown'),
+    push: {
+      ...pushButtonCopy(t, birth.born, settings.privacy.showSex ? settings.sex : 'unknown'),
+      appName: siteShortName(settings, lang),
+      appIcon: settings.icon ? twemojiUrl(settings.icon) : '/apple-icon.png',
+    },
   };
 }
 
@@ -233,6 +248,16 @@ function pushButtonCopy(t: PublicPageCopy, born: boolean, sex: SiteSettings['sex
     iosSteps26: t.iosSteps26,
     iosStepsGeneric: t.iosStepsGeneric,
     iosOpenApp: t.iosOpenApp,
+    appName: 'Loading Baby',
+    appIcon: '/apple-icon.png',
+    iosOpenSafari: t.iosOpenSafari,
+    iosShare: t.iosShare,
+    iosMenu26: t.iosMenu26,
+    iosMenu27: t.iosMenu27,
+    iosAddHome: t.iosAddHome,
+    iosEnableApp: t.iosEnableApp,
+    iosAdd: t.iosAdd,
+
     androidUnsupported: t.androidUnsupported,
 
     iosHomeScreenLink: t.iosHomeScreenLink,
