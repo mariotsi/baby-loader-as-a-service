@@ -88,8 +88,6 @@ type Story = StoryObj<typeof meta>;
 
 /** Simulates opting in and celebrates without requesting browser permission or saving a subscription. */
 export const Subscribe: Story = {};
-/** Shows the same controls in Italian. */
-export const Italian: Story = { parameters: { language: 'it' } };
 /** Offers updates after the birth. */
 export const Born: Story = { parameters: { born: true } };
 /** Shows the confirmed subscription with its deactivation link. */
