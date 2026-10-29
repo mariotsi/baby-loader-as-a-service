@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
+import { ExternalLink } from '@/components/ui/ExternalLink';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import type { Lang } from '@/lib/i18n';
@@ -105,20 +106,14 @@ function StatusNotice({ status, device, t }: { status: Status; device: DeviceCon
         <span className={styles.instructions}>
           {status === 'ios-home-screen' ? (
             <>
-              <a className={styles.helpLink} href="https://webkit.org/blog/13878/" target="_blank" rel="noreferrer">
-                {t.iosHomeScreen}
-              </a>
+              <ExternalLink href="https://webkit.org/blog/13878/">{t.iosHomeScreen}</ExternalLink>
               <span>{steps}</span>
               <span>{t.iosOpenApp}</span>
             </>
           ) : (
             statusNotice(status, device, t)
           )}
-          {link ? (
-            <a className={styles.helpLink} href={link.href} target="_blank" rel="noreferrer">
-              {link.label}
-            </a>
-          ) : null}
+          {link ? <ExternalLink href={link.href}>{link.label}</ExternalLink> : null}
         </span>
       </StatusMessage>
     </div>

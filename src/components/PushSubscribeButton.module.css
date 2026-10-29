@@ -6,12 +6,6 @@
   gap: var(--space-1);
 }
 
-.helpLink {
-  color: var(--color-accent-ink);
-  font-size: var(--text-sm);
-  text-underline-offset: 0.15em;
-}
-
 .confetti {
   position: fixed;
   z-index: 10;

@@ -10,6 +10,7 @@ import { Checklist } from '../Checklist';
 import { Combobox } from '../Combobox';
 import { ConfirmDialog } from '../ConfirmDialog';
 import { EmojiPicker } from '../EmojiPicker';
+import { ExternalLink } from '../ExternalLink';
 import { Field } from '../Field';
 import { Input } from '../Input';
 import { LanguagesPicker } from '../LanguagesPicker';
@@ -49,6 +50,9 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
   return (
     <div className={styles.sheet}>
       <Heading className={styles.heading}>Components</Heading>
+      <Group title="External links">
+        <ExternalLink href="https://support.apple.com/">Open Apple Support</ExternalLink>
+      </Group>
       <Group title="Confirmation">
         <Button variant="link" inline onClick={() => setConfirmOpen(true)}>
           Turn off notifications
