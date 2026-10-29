@@ -60,6 +60,11 @@ jobs:
 
       - run: npm run cf:build
 
+      - name: Upload website assets to R2
+        env:
+          R2_BUCKET: loading-baby-staging-media
+        run: node scripts/upload-website-assets.mjs
+
       - name: Deploy the staging Worker
         uses: cloudflare/wrangler-action@v4
         env:
@@ -137,6 +142,11 @@ jobs:
 
       - run: npm run cf:build
 
+      - name: Upload website assets to R2
+        env:
+          R2_BUCKET: loading-baby-staging-media
+        run: node scripts/upload-website-assets.mjs
+
       # The branch name reaches the Worker through `vars`, as its own
       # argument, never inside the command; the Preview's name is sanitized.
       # The Preview's own host is its root domain, so it serves Sites by path.
@@ -196,6 +206,11 @@ jobs:
           command: d1 migrations apply loading-baby --remote --config wrangler.production.jsonc
 
       - run: npm run cf:build
+
+      - name: Upload website assets to R2
+        env:
+          R2_BUCKET: loading-baby-media
+        run: node scripts/upload-website-assets.mjs
 
       - name: Deploy the production Worker
         uses: cloudflare/wrangler-action@v4

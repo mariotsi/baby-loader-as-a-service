@@ -1,5 +1,5 @@
 import { TZDate } from '@date-fns/tz';
-import { format, parseISO } from 'date-fns';
+import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { enUS, it as itLocale } from 'date-fns/locale';
 import { commonCopy } from './copy/common.ts';
 import { type PublicPageCopy, publicPageCopy } from './copy/publicPage.ts';
@@ -27,6 +27,14 @@ export type PushButtonCopy = {
   errorGeneric: string;
   errorUnsupported: string;
   errorDenied: string;
+  iosHomeScreen: string;
+  iosHomeScreenLink: string;
+  iosVersion: string;
+  iosDenied: string;
+  iosSettingsLink: string;
+  androidUseChrome: string;
+  androidDenied: string;
+  androidSettingsLink: string;
 };
 
 export type MilestoneItem = {
@@ -51,6 +59,8 @@ export type PublicPageView = {
   pageName: string | null;
   tagline: string;
   title: string;
+  titleLead: string;
+  titleName: string;
   /** "It's a girl", or null when hidden or unknown. */
   sex: string | null;
   /** Null in the Born state and when there is no Due date. */
@@ -65,13 +75,15 @@ export type PublicPageView = {
   } | null;
   born: {
     bornOn: string;
-    weightLine: string | null;
-    lengthLine: string | null;
+    age: number;
+    ageLabel: string;
+    stats: { label: string; value: string }[];
     message: string | null;
   } | null;
   milestones: { title: string; items: MilestoneItem[] } | null;
   /** Names the Language switcher in this view's language. */
   languageLabel: string;
+  share: string;
   push: PushButtonCopy;
 };
 
@@ -91,35 +103,53 @@ export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = n
     pageName: settings.pageName[lang]?.trim() || null,
     ...headline(settings, t),
     waiting: !birth.born && settings.dueDate ? waitingView(settings.dueDate, settings.timezone, lang, now) : null,
-    born: birth.born ? bornView(birth.details, settings.timezone, lang) : null,
+    born: birth.born ? bornView(birth.details, settings.timezone, settings.sex, lang, now) : null,
     milestones: milestonesView(settings.milestones, lang),
     languageLabel: commonCopy[lang].languageLabel,
+    share: t.share,
     push: pushButtonCopy(t, birth.born),
   };
 }
 
 /** Privacy settings apply only while Waiting: the Born state announces the name and Sex. */
-function headline(settings: SiteSettings, t: PublicPageCopy): Pick<PublicPageView, 'tagline' | 'title' | 'sex'> {
+function headline(
+  settings: SiteSettings,
+  t: PublicPageCopy
+): Pick<PublicPageView, 'tagline' | 'title' | 'titleLead' | 'titleName' | 'sex'> {
   const born = settings.birth.born;
   const name = (born || settings.privacy.showName) && settings.babyName ? settings.babyName : null;
-  const showSex = (born || settings.privacy.showSex) && settings.sex !== 'unknown';
-  const sexes = { female: t.sexFemale, male: t.sexMale, unknown: null };
+  const titleLead = born ? t.bornTitle(settings.sex) : t.waitingTitle;
+  const titleName = born ? settings.babyName : (name ?? t.someone);
   return {
-    tagline: born ? t.bornTagline : t.waitingTagline,
-    title: born ? [t.bornTitle, name].filter(Boolean).join(' ') : `${t.waitingTitle} ${name ?? t.someone}`,
-    sex: showSex ? sexes[settings.sex] : null,
+    tagline: born ? t.bornTagline(settings.sex) : t.waitingTagline,
+    title: [titleLead, titleName].filter(Boolean).join(' '),
+    titleLead,
+    titleName,
+    sex: null,
   };
 }
 
-function bornView(details: BirthDetails, timezone: string, lang: Lang): NonNullable<PublicPageView['born']> {
+function bornView(
+  details: BirthDetails,
+  timezone: string,
+  sex: SiteSettings['sex'],
+  lang: Lang,
+  now: Date
+): NonNullable<PublicPageView['born']> {
   const t = publicPageCopy[lang];
   const bornAt = format(new TZDate(new Date(details.datetime), timezone), `${DATE_FORMAT[lang]}, HH:mm`, {
     locale: LOCALES[lang],
   });
   return {
-    bornOn: t.bornOn(bornAt),
-    weightLine: details.weightGrams ? `${t.weightLabel}: ${details.weightGrams} g` : null,
-    lengthLine: details.lengthCm ? `${t.lengthLabel}: ${details.lengthCm} cm` : null,
+    bornOn: t.bornOn(bornAt, sex),
+    age: Math.max(0, differenceInCalendarDays(new TZDate(now, timezone), new TZDate(details.datetime, timezone))),
+    ageLabel: t.ageLabel(
+      Math.max(0, differenceInCalendarDays(new TZDate(now, timezone), new TZDate(details.datetime, timezone)))
+    ),
+    stats: [
+      details.weightGrams ? { label: t.weightLabel, value: `${details.weightGrams} g` } : null,
+      details.lengthCm ? { label: t.lengthLabel, value: `${details.lengthCm} cm` } : null,
+    ].filter((stat): stat is { label: string; value: string } => stat !== null),
     message: details.message[lang]?.trim() || null,
   };
 }
@@ -182,5 +212,13 @@ function pushButtonCopy(t: PublicPageCopy, born: boolean): PushButtonCopy {
     errorGeneric: t.errorGeneric,
     errorUnsupported: t.errorUnsupported,
     errorDenied: t.errorDenied,
+    iosHomeScreen: t.iosHomeScreen,
+    iosHomeScreenLink: t.iosHomeScreenLink,
+    iosVersion: t.iosVersion,
+    iosDenied: t.iosDenied,
+    iosSettingsLink: t.iosSettingsLink,
+    androidUseChrome: t.androidUseChrome,
+    androidDenied: t.androidDenied,
+    androidSettingsLink: t.androidSettingsLink,
   };
 }

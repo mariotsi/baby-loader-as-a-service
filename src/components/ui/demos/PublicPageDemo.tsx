@@ -51,6 +51,8 @@ export function PublicPageDemo({ state = 'waiting' }: { state?: 'waiting' | 'bor
       initialLang="en"
       slug="emma"
       vapidPublicKey={undefined}
+      disableNotifications
+      disableVideoAutoplay
     />
   );
 }

@@ -3,12 +3,13 @@ import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { PublicPage } from '@/components/PublicPage';
 import { siteAddress } from '@/lib/address';
-import { addressEnv, vapidEnv } from '@/lib/env';
+import { addressEnv, deploymentEnv, vapidEnv } from '@/lib/env';
 import { requestLang } from '@/lib/i18nNext';
 import { publicPageViews } from '@/lib/publicPageView';
 import { getSiteBySlug } from '@/lib/site';
 import { SITE_PATHS, shareImageDay, shareText, siteIconUrl, siteShortName } from '@/lib/siteMeta';
 import { getFont, googleFontsHref, rootTokenCss, themeStyle } from '@/lib/theme';
+import { websiteAssetUrl } from '@/lib/websiteAssets';
 
 export const dynamic = 'force-dynamic';
 
@@ -79,6 +80,7 @@ export default async function SitePage({ params }: Props) {
         initialLang={await requestLang(views.map((view) => view.lang))}
         slug={site.slug}
         vapidPublicKey={vapidEnv()?.publicKey}
+        bornImageUrl={websiteAssetUrl('born-placeholder-v1.png', deploymentEnv().appEnv)}
       />
     </>
   );

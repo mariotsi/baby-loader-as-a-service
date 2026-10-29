@@ -88,9 +88,10 @@ test('Privacy settings hide the name and Sex while Waiting', () => {
 
 test('the Born state announces the name and Sex whatever the Privacy settings', () => {
   const view = publicPageView(site({ birth: BORN, privacy: { showName: false, showSex: false } }), 'en', NOW);
-  assert.equal(view.tagline, 'Here at last');
+  assert.equal(view.tagline, 'It’s a girl!');
   assert.equal(view.title, 'Welcome Emma');
-  assert.equal(view.sex, 'It’s a girl');
+  assert.equal(publicPageView(site({ birth: BORN }), 'it', NOW).tagline, 'È nata!');
+  assert.equal(view.sex, null);
   assert.equal(view.waiting, null);
 });
 
@@ -106,11 +107,15 @@ test('the Page name shows in its language, in both states and whatever the Priva
 test("Birth details are told in the Site's Timezone and language", () => {
   assert.deepEqual(publicPageView(site({ birth: BORN }), 'en', NOW).born, {
     bornOn: 'Born on October 19, 2026, 10:30',
-    weightLine: 'Weight: 3400 g',
-    lengthLine: 'Length: 50 cm',
+    age: 1,
+    ageLabel: 'day of life',
+    stats: [
+      { label: 'Weight', value: '3400 g' },
+      { label: 'Length', value: '50 cm' },
+    ],
     message: 'Hi',
   });
-  assert.equal(publicPageView(site({ birth: BORN }), 'it', NOW).born?.bornOn, 'Nato/a il 19 ottobre 2026, 10:30');
+  assert.equal(publicPageView(site({ birth: BORN }), 'it', NOW).born?.bornOn, 'Nata il 19 ottobre 2026, 10:30');
   assert.equal(
     publicPageView(site({ birth: BORN, timezone: 'America/New_York' }), 'en', NOW).born?.bornOn,
     'Born on October 19, 2026, 04:30'
@@ -123,7 +128,7 @@ test('missing Birth details stay out', () => {
     details: { datetime: BORN.details?.datetime ?? '', weightGrams: null, lengthCm: null, message: { it: '  ' } },
   };
   const born = publicPageView(site({ birth: sparse }), 'en', NOW).born;
-  assert.deepEqual([born?.weightLine, born?.lengthLine, born?.message], [null, null, null]);
+  assert.deepEqual([born?.stats, born?.message], [[], null]);
 });
 
 test("Milestones come in date order, dated and labelled in the page's language", () => {

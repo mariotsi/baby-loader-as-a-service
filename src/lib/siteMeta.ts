@@ -41,7 +41,7 @@ const LOADING_BABY: Record<SiteIconVariant, string> = {
 /** Where a Site's icons, manifest and share image are served, relative to its Address. */
 export const SITE_PATHS = {
   icon: (variant: SiteIconVariant) => `/site-icon/${variant}`,
-  manifest: '/site.webmanifest',
+  manifest: '/manifest.webmanifest',
   shareImage: '/share-image',
 } as const;
 
