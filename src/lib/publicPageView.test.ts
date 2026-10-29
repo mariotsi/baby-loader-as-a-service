@@ -24,7 +24,7 @@ test('the Waiting state leads with the Countdown', () => {
   const view = publicPageView(site(), 'en', NOW);
   assert.equal(view.tagline, 'Expecting');
   assert.equal(view.title, 'We are waiting for Emma');
-  assert.equal(view.sex, 'It’s a girl');
+  assert.equal(view.sex, null);
   assert.deepEqual(view.waiting, {
     dueDate: 'Due date: November 1, 2026',
     count: 12,
@@ -163,7 +163,7 @@ test("a Milestone's Place leads to its address on Google Maps, named in the page
 });
 
 test("the push button copy follows the Site's state", () => {
-  assert.equal(publicPageView(site(), 'en', NOW).push.subscribe, 'Notify me when they arrive');
+  assert.equal(publicPageView(site(), 'en', NOW).push.subscribe, 'Notify me when she arrives');
   assert.equal(publicPageView(site({ birth: BORN }), 'en', NOW).push.subscribe, 'Get the next updates');
 });
 
