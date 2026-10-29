@@ -72,8 +72,8 @@ jobs:
             GIT_COMMIT_SHA
             GIT_BRANCH
 
-      # Wrangler reconciles configured routes and removes dashboard exceptions.
-      - name: Restore the staging media route exception
+      # Recreate the media bypass if someone removes it manually in Cloudflare.
+      - name: Ensure the staging media route bypass exists
         run: node scripts/ensure-media-route.mjs staging
 
       # Wrangler's log files hold each Cloudflare API call and its error,
@@ -155,7 +155,7 @@ jobs:
             GIT_BRANCH
             ROOT_DOMAIN
 
-      - name: Restore the staging media route exception
+      - name: Ensure the staging media route bypass exists
         run: node scripts/ensure-media-route.mjs staging
 
       # Maintains one Preview comment on each pull request.
@@ -209,7 +209,7 @@ jobs:
             GIT_COMMIT_SHA
             GIT_BRANCH
 
-      - name: Restore the production media route exception
+      - name: Ensure the production media route bypass exists
         run: node scripts/ensure-media-route.mjs production
 
       - uses: actions/upload-artifact@v7
