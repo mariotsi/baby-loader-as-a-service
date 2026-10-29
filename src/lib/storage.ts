@@ -36,6 +36,7 @@ export class UnsupportedMediaTypeError extends Error {}
 export class MediaTooLargeError extends Error {}
 export class MediaCachePurgeError extends Error {}
 export class MediaOwnershipError extends Error {}
+export class InvalidMediaKeyError extends Error {}
 
 const CUSTOMER_DATA_PREFIX = 'customer-data';
 const WEBSITE_ASSETS_PREFIX = 'website-assets';
@@ -70,7 +71,7 @@ function validateKey(key: string): void {
     parts.length === 0 ||
     parts.some((part) => !part || part === '.' || part === '..')
   ) {
-    throw new Error('Media keys must be relative object paths.');
+    throw new InvalidMediaKeyError('Media keys must be relative object paths.');
   }
 }
 

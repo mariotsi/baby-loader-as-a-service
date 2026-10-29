@@ -18,6 +18,10 @@ export type RouteErrorCode =
   | 'notFound'
   | 'pushNotConfigured'
   | 'invalidRequest'
+  | 'unsupportedMediaType'
+  | 'mediaTooLarge'
+  | 'mediaCachePurgeFailed'
+  | 'mediaStorageUnavailable'
   | 'unknownSite';
 
 export interface RouteError {

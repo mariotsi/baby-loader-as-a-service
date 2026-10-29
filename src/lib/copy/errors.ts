@@ -23,6 +23,10 @@ const en = {
     notFound: 'Not found.',
     pushNotConfigured: 'VAPID keys are not configured on the server.',
     invalidRequest: 'Invalid request.',
+    unsupportedMediaType: 'This file type is not supported.',
+    mediaTooLarge: 'This file is empty or exceeds its size limit.',
+    mediaCachePurgeFailed: 'The media was deleted, but its cached copy could not be purged.',
+    mediaStorageUnavailable: 'Media storage is unavailable.',
     unknownSite: 'Unknown site.',
   } satisfies Record<RouteErrorCode, string | ((max: number) => string)>,
 
@@ -103,6 +107,10 @@ const it: ErrorsCopy = {
     notFound: 'Non trovato.',
     pushNotConfigured: 'Le chiavi VAPID non sono configurate sul server.',
     invalidRequest: 'Richiesta non valida.',
+    unsupportedMediaType: 'Questo tipo di file non è supportato.',
+    mediaTooLarge: 'Il file è vuoto o supera il limite di dimensione.',
+    mediaCachePurgeFailed: 'Il file è stato eliminato, ma la copia nella cache non è stata eliminata.',
+    mediaStorageUnavailable: 'Lo spazio per i file non è disponibile.',
     unknownSite: 'Sito sconosciuto.',
   },
 
