@@ -59,6 +59,12 @@ Owner uploads live under `customer-data/<owner-id>/<site-id>/`; application-mana
 website files use `website-assets/`. Deletion requires an authenticated `OwnedSite`
 and accepts keys only from that owner's Site folder.
 
+The Owner media API is `POST` and `DELETE /api/sites/<slug>/media`. `POST`
+accepts multipart form data with a `file` field and returns its object key and
+public URL. It accepts AVIF, JPEG, PNG and WebP images up to 5 MB, and MP4 or
+WebM video up to 50 MB. `DELETE` accepts a JSON `{ "key": "..." }` body;
+deletion purges the file's public URL from Cloudflare's cache.
+
 Deliberately not yet built (see the original planning discussion):
 - **Custom domains (CNAME)** — needs a Cloudflare-specific domain verification
   and routing flow; not started.
