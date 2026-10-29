@@ -111,5 +111,9 @@
   color: var(--color-text-muted);
   text-decoration: underline;
   text-underline-offset: 0.15em;
-  font-weight: inherit;
+  font-weight: var(--font-body-weight);
+}
+
+.link.sm {
+  font-size: var(--text-xs);
 }
