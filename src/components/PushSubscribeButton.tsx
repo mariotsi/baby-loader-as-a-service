@@ -238,6 +238,46 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
     }
   }
 
+  return (
+    <PushSubscribeView
+      status={status}
+      device={device}
+      t={t}
+      busy={busy}
+      feedback={feedback}
+      celebrate={celebrate}
+      confirmOpen={confirmOpen}
+      onSubscribe={subscribe}
+      onUnsubscribe={unsubscribe}
+      onConfirmOpenChange={setConfirmOpen}
+    />
+  );
+}
+
+/** Renders notification controls from their resolved state, shared by the page and stories. */
+export function PushSubscribeView({
+  status,
+  device,
+  t,
+  busy = false,
+  feedback = null,
+  celebrate = false,
+  confirmOpen = false,
+  onSubscribe,
+  onUnsubscribe,
+  onConfirmOpenChange,
+}: {
+  status: Status;
+  device: DeviceContext | null;
+  t: PushButtonCopy;
+  busy?: boolean;
+  feedback?: 'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe' | null;
+  celebrate?: boolean;
+  confirmOpen?: boolean;
+  onSubscribe: () => void;
+  onUnsubscribe: () => void;
+  onConfirmOpenChange: (open: boolean) => void;
+}) {
   if (status === 'checking' || status === 'unsupported' || status === 'denied' || status === 'ios-home-screen') {
     return (
       <>
@@ -259,13 +299,13 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
         <StatusMessage tone="success">
           <span className={styles.subscribedContent}>
             <span>{t.subscribed}</span>
-            <Button variant="link" size="sm" inline onClick={() => setConfirmOpen(true)} loading={busy}>
+            <Button variant="link" size="sm" inline onClick={() => onConfirmOpenChange(true)} loading={busy}>
               {t.unsubscribeLink}
             </Button>
           </span>
         </StatusMessage>
       ) : (
-        <Button variant="primary" icon="bell" onClick={subscribe} loading={busy}>
+        <Button variant="primary" icon="bell" onClick={onSubscribe} loading={busy}>
           {busy ? t.subscribing : t.subscribe}
         </Button>
       )}
@@ -278,8 +318,8 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
         confirmLabel={t.unsubscribe}
         dismissLabel={t.keepNotifications}
         busy={busy}
-        onConfirm={unsubscribe}
-        onClose={() => setConfirmOpen(false)}
+        onConfirm={onUnsubscribe}
+        onClose={() => onConfirmOpenChange(false)}
       />
       {celebrate ? <Confetti /> : null}
     </div>
