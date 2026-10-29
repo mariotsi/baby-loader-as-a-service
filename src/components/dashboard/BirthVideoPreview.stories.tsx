@@ -1,7 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { LangProvider } from '@/components/LangProvider';
 import { PublicPage } from '@/components/PublicPage';
+import { Button } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { publicPageViews } from '@/lib/publicPageView';
 import type { SiteDTO } from '@/lib/site';
@@ -102,6 +104,7 @@ export const AudioAutoplayBlocked: Story = {
     await expect(getComputedStyle(dialog).backgroundColor).toBe('rgb(0, 0, 0)');
     const sound = await within(dialog).findByRole('button', { name: 'Turn on sound' });
     await waitFor(() => expect(video.muted).toBe(true));
+    await waitFor(() => expect(video.currentTime).toBeGreaterThan(0));
     await userEvent.click(sound);
     await expect(video.muted).toBe(false);
     await expect(within(dialog).queryByRole('button', { name: 'Turn on sound' })).not.toBeInTheDocument();
@@ -151,5 +154,58 @@ export const BornPublicPageItalian: Story = {
         disableNotifications
       />
     </LangProvider>
+  ),
+};
+
+function RepeatVisitPreview() {
+  const [visit, setVisit] = useState(0);
+  return (
+    <>
+      <Button onClick={() => setVisit((count) => count + 1)}>Visit again</Button>
+      <PublicPage
+        key={visit}
+        views={publicPageViews(site)}
+        initialLang="en"
+        slug="autoplay-check"
+        vapidPublicKey={undefined}
+        birthVideoUrl={videoUrl}
+        disableNotifications
+      />
+    </>
+  );
+}
+
+/** First-time visitors see the reveal automatically; returning visitors can replay it. */
+export const FirstAndReturnVisit: Story = {
+  beforeEach: () => {
+    const key = `birth-reveal:autoplay-check:${videoUrl}`;
+    localStorage.removeItem(key);
+    return () => localStorage.removeItem(key);
+  },
+  render: () => <RepeatVisitPreview />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await waitFor(() => expect(canvas.getByRole('dialog')).toBeVisible());
+    await waitFor(() => expect(canvas.getByRole('dialog').querySelector('video')?.currentTime).toBeGreaterThan(0));
+    await userEvent.click(canvas.getByRole('button', { name: 'Close video' }));
+    await userEvent.click(canvas.getByRole('button', { name: 'Visit again' }));
+    await expect(canvas.queryByRole('dialog')).not.toBeInTheDocument();
+    await userEvent.click(canvas.getByRole('button', { name: 'Replay the welcome' }));
+    await waitFor(() => expect(canvas.getByRole('dialog')).toBeVisible());
+    await userEvent.click(canvas.getByRole('button', { name: 'Close video' }));
+  },
+};
+
+/** A fresh visitor's reveal uses a clip with audio and the browser's native autoplay policy. */
+export const AudioFirstVisit: Story = {
+  render: () => (
+    <PublicPage
+      views={publicPageViews(site)}
+      initialLang="en"
+      slug="emma-audio-review"
+      vapidPublicKey={undefined}
+      birthVideoUrl={videoUrl}
+      disableNotifications
+    />
   ),
 };

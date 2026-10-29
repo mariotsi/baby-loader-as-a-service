@@ -68,7 +68,8 @@ deletion purges the file's public URL from Cloudflare's cache.
 The Site editor holds the welcome video selection locally until the Owner saves.
 The welcome video opens in a full-screen dialog once per browser, and the Born
 page offers a replay button. The editor
-provides an explicit video preview. Replaced and removed files are deleted after
+provides an explicit video preview. On Preview deployments, published birth media
+is served on the page origin from R2, including byte-range video requests. Replaced and removed files are deleted after
 the Site settings save succeeds. Birth photo selection in the Send birth
 notification flow is tracked in [#15](https://github.com/mariotsi/baby-loader-as-a-service/issues/15).
 
