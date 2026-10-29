@@ -20,7 +20,7 @@
   font-weight: var(--font-display-weight);
   font-size: calc(var(--text-hero) * 0.85);
   line-height: 1;
-  color: var(--color-accent-ink);
+  color: var(--color-text);
 }
 
 .unit {

@@ -6,7 +6,7 @@ import { StatusMessage } from '@/components/ui/StatusMessage';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import type { Lang } from '@/lib/i18n';
 import type { PushButtonCopy } from '@/lib/publicPageView';
-import { decodeVapidKey, VapidKeyError } from '@/lib/vapid';
+import { decodeVapidKey } from '@/lib/vapid';
 import styles from './PushSubscribeButton.module.css';
 
 interface Props {
@@ -145,7 +145,7 @@ async function detectStatus(device: DeviceContext): Promise<Status> {
 export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
   const [status, setStatus] = useState<Status>('checking');
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<'unsubscribeOk' | 'errorGeneric' | null>(null);
   const [device, setDevice] = useState<DeviceContext | null>(null);
   const [celebrate, setCelebrate] = useState(false);
 
@@ -184,17 +184,15 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
         throw new Error('server');
       }
       setStatus('subscribed');
-      setFeedback(t.subscribeOk);
+      setFeedback(null);
       if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         setCelebrate(true);
       }
-    } catch (err) {
+    } catch {
       if (Notification.permission === 'denied') {
         setStatus('denied');
-      } else if (err instanceof VapidKeyError) {
-        setFeedback(err.message);
       } else {
-        setFeedback(t.errorGeneric);
+        setFeedback('errorGeneric');
       }
     } finally {
       setBusy(false);
@@ -216,9 +214,9 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
         await sub.unsubscribe();
       }
       setStatus('unsubscribed');
-      setFeedback(t.unsubscribeOk);
+      setFeedback('unsubscribeOk');
     } catch {
-      setFeedback(t.errorGeneric);
+      setFeedback('errorGeneric');
     } finally {
       setBusy(false);
     }
@@ -233,9 +231,8 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
     );
   }
 
-  const failed = feedback !== null && feedback !== t.subscribeOk && feedback !== t.unsubscribeOk;
-  const success = failed ? null : feedback;
-  const failure = failed ? feedback : null;
+  const success = feedback === 'unsubscribeOk' ? t.unsubscribeOk : null;
+  const failure = feedback !== null && feedback !== 'unsubscribeOk' ? t.errorGeneric : null;
 
   return (
     <div className={styles.push}>

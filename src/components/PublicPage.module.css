@@ -129,6 +129,7 @@
 
 .cta {
   display: grid;
+  gap: var(--space-4);
   justify-items: inherit;
   margin-top: var(--space-3);
 }

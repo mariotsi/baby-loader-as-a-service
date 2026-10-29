@@ -67,7 +67,7 @@ const en = {
   checking: 'Checking notification status...',
   subscribedBorn: 'Notifications are on for this device',
   subscribedWaiting: 'Birth notification is on for this device',
-  unsubscribe: 'Turn off',
+  unsubscribe: 'Turn off notifications',
   subscribeBorn: 'Get the next updates',
   subscribeWaiting: (sex: Sex): string =>
     ({
@@ -122,7 +122,7 @@ const it: PublicPageCopy = {
   checking: 'Controllo stato notifiche...',
   subscribedBorn: 'Notifiche attive su questo dispositivo',
   subscribedWaiting: 'Notifica della nascita attiva su questo dispositivo',
-  unsubscribe: 'Disattiva',
+  unsubscribe: 'Disattiva le notifiche',
   subscribeBorn: 'Ricevi i prossimi aggiornamenti',
   subscribeWaiting: (_sex: Sex): string => 'Avvisami alla nascita',
   subscribing: 'Attivazione...',
