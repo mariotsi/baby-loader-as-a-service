@@ -13,6 +13,8 @@ interface ButtonLook {
   /** `end` puts the icon after the label, for actions that move forward or leave the page. */
   iconPosition?: 'start' | 'end';
   fullWidth?: boolean;
+  /** Fits the content with no padding or minimum height, for actions embedded in text. */
+  inline?: boolean;
   /**
    * Shows only the icon and gives the label to screen readers, for an
    * action repeated in a dense row. Needs `icon`.
@@ -21,7 +23,7 @@ interface ButtonLook {
 }
 
 function lookClassName(
-  { variant = 'secondary', size = 'md', fullWidth, labelHidden }: ButtonLook,
+  { variant = 'secondary', size = 'md', fullWidth, labelHidden, inline }: ButtonLook,
   className?: string
 ): string {
   return [
@@ -29,6 +31,7 @@ function lookClassName(
     styles[variant],
     size === 'sm' && styles.sm,
     fullWidth && styles.fullWidth,
+    inline && styles.inline,
     labelHidden && styles.iconOnly,
     className,
   ]
@@ -77,6 +80,7 @@ export function Button({
   icon,
   iconPosition,
   fullWidth,
+  inline,
   labelHidden,
   loading = false,
   className,
@@ -97,7 +101,7 @@ export function Button({
     <button
       {...rest}
       type={type}
-      className={lookClassName({ variant, size, fullWidth, labelHidden }, className)}
+      className={lookClassName({ variant, size, fullWidth, labelHidden, inline }, className)}
       aria-disabled={loading || undefined}
       aria-busy={loading || undefined}
       onClick={handleClick}
@@ -118,13 +122,14 @@ export function ButtonLink({
   icon,
   iconPosition,
   fullWidth,
+  inline,
   labelHidden,
   className,
   children,
   ...rest
 }: ButtonLinkProps) {
   return (
-    <Link {...rest} className={lookClassName({ variant, size, fullWidth, labelHidden }, className)}>
+    <Link {...rest} className={lookClassName({ variant, size, fullWidth, labelHidden, inline }, className)}>
       <Content icon={icon} iconPosition={iconPosition} labelHidden={labelHidden}>
         {children}
       </Content>

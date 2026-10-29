@@ -259,7 +259,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
         <StatusMessage tone="success">
           <span className={styles.subscribedContent}>
             <span>{t.subscribed}</span>
-            <Button variant="link" size="sm" onClick={() => setConfirmOpen(true)} loading={busy}>
+            <Button variant="link" size="sm" inline onClick={() => setConfirmOpen(true)} loading={busy}>
               {t.unsubscribe}
             </Button>
           </span>

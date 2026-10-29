@@ -50,7 +50,7 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
     <div className={styles.sheet}>
       <Heading className={styles.heading}>Components</Heading>
       <Group title="Confirmation">
-        <Button variant="link" onClick={() => setConfirmOpen(true)}>
+        <Button variant="link" inline onClick={() => setConfirmOpen(true)}>
           Turn off notifications
         </Button>
         <ConfirmDialog
