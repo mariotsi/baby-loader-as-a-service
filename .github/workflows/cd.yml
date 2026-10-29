@@ -72,6 +72,10 @@ jobs:
             GIT_COMMIT_SHA
             GIT_BRANCH
 
+      # Wrangler reconciles configured routes and removes dashboard exceptions.
+      - name: Restore the staging media route exception
+        run: node scripts/ensure-media-route.mjs staging
+
       # Wrangler's log files hold each Cloudflare API call and its error,
       # which the step's own output leaves out.
       - uses: actions/upload-artifact@v7
@@ -151,7 +155,10 @@ jobs:
             GIT_BRANCH
             ROOT_DOMAIN
 
-      # Like Vercel's bot: one comment per pull request, edited on each push.
+      - name: Restore the staging media route exception
+        run: node scripts/ensure-media-route.mjs staging
+
+      # Maintains one Preview comment on each pull request.
       - name: Comment the Preview link on the branch's pull requests
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -201,6 +208,9 @@ jobs:
           vars: |
             GIT_COMMIT_SHA
             GIT_BRANCH
+
+      - name: Restore the production media route exception
+        run: node scripts/ensure-media-route.mjs production
 
       - uses: actions/upload-artifact@v7
         if: failure()

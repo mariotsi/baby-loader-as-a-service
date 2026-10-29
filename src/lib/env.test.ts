@@ -8,6 +8,13 @@ const VALID = {
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: `B${'A'.repeat(86)}`,
   VAPID_PRIVATE_KEY: 'A'.repeat(43),
   ROOT_DOMAIN: 'localhost:3000',
+  MEDIA_STORAGE_ENDPOINT: 'https://account-id.r2.cloudflarestorage.com',
+  MEDIA_STORAGE_BUCKET: 'loading-baby-media',
+  MEDIA_STORAGE_ACCESS_KEY_ID: 'access-key',
+  MEDIA_STORAGE_SECRET_ACCESS_KEY: 'secret-key',
+  MEDIA_PUBLIC_URL: 'https://media.loading.baby',
+  MEDIA_CACHE_PURGE_TOKEN: 'cache-purge-token',
+  MEDIA_CACHE_PURGE_ZONE_ID: '0123456789abcdef0123456789abcdef',
 };
 
 function problems(env: Record<string, string | undefined>): string[] {

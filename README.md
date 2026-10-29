@@ -52,14 +52,18 @@ through Drizzle ORM, Web Push (VAPID). See ADR-0009.
 Implemented: accounts, Site creation/onboarding, subdomain routing, theming
 (palette + font), name/sex visibility toggles, language mode (mono or
 switcher), due-date countdown + milestones, born-state fields, per-Site
-push notifications and the list of a Site's Subscriptions.
+push notifications, the list of a Site's Subscriptions and the R2-backed
+media storage layer.
+
+Owner uploads live under `customer-data/<owner-id>/<site-id>/`; application-managed
+website files use `website-assets/`. Deletion requires an authenticated `OwnedSite`
+and accepts keys only from that owner's Site folder.
 
 Deliberately not yet built (see the original planning discussion):
-- **Custom domains (CNAME)** — needs the Vercel Domains API behind a
-  `DomainProvider` abstraction so it isn't a hard Vercel lock-in; not started.
-- **Media storage** — Owner-uploaded hero photo/video and a custom OG/share
-  image; the public page currently has no hero media at all. Needs a small
-  storage abstraction (Vercel Blob or an S3-compatible provider).
+- **Custom domains (CNAME)** — needs a Cloudflare-specific domain verification
+  and routing flow; not started.
+- **Birth media uploads** — The storage layer is ready; the Owner-facing
+  upload editor and public hero display are tracked in [#13](https://github.com/mariotsi/baby-loader-as-a-service/issues/13).
 - **Billing** — no Stripe integration; site creation is free/manual for now.
 - Fuller push-notification UX copy (iOS "add to home screen" instructions,
   per-OS "notifications are blocked" troubleshooting) — baby-loader has a
@@ -69,7 +73,7 @@ Deliberately not yet built (see the original planning discussion):
 
 - Separate GitHub repo, separate `package.json`, no shared imports.
 - Separate **database**: its own D1 databases (`loading-baby` and the
-  others in "Environments"), sharing nothing with baby-loader's MongoDB.
+  others in "Environments").
 - Separate VAPID keypair, separate `SESSION_SECRET`, separate deployment.
 
 ## Local development
@@ -214,9 +218,9 @@ both together.
 ## Hosting
 
 Cloudflare Workers, through the `@opennextjs/cloudflare` adapter, with data
-in Cloudflare D1 (ADR-0009). Staging and Previews run there; production
-moves there from Vercel and MongoDB Atlas in #72. Custom domains per Site
-are meant for Cloudflare for SaaS custom hostnames (#16).
+in Cloudflare D1 and media in Cloudflare R2 (ADR-0009). Production, staging,
+and Previews run on Cloudflare Workers. Custom domains per Site are meant
+for Cloudflare for SaaS custom hostnames ([#16](https://github.com/mariotsi/baby-loader-as-a-service/issues/16)).
 
 ## Environments
 
@@ -230,7 +234,7 @@ all from GitHub Actions.
 
 | Environment | Worker                                 | Branch               | Addresses                                                                        | D1 database                                                 |
 | ----------- | -------------------------------------- | -------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
-| Production  | `loading-baby` (Vercel until #72)      | `main`               | `loading.baby`, Sites at `<slug>.loading.baby`                                   | `loading-baby` (MongoDB Atlas `waitingpages` until #72)     |
+| Production  | `loading-baby`                         | `main`               | `loading.baby`, Sites at `<slug>.loading.baby`                                   | `loading-baby`                                              |
 | Staging     | `loading-baby-staging`                 | `staging`            | `staging-loading-baby.fyi`, Sites at `<slug>.staging-loading-baby.fyi`           | `loading-baby-staging`                                      |
 | Preview     | `loading-baby-staging`, one per branch | any other but `main` | `<branch>-loading-baby-staging.simone-716.workers.dev`, Sites at `/sites/<slug>` | one of `loading-baby-preview-1` to `-5`, lent to the branch |
 | Local       | none                                   | any                  | `localhost:3000`, Sites at `<slug>.localhost:3000`                               | local D1 in `.wrangler/state`                               |

@@ -28,6 +28,13 @@ const envSchema = z.object({
     z.string().check(z.regex(VAPID_PRIVATE_KEY, 'must be a VAPID private key (npm run generate-vapid)'))
   ),
   ROOT_DOMAIN: z.optional(z.string().check(z.regex(HOST, 'must be a host, with a port only for localhost'))),
+  MEDIA_STORAGE_ENDPOINT: z.string().check(z.regex(/^https:\/\//, 'must be an HTTPS URL')),
+  MEDIA_STORAGE_BUCKET: z.string(),
+  MEDIA_STORAGE_ACCESS_KEY_ID: z.string(),
+  MEDIA_STORAGE_SECRET_ACCESS_KEY: z.string(),
+  MEDIA_PUBLIC_URL: z.string().check(z.regex(/^https:\/\//, 'must be an HTTPS URL')),
+  MEDIA_CACHE_PURGE_TOKEN: z.string(),
+  MEDIA_CACHE_PURGE_ZONE_ID: z.string().check(z.regex(/^[0-9a-f]{32}$/i, 'must be a Cloudflare zone ID')),
   APP_ENV: z.optional(
     z.enum(['production', 'staging', 'preview', 'development'], 'must be production, staging, preview or development')
   ),
@@ -39,7 +46,6 @@ type Env = z.output<typeof envSchema>;
 type RawEnv = Record<string, string | undefined>;
 
 const VAPID_VARS = ['VAPID_EMAIL', 'NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'] as const;
-
 /**
  * The rule across variables: the VAPID keypair comes whole or not at all. It
  * runs even when a variable already failed, so one start names every problem.
@@ -116,4 +122,28 @@ export const deploymentEnv = lazy(
     commit: env.GIT_COMMIT_SHA ?? null,
     branch: env.GIT_BRANCH ?? null,
   })
+);
+
+/** Required S3-compatible media storage configuration. */
+export const mediaStorageEnv = lazy(
+  {
+    MEDIA_STORAGE_ENDPOINT: true,
+    MEDIA_STORAGE_BUCKET: true,
+    MEDIA_STORAGE_ACCESS_KEY_ID: true,
+    MEDIA_STORAGE_SECRET_ACCESS_KEY: true,
+    MEDIA_PUBLIC_URL: true,
+    MEDIA_CACHE_PURGE_TOKEN: true,
+    MEDIA_CACHE_PURGE_ZONE_ID: true,
+  },
+  (env) => {
+    return {
+      endpoint: env.MEDIA_STORAGE_ENDPOINT,
+      bucket: env.MEDIA_STORAGE_BUCKET,
+      accessKeyId: env.MEDIA_STORAGE_ACCESS_KEY_ID,
+      secretAccessKey: env.MEDIA_STORAGE_SECRET_ACCESS_KEY,
+      publicUrl: env.MEDIA_PUBLIC_URL.replace(/\/$/, ''),
+      cachePurgeToken: env.MEDIA_CACHE_PURGE_TOKEN,
+      cachePurgeZoneId: env.MEDIA_CACHE_PURGE_ZONE_ID,
+    };
+  }
 );
