@@ -14,6 +14,10 @@ import { previewName } from '../src/lib/dbName.ts';
 
 const MARKER = '<!-- loading-baby-preview -->';
 const API = 'https://api.github.com';
+const CLOUDFLARE_ACCOUNT_ID = '7163354ec1980b37f6d1622ced676359';
+const WORKER_NAME = 'loading-baby-staging';
+const WORKER_DASHBOARD_URL = `https://dash.cloudflare.com/${CLOUDFLARE_ACCOUNT_ID}/workers/services/view/${WORKER_NAME}/production`;
+const CLOUDFLARE_ICON_URL = 'https://www.cloudflare.com/favicon.ico';
 
 export function previewUrl(branch, workersDev) {
   return `https://${previewName(branch)}-loading-baby-staging.${workersDev}`;
@@ -24,24 +28,23 @@ export function previewUrl(branch, workersDev) {
  * deploy, and `deploymentUrl` is that one deployment's own address.
  */
 export function commentBody(state, url, commit, deploymentUrl = null) {
-  const lines = [MARKER, '### Cloudflare Preview', ''];
-  if (state === 'deleted') {
-    lines.push('The Preview and its D1 database were removed when the branch closed.');
-  } else {
-    lines.push(`**Preview:** ${url}`);
-    lines.push(`**Sites:** \`${url}/sites/<slug>\``);
-    if (deploymentUrl) {
-      lines.push(`**This deployment:** ${deploymentUrl}`);
-    }
-    lines.push('');
-    lines.push(
-      commit
-        ? `Serves \`${commit.slice(0, 7)}\`, deployed ${new Date().toISOString().replace(/\.\d+Z$/, 'Z')}.`
-        : 'Deployed by the latest push to the branch; the next push updates this comment.'
-    );
-    lines.push('Behind Cloudflare Access: sign in with the owner email.');
-  }
-  return lines.join('\n');
+  const timestamp = new Date().toISOString();
+  const worker = `<a href="${WORKER_DASHBOARD_URL}"><img src="${CLOUDFLARE_ICON_URL}" width="16" height="16" align="middle" alt="Cloudflare" /></a> [${WORKER_NAME}](${WORKER_DASHBOARD_URL})`;
+  const deployment =
+    state === 'deleted'
+      ? 'Removed'
+      : `✅ [Ready](${deploymentUrl || url})${commit ? ` · \`${commit.slice(0, 7)}\`` : ''}`;
+  const actions = state === 'deleted' ? 'n/a' : `[Preview](${url})`;
+  const updated = `<relative-time datetime="${timestamp}">${new Date(timestamp).toUTCString()}</relative-time>`;
+
+  return [
+    MARKER,
+    'Latest updates on your Cloudflare Workers project. Learn more about [Cloudflare Workers](https://developers.cloudflare.com/workers/).',
+    '',
+    '| Project | Deployment | Actions | Updated |',
+    '| :--- | :--- | :--- | :--- |',
+    `| ${worker} | ${deployment} | ${actions} | ${updated} |`,
+  ].join('\n');
 }
 
 async function github(path, init = {}) {

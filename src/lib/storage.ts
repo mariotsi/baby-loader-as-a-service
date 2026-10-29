@@ -2,8 +2,8 @@ import { AwsClient } from 'aws4fetch';
 import { mediaStorageEnv } from './env.ts';
 import type { OwnedSite } from './ownerAccess.ts';
 
-const IMAGE_LIMIT_BYTES = 5 * 1024 * 1024;
-const VIDEO_LIMIT_BYTES = 50 * 1024 * 1024;
+const IMAGE_LIMIT_BYTES = 5 * 1024 * 1024; // 5 MB
+const VIDEO_LIMIT_BYTES = 50 * 1024 * 1024; // 50 MB
 const MEDIA_TYPE_LIMITS: Record<string, number> = {
   'image/avif': IMAGE_LIMIT_BYTES,
   'image/jpeg': IMAGE_LIMIT_BYTES,
