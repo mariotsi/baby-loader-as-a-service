@@ -33,3 +33,12 @@ test('a Visitor subscribes and the Owner sends them a Notification', async ({
   await owner.goto(`/dashboard/${slug}/subscriptions`);
   await expect(owner.getByText('0 devices subscribed.')).toBeVisible();
 });
+
+test('an iPhone browser explains Home Screen installation before subscribing', async ({ page, project, addressOf }) => {
+  test.skip(project !== 'iphone', 'Home Screen installation is required on iPhone');
+  await page.goto(await addressOf('e2e-waiting'));
+  await expect(
+    page.getByText('On iPhone, web notifications work only after you add this page to your Home Screen as a web app.')
+  ).toBeVisible();
+  await expect(page.getByRole('button', { name: /Notify me/ })).toHaveCount(0);
+});

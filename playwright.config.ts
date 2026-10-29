@@ -29,6 +29,13 @@ if (vapid) {
       `VAPID_PRIVATE_KEY=${vapid.privateKey}`,
       'VAPID_EMAIL=mailto:e2e@waitingpages.test',
       'NEXTJS_ENV=production',
+      'MEDIA_STORAGE_ENDPOINT=https://storage.invalid',
+      'MEDIA_STORAGE_BUCKET=e2e-media',
+      'MEDIA_STORAGE_ACCESS_KEY_ID=e2e-key',
+      'MEDIA_STORAGE_SECRET_ACCESS_KEY=e2e-secret',
+      'MEDIA_PUBLIC_URL=https://media.invalid',
+      'MEDIA_CACHE_PURGE_TOKEN=e2e-token',
+      'MEDIA_CACHE_PURGE_ZONE_ID=00000000000000000000000000000000',
     ].join('\n')
   );
 }
