@@ -1,7 +1,8 @@
 /* Lines up with whatever holds it: centred on a phone, at the start beside the Countdown on a wide screen. */
 .push {
   display: grid;
-  justify-items: inherit;
+  justify-items: stretch;
+  width: 100%;
   gap: var(--space-1);
 }
 
@@ -74,4 +75,12 @@
   display: inline-grid;
   justify-items: center;
   gap: 0;
+}
+
+.instructions {
+  display: grid;
+  gap: var(--space-2);
+}
+.subscribedContent {
+  width: 100%;
 }

@@ -87,10 +87,16 @@ const en = {
   errorUnsubscribe: 'Could not turn off notifications. Please try again.',
   errorUnsupported: 'Your browser does not support push notifications.',
   errorDenied: 'Notifications are blocked in your browser settings.',
-  iosHomeScreen:
-    'On iPhone, open this page in Safari, tap Share, then Add to Home Screen. Open the new icon and turn notifications on there. Web push needs iOS 16.4 or later.',
+  iosHomeScreen: 'On iPhone, web notifications work only after you add this page to your Home Screen as a web app.',
+  iosStepsClassic: 'In Safari, tap Share, choose Add to Home Screen, then tap Add.',
+  iosSteps26:
+    'In Safari, tap More (…), then Share. With the Top or Bottom tab layout, tap Share directly. Choose Add to Home Screen, enable Open as Web App, then tap Add.',
+  iosStepsGeneric:
+    'Open this page in Safari and use its Share menu to add it to your Home Screen. If Open as Web App appears, enable it. The Apple guide below shows the steps for your version.',
+  iosOpenApp: 'Open the new Home Screen icon, then turn notifications on there.',
+  androidUnsupported: 'This browser does not support push notifications. Open this page in Chrome to turn them on.',
   iosHomeScreenLink: 'See how to add this page to your Home Screen',
-  iosVersion: 'Web notifications need iOS 16.4 or later. Update your iPhone, then add this page to your Home Screen.',
+  iosVersion: 'Your browser does not support push notifications. Web notifications need iOS 16.4 or later.',
   iosDenied: 'Notifications are blocked for this web app. Check its notification settings in iPhone Settings.',
   iosSettingsLink: 'Open Apple’s notification guide',
   androidUseChrome: 'For the best notification support on Android, open this page in Chrome.',
@@ -143,10 +149,16 @@ const it: PublicPageCopy = {
   errorUnsupported: 'Il tuo browser non supporta le notifiche push.',
   errorDenied: 'Le notifiche sono bloccate nelle impostazioni del browser.',
   iosHomeScreen:
-    'Su iPhone, apri questa pagina in Safari, tocca Condividi e poi Aggiungi alla schermata Home. Apri la nuova icona e attiva le notifiche. Le notifiche web richiedono iOS 16.4 o successivo.',
+    'Su iPhone, le notifiche web funzionano solo dopo aver aggiunto questa pagina alla schermata Home come app web.',
+  iosStepsClassic: 'In Safari, tocca Condividi, scegli Aggiungi alla schermata Home e tocca Aggiungi.',
+  iosSteps26:
+    'In Safari, tocca Altro (…), poi Condividi. Con il layout dei pannelli in alto o in basso, tocca direttamente Condividi. Scegli Aggiungi alla schermata Home, attiva Apri come app web e tocca Aggiungi.',
+  iosStepsGeneric:
+    'Apri questa pagina in Safari e usa il menu Condividi per aggiungerla alla schermata Home. Se compare Apri come app web, attivalo. La guida Apple qui sotto mostra i passaggi per la tua versione.',
+  iosOpenApp: 'Apri la nuova icona sulla schermata Home, poi attiva le notifiche da lì.',
+  androidUnsupported: 'Questo browser non supporta le notifiche push. Apri questa pagina in Chrome per attivarle.',
   iosHomeScreenLink: 'Scopri come aggiungere questa pagina alla schermata Home',
-  iosVersion:
-    'Le notifiche web richiedono iOS 16.4 o successivo. Aggiorna l’iPhone, poi aggiungi questa pagina alla schermata Home.',
+  iosVersion: 'Il tuo browser non supporta le notifiche push. Le notifiche web richiedono iOS 16.4 o successivo.',
   iosDenied:
     'Le notifiche sono bloccate per questa web app. Controlla le impostazioni delle notifiche in Impostazioni.',
   iosSettingsLink: 'Apri la guida Apple alle notifiche',

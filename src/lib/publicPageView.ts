@@ -33,6 +33,12 @@ export type PushButtonCopy = {
   errorUnsupported: string;
   errorDenied: string;
   iosHomeScreen: string;
+  iosStepsClassic: string;
+  iosSteps26: string;
+  iosStepsGeneric: string;
+  iosOpenApp: string;
+  androidUnsupported: string;
+
   iosHomeScreenLink: string;
   iosVersion: string;
   iosDenied: string;
@@ -223,6 +229,12 @@ function pushButtonCopy(t: PublicPageCopy, born: boolean, sex: SiteSettings['sex
     errorUnsupported: t.errorUnsupported,
     errorDenied: t.errorDenied,
     iosHomeScreen: t.iosHomeScreen,
+    iosStepsClassic: t.iosStepsClassic,
+    iosSteps26: t.iosSteps26,
+    iosStepsGeneric: t.iosStepsGeneric,
+    iosOpenApp: t.iosOpenApp,
+    androidUnsupported: t.androidUnsupported,
+
     iosHomeScreenLink: t.iosHomeScreenLink,
     iosVersion: t.iosVersion,
     iosDenied: t.iosDenied,

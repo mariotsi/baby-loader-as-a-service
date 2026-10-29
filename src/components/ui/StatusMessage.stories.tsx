@@ -34,3 +34,6 @@ export const Announced: Story = {
     );
   },
 };
+
+/** Aligns feedback with controls that fill their container. */
+export const FullWidth: Story = { args: { fullWidth: true } };

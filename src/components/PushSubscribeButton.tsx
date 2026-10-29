@@ -72,7 +72,7 @@ function statusNotice(status: Status, device: DeviceContext | null, t: PushButto
     return t.iosVersion;
   }
   if (device?.android && !device.chrome) {
-    return t.androidUseChrome;
+    return t.androidUnsupported;
   }
   return t.errorUnsupported;
 }
@@ -92,14 +92,35 @@ function statusHelpLink(status: Status, device: DeviceContext | null, t: PushBut
 
 function StatusNotice({ status, device, t }: { status: Status; device: DeviceContext | null; t: PushButtonCopy }) {
   const link = statusHelpLink(status, device, t);
+  const major = Number(device?.iosVersion?.split('.')[0]);
+  let steps = t.iosStepsGeneric;
+  if (major >= 16 && major <= 18) {
+    steps = t.iosStepsClassic;
+  } else if (major === 26) {
+    steps = t.iosSteps26;
+  }
   return (
     <div className={styles.push}>
-      <StatusMessage tone="info">{statusNotice(status, device, t)}</StatusMessage>
-      {link ? (
-        <a className={styles.helpLink} href={link.href} target="_blank" rel="noreferrer">
-          {link.label}
-        </a>
-      ) : null}
+      <StatusMessage tone="info" fullWidth>
+        <span className={styles.instructions}>
+          {status === 'ios-home-screen' ? (
+            <>
+              <a className={styles.helpLink} href="https://webkit.org/blog/13878/" target="_blank" rel="noreferrer">
+                {t.iosHomeScreen}
+              </a>
+              <span>{steps}</span>
+              <span>{t.iosOpenApp}</span>
+            </>
+          ) : (
+            statusNotice(status, device, t)
+          )}
+          {link ? (
+            <a className={styles.helpLink} href={link.href} target="_blank" rel="noreferrer">
+              {link.label}
+            </a>
+          ) : null}
+        </span>
+      </StatusMessage>
     </div>
   );
 }
@@ -292,11 +313,8 @@ export function PushSubscribeView({
 
   return (
     <div className={styles.push}>
-      {device?.android && !device.chrome && status === 'unsubscribed' ? (
-        <StatusMessage tone="info">{t.androidUseChrome}</StatusMessage>
-      ) : null}
       {status === 'subscribed' ? (
-        <StatusMessage tone="success">
+        <StatusMessage tone="success" fullWidth>
           <span className={styles.subscribedContent}>
             <span>{t.subscribed}</span>
             <Button variant="link" size="sm" inline onClick={() => onConfirmOpenChange(true)} loading={busy}>
@@ -305,12 +323,16 @@ export function PushSubscribeView({
           </span>
         </StatusMessage>
       ) : (
-        <Button variant="primary" icon="bell" onClick={onSubscribe} loading={busy}>
+        <Button variant="primary" icon="bell" fullWidth onClick={onSubscribe} loading={busy}>
           {busy ? t.subscribing : t.subscribe}
         </Button>
       )}
-      <StatusMessage tone="success">{success}</StatusMessage>
-      <StatusMessage tone="danger">{failure}</StatusMessage>
+      <StatusMessage tone="success" fullWidth>
+        {success}
+      </StatusMessage>
+      <StatusMessage tone="danger" fullWidth>
+        {failure}
+      </StatusMessage>
       <ConfirmDialog
         open={confirmOpen}
         title={t.unsubscribeTitle}

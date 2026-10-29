@@ -102,9 +102,26 @@ export const IPhoneOlderIOS: Story = { args: { status: 'unsupported', device: { 
 export const IPhoneBlocked: Story = { args: { status: 'denied', device: { ...iphone, standalone: true } } };
 /** Links to Chrome's Android notification settings help. */
 export const AndroidChromeBlocked: Story = { args: { status: 'denied', device: android } };
-/** Recommends Chrome to Android visitors using another browser. */
+/** Offers subscribing in any supported Android browser. */
 export const AndroidOtherBrowser: Story = { args: { device: { ...android, chrome: false } } };
 /** Unsupported Android browsers receive browser guidance. */
 export const AndroidUnsupported: Story = { args: { status: 'unsupported', device: { ...android, chrome: false } } };
 /** Opting in skips confetti when reduced motion is enabled. */
 export const ReducedMotion: Story = { parameters: { reducedMotion: true } };
+
+/** Uses the classic Safari Share menu on iOS 16.4. */
+export const IPhoneIOS164: Story = { args: { status: 'ios-home-screen', device: { ...iphone, iosVersion: '16.4' } } };
+/** Uses the classic Safari Share menu on iOS 17. */
+export const IPhoneIOS17: Story = { args: { status: 'ios-home-screen', device: { ...iphone, iosVersion: '17.0' } } };
+/** Uses the classic Safari Share menu on iOS 18. */
+export const IPhoneIOS18: Story = { args: { status: 'ios-home-screen', device: iphone } };
+/** Includes the iOS 26 layout choices and Open as Web App switch. */
+export const IPhoneIOS26: Story = { args: { status: 'ios-home-screen', device: { ...iphone, iosVersion: '26.0' } } };
+/** Uses generic guidance when the OS version is uncertain or frozen. */
+export const IPhoneUnknownVersion: Story = {
+  args: { status: 'ios-home-screen', device: { ...iphone, iosVersion: null } },
+};
+/** Uses generic guidance for versions without verified installation steps. */
+export const IPhoneFutureVersion: Story = {
+  args: { status: 'ios-home-screen', device: { ...iphone, iosVersion: '27.0' } },
+};
