@@ -81,7 +81,11 @@ export default async function SitePage({ params }: Props) {
         initialLang={await requestLang(views.map((view) => view.lang))}
         slug={site.slug}
         vapidPublicKey={vapidEnv()?.publicKey}
-        bornImageUrl={websiteAssetUrl('born-placeholder-v1.png', deploymentEnv().appEnv)}
+        bornImageUrl={
+          (site.birth.born && site.birth.details.photo?.url) ||
+          websiteAssetUrl('born-placeholder-v1.png', deploymentEnv().appEnv)
+        }
+        birthVideoUrl={site.birth.born ? site.birth.details.video?.url : undefined}
       />
     </>
   );

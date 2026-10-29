@@ -97,6 +97,16 @@ const placeSchema = z.strictObject({
   lon: z.number().check(z.minimum(-180), z.maximum(180)),
 });
 
+const birthMedia = z.nullable(
+  z.strictObject({
+    key: z.string().check(z.minLength(1), z.maxLength(500)),
+    url: z.url().check(z.refine((url) => url.startsWith('https://'))),
+    name: z.optional(z.string().check(z.maxLength(255))),
+    type: z.optional(z.enum(['image/avif', 'image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'])),
+    size: z.optional(z.int().check(z.minimum(1), z.maximum(50 * 1024 * 1024))),
+  })
+);
+
 const birthSchema = z.discriminatedUnion('born', [
   z.strictObject({ born: z.literal(false), details: z.null() }),
   z.strictObject({
@@ -107,6 +117,8 @@ const birthSchema = z.discriminatedUnion('born', [
       lengthCm: z.nullable(z.number().check(z.minimum(20), z.maximum(70))),
       // Optional, so only the Languages that have one.
       message: textPerLanguage(1000),
+      photo: z.optional(birthMedia),
+      video: z.optional(birthMedia),
     }),
   }),
 ]);

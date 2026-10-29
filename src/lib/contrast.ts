@@ -33,6 +33,8 @@ export function paletteContrastPairings(vars: ColorTokens): ContrastPairing[] {
     page: vars['--color-bg'],
     card: vars['--color-surface'],
     tint: vars['--color-soft'],
+    success: vars['--color-success-soft'],
+    error: vars['--color-danger-soft'],
     'decoration 1': vars['--color-joy-1'],
     'decoration 2': vars['--color-joy-2'],
     'decoration 3': vars['--color-joy-3'],
@@ -41,12 +43,21 @@ export function paletteContrastPairings(vars: ColorTokens): ContrastPairing[] {
   const onEach = (use: string, fg: string, min: number, on: (keyof typeof surfaces)[]) =>
     on.map((s) => ({ use: `${use} on ${s}`, fg, bg: surfaces[s], min }));
   return [
-    ...onEach('Text', vars['--color-text'], TEXT_MIN, ['page', 'card', 'tint', ...decorations]),
-    ...onEach('Muted text', vars['--color-text-muted'], TEXT_MIN, ['page', 'card', 'tint', ...decorations]),
+    ...onEach('Text', vars['--color-text'], TEXT_MIN, ['page', 'card', 'tint', 'success', 'error', ...decorations]),
+    ...onEach('Muted text', vars['--color-text-muted'], TEXT_MIN, [
+      'page',
+      'card',
+      'tint',
+      'success',
+      'error',
+      ...decorations,
+    ]),
     ...onEach('Accent text', vars['--color-accent-ink'], TEXT_MIN, ['page', 'card', 'tint', ...decorations]),
-    ...onEach('Error text', vars['--color-danger'], TEXT_MIN, ['page', 'card']),
-    ...onEach('Success text', vars['--color-success'], TEXT_MIN, ['page', 'card']),
+    ...onEach('Error text', vars['--color-danger'], TEXT_MIN, ['page', 'card', 'error']),
+    ...onEach('Success text', vars['--color-success'], TEXT_MIN, ['page', 'card', 'success']),
     { use: 'Text on accent fill', fg: vars['--color-on-accent'], bg: vars['--color-accent'], min: TEXT_MIN },
+    ...onEach('File picker success border', vars['--color-success'], NON_TEXT_MIN, ['card']),
+    ...onEach('File picker error border', vars['--color-danger'], NON_TEXT_MIN, ['card']),
     ...onEach('Control border', vars['--color-border'], NON_TEXT_MIN, ['page', 'card']),
     ...onEach('Focus ring and selected outline', vars['--color-accent-ink'], NON_TEXT_MIN, ['page', 'card']),
   ];

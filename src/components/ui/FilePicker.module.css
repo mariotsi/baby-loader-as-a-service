@@ -1,0 +1,83 @@
+.area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-2);
+  width: 100%;
+  min-height: var(--control-height);
+  padding: var(--space-5);
+  border: var(--border-width) dashed var(--color-border);
+  border-radius: var(--radius-md);
+  color: var(--color-text);
+  background: var(--color-surface);
+  font: inherit;
+  cursor: pointer;
+  text-align: center;
+}
+.area:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+.area[data-state="drag-valid"] {
+  border-color: var(--color-success);
+  background: var(--color-success-soft);
+}
+.area[data-state="error"],
+.area[data-state="drag-invalid"] {
+  border-color: var(--color-danger);
+  background: var(--color-danger-soft);
+}
+.symbol {
+  display: flex;
+  color: var(--color-accent-ink);
+}
+.area[data-state="drag-valid"] .symbol {
+  color: var(--color-success);
+}
+.area[data-state="error"] .symbol,
+.area[data-state="drag-invalid"] .symbol {
+  color: var(--color-danger);
+}
+.prompt,
+.name {
+  font-weight: var(--weight-bold);
+}
+.hint,
+.metadata {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+.file {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  width: 100%;
+  padding: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  text-align: start;
+}
+.details {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+}
+.name,
+.metadata {
+  overflow-wrap: anywhere;
+}
+.thumbnail {
+  width: 4.5rem;
+  height: 4.5rem;
+  flex-shrink: 0;
+  object-fit: cover;
+  border-radius: var(--radius-sm);
+}
+
+.selection {
+  min-width: 0;
+}
+.selection:empty {
+  display: none;
+}
