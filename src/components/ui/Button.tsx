@@ -7,7 +7,7 @@ import { VisuallyHidden } from './VisuallyHidden';
 
 interface ButtonLook {
   /** `primary` is the one main action of a view; `secondary` is the default; `ghost` is for quiet, repeated actions. */
-  variant?: 'primary' | 'secondary' | 'ghost';
+  variant?: 'primary' | 'secondary' | 'ghost' | 'link';
   size?: 'md' | 'sm';
   icon?: IconName;
   /** `end` puts the icon after the label, for actions that move forward or leave the page. */

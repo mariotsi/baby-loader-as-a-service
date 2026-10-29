@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import type { Lang } from '@/lib/i18n';
@@ -153,6 +154,7 @@ async function detectStatus(device: DeviceContext, slug: string): Promise<Status
 
 export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
   const [status, setStatus] = useState<Status>('checking');
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe' | null>(null);
   const [device, setDevice] = useState<DeviceContext | null>(null);
@@ -227,7 +229,9 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
       }
       setStatus('unsubscribed');
       setFeedback('unsubscribeOk');
+      setConfirmOpen(false);
     } catch {
+      setConfirmOpen(false);
       setFeedback('errorUnsubscribe');
     } finally {
       setBusy(false);
@@ -254,7 +258,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
       {status === 'subscribed' ? (
         <>
           <StatusMessage tone="success">{t.subscribed}</StatusMessage>
-          <Button onClick={unsubscribe} loading={busy}>
+          <Button variant="link" size="sm" onClick={() => setConfirmOpen(true)} loading={busy}>
             {t.unsubscribe}
           </Button>
         </>
@@ -265,6 +269,16 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
       )}
       <StatusMessage tone="success">{success}</StatusMessage>
       <StatusMessage tone="danger">{failure}</StatusMessage>
+      <ConfirmDialog
+        open={confirmOpen}
+        title={t.unsubscribeTitle}
+        description={t.unsubscribeDescription}
+        confirmLabel={t.unsubscribe}
+        dismissLabel={t.keepNotifications}
+        busy={busy}
+        onConfirm={unsubscribe}
+        onClose={() => setConfirmOpen(false)}
+      />
       {celebrate ? <Confetti /> : null}
     </div>
   );

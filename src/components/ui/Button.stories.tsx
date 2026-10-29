@@ -74,3 +74,6 @@ export const InAGroup: Story = {
     </Stack>
   ),
 };
+
+/** A muted text action with a full touch target. */
+export const Link: Story = { args: { variant: 'link', children: 'Turn off notifications' } };
