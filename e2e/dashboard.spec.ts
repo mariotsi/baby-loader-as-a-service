@@ -71,9 +71,9 @@ test.describe('Dashboard', () => {
     await expect(page.getByLabel('Page name')).toHaveValue('Elena e Ettore');
 
     await page.goto(await dashboardAddress(page, slug));
-    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Benvenuto/a Edith Rose');
-    await expect(page.getByText('Peso: 3100 g')).toBeVisible();
-    await expect(page.getByText('È una femmina')).toBeVisible();
+    await expect(page.getByRole('heading', { level: 1 })).toHaveText('Benvenuta Edith Rose');
+    await expect(page.getByRole('listitem').filter({ hasText: 'Peso' }).getByText('3100 g')).toBeVisible();
+    await expect(page.getByText('È nata!')).toBeVisible();
     await expect(page.getByRole('banner')).toHaveText('Elena e Ettore');
     await expect(page.getByText('Si torna a casa')).toBeVisible();
   });
