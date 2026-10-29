@@ -22,6 +22,7 @@ export type PushButtonCopy = {
   subscribe: string;
   subscribing: string;
   unsubscribe: string;
+  unsubscribeLink: string;
   unsubscribeTitle: string;
   unsubscribeDescription: string;
   keepNotifications: string;
@@ -211,6 +212,7 @@ function pushButtonCopy(t: PublicPageCopy, born: boolean, sex: SiteSettings['sex
     subscribe: born ? t.subscribeBorn : t.subscribeWaiting(sex),
     subscribing: t.subscribing,
     unsubscribe: t.unsubscribe,
+    unsubscribeLink: t.unsubscribeLink,
     unsubscribeTitle: t.unsubscribeTitle,
     unsubscribeDescription: t.unsubscribeDescription,
     keepNotifications: t.keepNotifications,
