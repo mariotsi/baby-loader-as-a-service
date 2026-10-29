@@ -35,6 +35,7 @@ import {
   type SiteSettingsError,
   type SiteSettingsInput,
 } from '@/lib/siteSettings';
+import { BirthMediaEditor, initialMedia, type MediaDraft, storedDraft } from './BirthMediaEditor';
 import { PlaceField } from './PlaceField';
 import { SitePreviews } from './SitePreviews';
 import styles from './SiteSettingsForm.module.css';
@@ -71,10 +72,12 @@ export function SiteSettingsForm({
   site,
   timeZones,
   address,
+  mediaPreviewSlug,
 }: {
   site: SiteDTO;
   timeZones: string[];
   address: string;
+  mediaPreviewSlug?: string;
 }) {
   const router = useRouter();
   const pageLang = useLang();
@@ -83,6 +86,12 @@ export function SiteSettingsForm({
   const [sex, setSex] = useState(site.sex);
   const [dueDate, setDueDate] = useState(site.dueDate?.slice(0, 10) ?? '');
   const details = site.birth.details;
+  const [photo, setPhoto] = useState<MediaDraft>(initialMedia(details, 'photo'));
+  const [video, setVideo] = useState<MediaDraft>(initialMedia(details, 'video'));
+  const [savedMedia, setSavedMedia] = useState({
+    photo: initialMedia(details, 'photo'),
+    video: initialMedia(details, 'video'),
+  });
   const [born, setBorn] = useState(site.birth.born);
   const [birthDatetime, setBirthDatetime] = useState(details ? format(parseISO(details.datetime), LOCAL_DATETIME) : '');
   const [weight, setWeight] = useState(details?.weightGrams?.toString() ?? '');
@@ -130,6 +139,8 @@ export function SiteSettingsForm({
               weightGrams: weight ? Number(weight) : null,
               lengthCm: lengthCm ? Number(lengthCm) : null,
               message: writtenTexts(birthMessage),
+              photo: storedDraft(photo),
+              video: storedDraft(video),
             },
           }
         : { born: false, details: null },
@@ -185,22 +196,64 @@ export function SiteSettingsForm({
     const settings = currentSettings();
     setFailedPaths([]);
     setSaving(true);
-    const res = await fetch(`/api/sites/${site.slug}`, {
-      method: 'PUT',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(settings),
-    });
-    setSaving(false);
-    if (res.ok) {
+    const uploaded: { key: string; url: string }[] = [];
+    let committed = false;
+    async function upload(draft: MediaDraft) {
+      if (!(draft instanceof File)) {
+        return draft;
+      }
+      const body = new FormData();
+      body.set('file', draft);
+      const response = await fetch(`/api/sites/${site.slug}/media`, { method: 'POST', body });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(routeErrorText(data.error, pageLang));
+      }
+      uploaded.push(data.media);
+      return { ...data.media, name: draft.name, type: draft.type, size: draft.size } as NonNullable<
+        BirthDetails['photo']
+      >;
+    }
+    async function remove(key: string) {
+      const response = await fetch(`/api/sites/${site.slug}/media`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ key }),
+      });
+      if (!response.ok) {
+        throw new Error(routeErrorText((await response.json()).error, pageLang));
+      }
+    }
+    try {
+      const next = await prepareBirthMedia(settings, photo, video, upload);
+      const res = await fetch(`/api/sites/${site.slug}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(settings),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        if (data?.errors) {
+          fail(data.errors);
+        } else {
+          setMessage(routeErrorText(data?.error, pageLang));
+        }
+        return;
+      }
+      committed = true;
+      setPhoto(next.photo);
+      setVideo(next.video);
+      setSavedMedia(next);
       setSaved(true);
       router.refresh();
-    } else {
-      const data = await res.json().catch(() => null);
-      if (data?.errors) {
-        fail(data.errors);
-      } else {
-        setMessage(routeErrorText(data?.error, pageLang));
+      await removeReplacedMedia(savedMedia, next, remove);
+    } catch (error) {
+      setMessage(error instanceof Error ? error.message : routeErrorText(undefined, pageLang));
+    } finally {
+      if (!committed) {
+        await Promise.allSettled(uploaded.map((media) => remove(media.key)));
       }
+      setSaving(false);
     }
   }
 
@@ -265,6 +318,17 @@ export function SiteSettingsForm({
               </>
             ) : null}
           </Card>
+
+          {born ? (
+            <BirthMediaEditor
+              previewSlug={mediaPreviewSlug}
+              videoOnly
+              photo={photo}
+              video={video}
+              onPhoto={setPhoto}
+              onVideo={setVideo}
+            />
+          ) : null}
 
           <MilestonesCard
             milestones={milestones}
@@ -476,4 +540,30 @@ function problemsText(errors: SiteSettingsError[], lang: Lang): string | null {
     elsewhere.length > 0 ? describeSiteSettingsErrors(elsewhere, lang) : null,
   ];
   return parts.filter(Boolean).join(' ') || null;
+}
+
+async function removeReplacedMedia(
+  previous: { photo: ReturnType<typeof storedDraft>; video: ReturnType<typeof storedDraft> },
+  next: typeof previous,
+  remove: (key: string) => Promise<void>
+) {
+  for (const old of [previous.photo, previous.video]) {
+    if (old && old.key !== next.photo?.key && old.key !== next.video?.key) {
+      await remove(old.key);
+    }
+  }
+}
+
+async function prepareBirthMedia(
+  settings: SiteSettingsInput,
+  photo: MediaDraft,
+  video: MediaDraft,
+  upload: (draft: MediaDraft) => Promise<ReturnType<typeof storedDraft>>
+) {
+  if (!settings.birth.born) {
+    return { photo: null, video: null };
+  }
+  const next = { photo: await upload(photo), video: await upload(video) };
+  Object.assign(settings.birth.details, next);
+  return next;
 }

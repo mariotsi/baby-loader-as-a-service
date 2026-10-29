@@ -37,6 +37,8 @@ export interface ColorTokens {
   '--color-joy-3': string;
   '--color-danger': string;
   '--color-success': string;
+  '--color-success-soft': string;
+  '--color-danger-soft': string;
 }
 
 export interface Palette {
@@ -46,7 +48,12 @@ export interface Palette {
   vars: ColorTokens;
 }
 
-const LIGHT_STATUS = { '--color-danger': '#b0373b', '--color-success': '#217049' } as const;
+const LIGHT_STATUS = {
+  '--color-danger': '#b0373b',
+  '--color-success': '#217049',
+  '--color-success-soft': '#e9f5ee',
+  '--color-danger-soft': '#fff0f0',
+} as const;
 const LIGHT: Pick<ColorTokens, '--color-scheme'> = { '--color-scheme': 'light' };
 
 /** The Platform's own colors: the marketing, auth, onboarding and Dashboard pages. Owners cannot pick it. */
@@ -191,6 +198,8 @@ export const PALETTES: Palette[] = [
       '--color-joy-3': '#1b373a',
       '--color-danger': '#ff6e6e',
       '--color-success': '#34c47f',
+      '--color-success-soft': '#15382b',
+      '--color-danger-soft': '#42262c',
     },
   },
 ];

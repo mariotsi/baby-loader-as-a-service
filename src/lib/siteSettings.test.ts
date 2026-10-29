@@ -297,3 +297,36 @@ test('the Timezone is any zone Intl knows, aliases included', () => {
   assert.deepEqual(errorsOf(settings({ timezone: 'Mars/Olympus' })), [{ path: 'timezone', code: 'invalidOption' }]);
   assert.deepEqual(errorsOf(settings({ timezone: '' })), [{ path: 'timezone', code: 'invalidOption' }]);
 });
+
+test('birth media accepts stored HTTPS assets and remains optional for existing Sites', () => {
+  const photo = {
+    key: 'customer-data/owner/site/photo',
+    url: 'https://media.example.com/photo',
+    name: 'hello.png',
+    type: 'image/png' as const,
+    size: 2048,
+  };
+  assert.equal(
+    parseSiteSettings(settings({ babyName: 'Emma', sex: 'female', birth: born({ photo, video: null }) }), NOW).ok,
+    true
+  );
+  assert.equal(parseSiteSettings(settings({ babyName: 'Emma', sex: 'female', birth: born() }), NOW).ok, true);
+  assert.equal(
+    parseSiteSettings(
+      settings({ babyName: 'Emma', sex: 'female', birth: born({ photo: { ...photo, url: 'javascript:alert(1)' } }) }),
+      NOW
+    ).ok,
+    false
+  );
+  assert.equal(
+    parseSiteSettings(
+      settings({
+        babyName: 'Emma',
+        sex: 'female',
+        birth: born({ photo: { ...photo, url: 'http://media.example.com/photo' } }),
+      }),
+      NOW
+    ).ok,
+    false
+  );
+});

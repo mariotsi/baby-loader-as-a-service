@@ -5,6 +5,8 @@
  * Components read tokens only: no literal color, size or duration.
  */
 :root {
+  --color-media-bg: #000000;
+  --color-on-media: #ffffff;
   /* Type scale: mobile first, growing with the viewport up to a cap. */
   /* Only for small labels, like a small Badge: the least the design system sets text in. */
   --text-2xs: 0.6875rem;

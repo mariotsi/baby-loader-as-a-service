@@ -1,0 +1,41 @@
+.dialog {
+  --color-text: var(--color-on-media);
+  --color-text-muted: var(--color-on-media);
+  --color-accent-ink: var(--color-on-media);
+  --color-border: var(--color-on-media);
+  --color-surface: var(--color-media-bg);
+  --color-soft: var(--color-media-bg);
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--color-media-bg);
+  color: var(--color-on-media);
+}
+.dialog::backdrop {
+  background: var(--color-media-bg);
+}
+.close {
+  position: absolute;
+  top: var(--space-3);
+  right: var(--space-3);
+}
+.sound {
+  position: absolute;
+  bottom: var(--space-6);
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+}
+.video {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}

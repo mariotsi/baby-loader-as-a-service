@@ -53,7 +53,7 @@ Implemented: accounts, Site creation/onboarding, subdomain routing, theming
 (palette + font), name/sex visibility toggles, language mode (mono or
 switcher), due-date countdown + milestones, born-state fields, per-Site
 push notifications, the list of a Site's Subscriptions and the R2-backed
-media storage layer.
+media storage layer, birth video uploads and the welcome video reveal.
 
 Owner uploads live under `customer-data/<owner-id>/<site-id>/`; application-managed
 website files use `website-assets/`. Deletion requires an authenticated `OwnedSite`
@@ -65,11 +65,17 @@ public URL. It accepts AVIF, JPEG, PNG and WebP images up to 5 MB, and MP4 or
 WebM video up to 50 MB. `DELETE` accepts a JSON `{ "key": "..." }` body;
 deletion purges the file's public URL from Cloudflare's cache.
 
+The Site editor holds the welcome video selection locally until the Owner saves.
+The welcome video opens in a full-screen dialog once per browser, and the Born
+page offers a replay button. The editor
+provides an explicit video preview. On Preview deployments, published birth media
+is served on the page origin from R2, including byte-range video requests. Replaced and removed files are deleted after
+the Site settings save succeeds. Birth photo selection in the Send birth
+notification flow is tracked in [#15](https://github.com/mariotsi/baby-loader-as-a-service/issues/15).
+
 Deliberately not yet built (see the original planning discussion):
 - **Custom domains (CNAME)** — needs a Cloudflare-specific domain verification
   and routing flow; not started.
-- **Birth media uploads** — The storage layer is ready; the Owner-facing
-  upload editor and public hero display are tracked in [#13](https://github.com/mariotsi/baby-loader-as-a-service/issues/13).
 - **Billing** — no Stripe integration; site creation is free/manual for now.
 - Fuller push-notification UX copy (iOS "add to home screen" instructions,
   per-OS "notifications are blocked" troubleshooting) — baby-loader has a

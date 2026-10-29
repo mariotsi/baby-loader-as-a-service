@@ -12,6 +12,7 @@ import { ConfirmDialog } from '../ConfirmDialog';
 import { EmojiPicker } from '../EmojiPicker';
 import { ExternalLink } from '../ExternalLink';
 import { Field } from '../Field';
+import { FilePicker } from '../FilePicker';
 import { Input } from '../Input';
 import { LanguagesPicker } from '../LanguagesPicker';
 import { Logo } from '../Logo';
@@ -40,6 +41,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
  * renders once per Palette.
  */
 export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?: 2 | 3; themeName?: string }) {
+  const [file, setFile] = useState<File | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [sex, setSex] = useState<'female' | 'male' | 'unknown'>('unknown');
   const [languages, setLanguages] = useState<Lang[]>(['it', 'en']);
@@ -134,6 +136,17 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
             </PerLanguageField>
           </div>
         </div>
+      </Group>
+      <Group title="File picker">
+        <FilePicker
+          label="Photo"
+          hint="JPEG, PNG · 5 MB"
+          optional
+          accept={['image/jpeg', 'image/png']}
+          maxBytes={5 * 1024 * 1024}
+          value={file}
+          onChange={setFile}
+        />
       </Group>
       <Group title="Choices">
         <div className={styles.grid}>

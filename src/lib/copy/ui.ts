@@ -7,6 +7,14 @@ import type { Lang } from '../i18n.ts';
  */
 const en = {
   optional: 'optional',
+  filePicker: {
+    choose: 'Choose a file',
+    drop: 'Drop your file here',
+    orDrop: 'or drag and drop it here',
+    single: 'Choose one file at a time.',
+    type: 'Choose one of the supported file types.',
+    size: 'Choose a non-empty file up to',
+  },
   palette: 'Palette',
   font: 'Font',
   languages: {
@@ -26,6 +34,14 @@ export type UiCopy = typeof en;
 
 const it: UiCopy = {
   optional: 'facoltativo',
+  filePicker: {
+    choose: 'Scegli un file',
+    drop: 'Rilascia qui il file',
+    orDrop: 'oppure trascinalo qui',
+    single: 'Scegli un solo file alla volta.',
+    type: 'Scegli uno dei formati supportati.',
+    size: 'Scegli un file non vuoto fino a',
+  },
   palette: 'Palette',
   font: 'Carattere',
   languages: {

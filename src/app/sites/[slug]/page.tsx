@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation';
 import { cache } from 'react';
 import { PublicPage } from '@/components/PublicPage';
 import { siteAddress } from '@/lib/address';
+import { birthMediaUrl } from '@/lib/birthMedia';
 import { addressEnv, deploymentEnv, vapidEnv } from '@/lib/env';
 import { requestLang } from '@/lib/i18nNext';
 import { publicPageViews } from '@/lib/publicPageView';
@@ -81,7 +82,17 @@ export default async function SitePage({ params }: Props) {
         initialLang={await requestLang(views.map((view) => view.lang))}
         slug={site.slug}
         vapidPublicKey={vapidEnv()?.publicKey}
-        bornImageUrl={websiteAssetUrl('born-placeholder-v1.png', deploymentEnv().appEnv)}
+        bornImageUrl={
+          (site.birth.born &&
+            site.birth.details.photo &&
+            birthMediaUrl(site.slug, 'photo', site.birth.details.photo, deploymentEnv().appEnv)) ||
+          websiteAssetUrl('born-placeholder-v1.png', deploymentEnv().appEnv)
+        }
+        birthVideoUrl={
+          site.birth.born && site.birth.details.video
+            ? birthMediaUrl(site.slug, 'video', site.birth.details.video, deploymentEnv().appEnv)
+            : undefined
+        }
       />
     </>
   );

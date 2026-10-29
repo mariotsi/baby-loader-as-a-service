@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useId, useState } from 'react';
+import { BirthReveal } from '@/components/BirthReveal';
 import { Countdown } from '@/components/Countdown';
 import { LanguageSwitcher, rememberLang } from '@/components/LanguageSwitcher';
 import { MilestonePlace } from '@/components/MilestonePlace';
@@ -29,6 +30,7 @@ export function PublicPage({
   slug,
   vapidPublicKey,
   bornImageUrl = '/website-assets/born-placeholder-v1.png',
+  birthVideoUrl,
   disableNotifications = false,
   disableVideoAutoplay = false,
 }: {
@@ -37,6 +39,7 @@ export function PublicPage({
   slug: string;
   vapidPublicKey: string | undefined;
   bornImageUrl?: string;
+  birthVideoUrl?: string;
   disableNotifications?: boolean;
   disableVideoAutoplay?: boolean;
 }) {
@@ -92,6 +95,9 @@ export function PublicPage({
         </div>
         <div className={styles.aside}>
           {view.waiting ? <Countdown waiting={view.waiting} /> : null}
+          {view.born ? (
+            <BirthVideo url={birthVideoUrl} lang={view.lang} slug={slug} disableAutoplay={disableVideoAutoplay} />
+          ) : null}
           {view.born ? <Born born={view.born} view={view} imageUrl={bornImageUrl} /> : null}
           {view.milestones ? <Milestones milestones={view.milestones} /> : null}
         </div>
@@ -207,5 +213,46 @@ function Milestones({ milestones }: { milestones: NonNullable<PublicPageView['mi
         ))}
       </ol>
     </section>
+  );
+}
+
+function BirthVideo({
+  url,
+  lang,
+  slug,
+  disableAutoplay,
+}: {
+  url?: string;
+  lang: Lang;
+  slug: string;
+  disableAutoplay: boolean;
+}) {
+  const [revealOpen, setRevealOpen] = useState(false);
+  useEffect(() => {
+    if (!url || disableAutoplay) {
+      return;
+    }
+    const key = `birth-reveal:${slug}:${url}`;
+    try {
+      if (localStorage.getItem(key)) {
+        return;
+      }
+      localStorage.setItem(key, 'seen');
+    } catch {
+      return;
+    }
+    setRevealOpen(true);
+  }, [url, disableAutoplay, slug]);
+
+  if (!url) {
+    return null;
+  }
+  return (
+    <>
+      <Button onClick={() => setRevealOpen(true)}>
+        {lang === 'it' ? 'Riguarda il benvenuto' : 'Replay the welcome'}
+      </Button>
+      {revealOpen ? <BirthReveal url={url} lang={lang} onClose={() => setRevealOpen(false)} /> : null}
+    </>
   );
 }
