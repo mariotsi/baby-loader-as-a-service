@@ -107,7 +107,7 @@ export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = n
     milestones: milestonesView(settings.milestones, lang),
     languageLabel: commonCopy[lang].languageLabel,
     share: t.share,
-    push: pushButtonCopy(t, birth.born),
+    push: pushButtonCopy(t, birth.born, settings.privacy.showSex ? settings.sex : 'unknown'),
   };
 }
 
@@ -200,11 +200,11 @@ function formatDay(day: string, lang: Lang): string {
   return format(parseISO(day), DATE_FORMAT[lang], { locale: LOCALES[lang] });
 }
 
-function pushButtonCopy(t: PublicPageCopy, born: boolean): PushButtonCopy {
+function pushButtonCopy(t: PublicPageCopy, born: boolean, sex: SiteSettings['sex']): PushButtonCopy {
   return {
     checking: t.checking,
     subscribed: born ? t.subscribedBorn : t.subscribedWaiting,
-    subscribe: born ? t.subscribeBorn : t.subscribeWaiting,
+    subscribe: born ? t.subscribeBorn : t.subscribeWaiting(sex),
     subscribing: t.subscribing,
     unsubscribe: t.unsubscribe,
     subscribeOk: t.subscribeOk,

@@ -69,7 +69,12 @@ const en = {
   subscribedWaiting: 'Birth notification is on for this device',
   unsubscribe: 'Turn off',
   subscribeBorn: 'Get the next updates',
-  subscribeWaiting: 'Notify me when they arrive',
+  subscribeWaiting: (sex: Sex): string =>
+    ({
+      female: 'Notify me when she arrives',
+      male: 'Notify me when he arrives',
+      unknown: 'Notify me when they arrive',
+    })[sex],
   subscribing: 'Turning on...',
 
   subscribeOk: 'You are all set.',
@@ -119,7 +124,7 @@ const it: PublicPageCopy = {
   subscribedWaiting: 'Notifica della nascita attiva su questo dispositivo',
   unsubscribe: 'Disattiva',
   subscribeBorn: 'Ricevi i prossimi aggiornamenti',
-  subscribeWaiting: 'Avvisami alla nascita',
+  subscribeWaiting: (_sex: Sex): string => 'Avvisami alla nascita',
   subscribing: 'Attivazione...',
 
   subscribeOk: 'Iscrizione completata.',
