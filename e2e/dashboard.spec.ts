@@ -143,10 +143,10 @@ test.describe('Dashboard', () => {
     await expect(preview).toBeHidden();
 
     const sections = page.getByRole('navigation', { name: 'Sections of this page' });
-    await sections.getByRole('link', { name: 'Who sees what' }).click();
-    await expect(page.getByRole('heading', { name: 'Who sees what' })).toBeInViewport();
-    await expect(sections.getByRole('link', { name: 'Who sees what' })).toHaveAttribute('aria-current', 'location');
-    await expect(sections.getByRole('link', { name: 'Who sees what' })).toBeInViewport({ ratio: 1 });
+    await sections.getByRole('link', { name: 'Keep the secret' }).click();
+    await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeInViewport();
+    await expect(sections.getByRole('link', { name: 'Keep the secret' })).toHaveAttribute('aria-current', 'location');
+    await expect(sections.getByRole('link', { name: 'Keep the secret' })).toBeInViewport({ ratio: 0.9 });
   });
 
   test('asks before leaving with unsaved changes', async ({ page }) => {

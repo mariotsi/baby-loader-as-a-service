@@ -6,7 +6,7 @@ const SECTIONS = [
   { id: 'video', label: 'Their first hello' },
   { id: 'milestones', label: 'Milestones' },
   { id: 'appearance', label: 'Appearance' },
-  { id: 'who', label: 'Who sees what' },
+  { id: 'who', label: 'Keep the secret' },
 ];
 
 const meta = {

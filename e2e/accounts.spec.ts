@@ -19,7 +19,7 @@ async function fillBasics(page: Page, slug: string, babyName: string) {
 async function finishSite(page: Page) {
   await expect(page.getByRole('heading', { name: 'Make it yours' })).toBeFocused();
   await page.getByRole('button', { name: 'Next' }).click();
-  await expect(page.getByRole('heading', { name: 'Who sees what' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeFocused();
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByRole('heading', { name: 'A last look' })).toBeFocused();
   await page.getByRole('button', { name: 'Create site' }).click();

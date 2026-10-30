@@ -83,7 +83,7 @@ const en = {
     dueDateHint: 'Your page counts the days down to it.',
     makeItYours: 'Make it yours',
     makeItYoursDescription: 'Pick the colors and letters your page wears.',
-    whoSeesWhat: 'Who sees what',
+    whoSeesWhat: 'Keep the secret',
     whoSeesWhatDescription: 'Until the birth, you decide what the page tells.',
     lastLook: 'A last look',
     lastLookDescription: 'Milestones and the welcome video wait for you in the page’s settings.',
@@ -97,8 +97,8 @@ const en = {
 
   /** What the onboarding form and the Site settings editor both ask. */
   privacy: {
-    showName: 'Show the name while waiting',
-    showSex: 'Show the sex while waiting',
+    showName: 'Show the name',
+    showSex: 'Show the sex',
   },
 
   dashboard: {
@@ -217,7 +217,7 @@ const en = {
     pageNamePlaceholder: 'Stefania & Simone',
     timezone: 'Timezone',
     timezoneHint: 'The Countdown turns over at midnight here.',
-    whoSeesWhat: 'Who sees what',
+    whoSeesWhat: 'Keep the secret',
     whoSeesWhatDescription: 'After the birth your page always shows the name and the sex.',
     save: 'Save changes',
     saving: 'Saving…',
@@ -341,7 +341,7 @@ const it: PlatformCopy = {
     dueDateHint: 'La tua pagina conta i giorni che mancano.',
     makeItYours: 'Rendila tua',
     makeItYoursDescription: 'Scegli i colori e i caratteri della tua pagina.',
-    whoSeesWhat: 'Chi vede cosa',
+    whoSeesWhat: 'Mantieni il segreto',
     whoSeesWhatDescription: 'Fino alla nascita, decidi tu cosa racconta la pagina.',
     lastLook: 'Un ultimo sguardo',
     lastLookDescription: 'Le tappe e il video di benvenuto ti aspettano nelle impostazioni della pagina.',
@@ -354,8 +354,8 @@ const it: PlatformCopy = {
   },
 
   privacy: {
-    showName: 'Mostra il nome durante l’attesa',
-    showSex: 'Mostra il sesso durante l’attesa',
+    showName: 'Mostra il nome',
+    showSex: 'Mostra il sesso',
   },
 
   dashboard: {
@@ -479,7 +479,7 @@ const it: PlatformCopy = {
     pageNamePlaceholder: 'Stefania e Simone',
     timezone: 'Fuso orario',
     timezoneHint: 'Il conto alla rovescia cambia alla mezzanotte di questo fuso.',
-    whoSeesWhat: 'Chi vede cosa',
+    whoSeesWhat: 'Mantieni il segreto',
     whoSeesWhatDescription: 'Dopo la nascita la tua pagina mostra sempre il nome e il sesso.',
     save: 'Salva le modifiche',
     saving: 'Salvataggio…',
