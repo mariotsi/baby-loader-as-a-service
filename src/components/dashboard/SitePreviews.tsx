@@ -88,6 +88,7 @@ export function SitePreviews({ settings, address }: { settings: SiteSettings; ad
                     display: 'var(--font-display)',
                     displayWeight: 'var(--font-display-weight)',
                     body: 'var(--font-body)',
+                    bodyWeight: 'var(--font-body-weight)',
                   }}
                 />
               </div>

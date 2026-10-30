@@ -14,7 +14,12 @@ export interface ShareCardProps {
   px: (pixels: number) => number | string;
   color: (token: ColorToken) => string;
   /** Undefined leaves the typeface ImageResponse bundles. */
-  font: { display: string | undefined; displayWeight: number | string; body: string | undefined };
+  font: {
+    display: string | undefined;
+    displayWeight: number | string;
+    body: string | undefined;
+    bodyWeight: number | string;
+  };
 }
 
 /**
@@ -61,6 +66,7 @@ export function ShareCard({ view, address, icon, px, color, font }: ShareCardPro
         background: color('--color-bg'),
         color: color('--color-text'),
         fontFamily: font.body,
+        fontWeight: font.bodyWeight,
         boxSizing: 'border-box',
         overflow: 'hidden',
       }}
