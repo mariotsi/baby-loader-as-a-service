@@ -54,8 +54,8 @@
   display: grid;
   margin-inline: calc(var(--gutter) * -1);
   padding: var(--space-2) var(--gutter);
-  border-bottom: var(--border-width) solid var(--color-border);
-  background: var(--color-bg);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
 }
 
 @media (min-width: 48rem) {
@@ -82,8 +82,8 @@
     display: grid;
     margin-inline: 0;
     padding: 0;
-    border-bottom: 0;
     background: none;
+    box-shadow: none;
   }
 }
 
