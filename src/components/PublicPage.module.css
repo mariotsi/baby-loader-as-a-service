@@ -283,6 +283,8 @@
   background: var(--color-soft);
   border-radius: var(--radius-pill);
   font-size: var(--text-xl);
+  line-height: 1;
+  padding-block-start: var(--space-1);
 }
 .moment:where(:nth-child(3n + 2)) .emoji {
   background: var(--color-joy-2);
