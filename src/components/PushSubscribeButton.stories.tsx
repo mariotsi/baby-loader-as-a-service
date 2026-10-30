@@ -3,7 +3,7 @@ import { useState } from 'react';
 import type { Lang } from '@/lib/i18n';
 import { publicPageView } from '@/lib/publicPageView';
 import { defaultSiteSettings } from '@/lib/siteSettings';
-import { Confetti } from './Confetti';
+import { Confetti, type ConfettiOrigin } from './Confetti';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { PushSubscribeView } from './PushSubscribeButton';
 import { Stack } from './ui/Stack';
@@ -46,7 +46,7 @@ const meta = {
     const translated = { ...copy(lang, parameters.born ?? false), appName: args.t.appName, appIcon: args.t.appIcon };
     const [status, setStatus] = useState(args.status);
     const [open, setOpen] = useState(args.confirmOpen ?? false);
-    const [confettiShots, setConfettiShots] = useState(0);
+    const [confettiShot, setConfettiShot] = useState<{ origin: ConfettiOrigin } | null>(null);
     return (
       <Stack gap={4} align="stretch">
         <Stack direction="row" justify="end">
@@ -62,10 +62,10 @@ const meta = {
           t={translated}
           status={status}
           confirmOpen={open}
-          onSubscribe={() => {
+          onSubscribe={(origin) => {
             setStatus('subscribed');
             if (!parameters.reducedMotion) {
-              setConfettiShots((shots) => shots + 1);
+              setConfettiShot({ origin });
             }
           }}
           onUnsubscribe={() => {
@@ -74,7 +74,7 @@ const meta = {
           }}
           onConfirmOpenChange={setOpen}
         />
-        <Confetti shots={confettiShots} />
+        <Confetti shot={confettiShot} />
       </Stack>
     );
   },

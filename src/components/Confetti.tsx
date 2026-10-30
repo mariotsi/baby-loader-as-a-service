@@ -19,8 +19,20 @@ const BURSTS: Array<{ ratio: number; options: Options }> = [
   { ratio: 0.1, options: { spread: 120, startVelocity: 45 } },
 ];
 
-/** A full-screen canvas that fires the celebration bursts each time `shots` goes up. */
-export function Confetti({ shots }: { shots: number }) {
+/** Where a burst starts, as fractions of the viewport (canvas-confetti's `origin`). */
+export type ConfettiOrigin = { x: number; y: number };
+
+/** The centre of an element, such as the button that was pressed, as a burst origin. */
+export function confettiOrigin(element: Element): ConfettiOrigin {
+  const rect = element.getBoundingClientRect();
+  return {
+    x: (rect.left + rect.width / 2) / window.innerWidth,
+    y: (rect.top + rect.height / 2) / window.innerHeight,
+  };
+}
+
+/** A full-screen canvas that fires the celebration bursts from `shot.origin` each time a new `shot` arrives. */
+export function Confetti({ shot }: { shot: { origin: ConfettiOrigin } | null }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const instanceRef = useRef<CreateTypes | null>(null);
 
@@ -41,7 +53,7 @@ export function Confetti({ shots }: { shots: number }) {
   }, []);
 
   useEffect(() => {
-    if (shots === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (!shot || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
       return;
     }
     void getInstance().then((instance) => {
@@ -50,7 +62,7 @@ export function Confetti({ shots }: { shots: number }) {
       }
       for (const burst of BURSTS) {
         instance({
-          origin: { y: 0.7 },
+          origin: shot.origin,
           colors: COLORS,
           disableForReducedMotion: true,
           ...burst.options,
@@ -58,7 +70,7 @@ export function Confetti({ shots }: { shots: number }) {
         });
       }
     });
-  }, [shots, getInstance]);
+  }, [shot, getInstance]);
 
   useEffect(() => {
     // Warm up the module and the worker now, so the first launch does not pay

@@ -10,7 +10,7 @@ import { buildDeviceInfo } from '@/lib/deviceInfo';
 import type { Lang } from '@/lib/i18n';
 import type { PushButtonCopy } from '@/lib/publicPageView';
 import { decodeVapidKey } from '@/lib/vapid';
-import { Confetti } from './Confetti';
+import { Confetti, type ConfettiOrigin, confettiOrigin } from './Confetti';
 import styles from './PushSubscribeButton.module.css';
 
 interface Props {
@@ -256,7 +256,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe' | null>(null);
   const [device, setDevice] = useState<DeviceContext | null>(null);
-  const [confettiShots, setConfettiShots] = useState(0);
+  const [confettiShot, setConfettiShot] = useState<{ origin: ConfettiOrigin } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -268,7 +268,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
     };
   }, [slug]);
 
-  async function subscribe() {
+  async function subscribe(origin: ConfettiOrigin) {
     setBusy(true);
     setFeedback(null);
     try {
@@ -285,7 +285,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
       }
       setStatus('subscribed');
       setFeedback(null);
-      setConfettiShots((shots) => shots + 1);
+      setConfettiShot({ origin });
     } catch {
       if (Notification.permission === 'denied') {
         setStatus('denied');
@@ -338,7 +338,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
         onUnsubscribe={unsubscribe}
         onConfirmOpenChange={setConfirmOpen}
       />
-      <Confetti shots={confettiShots} />
+      <Confetti shot={confettiShot} />
     </>
   );
 }
@@ -361,7 +361,8 @@ export function PushSubscribeView({
   busy?: boolean;
   feedback?: 'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe' | null;
   confirmOpen?: boolean;
-  onSubscribe: () => void;
+  /** Called with the pressed button's centre, where the celebration starts. */
+  onSubscribe: (origin: ConfettiOrigin) => void;
   onUnsubscribe: () => void;
   onConfirmOpenChange: (open: boolean) => void;
 }) {
@@ -384,7 +385,13 @@ export function PushSubscribeView({
           </span>
         </StatusMessage>
       ) : (
-        <Button variant="primary" icon="bell" fullWidth onClick={onSubscribe} loading={busy}>
+        <Button
+          variant="primary"
+          icon="bell"
+          fullWidth
+          onClick={(event) => onSubscribe(confettiOrigin(event.currentTarget))}
+          loading={busy}
+        >
           {busy ? t.subscribing : t.subscribe}
         </Button>
       )}
