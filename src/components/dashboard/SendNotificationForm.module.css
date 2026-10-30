@@ -1,0 +1,74 @@
+/* One column on a phone; on a wide screen the form, with the previews beside it. */
+.layout {
+  display: grid;
+  gap: var(--space-5);
+  align-items: start;
+}
+
+@media (min-width: 60rem) {
+  .layout {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr);
+  }
+}
+
+.audience {
+  margin: 0;
+}
+
+.previews {
+  display: grid;
+  gap: var(--space-4);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.previewItem {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.previewLang {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+/* A desktop notification, as macOS and Chrome draw one: the text, with the picture on the right. */
+.notification {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-sm);
+}
+
+.notificationText {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.notificationTitle {
+  font-weight: var(--weight-bold);
+}
+
+.notificationSource {
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.notificationBody {
+  white-space: pre-line;
+}
+
+.notificationIcon {
+  flex: none;
+  width: 3rem;
+  height: 3rem;
+  border-radius: var(--radius-sm);
+  object-fit: cover;
+}

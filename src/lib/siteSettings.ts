@@ -129,7 +129,16 @@ const siteSettingsSchema = z
     dueDate: z.nullable(calendarDate),
     birth: birthSchema,
     milestones: z
-      .array(z.strictObject({ emoji, label: textPerLanguage(80), date: calendarDate, place: z.optional(placeSchema) }))
+      .array(
+        z.strictObject({
+          emoji,
+          label: textPerLanguage(80),
+          date: calendarDate,
+          place: z.optional(placeSchema),
+          /** The Birth milestone, which announcing the birth adds and going back to the Countdown removes. */
+          kind: z.optional(z.literal('birth')),
+        })
+      )
       .check(z.maxLength(50)),
     /** The Languages the Public page speaks, in any order: pages list them in the Platform's (see inPlatformOrder). */
     languages: z.array(lang).check(

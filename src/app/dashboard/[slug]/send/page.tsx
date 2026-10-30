@@ -1,10 +1,16 @@
 import { SendNotificationForm } from '@/components/dashboard/SendNotificationForm';
 import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
+import { siteAddress } from '@/lib/address';
+import { birthNotificationMessages } from '@/lib/birthAnnouncement';
 import { platformCopy } from '@/lib/copy/platform';
-import { fallbackLang } from '@/lib/i18n';
+import { addressEnv } from '@/lib/env';
 import { platformLang } from '@/lib/i18nNext';
+import { notificationIcon } from '@/lib/notificationDelivery';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
+import { siteShortName } from '@/lib/siteAppIdentity';
+import { defaultNotificationTitle } from '@/lib/siteSettings';
+import { countSubscriptionsBySite } from '@/lib/subscription';
 import styles from '../../dashboard.module.css';
 
 export default async function SendPage({ params }: { params: Promise<{ slug: string }> }) {
@@ -12,10 +18,12 @@ export default async function SendPage({ params }: { params: Promise<{ slug: str
   const { site } = await pageOwnedSite(slug);
   const name = site.babyName || site.slug;
   const { dashboard, send } = platformCopy[await platformLang()];
+  const address = siteAddress(site.slug, addressEnv());
+  const subscribers = await countSubscriptionsBySite(site.id);
 
   return (
     <PageShell
-      width="medium"
+      width="wide"
       nav={
         <ButtonLink href={`/dashboard/${site.slug}`} variant="ghost" size="sm">
           {dashboard.backTo(name)}
@@ -28,7 +36,17 @@ export default async function SendPage({ params }: { params: Promise<{ slug: str
           <p className={styles.lead}>{send.lead(name)}</p>
         </div>
       </div>
-      <SendNotificationForm slug={site.slug} lang={fallbackLang(site.languages)} />
+      <SendNotificationForm
+        slug={site.slug}
+        languages={site.languages}
+        defaultTitle={defaultNotificationTitle(site)}
+        icon={notificationIcon(site, address)}
+        siteName={Object.fromEntries(site.languages.map((lang) => [lang, siteShortName(site, lang)]))}
+        host={address.replace(/^https?:\/\//, '')}
+        subscribers={subscribers}
+        subscriptionsHref={`/dashboard/${site.slug}/subscriptions`}
+        birth={site.birth.born ? birthNotificationMessages(site, site.birth.details.message) : null}
+      />
     </PageShell>
   );
 }

@@ -167,7 +167,7 @@ function payloads(site: Site, notification: ValidNotification): (lang: Lang | nu
  * The picture beside the text: the birth photo once the baby is born, else the
  * Site icon, which is the loading baby unless the Owner picked an emoji.
  */
-function notificationIcon(site: Site, address: string): string {
+export function notificationIcon(site: Site, address: string): string {
   const photo = site.birth.details?.photo;
   if (site.birth.born && photo) {
     return birthMediaUrl(site.slug, 'photo', photo, deploymentEnv().appEnv);

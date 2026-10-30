@@ -18,6 +18,7 @@ import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Switch } from '@/components/ui/Switch';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
+import { birthNotificationMessages, syncBirthMilestone } from '@/lib/birthAnnouncement';
 import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
 import {
@@ -129,13 +130,22 @@ export function SiteSettingsForm({
     }
   }, [failedSaves]);
 
+  /** The Milestones with `b` as the Birth: the Birth milestone follows the announcement (see syncBirthMilestone). */
+  function milestonesWith(b: BirthDraft): MilestoneDraft[] {
+    return syncBirthMilestone(
+      milestones,
+      { wasBorn: birth.born, born: b.born, date: b.datetime.slice(0, 10), languages, sex },
+      (m) => ({ ...m, placeText: '' })
+    );
+  }
+
   function currentSettings(b: BirthDraft = birth): SiteSettingsInput {
     return {
       babyName,
       sex,
       dueDate: dueDate || null,
       birth: birthSettings(b),
-      milestones: milestones.map(({ placeText: _, ...m }) => ({ ...m, label: writtenTexts(m.label) })),
+      milestones: milestonesWith(b).map(({ placeText: _, ...m }) => ({ ...m, label: writtenTexts(m.label) })),
       languages,
       timezone,
       theme: { palette, font },
@@ -203,8 +213,10 @@ export function SiteSettingsForm({
     setSaved(false);
     setAnnounced(null);
     const announcing = !birth.born && next.born;
+    const nextMilestones = milestonesWith(next);
     const outcome = await persist(next);
     if (outcome.ok) {
+      setMilestones(nextMilestones);
       setFailedPaths([]);
       closeBirthDialog();
       if (announcing) {
@@ -218,12 +230,7 @@ export function SiteSettingsForm({
 
   /** Tells every Subscription the baby is born, in each of the Site's Languages: "È nata Sofia!" and the Birth message, or an invitation to the page. */
   async function sendBirthNotification(next: BirthDraft) {
-    const messages = Object.fromEntries(
-      languages.map((lang) => {
-        const news = platformCopy[lang].settings.birthNotification(babyName.trim(), sex);
-        return [lang, { title: news.title, body: next.message[lang]?.trim() || news.body }];
-      })
-    );
+    const messages = birthNotificationMessages({ babyName, sex, languages }, next.message);
     const res = await fetch('/api/send-notification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
