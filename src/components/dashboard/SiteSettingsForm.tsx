@@ -489,7 +489,7 @@ function BirthStatus({ birth, sex, buttonRef, onOpen }: BirthStatusProps) {
     return (
       <div className={styles.birth}>
         <p className={styles.birthSummary}>{t.waitingForBirth}</p>
-        <Button ref={buttonRef} icon="sparkles" onClick={onOpen}>
+        <Button ref={buttonRef} icon="megaphone" onClick={onOpen}>
           {t.announceBirth}
         </Button>
       </div>

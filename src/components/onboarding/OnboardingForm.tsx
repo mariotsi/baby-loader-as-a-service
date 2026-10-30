@@ -155,7 +155,7 @@ export function OnboardingForm({ addressConfig }: { addressConfig: AddressConfig
         </section>
         <div className={styles.actions}>
           <StatusMessage tone="danger">{error}</StatusMessage>
-          <Button variant="primary" type="submit" icon="sparkles" loading={loading}>
+          <Button variant="primary" type="submit" icon="plus" loading={loading}>
             {loading ? t.creating : t.create}
           </Button>
         </div>

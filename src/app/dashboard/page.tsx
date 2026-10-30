@@ -26,7 +26,7 @@ export default async function DashboardPage() {
       {sites.length === 0 ? (
         <Card title={t.firstPage} description={t.firstPageDescription}>
           <div>
-            <ButtonLink href="/onboarding" icon="sparkles">
+            <ButtonLink href="/onboarding" icon="plus">
               {t.createPage}
             </ButtonLink>
           </div>

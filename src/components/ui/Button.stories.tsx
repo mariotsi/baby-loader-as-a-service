@@ -18,7 +18,7 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 
 /** The one main action of a view. A view has at most one. */
-export const Primary: Story = { args: { variant: 'primary', children: "Create Emma's page", icon: 'sparkles' } };
+export const Primary: Story = { args: { variant: 'primary', children: "Create Emma's page", icon: 'plus' } };
 
 /** The default: every action that is not the main one. */
 export const Secondary: Story = {};

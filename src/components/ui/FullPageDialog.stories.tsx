@@ -28,7 +28,7 @@ const meta = {
     const [open, setOpen] = useState(args.open);
     return (
       <>
-        <Button icon="sparkles" onClick={() => setOpen(true)}>
+        <Button icon="megaphone" onClick={() => setOpen(true)}>
           Announce the birth
         </Button>
         <FullPageDialog
@@ -43,7 +43,7 @@ const meta = {
             <>
               <StatusMessage tone="danger">{null}</StatusMessage>
               <Button onClick={() => setOpen(false)}>Cancel</Button>
-              <Button variant="primary" type="submit" icon="sparkles" loading={args.busy}>
+              <Button variant="primary" type="submit" icon="megaphone" loading={args.busy}>
                 {args.busy ? 'Announcing…' : 'Announce the birth'}
               </Button>
             </>
