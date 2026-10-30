@@ -18,6 +18,9 @@ type Story = StoryObj<typeof meta>;
 /** A plain fact about the thing beside it, like an optional field. */
 export const Neutral: Story = {};
 
+/** Quiet metadata shares the surrounding label's color and size. */
+export const Plain: Story = { args: { variant: 'plain', children: 'Optional' } };
+
 /** Something special, like a recommended choice. */
 export const Highlight: Story = { args: { tone: 'highlight', icon: 'star', children: 'Recommended' } };
 
