@@ -73,6 +73,7 @@ export function SitePreviews({ settings, address }: { settings: SiteSettings; ad
               <div className={styles.shareImage} style={theme} aria-hidden="true">
                 <ShareCard
                   view={view}
+                  address={address}
                   icon={
                     settings.icon ? (
                       <SiteIcon icon={settings.icon} className={styles.shareIcon} />

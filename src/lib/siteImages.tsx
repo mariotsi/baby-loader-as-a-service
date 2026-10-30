@@ -70,7 +70,7 @@ function loadingBaby(file: LoadingBabyMark): Promise<string | null> {
 }
 
 /** The share image: the Site icon beside the Public page's headline and Countdown, in its Palette and Font. */
-export async function shareImage(settings: SiteSettings, lang: Lang, now: Date, headers: HeadersInit) {
+export async function shareImage(settings: SiteSettings, address: string, lang: Lang, now: Date, headers: HeadersInit) {
   const view = publicPageView(settings, lang, now);
   const vars = getPalette(settings.theme.palette).vars;
   const font = getFont(settings.theme.font);
@@ -80,6 +80,7 @@ export async function shareImage(settings: SiteSettings, lang: Lang, now: Date, 
     view.sex ?? '',
     view.waiting ? `${view.waiting.count ?? ''} ${view.waiting.unit} ${view.waiting.dueDate}` : '',
     view.born?.bornOn ?? '',
+    address,
   ];
   const text = lines.join('');
   const fonts = (
@@ -100,6 +101,7 @@ export async function shareImage(settings: SiteSettings, lang: Lang, now: Date, 
   return new ImageResponse(
     <ShareCard
       view={view}
+      address={address}
       icon={icon}
       px={(pixels) => pixels}
       color={(token) => vars[token]}

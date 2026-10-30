@@ -6,6 +6,8 @@ type ColorToken = Exclude<keyof ColorTokens, '--color-scheme'>;
 
 export interface ShareCardProps {
   view: PublicPageView;
+  /** The Site's Address, such as `https://christian.loading.baby`, in a pill at the bottom. */
+  address: string;
   /** The Site icon, inside a 340px rounded tile on the Palette's surface color. */
   icon: ReactNode;
   /** A length in the image's 1200×630 pixels, as the renderer writes it. */
@@ -23,7 +25,7 @@ export interface ShareCardProps {
  * draws it scaled to its box, so the preview is the image. Only inline styles,
  * flex layout and absolute positions, which ImageResponse reads.
  */
-export function ShareCard({ view, icon, px, color, font }: ShareCardProps) {
+export function ShareCard({ view, address, icon, px, color, font }: ShareCardProps) {
   const display = { fontFamily: font.display, fontWeight: font.displayWeight };
   const length = (pixels: number) => {
     const value = px(pixels);
@@ -104,6 +106,57 @@ export function ShareCard({ view, icon, px, color, font }: ShareCardProps) {
         ) : null}
         {view.born ? <div style={{ fontSize: px(36), marginTop: px(16) }}>{view.born.bornOn}</div> : null}
       </div>
+      <div
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          bottom: px(36),
+          display: 'flex',
+          justifyContent: 'center',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            paddingTop: px(8),
+            paddingBottom: px(8),
+            paddingLeft: px(24),
+            paddingRight: px(24),
+            borderRadius: px(999),
+            background: color('--color-soft'),
+            fontSize: px(28),
+            fontWeight: 700,
+          }}
+        >
+          {addressParts(address).map(([part, accent]) => (
+            <span key={part} style={{ color: color(accent ? '--color-accent-ink' : '--color-text') }}>
+              {part}
+            </span>
+          ))}
+        </div>
+      </div>
     </div>
   );
+}
+
+/**
+ * An Address split as the Platform's name is drawn: the Site's own subdomain
+ * and the top-level domain in the accent, the scheme and the name between
+ * them in the text color (`https://` `christian` `.loading` `.baby`). The
+ * scheme stays so the pill reads as a web address, which `.baby` alone may not.
+ */
+function addressParts(address: string): [string, boolean][] {
+  const [, scheme = '', host = address] = /^([a-z]+:\/\/)?(.*)$/.exec(address) ?? [];
+  const labels = host.split('.');
+  if (labels.length < 3) {
+    return [[address, false]];
+  }
+  const last = labels.length - 1;
+  return [
+    [scheme, false],
+    [labels[0], true],
+    [`.${labels.slice(1, last).join('.')}`, false],
+    [`.${labels[last]}`, true],
+  ];
 }

@@ -1,4 +1,6 @@
 import { notFound } from 'next/navigation';
+import { siteAddress } from '@/lib/address';
+import { addressEnv } from '@/lib/env';
 import { getSiteBySlug } from '@/lib/site';
 import { shareImage } from '@/lib/siteImages';
 import { secondsUntilMidnight, shareImageLang } from '@/lib/siteMeta';
@@ -18,5 +20,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const now = new Date();
   const seconds = secondsUntilMidnight(site.timezone, now);
   const lang = shareImageLang(new URL(req.url).searchParams.get('l'), site.languages);
-  return shareImage(site, lang, now, { 'Cache-Control': `public, max-age=${seconds}, s-maxage=${seconds}` });
+  return shareImage(site, siteAddress(site.slug, addressEnv()), lang, now, {
+    'Cache-Control': `public, max-age=${seconds}, s-maxage=${seconds}`,
+  });
 }
