@@ -77,7 +77,7 @@ export const SiteEditBeforeBirth: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.queryByText('The baby has been born')).toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: 'Announce the birth' })).toBeVisible();
     await expect(canvas.queryByLabelText('Birth date & time')).not.toBeInTheDocument();
     await expect(canvas.getByRole('button', { name: 'Preview the welcome' })).toBeVisible();
   },

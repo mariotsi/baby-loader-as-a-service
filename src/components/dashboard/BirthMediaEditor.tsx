@@ -16,6 +16,7 @@ const mediaCopy = {
     title: 'Their first hello',
     videoDescription:
       'A welcome video for the big announcement. Pick it whenever you like: it plays once you mark the baby as born, and uploads when you save.',
+    photoDescription: 'A photo for their page, beside the Birth details. It uploads when you save.',
     photo: 'Birth photo',
     photoAlt: 'Birth photo preview',
     removePhoto: 'Remove photo',
@@ -28,6 +29,7 @@ const mediaCopy = {
     title: 'Il primo ciao',
     videoDescription:
       'Un video di benvenuto per il grande annuncio. Sceglilo quando vuoi: parte quando segni che il bambino è nato e viene caricato quando salvi.',
+    photoDescription: 'Una foto per la pagina, accanto ai dettagli della nascita. Viene caricata quando salvi.',
     photo: 'Foto della nascita',
     photoAlt: 'Anteprima della foto della nascita',
     removePhoto: 'Rimuovi la foto',
@@ -55,19 +57,20 @@ export function useMediaUrl(media: MediaDraft): string | undefined {
 }
 
 export function BirthMediaEditor({
-  photo,
-  video,
-  onPhoto,
-  onVideo,
-  videoOnly = false,
+  photo = null,
+  video = null,
+  onPhoto = () => {},
+  onVideo = () => {},
+  only,
   previewSlug,
 }: {
-  videoOnly?: boolean;
+  /** Shows one of the two: the Birth video is a setting of its own, the photo a Birth detail. */
+  only?: 'photo' | 'video';
   previewSlug?: string;
-  photo: MediaDraft;
-  video: MediaDraft;
-  onPhoto: (value: MediaDraft) => void;
-  onVideo: (value: MediaDraft) => void;
+  photo?: MediaDraft;
+  video?: MediaDraft;
+  onPhoto?: (value: MediaDraft) => void;
+  onVideo?: (value: MediaDraft) => void;
 }) {
   const lang = useLang();
   const t = mediaCopy[lang];
@@ -78,8 +81,8 @@ export function BirthMediaEditor({
   const videoUrl = useMediaUrl(previewVideo);
 
   return (
-    <Card title={t.title} description={videoOnly ? t.videoDescription : photoDescription(lang)}>
-      {!videoOnly ? (
+    <Card title={t.title} description={description(only, lang)}>
+      {only !== 'video' ? (
         <>
           <FilePicker
             label={t.photo}
@@ -103,22 +106,26 @@ export function BirthMediaEditor({
           ) : null}
         </>
       ) : null}
-      <FilePicker
-        label={t.video}
-        hint="MP4, WebM · 50 MB"
-        optional
-        accept={['video/mp4', 'video/webm']}
-        maxBytes={50 * 1024 * 1024}
-        value={pickerValue(previewVideo, t.savedVideo, 'video')}
-        onChange={onVideo}
-      />
-      {videoUrl ? (
-        <Stack direction="row" gap={3}>
-          <Button onClick={() => setPreview(true)}>{t.previewVideo}</Button>
-          <Button variant="ghost" onClick={() => onVideo(null)}>
-            {t.removeVideo}
-          </Button>
-        </Stack>
+      {only !== 'photo' ? (
+        <>
+          <FilePicker
+            label={t.video}
+            hint="MP4, WebM · 50 MB"
+            optional
+            accept={['video/mp4', 'video/webm']}
+            maxBytes={50 * 1024 * 1024}
+            value={pickerValue(previewVideo, t.savedVideo, 'video')}
+            onChange={onVideo}
+          />
+          {videoUrl ? (
+            <Stack direction="row" gap={3}>
+              <Button onClick={() => setPreview(true)}>{t.previewVideo}</Button>
+              <Button variant="ghost" onClick={() => onVideo(null)}>
+                {t.removeVideo}
+              </Button>
+            </Stack>
+          ) : null}
+        </>
       ) : null}
       {preview && videoUrl ? <BirthReveal url={videoUrl} lang={lang} onClose={() => setPreview(false)} /> : null}
     </Card>
@@ -133,7 +140,10 @@ export function storedDraft(draft: MediaDraft): BirthMedia | null {
   return draft instanceof File ? null : draft;
 }
 
-function photoDescription(lang: 'en' | 'it') {
+function description(only: 'photo' | 'video' | undefined, lang: 'en' | 'it') {
+  if (only) {
+    return mediaCopy[lang][only === 'photo' ? 'photoDescription' : 'videoDescription'];
+  }
   return lang === 'it'
     ? 'Una foto per la pagina e un video per il grande annuncio. I file vengono caricati quando salvi.'
     : 'A photo for their page and a video for the big announcement. Files upload when you save.';

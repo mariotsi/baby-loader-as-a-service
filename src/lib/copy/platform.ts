@@ -1,5 +1,8 @@
 import { type Lang, plural } from '../i18n.ts';
 import type { PasswordRuleId } from '../passwordRules.ts';
+import type { SiteSettings } from '../siteSettings.ts';
+
+type Sex = SiteSettings['sex'];
 
 /**
  * The copy of the Platform's own pages, in every language in `Lang`. English
@@ -138,8 +141,25 @@ const en = {
     sexFemale: 'Girl',
     sexMale: 'Boy',
     dueDate: 'Due date',
-    born: 'The baby has been born',
-    bornHint: 'Your page switches from the Countdown to the Birth details.',
+    waitingForBirth:
+      'When the baby arrives, announce it here: your page switches from the Countdown to the Birth details.',
+    announceBirth: 'Announce the birth',
+    announcing: 'Announcing…',
+    bornOn: (when: string, _sex: Sex) => `Born ${when}`,
+    editBirth: 'Edit the birth details',
+    birthDialogTitle: (name: string, _sex: Sex) => (name ? `Welcome, ${name}` : 'Welcome, little one'),
+    birthDialogDescription:
+      'Share the first details. Announcing switches your page to the Birth details and saves your other changes too.',
+    birthEditTitle: 'Birth details',
+    birthEditDescription: 'Saving updates your page with these details and saves your other changes too.',
+    closeBirthDialog: 'Close without saving',
+    cancel: 'Cancel',
+    unannounce: 'Back to the Countdown',
+    unannounceTitle: 'Go back to the Countdown?',
+    unannounceDescription:
+      'Your page hides the Birth details again and the birth photo is removed. Your other changes are saved too.',
+    keepBirthDetails: 'Keep the Birth details',
+    fixElsewhere: 'Something else on this page needs fixing first.',
     birthDatetime: 'Birth date & time',
     weight: 'Weight (g)',
     length: 'Length (cm)',
@@ -322,8 +342,28 @@ const it: PlatformCopy = {
     sexFemale: 'Femmina',
     sexMale: 'Maschio',
     dueDate: 'Data prevista',
-    born: 'Il bambino è nato',
-    bornHint: 'La tua pagina passa dal conto alla rovescia ai dettagli della nascita.',
+    waitingForBirth:
+      'Quando il bambino arriva, annuncialo da qui: la tua pagina passa dal conto alla rovescia ai dettagli della nascita.',
+    announceBirth: 'Annuncia la nascita',
+    announcing: 'Annuncio in corso…',
+    bornOn: (when, sex) => `${sex === 'female' ? 'Nata' : 'Nato'} il ${when}`,
+    editBirth: 'Modifica i dettagli della nascita',
+    birthDialogTitle: (name, sex) => {
+      const welcome = sex === 'female' ? 'Benvenuta' : 'Benvenuto';
+      return name ? `${welcome}, ${name}` : `${welcome}, ${sex === 'female' ? 'piccola' : 'piccolo'}`;
+    },
+    birthDialogDescription:
+      'Racconta i primi dettagli. L’annuncio porta la tua pagina ai dettagli della nascita e salva anche le altre modifiche.',
+    birthEditTitle: 'Dettagli della nascita',
+    birthEditDescription: 'Salvando aggiorni la pagina con questi dettagli e salvi anche le altre modifiche.',
+    closeBirthDialog: 'Chiudi senza salvare',
+    cancel: 'Annulla',
+    unannounce: 'Torna al conto alla rovescia',
+    unannounceTitle: 'Tornare al conto alla rovescia?',
+    unannounceDescription:
+      'La tua pagina nasconde di nuovo i dettagli della nascita e la foto viene rimossa. Vengono salvate anche le altre modifiche.',
+    keepBirthDetails: 'Tieni i dettagli della nascita',
+    fixElsewhere: 'Prima c’è qualcos’altro da sistemare in questa pagina.',
     birthDatetime: 'Data e ora di nascita',
     weight: 'Peso (g)',
     length: 'Lunghezza (cm)',

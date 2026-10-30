@@ -42,10 +42,6 @@ test.describe('Dashboard', () => {
 
     await page.getByLabel('Name', { exact: true }).fill('Edith Rose');
     await page.getByLabel('Sex', { exact: true }).selectOption('female');
-    await page.getByLabel('The baby has been born').check();
-    await page.getByLabel('Birth date & time').fill('2026-01-15T08:30');
-    await page.getByLabel('Weight (g)').fill('3100');
-    await page.getByLabel('Length (cm)').fill('49');
     await page.getByRole('checkbox', { name: 'Italian' }).check();
     await page.getByRole('button', { name: 'Add milestone' }).click();
     const milestone = page.getByRole('group', { name: 'Milestone 1' });
@@ -58,13 +54,26 @@ test.describe('Dashboard', () => {
     await expect(milestone.getByText('Write this Milestone in Italian.')).toBeHidden();
     await page.getByRole('checkbox', { name: 'English' }).uncheck();
     await page.getByLabel('Page name').fill('Elena e Ettore');
-    await page.getByRole('button', { name: 'Save changes' }).click();
+
+    // Announcing the birth saves every other change on the page with it.
+    await page.getByRole('button', { name: 'Announce the birth' }).click();
+    const dialog = page.getByRole('dialog', { name: 'Welcome, Edith Rose' });
+    await expect(dialog.getByLabel('Birth date & time')).toBeFocused();
+    await dialog.getByLabel('Birth date & time').fill('2026-01-15T08:30');
+    await dialog.getByLabel('Weight (g)').fill('3100');
+    await dialog.getByLabel('Length (cm)').fill('49');
+    await dialog.getByRole('button', { name: 'Announce the birth' }).click();
+    await expect(dialog).toBeHidden();
     await expect(page.getByText('Saved.')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Edit the birth details' })).toBeFocused();
 
     await page.reload();
     await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Edith Rose');
-    await expect(page.getByLabel('The baby has been born')).toBeChecked();
-    await expect(page.getByLabel('Weight (g)')).toHaveValue('3100');
+    await expect(page.getByText('Born January 15, 2026')).toBeVisible();
+    await expect(page.getByText('3100 g · 49 cm')).toBeVisible();
+    await page.getByRole('button', { name: 'Edit the birth details' }).click();
+    await expect(page.getByRole('dialog', { name: 'Birth details' }).getByLabel('Weight (g)')).toHaveValue('3100');
+    await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('group', { name: 'Milestone 1' }).getByLabel('Label')).toHaveValue('Si torna a casa');
     await expect(page.getByRole('checkbox', { name: 'Italian' })).toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'English' })).not.toBeChecked();
@@ -81,28 +90,34 @@ test.describe('Dashboard', () => {
   test('explains a missing birth date and time and a weight in fractions of a gram', async ({ page, project }) => {
     await page.goto(`/dashboard/${perProjectSlug('e2e-rules', project)}`);
 
-    await page.getByLabel('The baby has been born').check();
-    await page.getByRole('button', { name: 'Save changes' }).click();
-    await expect(page.getByText('Birth date & time is required.', { exact: true })).toBeVisible();
+    await page.getByRole('button', { name: 'Announce the birth' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Birth date & time').fill('');
+    await dialog.getByRole('button', { name: 'Announce the birth' }).click();
+    await expect(dialog.getByText('Birth date & time is required.', { exact: true })).toBeVisible();
+    await expect(dialog.getByLabel('Birth date & time')).toBeFocused();
 
-    await page.getByLabel('Birth date & time').fill('2026-01-15T08:30');
-    await page.getByLabel('Weight (g)').fill('3400.5');
-    await page.getByRole('button', { name: 'Save changes' }).click();
-    await expect(page.getByText('Weight must be a whole number of grams.', { exact: true })).toBeVisible();
+    await dialog.getByLabel('Birth date & time').fill('2026-01-15T08:30');
+    await dialog.getByLabel('Weight (g)').fill('3400.5');
+    await dialog.getByRole('button', { name: 'Announce the birth' }).click();
+    await expect(dialog.getByText('Weight must be a whole number of grams.', { exact: true })).toBeVisible();
 
+    // Closing the dialog drops what it holds: the page is still waiting.
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
     await page.reload();
-    await expect(page.getByLabel('The baby has been born')).not.toBeChecked();
+    await expect(page.getByRole('button', { name: 'Announce the birth' })).toBeVisible();
   });
 
   test('keeps a Birth message in a Language the Site no longer speaks', async ({ page, project }) => {
     await page.goto(`/dashboard/${perProjectSlug('e2e-messages', project)}`);
 
-    await page.getByLabel('The baby has been born').check();
-    await page.getByLabel('Birth date & time').fill('2026-01-15T08:30');
-    const message = page.getByRole('group', { name: /^Message/ });
+    await page.getByRole('button', { name: 'Announce the birth' }).click();
+    const dialog = page.getByRole('dialog');
+    await dialog.getByLabel('Birth date & time').fill('2026-01-15T08:30');
+    const message = dialog.getByRole('group', { name: /^Message/ });
     await message.getByLabel('Italian').fill('Benvenuta Marta!');
     await message.getByLabel('English').fill('Welcome Marta!');
-    await page.getByRole('button', { name: 'Save changes' }).click();
+    await dialog.getByRole('button', { name: 'Announce the birth' }).click();
     await expect(page.getByText('Saved.')).toBeVisible();
 
     // 'Saved.' is still on screen from the first save, so wait for the second one itself.
@@ -113,8 +128,11 @@ test.describe('Dashboard', () => {
 
     // A reload drops the form's own state: what follows comes from the saved Site.
     await page.reload();
-    await expect(page.getByLabel('Message optional', { exact: true })).toHaveValue('Welcome Marta!');
+    await page.getByRole('button', { name: 'Edit the birth details' }).click();
+    await expect(dialog.getByLabel('Message optional', { exact: true })).toHaveValue('Welcome Marta!');
+    await dialog.getByRole('button', { name: 'Cancel' }).click();
     await page.getByRole('checkbox', { name: 'Italian' }).check();
+    await page.getByRole('button', { name: 'Edit the birth details' }).click();
     await expect(message.getByLabel('Italian')).toHaveValue('Benvenuta Marta!');
   });
 
