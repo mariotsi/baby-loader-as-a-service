@@ -9,6 +9,7 @@ import {
 import { useEffect, useId, useRef, useState } from 'react';
 import { useLang } from '@/components/LangProvider';
 import { uiCopy } from '@/lib/copy/ui';
+import { TWEMOJI_EMOJI_VERSION, twemojiUrl } from '@/lib/siteAppIdentity';
 import control from './control.module.css';
 import styles from './EmojiPicker.module.css';
 
@@ -17,17 +18,26 @@ interface EmojiPickerProps {
   onChange: (emoji: string) => void;
   /** Names the button, which shows only the emoji. */
   label: string;
+  /**
+   * Shows emoji in Twemoji and offers only those Twemoji has, for an emoji that
+   * ends up in the Site's generated images. Without it emoji show in the
+   * device's font, as text on a page does.
+   */
+  twemoji?: boolean;
 }
 
 /** Six columns of 44px emoji fit a 320px screen beside the page's gutters. */
 const COLUMNS = 6;
+
+/** Frimousse reads an Emoji version from the Emojibase release of that number, and Emojibase has no release 14. */
+const EMOJIBASE_URL = 'https://cdn.jsdelivr.net/npm/emojibase-data@18.0.0';
 
 /**
  * Picks one emoji: a button showing the current one opens a searchable grid
  * under it. Picking an emoji, Escape or a press outside
  * closes the grid and gives the focus back to the button.
  */
-export function EmojiPicker({ value, onChange, label }: EmojiPickerProps) {
+export function EmojiPicker({ value, onChange, label, twemoji = false }: EmojiPickerProps) {
   const t = uiCopy[useLang()].emoji;
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -73,13 +83,15 @@ export function EmojiPicker({ value, onChange, label }: EmojiPickerProps) {
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen(!open)}
       >
-        <span aria-hidden="true">{value}</span>
+        {twemoji ? <EmojiImage key={value} emoji={value} /> : <span aria-hidden="true">{value}</span>}
       </button>
       {open ? (
         <div id={panelId} className={styles.panel}>
           <Frimousse.Root
             className={styles.picker}
             columns={COLUMNS}
+            emojiVersion={twemoji ? TWEMOJI_EMOJI_VERSION : undefined}
+            emojibaseUrl={twemoji ? EMOJIBASE_URL : undefined}
             onEmojiSelect={({ emoji }) => {
               onChange(emoji);
               close();
@@ -94,7 +106,7 @@ export function EmojiPicker({ value, onChange, label }: EmojiPickerProps) {
             <Frimousse.Viewport className={styles.viewport}>
               <Frimousse.Loading className={styles.note}>{t.loading}</Frimousse.Loading>
               <Frimousse.Empty className={styles.note}>{t.empty}</Frimousse.Empty>
-              <Frimousse.List components={{ CategoryHeader, Row, Emoji }} />
+              <Frimousse.List components={{ CategoryHeader, Row, Emoji: twemoji ? TwemojiCell : DeviceCell }} />
             </Frimousse.Viewport>
           </Frimousse.Root>
         </div>
@@ -119,10 +131,28 @@ function Row({ children, ...props }: EmojiPickerListRowProps) {
   );
 }
 
-function Emoji({ emoji, ...props }: EmojiPickerListEmojiProps) {
+function DeviceCell({ emoji, ...props }: EmojiPickerListEmojiProps) {
   return (
     <button {...props} type="button" className={styles.emoji} data-active={emoji.isActive || undefined}>
       {emoji.emoji}
     </button>
   );
+}
+
+function TwemojiCell({ emoji, ...props }: EmojiPickerListEmojiProps) {
+  return (
+    <button {...props} type="button" className={styles.emoji} data-active={emoji.isActive || undefined}>
+      <EmojiImage key={emoji.emoji} emoji={emoji.emoji} />
+    </button>
+  );
+}
+
+/** Keyed by its emoji, so a reused cell never shows the previous image. The device's font takes over when the image fails. */
+function EmojiImage({ emoji }: { emoji: string }) {
+  const [failed, setFailed] = useState(false);
+  if (failed) {
+    return <span aria-hidden="true">{emoji}</span>;
+  }
+  // biome-ignore lint/performance/noImgElement: a remote Twemoji, shown small; next/image adds nothing.
+  return <img className={styles.image} src={twemojiUrl(emoji)} alt="" onError={() => setFailed(true)} />;
 }
