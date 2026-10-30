@@ -89,8 +89,8 @@ export default async function SitePage({ params }: Props) {
           websiteAssetUrl('born-placeholder-v1.png', deploymentEnv().appEnv)
         }
         birthVideoUrl={
-          site.birth.born && site.birth.details.video
-            ? birthMediaUrl(site.slug, 'video', site.birth.details.video, deploymentEnv().appEnv)
+          site.birth.born && site.birthVideo
+            ? birthMediaUrl(site.slug, 'video', site.birthVideo, deploymentEnv().appEnv)
             : undefined
         }
       />

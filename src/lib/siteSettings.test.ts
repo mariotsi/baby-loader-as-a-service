@@ -307,7 +307,7 @@ test('birth media accepts stored HTTPS assets and remains optional for existing 
     size: 2048,
   };
   assert.equal(
-    parseSiteSettings(settings({ babyName: 'Emma', sex: 'female', birth: born({ photo, video: null }) }), NOW).ok,
+    parseSiteSettings(settings({ babyName: 'Emma', sex: 'female', birth: born({ photo }), birthVideo: null }), NOW).ok,
     true
   );
   assert.equal(parseSiteSettings(settings({ babyName: 'Emma', sex: 'female', birth: born() }), NOW).ok, true);
@@ -329,4 +329,16 @@ test('birth media accepts stored HTTPS assets and remains optional for existing 
     ).ok,
     false
   );
+});
+
+test('the Birth video can be picked in the Waiting state and is no Birth detail', () => {
+  const birthVideo = { key: 'customer-data/owner/site/video', url: 'https://media.example.com/video' };
+  assert.equal(parseSiteSettings(settings({ birthVideo }), NOW).ok, true);
+  assert.deepEqual(
+    errorsOf(settings({ babyName: 'Emma', sex: 'female', birth: born({ video: birthVideo } as object) })),
+    [{ path: 'birth.details.video', code: 'unknownField' }]
+  );
+  assert.deepEqual(errorsOf(settings({ birthVideo: { ...birthVideo, url: 'http://media.example.com/video' } })), [
+    { path: 'birthVideo.url', code: 'invalidType' },
+  ]);
 });

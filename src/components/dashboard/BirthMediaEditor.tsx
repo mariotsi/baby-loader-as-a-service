@@ -8,13 +8,14 @@ import { Card } from '@/components/ui/Card';
 import { FilePicker, type PickedFile } from '@/components/ui/FilePicker';
 import { Stack } from '@/components/ui/Stack';
 import { birthMediaPreviewPath } from '@/lib/birthMedia';
-import type { BirthDetails } from '@/lib/siteSettings';
+import type { BirthDetails, BirthMedia } from '@/lib/siteSettings';
 import styles from './BirthMediaEditor.module.css';
 
 const mediaCopy = {
   en: {
     title: 'Their first hello',
-    videoDescription: 'A welcome video for the big announcement. It uploads when you save.',
+    videoDescription:
+      'A welcome video for the big announcement. Pick it whenever you like: it plays once you mark the baby as born, and uploads when you save.',
     photo: 'Birth photo',
     photoAlt: 'Birth photo preview',
     removePhoto: 'Remove photo',
@@ -25,7 +26,8 @@ const mediaCopy = {
   },
   it: {
     title: 'Il primo ciao',
-    videoDescription: 'Un video di benvenuto per il grande annuncio. Viene caricato quando salvi.',
+    videoDescription:
+      'Un video di benvenuto per il grande annuncio. Sceglilo quando vuoi: parte quando segni che il bambino è nato e viene caricato quando salvi.',
     photo: 'Foto della nascita',
     photoAlt: 'Anteprima della foto della nascita',
     removePhoto: 'Rimuovi la foto',
@@ -36,7 +38,7 @@ const mediaCopy = {
   },
 };
 
-export type MediaDraft = NonNullable<BirthDetails['photo']> | File | null;
+export type MediaDraft = BirthMedia | File | null;
 
 export function useMediaUrl(media: MediaDraft): string | undefined {
   const [local, setLocal] = useState<string>();
@@ -123,11 +125,11 @@ export function BirthMediaEditor({
   );
 }
 
-export function initialMedia(details: BirthDetails | null, kind: 'photo' | 'video'): ReturnType<typeof storedDraft> {
-  return details?.[kind] ?? null;
+export function birthPhoto(details: BirthDetails | null): BirthMedia | null {
+  return details?.photo ?? null;
 }
 
-export function storedDraft(draft: MediaDraft): NonNullable<BirthDetails['photo']> | null {
+export function storedDraft(draft: MediaDraft): BirthMedia | null {
   return draft instanceof File ? null : draft;
 }
 

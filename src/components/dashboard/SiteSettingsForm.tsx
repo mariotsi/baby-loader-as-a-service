@@ -27,6 +27,7 @@ import type { Lang } from '@/lib/i18n';
 import type { Milestone, SiteDTO } from '@/lib/site';
 import {
   type BirthDetails,
+  type BirthMedia,
   DEFAULT_MILESTONE_EMOJI,
   DEFAULT_SITE_ICON_EMOJI,
   type PageName,
@@ -35,7 +36,7 @@ import {
   type SiteSettingsError,
   type SiteSettingsInput,
 } from '@/lib/siteSettings';
-import { BirthMediaEditor, initialMedia, type MediaDraft, storedDraft } from './BirthMediaEditor';
+import { BirthMediaEditor, birthPhoto, type MediaDraft, storedDraft } from './BirthMediaEditor';
 import { PlaceField } from './PlaceField';
 import { SitePreviews } from './SitePreviews';
 import styles from './SiteSettingsForm.module.css';
@@ -86,12 +87,9 @@ export function SiteSettingsForm({
   const [sex, setSex] = useState(site.sex);
   const [dueDate, setDueDate] = useState(site.dueDate?.slice(0, 10) ?? '');
   const details = site.birth.details;
-  const [photo, setPhoto] = useState<MediaDraft>(initialMedia(details, 'photo'));
-  const [video, setVideo] = useState<MediaDraft>(initialMedia(details, 'video'));
-  const [savedMedia, setSavedMedia] = useState({
-    photo: initialMedia(details, 'photo'),
-    video: initialMedia(details, 'video'),
-  });
+  const [photo, setPhoto] = useState<MediaDraft>(birthPhoto(details));
+  const [video, setVideo] = useState<MediaDraft>(site.birthVideo);
+  const [savedMedia, setSavedMedia] = useState({ photo: birthPhoto(details), video: site.birthVideo });
   const [born, setBorn] = useState(site.birth.born);
   const [birthDatetime, setBirthDatetime] = useState(details ? format(parseISO(details.datetime), LOCAL_DATETIME) : '');
   const [weight, setWeight] = useState(details?.weightGrams?.toString() ?? '');
@@ -140,7 +138,6 @@ export function SiteSettingsForm({
               lengthCm: lengthCm ? Number(lengthCm) : null,
               message: writtenTexts(birthMessage),
               photo: storedDraft(photo),
-              video: storedDraft(video),
             },
           }
         : { born: false, details: null },
@@ -151,6 +148,7 @@ export function SiteSettingsForm({
       privacy: { showName, showSex },
       pageName: writtenTexts(pageName),
       icon: iconIsEmoji ? iconEmoji : null,
+      birthVideo: storedDraft(video),
     };
   }
 
@@ -210,9 +208,7 @@ export function SiteSettingsForm({
         throw new Error(routeErrorText(data.error, pageLang));
       }
       uploaded.push(data.media);
-      return { ...data.media, name: draft.name, type: draft.type, size: draft.size } as NonNullable<
-        BirthDetails['photo']
-      >;
+      return { ...data.media, name: draft.name, type: draft.type, size: draft.size } as BirthMedia;
     }
     async function remove(key: string) {
       const response = await fetch(`/api/sites/${site.slug}/media`, {
@@ -319,16 +315,14 @@ export function SiteSettingsForm({
             ) : null}
           </Card>
 
-          {born ? (
-            <BirthMediaEditor
-              previewSlug={mediaPreviewSlug}
-              videoOnly
-              photo={photo}
-              video={video}
-              onPhoto={setPhoto}
-              onVideo={setVideo}
-            />
-          ) : null}
+          <BirthMediaEditor
+            previewSlug={mediaPreviewSlug}
+            videoOnly
+            photo={photo}
+            video={video}
+            onPhoto={setPhoto}
+            onVideo={setVideo}
+          />
 
           <MilestonesCard
             milestones={milestones}
@@ -560,10 +554,11 @@ async function prepareBirthMedia(
   video: MediaDraft,
   upload: (draft: MediaDraft) => Promise<ReturnType<typeof storedDraft>>
 ) {
-  if (!settings.birth.born) {
-    return { photo: null, video: null };
+  // The Birth video is kept in the Waiting state too, ready for the day; the photo is a Birth detail.
+  const next = { photo: settings.birth.born ? await upload(photo) : null, video: await upload(video) };
+  if (settings.birth.born) {
+    settings.birth.details.photo = next.photo;
   }
-  const next = { photo: await upload(photo), video: await upload(video) };
-  Object.assign(settings.birth.details, next);
+  settings.birthVideo = next.video;
   return next;
 }
