@@ -163,9 +163,13 @@ function bornView(
   now: Date
 ): NonNullable<PublicPageView['born']> {
   const t = publicPageCopy[lang];
-  const bornAt = format(new TZDate(new Date(details.datetime), timezone), `${DATE_FORMAT[lang]}, HH:mm`, {
-    locale: LOCALES[lang],
-  });
+  const bornAt = format(
+    new TZDate(new Date(details.datetime), timezone),
+    `${DATE_FORMAT[lang]}${lang === 'it' ? " 'alle' " : ', '}HH:mm`,
+    {
+      locale: LOCALES[lang],
+    }
+  );
   return {
     bornOn: t.bornOn(bornAt, sex),
     age: Math.max(0, differenceInCalendarDays(new TZDate(now, timezone), new TZDate(details.datetime, timezone))),

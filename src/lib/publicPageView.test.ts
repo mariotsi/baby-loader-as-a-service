@@ -115,7 +115,7 @@ test("Birth details are told in the Site's Timezone and language", () => {
     ],
     message: 'Hi',
   });
-  assert.equal(publicPageView(site({ birth: BORN }), 'it', NOW).born?.bornOn, 'Nata il 19 ottobre 2026, 10:30');
+  assert.equal(publicPageView(site({ birth: BORN }), 'it', NOW).born?.bornOn, 'Nata il 19 ottobre 2026 alle 10:30');
   assert.equal(
     publicPageView(site({ birth: BORN, timezone: 'America/New_York' }), 'en', NOW).born?.bornOn,
     'Born on October 19, 2026, 04:30'
