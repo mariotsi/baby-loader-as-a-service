@@ -149,7 +149,10 @@ const en = {
         other: `Announced. Notification sent to ${sent} of ${total} subscribers.`,
       }),
     notificationFailed: 'Your page is updated, but the notification wasn’t sent.',
-    birthNews: (sex: Sex) => ({ female: 'She is born!', male: 'He is born!', unknown: 'The baby is born!' })[sex],
+    birthNotification: (name: string, sex: Sex) => ({
+      title: `${name} is born!`,
+      body: `Come and meet ${({ female: 'her', male: 'him', unknown: 'them' } as const)[sex]} on the page.`,
+    }),
     announceBirth: 'Announce the birth',
     announcing: 'Announcing…',
     bornOn: (when: string, _sex: Sex) => `Born ${when}`,
@@ -365,7 +368,10 @@ const it: PlatformCopy = {
         other: `Annunciato. Notifica inviata a ${sent} iscritti su ${total}.`,
       }),
     notificationFailed: 'La pagina è aggiornata, ma la notifica non è stata inviata.',
-    birthNews: (sex) => ({ female: 'È nata!', male: 'È nato!', unknown: 'È nato!' })[sex],
+    birthNotification: (name, sex) => ({
+      title: `${sex === 'female' ? 'È nata' : 'È nato'} ${name}!`,
+      body: `Vieni a ${sex === 'female' ? 'conoscerla' : 'conoscerlo'} sulla pagina.`,
+    }),
     announceBirth: 'Annuncia la nascita',
     announcing: 'Annuncio in corso…',
     bornOn: (when, sex) => `${sex === 'female' ? 'Nata' : 'Nato'} il ${when}`,

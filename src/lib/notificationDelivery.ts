@@ -1,8 +1,10 @@
 import { siteAddressPath } from './address.ts';
-import { addressEnv } from './env.ts';
+import { birthMediaUrl } from './birthMedia.ts';
+import { addressEnv, deploymentEnv } from './env.ts';
 import { fallbackLang, type Lang } from './i18n.ts';
 import type { OwnedSite } from './ownerAccess.ts';
 import type { Site } from './site.ts';
+import { siteIconUrl } from './siteMeta.ts';
 import { defaultNotificationTitle, type ParseResult, type SiteSettingsError } from './siteSettings.ts';
 import { deleteSubscriptionsByEndpoint, listSubscriptionsBySite } from './subscription.ts';
 
@@ -142,6 +144,8 @@ function payloads(site: Site, notification: ValidNotification): (lang: Lang | nu
   const texts = notification.messages;
   const fallback = texts[fallbackLang(site.languages)] ?? Object.values(texts)[0];
   const built = new Map<Lang | null, string>();
+  const address = siteAddressPath(site.slug, addressEnv());
+  const icon = notificationIcon(site, address);
   return (lang) => {
     let payload = built.get(lang);
     if (payload === undefined) {
@@ -149,13 +153,26 @@ function payloads(site: Site, notification: ValidNotification): (lang: Lang | nu
       payload = JSON.stringify({
         title: text?.title || defaultNotificationTitle(site),
         body: text?.body,
-        url: siteAddressPath(site.slug, addressEnv()),
+        icon,
+        url: address,
         tag: `site-${site.slug}`,
       });
       built.set(lang, payload);
     }
     return payload;
   };
+}
+
+/**
+ * The picture beside the text: the birth photo once the baby is born, else the
+ * Site icon, which is the loading baby unless the Owner picked an emoji.
+ */
+function notificationIcon(site: Site, address: string): string {
+  const photo = site.birth.details?.photo;
+  if (site.birth.born && photo) {
+    return birthMediaUrl(site.slug, 'photo', photo, deploymentEnv().appEnv);
+  }
+  return siteIconUrl(site, '192', address.replace(/\/$/, ''));
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

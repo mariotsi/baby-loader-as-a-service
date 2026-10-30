@@ -216,10 +216,13 @@ export function SiteSettingsForm({
     return outcome;
   }
 
-  /** Tells every Subscription the baby is born, in each of the Site's Languages: the Birth message, or the news. */
+  /** Tells every Subscription the baby is born, in each of the Site's Languages: "È nata Sofia!" and the Birth message, or an invitation to the page. */
   async function sendBirthNotification(next: BirthDraft) {
     const messages = Object.fromEntries(
-      languages.map((lang) => [lang, { body: next.message[lang]?.trim() || birthNews(lang, sex) }])
+      languages.map((lang) => {
+        const news = platformCopy[lang].settings.birthNotification(babyName.trim(), sex);
+        return [lang, { title: news.title, body: next.message[lang]?.trim() || news.body }];
+      })
     );
     const res = await fetch('/api/send-notification', {
       method: 'POST',
@@ -439,11 +442,6 @@ function birthSettings(b: BirthDraft): SiteSettingsInput['birth'] {
       photo: storedDraft(b.photo),
     },
   };
-}
-
-/** The birth notification's text in `lang` when the Birth message has none in it. */
-function birthNews(lang: Lang, sex: SiteSettingsInput['sex']): string {
-  return platformCopy[lang].settings.birthNews(sex);
 }
 
 function savedBirth(site: SiteDTO): BirthDraft {
