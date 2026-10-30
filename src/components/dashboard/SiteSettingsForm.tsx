@@ -79,11 +79,14 @@ export function SiteSettingsForm({
   timeZones,
   address,
   mediaPreviewSlug,
+  bornPlaceholderUrl,
 }: {
   site: SiteDTO;
   timeZones: string[];
   address: string;
   mediaPreviewSlug?: string;
+  /** What the Public page shows in place of a birth photo, which depends on the deployment. */
+  bornPlaceholderUrl: string;
 }) {
   const router = useRouter();
   const pageLang = useLang();
@@ -426,6 +429,14 @@ export function SiteSettingsForm({
           languages={languages}
           previewSlug={mediaPreviewSlug}
           check={problems}
+          settingsWith={(b) => {
+            const checked = parseSiteSettings(currentSettings(b));
+            return checked.ok ? checked.value : null;
+          }}
+          slug={site.slug}
+          address={address}
+          video={video}
+          bornPlaceholderUrl={bornPlaceholderUrl}
           onSave={saveBirth}
           onClose={closeBirthDialog}
         />

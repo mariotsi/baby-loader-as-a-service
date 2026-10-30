@@ -76,3 +76,6 @@ export const Default: Story = {
 };
 /** While its action runs the dialog stays open: Escape and the close button wait for it. */
 export const Busy: Story = { args: { busy: true } };
+
+/** Wide, for a step that shows previews beside its fields, like announcing the birth. */
+export const Wide: Story = { args: { width: 'wide' } };

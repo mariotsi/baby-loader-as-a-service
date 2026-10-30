@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/Textarea';
 import { platformCopy } from '@/lib/copy/platform';
 import { responseErrorText } from '@/lib/errorText';
 import { type Lang, languageName } from '@/lib/i18n';
+import { NotificationPreviews } from './NotificationPreviews';
 import styles from './SendNotificationForm.module.css';
 
 type Texts = Partial<Record<Lang, string>>;
@@ -172,30 +173,21 @@ export function SendNotificationForm({
       </Card>
 
       <Card title={t.preview} description={languages.length > 1 ? t.previewNote : undefined}>
-        <ul className={styles.previews}>
-          {languages.map((lang) => (
-            <li key={lang} className={styles.previewItem}>
-              {languages.length > 1 ? (
-                <span className={styles.previewLang}>{t.previewIn(languageName(lang, pageLang))}</span>
-              ) : null}
-              <div className={styles.notification} lang={lang}>
-                <div className={styles.notificationText}>
-                  <strong className={styles.notificationTitle}>
-                    {titles[lang]?.trim() || defaultTitle || siteName[lang]}
-                  </strong>
-                  <span className={styles.notificationSource}>
-                    {siteName[lang]} · {host}
-                  </span>
-                  <span className={styles.notificationBody}>
-                    {bodies[lang]?.trim() || platformCopy[lang].send.messagePlaceholder}
-                  </span>
-                </div>
-                {/* biome-ignore lint/performance/noImgElement: The icon is the one the notification itself loads. */}
-                <img className={styles.notificationIcon} src={icon} alt="" width={48} height={48} />
-              </div>
-            </li>
-          ))}
-        </ul>
+        <NotificationPreviews
+          languages={languages}
+          texts={Object.fromEntries(
+            languages.map((lang) => [
+              lang,
+              {
+                title: titles[lang]?.trim() || defaultTitle || siteName[lang] || '',
+                body: bodies[lang]?.trim() || platformCopy[lang].send.messagePlaceholder,
+              },
+            ])
+          )}
+          siteName={siteName}
+          host={host}
+          icon={icon}
+        />
       </Card>
 
       <ConfirmDialog

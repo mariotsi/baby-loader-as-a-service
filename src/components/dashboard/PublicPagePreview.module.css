@@ -1,0 +1,33 @@
+.figure {
+  display: grid;
+  justify-items: center;
+  gap: var(--space-2);
+  min-width: 0;
+  margin: 0;
+}
+
+/* A phone's screen: 375 by 720 pixels, as an iPhone shows a page below its status bar. */
+.phone {
+  color-scheme: var(--color-scheme);
+  width: min(100%, 23.4375rem);
+  height: 45rem;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-bg);
+  box-shadow: var(--shadow-md);
+  color: var(--color-text);
+  font-family: var(--font-body);
+  font-weight: var(--font-body-weight);
+}
+
+.phone:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: var(--space-1);
+}
+
+.caption {
+  font-size: var(--text-sm);
+  color: var(--color-text-muted);
+}

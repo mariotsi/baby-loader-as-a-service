@@ -62,7 +62,17 @@ test.describe('Dashboard', () => {
     await dialog.getByLabel('Birth date & time').fill('2026-01-15T08:30');
     await dialog.getByLabel('Weight (g)').fill('3100');
     await dialog.getByLabel('Length (cm)').fill('49');
+    // Beside the fields, the notification and the page once born, both in the Site's Language.
+    await expect(dialog.getByText('È nata Edith Rose!')).toBeVisible();
+    const pagePreview = dialog.getByRole('region', { name: 'Your page on a phone' });
+    await expect(pagePreview.getByText('3100 g')).toBeVisible();
+    // The preview shows the notifications button, inert: nobody can press anything in it.
+    await expect(pagePreview.locator('[inert]').getByText('Ricevi i prossimi aggiornamenti')).toBeVisible();
     await dialog.getByRole('button', { name: 'Announce the birth' }).click();
+    // Announcing asks first, so a slip of the finger cannot send the notification.
+    const confirm = page.getByRole('dialog', { name: 'Announce the birth now?' });
+    await expect(confirm.getByRole('button', { name: 'Keep editing' })).toBeFocused();
+    await confirm.getByRole('button', { name: 'Announce the birth' }).click();
     await expect(dialog).toBeHidden();
     await expect(page.getByText(/^Announced\. Notification sent to \d+ of \d+ subscribers?\.$/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Edit the birth details' })).toBeFocused();
@@ -121,6 +131,10 @@ test.describe('Dashboard', () => {
     await message.getByLabel('Italian').fill('Benvenuta Marta!');
     await message.getByLabel('English').fill('Welcome Marta!');
     await dialog.getByRole('button', { name: 'Announce the birth' }).click();
+    await page
+      .getByRole('dialog', { name: 'Announce the birth now?' })
+      .getByRole('button', { name: 'Announce the birth' })
+      .click();
     await expect(page.getByText(/^Announced\./)).toBeVisible();
 
     // The first save's message is still on screen, so wait for the second save itself.
