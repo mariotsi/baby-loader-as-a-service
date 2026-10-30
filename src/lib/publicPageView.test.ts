@@ -48,7 +48,8 @@ test('the Countdown says the day itself, and how late after it', () => {
     count: 1,
     unit: 'giorno in ritardo',
     lateNote: 'Se la sta prendendo comoda...',
-    week: null,
+    lateScene: { baby: 'Servizio in camera? Io resto qui.', mum: 'Il checkout era la settimana scorsa.' },
+    week: { number: 41, label: 'Settimana 41' },
   });
 });
 
@@ -192,4 +193,23 @@ test('a view is plain data that survives serialization to a Client Component', (
     NOW
   );
   assert.deepEqual(JSON.parse(JSON.stringify(view)), view);
+});
+
+test('late weeks remain visible beyond the two-week return track', () => {
+  for (const [days, week] of [
+    [1, 41],
+    [7, 41],
+    [8, 42],
+    [14, 42],
+    [15, 43],
+    [28, 44],
+  ]) {
+    const now = new Date(Date.UTC(2026, 9, 20 + days, 10));
+    for (const lang of ['en', 'it'] as const) {
+      const waiting = publicPageView(site({ dueDate: '2026-10-20' }), lang, now).waiting;
+      assert.equal(waiting?.count, days);
+      assert.deepEqual(waiting?.week, { number: week, label: `${lang === 'en' ? 'Week' : 'Settimana'} ${week}` });
+      assert.ok(waiting?.lateScene);
+    }
+  }
 });
