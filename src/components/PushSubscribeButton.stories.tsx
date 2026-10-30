@@ -1,8 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { useEffect, useState } from 'react';
+import { useRef, useState } from 'react';
 import type { Lang } from '@/lib/i18n';
 import { publicPageView } from '@/lib/publicPageView';
 import { defaultSiteSettings } from '@/lib/siteSettings';
+import { Confetti, type ConfettiHandle } from './Confetti';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { PushSubscribeView } from './PushSubscribeButton';
 import { Stack } from './ui/Stack';
@@ -45,14 +46,7 @@ const meta = {
     const translated = { ...copy(lang, parameters.born ?? false), appName: args.t.appName, appIcon: args.t.appIcon };
     const [status, setStatus] = useState(args.status);
     const [open, setOpen] = useState(args.confirmOpen ?? false);
-    const [celebrate, setCelebrate] = useState(false);
-    useEffect(() => {
-      if (!celebrate) {
-        return;
-      }
-      const timer = window.setTimeout(() => setCelebrate(false), 3200);
-      return () => window.clearTimeout(timer);
-    }, [celebrate]);
+    const confettiRef = useRef<ConfettiHandle | null>(null);
     return (
       <Stack gap={4} align="stretch">
         <Stack direction="row" justify="end">
@@ -68,10 +62,11 @@ const meta = {
           t={translated}
           status={status}
           confirmOpen={open}
-          celebrate={celebrate}
           onSubscribe={() => {
             setStatus('subscribed');
-            setCelebrate(!parameters.reducedMotion && !window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+            if (!parameters.reducedMotion) {
+              confettiRef.current?.launch();
+            }
           }}
           onUnsubscribe={() => {
             setStatus('unsubscribed');
@@ -79,6 +74,7 @@ const meta = {
           }}
           onConfirmOpenChange={setOpen}
         />
+        <Confetti ref={confettiRef} />
       </Stack>
     );
   },

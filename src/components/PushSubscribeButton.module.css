@@ -6,65 +6,6 @@
   gap: var(--space-1);
 }
 
-.confetti {
-  position: fixed;
-  z-index: 10;
-  inset: 0;
-  overflow: hidden;
-  pointer-events: none;
-}
-
-.confettiPiece {
-  position: absolute;
-  top: -1rem;
-  width: 0.65rem;
-  height: 0.9rem;
-  border-radius: var(--radius-sm);
-  background: var(--color-joy-1);
-}
-
-.confettiPiece:nth-child(3n + 1) {
-  background: var(--color-joy-2);
-}
-
-.confettiPiece:nth-child(3n + 2) {
-  background: var(--color-joy-3);
-}
-
-.confettiPiece:nth-child(4n) {
-  background: var(--color-accent);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .confettiPiece {
-    animation: confetti-fall 2.6s var(--ease-out) both;
-  }
-
-  @keyframes confetti-fall {
-    from {
-      opacity: 0;
-      translate: 0 -1rem;
-      rotate: 0;
-    }
-
-    12% {
-      opacity: 1;
-    }
-
-    to {
-      opacity: 0;
-      translate: 0 105vh;
-      rotate: 540deg;
-    }
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .confetti {
-    display: none;
-  }
-}
-
 .subscribedContent {
   display: inline-grid;
   justify-items: center;
