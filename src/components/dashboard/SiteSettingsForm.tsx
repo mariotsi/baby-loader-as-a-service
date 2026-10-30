@@ -2,11 +2,10 @@
 
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { type SubmitEvent, useEffect, useRef, useState } from 'react';
+import { type Ref, type SubmitEvent, useEffect, useRef, useState } from 'react';
 import { useLang } from '@/components/LangProvider';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { Checkbox } from '@/components/ui/Checkbox';
 import { EmojiPicker } from '@/components/ui/EmojiPicker';
 import { Field } from '@/components/ui/Field';
 import { FontPicker } from '@/components/ui/FontPicker';
@@ -18,15 +17,19 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Switch } from '@/components/ui/Switch';
-import { Textarea } from '@/components/ui/Textarea';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
-import { describeSiteSettingsErrors, inlineErrorText, isInlineError, routeErrorText } from '@/lib/errorText';
+import {
+  describeSiteSettingsErrors,
+  inlineErrorText,
+  isInlineError,
+  responseErrorText,
+  routeErrorText,
+} from '@/lib/errorText';
 import type { Lang } from '@/lib/i18n';
 import type { Milestone, SiteDTO } from '@/lib/site';
 import {
-  type BirthDetails,
   type BirthMedia,
   DEFAULT_MILESTONE_EMOJI,
   DEFAULT_SITE_ICON_EMOJI,
@@ -36,6 +39,7 @@ import {
   type SiteSettingsError,
   type SiteSettingsInput,
 } from '@/lib/siteSettings';
+import { BirthDialog, type BirthDraft, type SaveOutcome } from './BirthDialog';
 import { BirthMediaEditor, birthPhoto, type MediaDraft, storedDraft } from './BirthMediaEditor';
 import { PlaceField } from './PlaceField';
 import { SitePreviews } from './SitePreviews';
@@ -87,14 +91,13 @@ export function SiteSettingsForm({
   const [sex, setSex] = useState(site.sex);
   const [dueDate, setDueDate] = useState(site.dueDate?.slice(0, 10) ?? '');
   const details = site.birth.details;
-  const [photo, setPhoto] = useState<MediaDraft>(birthPhoto(details));
   const [video, setVideo] = useState<MediaDraft>(site.birthVideo);
   const [savedMedia, setSavedMedia] = useState({ photo: birthPhoto(details), video: site.birthVideo });
-  const [born, setBorn] = useState(site.birth.born);
-  const [birthDatetime, setBirthDatetime] = useState(details ? format(parseISO(details.datetime), LOCAL_DATETIME) : '');
-  const [weight, setWeight] = useState(details?.weightGrams?.toString() ?? '');
-  const [lengthCm, setLengthCm] = useState(details?.lengthCm?.toString() ?? '');
-  const [birthMessage, setBirthMessage] = useState<BirthDetails['message']>(details?.message ?? {});
+  /** The Birth as last saved: only the Birth dialog changes it, and only by saving. */
+  const [birth, setBirth] = useState<BirthDraft>(() => savedBirth(site));
+  const [birthDialogOpen, setBirthDialogOpen] = useState(false);
+  const birthButton = useRef<HTMLButtonElement>(null);
+  const returnFocus = useRef(false);
   const [languages, setLanguages] = useState<Lang[]>(site.languages);
   const [timezone, setTimezone] = useState(site.timezone);
   const [palette, setPalette] = useState(site.theme.palette);
@@ -112,6 +115,8 @@ export function SiteSettingsForm({
   /** Why the last save failed, when the server refused it for a reason the fields cannot show. */
   const [message, setMessage] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  /** How the birth notification went, after announcing the birth. */
+  const [announced, setAnnounced] = useState<string | null>(null);
   /** The fields in error at the last failed save, checked again on every edit until they pass. */
   const [failedPaths, setFailedPaths] = useState<string[]>([]);
   /** Counts failed saves, so each one moves the focus to the first field in error. */
@@ -124,28 +129,18 @@ export function SiteSettingsForm({
     }
   }, [failedSaves]);
 
-  function currentSettings(): SiteSettingsInput {
+  function currentSettings(b: BirthDraft = birth): SiteSettingsInput {
     return {
       babyName,
       sex,
       dueDate: dueDate || null,
-      birth: born
-        ? {
-            born: true,
-            details: {
-              datetime: birthDatetime ? parseISO(birthDatetime).toISOString() : '',
-              weightGrams: weight ? Number(weight) : null,
-              lengthCm: lengthCm ? Number(lengthCm) : null,
-              message: writtenTexts(birthMessage),
-              photo: storedDraft(photo),
-            },
-          }
-        : { born: false, details: null },
+      birth: birthSettings(b),
       milestones: milestones.map(({ placeText: _, ...m }) => ({ ...m, label: writtenTexts(m.label) })),
       languages,
       timezone,
       theme: { palette, font },
-      privacy: { showName, showSex },
+      // Announcing the birth shows the name and the sex to everyone, so the Privacy settings say so too.
+      privacy: b.born && !birth.born ? { showName: true, showSex: true } : { showName, showSex },
       pageName: writtenTexts(pageName),
       icon: iconIsEmoji ? iconEmoji : null,
       birthVideo: storedDraft(video),
@@ -160,8 +155,8 @@ export function SiteSettingsForm({
   }
 
   /** Everything that stops a save: the Site settings rules, then Places typed and never picked. */
-  function problems(): SiteSettingsError[] {
-    const checked = parseSiteSettings(currentSettings());
+  function problems(b: BirthDraft = birth): SiteSettingsError[] {
+    const checked = parseSiteSettings(currentSettings(b));
     return [...(checked.ok ? [] : checked.errors), ...unpickedPlaces(milestones)];
   }
 
@@ -186,13 +181,78 @@ export function SiteSettingsForm({
     e.preventDefault();
     setMessage(null);
     setSaved(false);
+    setAnnounced(null);
     const found = problems();
     if (found.length > 0) {
       fail(found);
       return;
     }
-    const settings = currentSettings();
     setFailedPaths([]);
+    const outcome = await persist(birth);
+    if (!outcome.ok) {
+      setMessage(outcome.message);
+      if (outcome.errors.length > 0) {
+        fail(outcome.errors);
+      }
+    }
+  }
+
+  /** Saves the Birth from the dialog with everything else on the page, then closes the dialog. */
+  async function saveBirth(next: BirthDraft): Promise<SaveOutcome> {
+    setMessage(null);
+    setSaved(false);
+    setAnnounced(null);
+    const announcing = !birth.born && next.born;
+    const outcome = await persist(next);
+    if (outcome.ok) {
+      setFailedPaths([]);
+      closeBirthDialog();
+      if (announcing) {
+        setShowName(true);
+        setShowSex(true);
+        await sendBirthNotification(next);
+      }
+    }
+    return outcome;
+  }
+
+  /** Tells every Subscription the baby is born, in each of the Site's Languages: "È nata Sofia!" and the Birth message, or an invitation to the page. */
+  async function sendBirthNotification(next: BirthDraft) {
+    const messages = Object.fromEntries(
+      languages.map((lang) => {
+        const news = platformCopy[lang].settings.birthNotification(babyName.trim(), sex);
+        return [lang, { title: news.title, body: next.message[lang]?.trim() || news.body }];
+      })
+    );
+    const res = await fetch('/api/send-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: site.slug, messages }),
+    }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (res?.ok) {
+      setAnnounced(t.announced(data.sent, data.total));
+    } else {
+      setMessage(`${t.notificationFailed} ${responseErrorText(data, pageLang)}`);
+    }
+  }
+
+  function closeBirthDialog() {
+    setBirthDialogOpen(false);
+    returnFocus.current = true;
+  }
+
+  // Back on the button that opened the dialog, which saving may have swapped for another.
+  useEffect(() => {
+    if (!birthDialogOpen && returnFocus.current) {
+      returnFocus.current = false;
+      birthButton.current?.focus();
+    }
+  });
+
+  /** Uploads the new media, saves the Site settings with `b` as the Birth, and removes the media they replaced. */
+  async function persist(b: BirthDraft): Promise<SaveOutcome> {
+    const settings = currentSettings(b);
     setSaving(true);
     const uploaded: { key: string; url: string }[] = [];
     let committed = false;
@@ -221,7 +281,7 @@ export function SiteSettingsForm({
       }
     }
     try {
-      const next = await prepareBirthMedia(settings, photo, video, upload);
+      const next = await prepareBirthMedia(settings, b.photo, video, upload);
       const res = await fetch(`/api/sites/${site.slug}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -229,22 +289,24 @@ export function SiteSettingsForm({
       });
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        if (data?.errors) {
-          fail(data.errors);
-        } else {
-          setMessage(routeErrorText(data?.error, pageLang));
-        }
-        return;
+        return data?.errors
+          ? { ok: false, errors: data.errors, message: null }
+          : { ok: false, errors: [], message: routeErrorText(data?.error, pageLang) };
       }
       committed = true;
-      setPhoto(next.photo);
+      setBirth({ ...b, photo: next.photo });
       setVideo(next.video);
       setSavedMedia(next);
       setSaved(true);
       router.refresh();
-      await removeReplacedMedia(savedMedia, next, remove);
+      await removeReplacedMedia(savedMedia, next, remove).catch(() => {});
+      return { ok: true };
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : routeErrorText(undefined, pageLang));
+      return {
+        ok: false,
+        errors: [],
+        message: error instanceof Error ? error.message : routeErrorText(undefined, pageLang),
+      };
     } finally {
       if (!committed) {
         await Promise.allSettled(uploaded.map((media) => remove(media.key)));
@@ -254,145 +316,185 @@ export function SiteSettingsForm({
   }
 
   return (
-    <form ref={formRef} onSubmit={save} className={styles.form} noValidate>
-      <div className={styles.columns}>
-        <div className={styles.column}>
-          <Card title={t.babyDetails} description={t.babyDetailsDescription}>
-            <Field label={t.name}>
-              <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
-            </Field>
-            <Field label={t.sex}>
-              <Select value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
-                <option value="unknown">{t.sexUnknown}</option>
-                <option value="female">{t.sexFemale}</option>
-                <option value="male">{t.sexMale}</option>
-              </Select>
-            </Field>
-            <Field label={t.dueDate} optional>
-              <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-            </Field>
-            <Checkbox label={t.born} hint={t.bornHint} checked={born} onChange={(e) => setBorn(e.target.checked)} />
-            {born ? (
-              <>
-                <Field label={t.birthDatetime}>
-                  <Input
-                    type="datetime-local"
-                    value={birthDatetime}
-                    onChange={(e) => setBirthDatetime(e.target.value)}
-                  />
-                </Field>
-                <div className={styles.pair}>
-                  <Field label={t.weight} optional>
-                    <Input
-                      type="number"
-                      inputMode="numeric"
-                      value={weight}
-                      onChange={(e) => setWeight(e.target.value)}
-                    />
-                  </Field>
-                  <Field label={t.length} optional>
-                    <Input
-                      type="number"
-                      inputMode="decimal"
-                      value={lengthCm}
-                      onChange={(e) => setLengthCm(e.target.value)}
-                    />
-                  </Field>
-                </div>
-                <PerLanguageField
-                  label={t.message}
-                  languages={languages}
-                  value={birthMessage}
-                  onChange={(lang, text) => setBirthMessage({ ...birthMessage, [lang]: text })}
-                  errors={errorsPerLanguage('birth.details.message')}
-                  optional
-                >
-                  {({ lang, value, onChange }) => (
-                    <Textarea lang={lang} value={value} onChange={(e) => onChange(e.target.value)} />
-                  )}
-                </PerLanguageField>
-              </>
-            ) : null}
-          </Card>
+    <>
+      <form ref={formRef} onSubmit={save} className={styles.form} noValidate>
+        <div className={styles.columns}>
+          <div className={styles.column}>
+            <Card title={t.babyDetails} description={t.babyDetailsDescription}>
+              <Field label={t.name}>
+                <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
+              </Field>
+              <Field label={t.sex}>
+                <Select value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
+                  <option value="unknown">{t.sexUnknown}</option>
+                  <option value="female">{t.sexFemale}</option>
+                  <option value="male">{t.sexMale}</option>
+                </Select>
+              </Field>
+              <Field label={t.dueDate} optional>
+                <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+              </Field>
+              <BirthStatus birth={birth} sex={sex} buttonRef={birthButton} onOpen={() => setBirthDialogOpen(true)} />
+            </Card>
 
-          <BirthMediaEditor
-            previewSlug={mediaPreviewSlug}
-            videoOnly
-            photo={photo}
-            video={video}
-            onPhoto={setPhoto}
-            onVideo={setVideo}
-          />
+            <BirthMediaEditor previewSlug={mediaPreviewSlug} only="video" video={video} onVideo={setVideo} />
 
-          <MilestonesCard
-            milestones={milestones}
-            onChange={setMilestones}
-            languages={languages}
-            inlineError={inlineError}
-            errorsPerLanguage={errorsPerLanguage}
-          />
-        </div>
-
-        <div className={styles.column}>
-          <Card title={t.appearance} description={t.appearanceDescription}>
-            <PalettePicker value={palette} onChange={setPalette} />
-            <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
-            <LanguagesPicker value={languages} onChange={setLanguages} />
-            <PerLanguageField
-              label={t.pageName}
-              hint={t.pageNameHint}
+            <MilestonesCard
+              milestones={milestones}
+              onChange={setMilestones}
               languages={languages}
-              value={pageName}
-              onChange={(lang, text) => setPageName({ ...pageName, [lang]: text })}
-              errors={errorsPerLanguage('pageName')}
-              optional
-            >
-              {({ lang, value, onChange }) => (
-                <Input
-                  lang={lang}
-                  value={value}
-                  onChange={(e) => onChange(e.target.value)}
-                  placeholder={platformCopy[lang].settings.pageNamePlaceholder}
-                  maxLength={60}
-                  autoComplete="off"
-                />
-              )}
-            </PerLanguageField>
-            <Field label={t.timezone} hint={t.timezoneHint}>
-              <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
-                {(timeZones.includes(timezone) ? timeZones : [timezone, ...timeZones]).map((zone) => (
-                  <option key={zone} value={zone}>
-                    {zone}
-                  </option>
-                ))}
-              </Select>
-            </Field>
-          </Card>
-          <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription}>
-            <div>
-              <Switch label={privacy.showName} checked={showName} onChange={(e) => setShowName(e.target.checked)} />
-              <Switch label={privacy.showSex} checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
-            </div>
-          </Card>
-          <IconAndSharingCard
-            isEmoji={iconIsEmoji}
-            onIsEmojiChange={setIconIsEmoji}
-            emoji={iconEmoji}
-            onEmojiChange={setIconEmoji}
-            preview={lastValid.current}
-            address={address}
-          />
-        </div>
-      </div>
+              inlineError={inlineError}
+              errorsPerLanguage={errorsPerLanguage}
+            />
+          </div>
 
-      <div className={styles.saveBar}>
-        <Button variant="primary" type="submit" loading={saving}>
-          {saving ? t.saving : t.save}
+          <div className={styles.column}>
+            <Card title={t.appearance} description={t.appearanceDescription}>
+              <PalettePicker value={palette} onChange={setPalette} />
+              <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
+              <LanguagesPicker value={languages} onChange={setLanguages} />
+              <PerLanguageField
+                label={t.pageName}
+                hint={t.pageNameHint}
+                languages={languages}
+                value={pageName}
+                onChange={(lang, text) => setPageName({ ...pageName, [lang]: text })}
+                errors={errorsPerLanguage('pageName')}
+                optional
+              >
+                {({ lang, value, onChange }) => (
+                  <Input
+                    lang={lang}
+                    value={value}
+                    onChange={(e) => onChange(e.target.value)}
+                    placeholder={platformCopy[lang].settings.pageNamePlaceholder}
+                    maxLength={60}
+                    autoComplete="off"
+                  />
+                )}
+              </PerLanguageField>
+              <Field label={t.timezone} hint={t.timezoneHint}>
+                <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
+                  {(timeZones.includes(timezone) ? timeZones : [timezone, ...timeZones]).map((zone) => (
+                    <option key={zone} value={zone}>
+                      {zone}
+                    </option>
+                  ))}
+                </Select>
+              </Field>
+            </Card>
+            <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription}>
+              <div>
+                <Switch label={privacy.showName} checked={showName} onChange={(e) => setShowName(e.target.checked)} />
+                <Switch label={privacy.showSex} checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
+              </div>
+            </Card>
+            <IconAndSharingCard
+              isEmoji={iconIsEmoji}
+              onIsEmojiChange={setIconIsEmoji}
+              emoji={iconEmoji}
+              onEmojiChange={setIconEmoji}
+              preview={lastValid.current}
+              address={address}
+            />
+          </div>
+        </div>
+
+        <div className={styles.saveBar}>
+          <Button variant="primary" type="submit" loading={saving}>
+            {saving ? t.saving : t.save}
+          </Button>
+          <StatusMessage tone="success">{saved ? (announced ?? t.saved) : null}</StatusMessage>
+          <StatusMessage tone="danger">{message || problemsText(errors, pageLang)}</StatusMessage>
+        </div>
+      </form>
+      {birthDialogOpen ? (
+        <BirthDialog
+          initial={birth.born ? birth : { ...birth, datetime: birth.datetime || format(new Date(), LOCAL_DATETIME) }}
+          babyName={babyName}
+          sex={sex}
+          onBabyName={setBabyName}
+          onSex={setSex}
+          hidden={{ name: !showName, sex: !showSex }}
+          languages={languages}
+          previewSlug={mediaPreviewSlug}
+          check={problems}
+          onSave={saveBirth}
+          onClose={closeBirthDialog}
+        />
+      ) : null}
+    </>
+  );
+}
+
+/** The Birth as the Site settings hold it, from the fields as typed. */
+function birthSettings(b: BirthDraft): SiteSettingsInput['birth'] {
+  if (!b.born) {
+    return { born: false, details: null };
+  }
+  return {
+    born: true,
+    details: {
+      datetime: b.datetime ? parseISO(b.datetime).toISOString() : '',
+      weightGrams: b.weight ? Number(b.weight) : null,
+      lengthCm: b.lengthCm ? Number(b.lengthCm) : null,
+      message: writtenTexts(b.message),
+      photo: storedDraft(b.photo),
+    },
+  };
+}
+
+function savedBirth(site: SiteDTO): BirthDraft {
+  const details = site.birth.details;
+  return {
+    born: site.birth.born,
+    datetime: details ? format(parseISO(details.datetime), LOCAL_DATETIME) : '',
+    weight: details?.weightGrams?.toString() ?? '',
+    lengthCm: details?.lengthCm?.toString() ?? '',
+    message: details?.message ?? {},
+    photo: birthPhoto(details),
+  };
+}
+
+interface BirthStatusProps {
+  birth: BirthDraft;
+  sex: SiteSettingsInput['sex'];
+  buttonRef: Ref<HTMLButtonElement>;
+  onOpen: () => void;
+}
+
+/** Where the Birth stands, waiting or announced, and the button that opens the Birth details. */
+function BirthStatus({ birth, sex, buttonRef, onOpen }: BirthStatusProps) {
+  const pageLang = useLang();
+  const t = platformCopy[pageLang].settings;
+  if (!birth.born) {
+    return (
+      <div className={styles.birth}>
+        <p className={styles.birthSummary}>{t.waitingForBirth}</p>
+        <Button ref={buttonRef} icon="sparkles" onClick={onOpen}>
+          {t.announceBirth}
         </Button>
-        <StatusMessage tone="success">{saved ? t.saved : null}</StatusMessage>
-        <StatusMessage tone="danger">{message || problemsText(errors, pageLang)}</StatusMessage>
       </div>
-    </form>
+    );
+  }
+  const when = new Intl.DateTimeFormat(pageLang, { dateStyle: 'long', timeStyle: 'short' }).format(
+    parseISO(birth.datetime)
+  );
+  const stats = [birth.weight ? `${birth.weight} g` : null, birth.lengthCm ? `${birth.lengthCm} cm` : null].filter(
+    Boolean
+  );
+  return (
+    <div className={styles.birth}>
+      <div>
+        <p className={styles.birthSummary}>
+          <strong>{t.bornOn(when, sex)}</strong>
+        </p>
+        {stats.length > 0 ? <p className={styles.birthStats}>{stats.join(' · ')}</p> : null}
+      </div>
+      <Button ref={buttonRef} onClick={onOpen}>
+        {t.editBirth}
+      </Button>
+    </div>
   );
 }
 

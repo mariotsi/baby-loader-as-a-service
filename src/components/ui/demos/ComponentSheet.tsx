@@ -13,6 +13,7 @@ import { EmojiPicker } from '../EmojiPicker';
 import { ExternalLink } from '../ExternalLink';
 import { Field } from '../Field';
 import { FilePicker } from '../FilePicker';
+import { FullPageDialog } from '../FullPageDialog';
 import { Input } from '../Input';
 import { LanguagesPicker } from '../LanguagesPicker';
 import { Logo } from '../Logo';
@@ -43,6 +44,7 @@ function Group({ title, children }: { title: string; children: ReactNode }) {
 export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?: 2 | 3; themeName?: string }) {
   const [file, setFile] = useState<File | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [pageDialogOpen, setPageDialogOpen] = useState(false);
   const [sex, setSex] = useState<'female' | 'male' | 'unknown'>('unknown');
   const [languages, setLanguages] = useState<Lang[]>(['it', 'en']);
   const [emoji, setEmoji] = useState('🍼');
@@ -68,6 +70,38 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
           onClose={() => setConfirmOpen(false)}
           onConfirm={() => setConfirmOpen(false)}
         />
+      </Group>
+      <Group title="Full-page dialog">
+        <div>
+          <Button icon="sparkles" onClick={() => setPageDialogOpen(true)}>
+            Announce the birth
+          </Button>
+        </div>
+        {pageDialogOpen ? (
+          <FullPageDialog
+            open
+            title="Welcome, Emma"
+            description="Share the first details. Announcing saves your other changes too."
+            closeLabel="Close without saving"
+            onClose={() => setPageDialogOpen(false)}
+            onSubmit={(event) => {
+              event.preventDefault();
+              setPageDialogOpen(false);
+            }}
+            actions={
+              <>
+                <Button onClick={() => setPageDialogOpen(false)}>Cancel</Button>
+                <Button variant="primary" type="submit" icon="sparkles">
+                  Announce the birth
+                </Button>
+              </>
+            }
+          >
+            <Field label="Birth date & time">
+              <Input type="datetime-local" defaultValue="2026-10-26T08:30" />
+            </Field>
+          </FullPageDialog>
+        ) : null}
       </Group>
       <Group title="Buttons">
         <Stack direction="row" gap={3}>

@@ -131,7 +131,35 @@ test("the payload opens the Site's Address, with its tag and a default title", a
 
   await deliverNotification(owned, valid({ en: { body: 'Hi' } }), push.service);
 
-  assert.deepEqual(push.sent[0].payload, { title: 'Emma', body: 'Hi', url: '/', tag: 'site-payload-site' });
+  assert.deepEqual(push.sent[0].payload, {
+    title: 'Emma',
+    body: 'Hi',
+    icon: '/icon-192.png',
+    url: '/',
+    tag: 'site-payload-site',
+  });
+});
+
+test('the icon is the birth photo once born, else the Site icon', async () => {
+  const emoji = await ownedSite('icon-emoji', { icon: '🐣' });
+  await subscribe(emoji, 'https://push.test/icon-emoji');
+  const emojiPush = fakePush();
+  await deliverNotification(emoji, valid({ en: { body: 'Hi' } }), emojiPush.service);
+  assert.match(String(emojiPush.sent[0].payload.icon), /^\/site-icon\/192\?v=1f423\./);
+
+  const photo = { key: 'customer-data/o/s/photo', url: 'https://media.test/customer-data/o/s/photo' };
+  const born = await ownedSite('icon-born', {
+    icon: '🐣',
+    sex: 'female',
+    birth: {
+      born: true,
+      details: { datetime: '2026-01-15T08:30:00.000Z', weightGrams: null, lengthCm: null, message: {}, photo },
+    },
+  });
+  await subscribe(born, 'https://push.test/icon-born');
+  const bornPush = fakePush();
+  await deliverNotification(born, valid({ en: { body: 'Hi' } }), bornPush.service);
+  assert.equal(bornPush.sent[0].payload.icon, photo.url);
 });
 
 test('no default title while Privacy settings hide the name', async () => {

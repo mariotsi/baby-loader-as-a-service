@@ -140,3 +140,21 @@
   background: var(--color-bg);
   box-shadow: var(--shadow-lg);
 }
+
+/* Where the Birth stands, with the action that opens the Birth details beside it. */
+.birth {
+  display: grid;
+  gap: var(--space-3);
+  justify-items: start;
+  padding: var(--space-4);
+  border-radius: var(--radius-md);
+  background: var(--color-soft);
+}
+
+.birthSummary {
+  margin: 0;
+}
+
+.birthStats {
+  margin: 0;
+}

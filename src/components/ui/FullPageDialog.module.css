@@ -1,0 +1,113 @@
+.dialog {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  height: 100dvh;
+  max-height: none;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-family: var(--font-body);
+}
+.dialog::backdrop {
+  background: var(--color-bg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .dialog[open] {
+    animation: rise var(--duration-base) var(--ease-out);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(var(--space-5));
+  }
+}
+
+/* The heading and the actions stay put; only the content between them scrolls. */
+.frame {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+}
+
+.header {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+  padding: var(--space-4) var(--gutter);
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+.heading {
+  display: grid;
+  gap: var(--space-1);
+  min-width: 0;
+  padding-top: var(--space-2);
+}
+
+.title {
+  margin: 0;
+  font-family: var(--font-display);
+  font-size: var(--text-xl);
+}
+
+.description {
+  margin: 0;
+  color: var(--color-text-muted);
+}
+
+.body {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: var(--space-5) var(--gutter);
+}
+
+.content {
+  display: grid;
+  gap: var(--space-5);
+  max-width: var(--content-medium);
+  margin-inline: auto;
+}
+
+.footer {
+  padding: var(--space-3) var(--gutter);
+  border-top: var(--border-width) solid var(--color-border);
+  background: var(--color-surface);
+}
+
+/* The buttons share a row, the primary one last; anything else, like a StatusMessage, takes a row of its own on a phone. */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: end;
+  gap: var(--space-3);
+  max-width: var(--content-medium);
+  margin-inline: auto;
+}
+
+.actions > button {
+  flex: 1 1 0;
+}
+
+.actions > :not(button) {
+  flex-basis: 100%;
+}
+
+@media (min-width: 40rem) {
+  .actions > button {
+    flex: none;
+  }
+
+  .actions > :not(button) {
+    flex: 1 1 0;
+  }
+}

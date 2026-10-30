@@ -23,9 +23,11 @@ test.describe('Platform pages for an Italian browser', () => {
 
     test('explain a Site settings error in Italian', async ({ page, project }) => {
       await page.goto(`/dashboard/${perProjectSlug('e2e-rules', project)}`);
-      await page.getByLabel('Il bambino è nato').check();
-      await page.getByRole('button', { name: 'Salva le modifiche' }).click();
-      await expect(page.getByText('Data e ora di nascita: campo obbligatorio.', { exact: true })).toBeVisible();
+      await page.getByRole('button', { name: 'Annuncia la nascita' }).click();
+      const dialog = page.getByRole('dialog');
+      await dialog.getByLabel('Data e ora di nascita').fill('');
+      await dialog.getByRole('button', { name: 'Annuncia la nascita' }).click();
+      await expect(dialog.getByText('Data e ora di nascita: campo obbligatorio.', { exact: true })).toBeVisible();
     });
   });
 });

@@ -1,5 +1,8 @@
 import { type Lang, plural } from '../i18n.ts';
 import type { PasswordRuleId } from '../passwordRules.ts';
+import type { SiteSettings } from '../siteSettings.ts';
+
+type Sex = SiteSettings['sex'];
 
 /**
  * The copy of the Platform's own pages, in every language in `Lang`. English
@@ -138,8 +141,43 @@ const en = {
     sexFemale: 'Girl',
     sexMale: 'Boy',
     dueDate: 'Due date',
-    born: 'The baby has been born',
-    bornHint: 'Your page switches from the Countdown to the Birth details.',
+    waitingForBirth:
+      'When the baby arrives, announce it here: your page switches from the Countdown to the Birth details, and everyone subscribed gets a notification.',
+    announced: (sent: number, total: number) =>
+      plural('en', total, {
+        one: `Announced. Notification sent to ${sent} of ${total} subscriber.`,
+        other: `Announced. Notification sent to ${sent} of ${total} subscribers.`,
+      }),
+    notificationFailed: 'Your page is updated, but the notification wasn’t sent.',
+    birthNotification: (name: string, sex: Sex) => ({
+      title: `${name} is born!`,
+      body: `Come and meet ${({ female: 'her', male: 'him', unknown: 'them' } as const)[sex]} on the page.`,
+    }),
+    announceBirth: 'Announce the birth',
+    announcing: 'Announcing…',
+    bornOn: (when: string, _sex: Sex) => `Born ${when}`,
+    editBirth: 'Edit the birth details',
+    birthDialogTitle: (name: string, _sex: Sex) => (name ? `Welcome, ${name}` : 'Welcome, little one'),
+    birthDialogDescription:
+      'Share the first details. Announcing switches your page to the Birth details, sends a notification to everyone subscribed, and saves your other changes too.',
+    birthEditTitle: 'Birth details',
+    birthDetailsCard: 'The first details',
+    identityCard: 'Who is here',
+    identityCardDescription: 'Your page names the baby once born, so give them a name and say girl or boy first.',
+    revealsNameAndSex:
+      'Your page hides the name and the sex until now. Announcing shows both to everyone who opens it, and in the notification.',
+    revealsName:
+      'Your page hides the name until now. Announcing shows it to everyone who opens your page, and in the notification.',
+    revealsSex: 'Your page hides the sex until now. Announcing shows it to everyone who opens your page.',
+    birthEditDescription: 'Saving updates your page with these details and saves your other changes too.',
+    closeBirthDialog: 'Close without saving',
+    cancel: 'Cancel',
+    unannounce: 'Back to the Countdown',
+    unannounceTitle: 'Go back to the Countdown?',
+    unannounceDescription:
+      'Your page hides the Birth details again and the birth photo is removed. Your other changes are saved too.',
+    keepBirthDetails: 'Keep the Birth details',
+    fixElsewhere: 'Something else on this page needs fixing first.',
     birthDatetime: 'Birth date & time',
     weight: 'Weight (g)',
     length: 'Length (cm)',
@@ -322,8 +360,47 @@ const it: PlatformCopy = {
     sexFemale: 'Femmina',
     sexMale: 'Maschio',
     dueDate: 'Data prevista',
-    born: 'Il bambino è nato',
-    bornHint: 'La tua pagina passa dal conto alla rovescia ai dettagli della nascita.',
+    waitingForBirth:
+      'Quando il bambino arriva, annuncialo da qui: la tua pagina passa dal conto alla rovescia ai dettagli della nascita e tutti gli iscritti ricevono una notifica.',
+    announced: (sent, total) =>
+      plural('it', total, {
+        one: `Annunciato. Notifica inviata a ${sent} iscritto su ${total}.`,
+        other: `Annunciato. Notifica inviata a ${sent} iscritti su ${total}.`,
+      }),
+    notificationFailed: 'La pagina è aggiornata, ma la notifica non è stata inviata.',
+    birthNotification: (name, sex) => ({
+      title: `${sex === 'female' ? 'È nata' : 'È nato'} ${name}!`,
+      body: `Vieni a ${sex === 'female' ? 'conoscerla' : 'conoscerlo'} sulla pagina.`,
+    }),
+    announceBirth: 'Annuncia la nascita',
+    announcing: 'Annuncio in corso…',
+    bornOn: (when, sex) => `${sex === 'female' ? 'Nata' : 'Nato'} il ${when}`,
+    editBirth: 'Modifica i dettagli della nascita',
+    birthDialogTitle: (name, sex) => {
+      const welcome = sex === 'female' ? 'Benvenuta' : 'Benvenuto';
+      return name ? `${welcome}, ${name}` : `${welcome}, ${sex === 'female' ? 'piccola' : 'piccolo'}`;
+    },
+    birthDialogDescription:
+      'Racconta i primi dettagli. L’annuncio porta la tua pagina ai dettagli della nascita, invia una notifica a tutti gli iscritti e salva anche le altre modifiche.',
+    birthEditTitle: 'Dettagli della nascita',
+    birthDetailsCard: 'I primi dettagli',
+    identityCard: 'Chi è arrivato',
+    identityCardDescription:
+      'Dopo la nascita la pagina chiama il bambino per nome: prima scegli il nome e di’ se è una femmina o un maschio.',
+    revealsNameAndSex:
+      'Finora la tua pagina nasconde il nome e il sesso. Con l’annuncio li vede chiunque apra la pagina, anche nella notifica.',
+    revealsName:
+      'Finora la tua pagina nasconde il nome. Con l’annuncio lo vede chiunque apra la pagina, anche nella notifica.',
+    revealsSex: 'Finora la tua pagina nasconde il sesso. Con l’annuncio lo vede chiunque apra la pagina.',
+    birthEditDescription: 'Salvando aggiorni la pagina con questi dettagli e salvi anche le altre modifiche.',
+    closeBirthDialog: 'Chiudi senza salvare',
+    cancel: 'Annulla',
+    unannounce: 'Torna al conto alla rovescia',
+    unannounceTitle: 'Tornare al conto alla rovescia?',
+    unannounceDescription:
+      'La tua pagina nasconde di nuovo i dettagli della nascita e la foto viene rimossa. Vengono salvate anche le altre modifiche.',
+    keepBirthDetails: 'Tieni i dettagli della nascita',
+    fixElsewhere: 'Prima c’è qualcos’altro da sistemare in questa pagina.',
     birthDatetime: 'Data e ora di nascita',
     weight: 'Peso (g)',
     length: 'Lunghezza (cm)',
