@@ -213,44 +213,43 @@
     left: 0;
     top: 0.375rem;
   }
-  25%,
-  35% {
+  25% {
     left: 100%;
     top: 0.375rem;
   }
-  40% {
+  28% {
     left: calc(100% + 0.949rem);
     top: 0.489rem;
   }
-  45% {
+  31% {
     left: calc(100% + 1.436rem);
     top: 0.814rem;
   }
-  50% {
+  34% {
     left: calc(100% + 1.761rem);
     top: 1.301rem;
   }
-  55% {
+  37% {
     left: calc(100% + 1.875rem);
     top: 1.875rem;
   }
-  57.5% {
+  40% {
     left: calc(100% + 1.761rem);
     top: 2.449rem;
   }
-  60% {
+  43% {
     left: calc(100% + 1.436rem);
     top: 2.936rem;
   }
-  62.5% {
+  46% {
     left: calc(100% + 0.949rem);
     top: 3.261rem;
   }
-  65% {
+  49% {
     left: calc(100% + 0.375rem);
     top: 3.375rem;
   }
-  70% {
+  50% {
     left: 100%;
     top: 3.375rem;
   }
@@ -262,15 +261,15 @@
 
 @keyframes revealTurn {
   0%,
-  25% {
+  18% {
     opacity: 0;
     stroke-dashoffset: 100;
   }
-  35% {
-    opacity: 0.4;
-    stroke-dashoffset: 90;
+  25% {
+    opacity: 0.5;
+    stroke-dashoffset: 85;
   }
-  70%,
+  50%,
   100% {
     opacity: 1;
     stroke-dashoffset: 0;
@@ -279,13 +278,13 @@
 
 @keyframes revealReturn {
   0%,
-  60% {
+  40% {
     opacity: 0;
     clip-path: inset(0 0 0 100%);
     background-size: 0 100%;
   }
-  70% {
-    opacity: 0.4;
+  50% {
+    opacity: 0.5;
     clip-path: inset(0 0 0 90%);
     background-size: 0 100%;
   }
