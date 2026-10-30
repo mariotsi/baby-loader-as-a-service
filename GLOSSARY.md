@@ -90,6 +90,10 @@ _Avoid_: Birth stats, birth info
 The Owner's own words shown with the Birth details.
 _Avoid_: Announcement, caption
 
+**Birth milestone**:
+The Milestone that announcing the birth adds on the day of birth, "È nata!" / "She is born!", marked `kind: 'birth'`. Announcing again replaces it, going back to the Countdown removes it, and a new day of birth moves it; the Owner may change its label and emoji like any other.
+_Avoid_: Birth event
+
 **Birth video**:
 The Owner's welcome video, which the Public page plays full screen once the baby is born. The Owner can pick it in the Waiting state, ready for the day, and it stays when the born mark is removed.
 _Avoid_: Birth details video, announcement video
