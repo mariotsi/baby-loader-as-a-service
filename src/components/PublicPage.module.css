@@ -56,12 +56,33 @@
 
 /* Wide screens: the name and the call to action on the left, the Countdown beside them. */
 @container (min-width: 60rem) {
+  .header {
+    position: absolute;
+    inset-block-start: var(--space-4);
+    inset-inline: var(--gutter);
+    z-index: 1;
+  }
+
+  .introSlot {
+    position: sticky;
+    top: var(--space-4);
+    align-self: start;
+    display: grid;
+    align-items: center;
+    min-height: calc(100dvh - 2 * var(--space-4));
+  }
+
+  .aside {
+    padding-top: var(--space-8);
+    padding-bottom: var(--space-4);
+  }
+
   .hero {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     align-items: center;
     gap: var(--space-8);
     max-width: var(--content-wide);
-    margin-top: var(--space-8);
+    margin-top: 0;
     text-align: start;
   }
 }
@@ -73,19 +94,13 @@
   flex-direction: column;
   align-items: center;
   gap: var(--space-4);
-  max-width: var(--content-narrow);
-  margin: var(--space-7) auto 0;
+  width: 100%;
+  min-width: 0;
+  margin: var(--space-5) auto 0;
 }
 
 .pillSlot:empty {
   display: none;
-}
-
-@container (min-width: 60rem) {
-  .pillSlot {
-    align-items: flex-end;
-    max-width: var(--content-wide);
-  }
 }
 
 .intro {

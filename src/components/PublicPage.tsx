@@ -24,7 +24,7 @@ import styles from './PublicPage.module.css';
  * on a wide screen the name and the call to action sit beside the Countdown
  * or the Birth details. Once notifications are on, their pill leaves the call
  * to action for the end of the page, after all the content: centred on a
- * phone, on the right on a wide screen.
+ * phone and within the right column on a wide screen.
  *
  * Everything it shows comes from its props, so the Dashboard draws the same
  * page as a `preview` from Site settings not yet saved: it lays out to its
@@ -80,22 +80,24 @@ export function PublicPage({
       <JoyBackground />
       <PublicPageHeader views={views} view={view} onLang={chooseLang} />
       <Main className={styles.hero}>
-        <div className={styles.intro}>
-          <p className={styles.tagline}>{view.tagline}</p>
-          <h1 className={styles.title}>
-            <span className={styles.titleLead}>{view.titleLead}</span> {view.titleName}
-          </h1>
-          {view.sex ? <p className={styles.sex}>{view.sex}</p> : null}
-          {view.waiting ? <p className={styles.lead}>{view.waiting.dueDate}</p> : null}
-          <div className={styles.cta}>
-            <PublicPageActions
-              view={view}
-              slug={slug}
-              vapidPublicKey={vapidPublicKey}
-              disableNotifications={disableNotifications}
-              preview={preview}
-              pillSlot={pillSlot}
-            />
+        <div className={styles.introSlot}>
+          <div className={styles.intro}>
+            <p className={styles.tagline}>{view.tagline}</p>
+            <h1 className={styles.title}>
+              <span className={styles.titleLead}>{view.titleLead}</span> {view.titleName}
+            </h1>
+            {view.sex ? <p className={styles.sex}>{view.sex}</p> : null}
+            {view.waiting ? <p className={styles.lead}>{view.waiting.dueDate}</p> : null}
+            <div className={styles.cta}>
+              <PublicPageActions
+                view={view}
+                slug={slug}
+                vapidPublicKey={vapidPublicKey}
+                disableNotifications={disableNotifications}
+                preview={preview}
+                pillSlot={pillSlot}
+              />
+            </div>
           </div>
         </div>
         <div className={styles.aside}>
@@ -105,9 +107,9 @@ export function PublicPage({
           ) : null}
           {view.born ? <Born born={view.born} imageUrl={bornImageUrl} /> : null}
           {view.milestones ? <Milestones milestones={view.milestones} /> : null}
+          <div ref={setPillSlot} className={styles.pillSlot} />
         </div>
       </Main>
-      <div ref={setPillSlot} className={styles.pillSlot} />
     </div>
   );
 }
