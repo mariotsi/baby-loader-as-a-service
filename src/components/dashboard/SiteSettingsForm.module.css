@@ -1,6 +1,8 @@
 .form {
   display: grid;
   gap: var(--space-5);
+  /* The sticky action meets the viewport edge through PageShell's bottom gutter. */
+  margin-bottom: calc(var(--space-8) * -1);
 }
 
 /* One column on a phone; on a wide screen the story on the left, the look on the right. */
@@ -136,5 +138,5 @@
   padding: var(--space-3) var(--space-2);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   background: var(--color-bg);
-  box-shadow: 0 -1px 0 var(--color-border);
+  box-shadow: var(--shadow-lg);
 }
