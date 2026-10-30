@@ -8,7 +8,8 @@
   --color-media-bg: #000000;
   --color-on-media: #ffffff;
   /* Type scale: mobile first, growing with the viewport up to a cap. */
-  /* Only for small labels, like a small Badge: the least the design system sets text in. */
+  /* Map credits use a compact size; interface labels start at --text-2xs. */
+  --text-attribution: 0.5625rem;
   --text-2xs: 0.6875rem;
   --text-xs: 0.8125rem;
   --text-sm: 0.875rem;
