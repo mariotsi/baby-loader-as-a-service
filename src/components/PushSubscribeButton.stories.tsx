@@ -41,11 +41,11 @@ const meta = {
     onUnsubscribe: () => {},
     onConfirmOpenChange: () => {},
   },
-  render: function Interactive(args, { parameters }) {
+  render: function Interactive(args, { parameters, viewMode }) {
     const [lang, setLang] = useState<Lang>(parameters.language ?? 'en');
     const translated = { ...copy(lang, parameters.born ?? false), appName: args.t.appName, appIcon: args.t.appIcon };
     const [status, setStatus] = useState(args.status);
-    const [open, setOpen] = useState(args.confirmOpen ?? false);
+    const [open, setOpen] = useState(viewMode === 'story' && (args.confirmOpen ?? false));
     const [confettiShot, setConfettiShot] = useState<{ origin: ConfettiOrigin } | null>(null);
     return (
       <Stack gap={4} align="stretch">

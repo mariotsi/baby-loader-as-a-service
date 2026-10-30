@@ -37,3 +37,25 @@ export const Announced: Story = {
 
 /** Aligns feedback with controls that fill their container. */
 export const FullWidth: Story = { args: { fullWidth: true } };
+
+/** A heading aligns with the icon above longer instructions. */
+export const WithTitle: Story = {
+  args: {
+    tone: 'info',
+    title: 'How to enable notifications',
+    children: 'Add this page to your Home Screen, then open the app to turn notifications on.',
+    fullWidth: true,
+  },
+};
+
+/** Wrapped text keeps the icon beside its first line. */
+export const Multiline: Story = {
+  args: { tone: 'info', children: 'Add this page to your Home Screen, then open the app to turn notifications on.' },
+  decorators: [
+    (Story) => (
+      <div style={{ maxWidth: '18rem' }}>
+        <Story />
+      </div>
+    ),
+  ],
+};

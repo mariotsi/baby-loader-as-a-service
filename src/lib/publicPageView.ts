@@ -33,6 +33,7 @@ export type PushButtonCopy = {
   errorUnsubscribe: string;
   errorUnsupported: string;
   errorDenied: string;
+  notificationsHelpTitle: string;
   iosHomeScreen: string;
   iosStepsClassic: string;
   iosSteps26: string;
@@ -238,6 +239,7 @@ function formatDay(day: string, lang: Lang): string {
 
 function pushButtonCopy(t: PublicPageCopy, born: boolean, sex: SiteSettings['sex']): PushButtonCopy {
   return {
+    notificationsHelpTitle: t.notificationsHelpTitle,
     checking: t.checking,
     subscribed: born ? t.subscribedBorn : t.subscribedWaiting,
     subscribe: born ? t.subscribeBorn : t.subscribeWaiting(sex),

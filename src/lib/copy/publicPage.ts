@@ -89,6 +89,7 @@ const en = {
   errorUnsubscribe: 'Could not turn off notifications. Please try again.',
   errorUnsupported: 'Your browser does not support push notifications.',
   errorDenied: 'Notifications are blocked in your browser settings.',
+  notificationsHelpTitle: 'How to enable notifications',
   iosHomeScreen: 'On iPhone, web notifications work only after you add this page to your Home Screen as a web app.',
   iosStepsClassic: 'In Safari, tap Share, choose Add to Home Screen, then tap Add.',
   iosSteps26:
@@ -159,6 +160,7 @@ const it: PublicPageCopy = {
   errorUnsubscribe: 'Non è stato possibile disattivare le notifiche. Riprova.',
   errorUnsupported: 'Il tuo browser non supporta le notifiche push.',
   errorDenied: 'Le notifiche sono bloccate nelle impostazioni del browser.',
+  notificationsHelpTitle: 'Come attivare le notifiche',
   iosHomeScreen:
     'Su iPhone, le notifiche web funzionano solo dopo aver aggiunto questa pagina alla schermata Home come app web.',
   iosStepsClassic: 'In Safari, tocca Condividi, scegli Aggiungi alla schermata Home e tocca Aggiungi.',
