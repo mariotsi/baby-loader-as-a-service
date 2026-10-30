@@ -56,7 +56,7 @@
   }
 }
 
-/* Holds the "notifications on" pill: last on a phone, pinned to the corner on a wide screen. */
+/* Holds the "notifications on" pill after all the content: centred on a phone, in the right corner on a wide screen. */
 .pillSlot {
   position: relative;
   display: flex;
@@ -71,12 +71,8 @@
 
 @media (min-width: 60rem) {
   .pillSlot {
-    position: fixed;
-    z-index: 5;
-    right: var(--space-4);
-    bottom: var(--space-4);
-    max-width: none;
-    margin: 0;
+    justify-content: flex-end;
+    max-width: var(--content-wide);
   }
 }
 

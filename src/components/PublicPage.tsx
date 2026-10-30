@@ -23,8 +23,8 @@ import styles from './PublicPage.module.css';
  * switcher on the right. On a phone everything stacks in one centred column;
  * on a wide screen the name and the call to action sit beside the Countdown
  * or the Birth details. Once notifications are on, their pill leaves the call
- * to action for the end of the page on a phone, the bottom right corner on a
- * wide screen.
+ * to action for the end of the page, after all the content: centred on a
+ * phone, on the right on a wide screen.
  */
 export function PublicPage({
   views,

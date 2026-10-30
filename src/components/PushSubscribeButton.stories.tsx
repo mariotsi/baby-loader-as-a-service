@@ -90,7 +90,7 @@ type Story = StoryObj<typeof meta>;
 export const Subscribe: Story = {};
 /** Offers updates after the birth. */
 export const Born: Story = { parameters: { born: true } };
-/** Shows the confirmed subscription as a quiet pill with its deactivation link. On the Public page it sits at the end on a phone and in the bottom right corner on a wide screen. */
+/** Shows the confirmed subscription as a quiet pill with its deactivation link. On the Public page it sits after all the content, on the right on a wide screen. */
 export const Subscribed: Story = { args: { status: 'subscribed' } };
 /** Confirms the opt-in for a few seconds where the button was. */
 export const JustSubscribed: Story = { args: { status: 'subscribed', feedback: 'subscribeOk' } };
