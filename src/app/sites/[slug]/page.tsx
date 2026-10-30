@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import { cache } from 'react';
+import { KeepCurrent } from '@/components/KeepCurrent';
 import { PublicPage } from '@/components/PublicPage';
 import { siteAddress } from '@/lib/address';
 import { birthMediaUrl } from '@/lib/birthMedia';
@@ -94,6 +95,7 @@ export default async function SitePage({ params }: Props) {
             : undefined
         }
       />
+      <KeepCurrent />
     </>
   );
 }
