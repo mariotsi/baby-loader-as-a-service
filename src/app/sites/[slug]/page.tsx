@@ -95,7 +95,7 @@ export default async function SitePage({ params }: Props) {
             : undefined
         }
       />
-      <KeepCurrent commit={deploymentEnv().commit} />
+      <KeepCurrent />
     </>
   );
 }
