@@ -6,7 +6,7 @@ import type { Lang } from '../i18n.ts';
  * in, like a label, comes from the page's dictionary.
  */
 const en = {
-  optional: 'optional',
+  optional: 'Optional',
   filePicker: {
     choose: 'Choose a file',
     drop: 'Drop your file here',
@@ -33,7 +33,7 @@ const en = {
 export type UiCopy = typeof en;
 
 const it: UiCopy = {
-  optional: 'facoltativo',
+  optional: 'Opzionale',
   filePicker: {
     choose: 'Scegli un file',
     drop: 'Rilascia qui il file',

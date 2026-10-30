@@ -232,7 +232,7 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
             <Badge tone="highlight" icon="star">
               Recommended
             </Badge>
-            <Badge>Optional</Badge>
+            <Badge variant="plain">Optional</Badge>
             <Badge size="sm">Optional</Badge>
           </Stack>
           <Stack direction="row" gap={4} align="center">

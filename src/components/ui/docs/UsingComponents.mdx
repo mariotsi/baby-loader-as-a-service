@@ -71,7 +71,7 @@ import { Meta } from '@storybook/addon-docs/blocks';
 </PerLanguageField>
 ```
 - **Never write an `id` by hand.** Biome fails the build on one. `Field` and `useId()` make unique ids.
-- **Mark the optional fields**, with `optional`, not the required ones.
+- **Mark the optional fields**, with `optional`, not the required ones. The marker uses `Badge variant="plain"`: sentence case, regular weight, and the label's color.
 - **An error says what happened and how to fix it**: "Someone got there first. Try emma-2026.", not "Invalid slug".
 - **Validate on one action, and clear an error the moment it is fixed.** A form checks its fields when the person
   submits it, never while they are still typing: before that nothing turns red. A `Checklist` may tick requirements
