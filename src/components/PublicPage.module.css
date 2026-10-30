@@ -66,11 +66,13 @@
   }
 }
 
-/* Holds the "notifications on" pill after all the content: centred on a phone, in the right corner on a wide screen. */
+/* Holds sharing and the active notification pill after all the content. */
 .pillSlot {
   position: relative;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
   max-width: var(--content-narrow);
   margin: var(--space-7) auto 0;
 }
@@ -81,7 +83,7 @@
 
 @container (min-width: 60rem) {
   .pillSlot {
-    justify-content: flex-end;
+    align-items: flex-end;
     max-width: var(--content-wide);
   }
 }

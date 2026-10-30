@@ -103,7 +103,7 @@ export function PublicPage({
           {view.born ? (
             <BirthVideo url={birthVideoUrl} lang={view.lang} slug={slug} disableAutoplay={noAutoplay} />
           ) : null}
-          {view.born ? <Born born={view.born} view={view} imageUrl={bornImageUrl} /> : null}
+          {view.born ? <Born born={view.born} imageUrl={bornImageUrl} /> : null}
           {view.milestones ? <Milestones milestones={view.milestones} /> : null}
         </div>
       </Main>
@@ -163,14 +163,11 @@ function PublicPageActions({
   if (preview) {
     // The button as a Visitor sees it first; the preview is inert, so nobody subscribes from it.
     return (
-      <>
-        <div className={styles.previewPush}>
-          <Button variant="primary" icon="bell" fullWidth>
-            {view.push.subscribe}
-          </Button>
-        </div>
-        {view.waiting ? <ShareButton view={view} /> : null}
-      </>
+      <div className={styles.previewPush}>
+        <Button variant="primary" icon="bell" fullWidth>
+          {view.push.subscribe}
+        </Button>
+      </div>
     );
   }
   return (
@@ -182,9 +179,9 @@ function PublicPageActions({
           vapidPublicKey={vapidPublicKey}
           t={view.push}
           pillSlot={pillSlot}
+          subscribedContent={<ShareButton view={view} />}
         />
       )}
-      {view.waiting ? <ShareButton view={view} /> : null}
     </>
   );
 }
@@ -218,15 +215,7 @@ function ShareButton({ view }: { view: PublicPageView }) {
   );
 }
 
-function Born({
-  born,
-  view,
-  imageUrl,
-}: {
-  born: NonNullable<PublicPageView['born']>;
-  view: PublicPageView;
-  imageUrl: string;
-}) {
+function Born({ born, imageUrl }: { born: NonNullable<PublicPageView['born']>; imageUrl: string }) {
   return (
     <>
       {/* biome-ignore lint/performance/noImgElement: R2 serves the pre-sized website asset directly. */}
@@ -251,7 +240,6 @@ function Born({
           <p className={styles.message}>{born.message}</p>
         </Card>
       ) : null}
-      <ShareButton view={view} />
     </>
   );
 }

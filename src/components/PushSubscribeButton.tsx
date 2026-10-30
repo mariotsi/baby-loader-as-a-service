@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { type ReactNode, useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
@@ -23,6 +23,7 @@ interface Props {
   t: PushButtonCopy;
   /** Where the "notifications on" pill goes, away from the call to action. */
   pillSlot?: HTMLElement | null;
+  subscribedContent?: ReactNode;
 }
 
 type Feedback = 'subscribeOk' | 'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe';
@@ -267,7 +268,7 @@ async function detectStatus(device: DeviceContext, slug: string): Promise<Status
   }
 }
 
-export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot }: Props) {
+export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot, subscribedContent }: Props) {
   const [status, setStatus] = useState<Status>('checking');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -360,6 +361,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot }:
         feedback={feedback}
         confirmOpen={confirmOpen}
         pillSlot={pillSlot}
+        subscribedContent={subscribedContent}
         onSubscribe={subscribe}
         onUnsubscribe={unsubscribe}
         onConfirmOpenChange={setConfirmOpen}
@@ -371,6 +373,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot }:
 
 /** Renders notification controls from their resolved state, shared by the page and stories. */
 export function PushSubscribeView({
+  subscribedContent,
   status,
   device,
   t,
@@ -390,6 +393,7 @@ export function PushSubscribeView({
   confirmOpen?: boolean;
   /** Renders the pill there instead of in place; left out, it stays in place, as in stories. */
   pillSlot?: HTMLElement | null;
+  subscribedContent?: ReactNode;
   /** Called with the pressed button's centre, where the celebration starts. */
   onSubscribe: (origin: ConfettiOrigin) => void;
   onUnsubscribe: () => void;
@@ -402,16 +406,19 @@ export function PushSubscribeView({
   const success = feedback === 'subscribeOk' || feedback === 'unsubscribeOk' ? t[feedback] : null;
   const failure = feedback === 'errorGeneric' || feedback === 'errorUnsubscribe' ? t[feedback] : null;
   const pill = (
-    <StatusPill
-      className={styles.pill}
-      action={
-        <Button variant="link" size="sm" inline onClick={() => onConfirmOpenChange(true)} loading={busy}>
-          {t.unsubscribeLink}
-        </Button>
-      }
-    >
-      {t.subscribed}
-    </StatusPill>
+    <>
+      {subscribedContent}
+      <StatusPill
+        className={styles.pill}
+        action={
+          <Button variant="link" size="sm" inline onClick={() => onConfirmOpenChange(true)} loading={busy}>
+            {t.unsubscribeLink}
+          </Button>
+        }
+      >
+        {t.subscribed}
+      </StatusPill>
+    </>
   );
   const placedPill = pillSlot === undefined ? pill : pillSlot && createPortal(pill, pillSlot);
 
