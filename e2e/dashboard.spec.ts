@@ -75,6 +75,8 @@ test.describe('Dashboard', () => {
     await expect(page.getByRole('dialog', { name: 'Birth details' }).getByLabel('Weight (g)')).toHaveValue('3100');
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('group', { name: 'Milestone 1' }).getByLabel('Label')).toHaveValue('Si torna a casa');
+    // Announcing added the Birth milestone, in the Site's Language.
+    await expect(page.getByRole('group', { name: 'Milestone 2' }).getByLabel('Label')).toHaveValue('È nata!');
     await expect(page.getByRole('checkbox', { name: 'Italian' })).toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'English' })).not.toBeChecked();
     await expect(page.getByLabel('Page name')).toHaveValue('Elena e Ettore');
@@ -82,7 +84,8 @@ test.describe('Dashboard', () => {
     await page.goto(await dashboardAddress(page, slug));
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Benvenuta Edith Rose');
     await expect(page.getByRole('listitem').filter({ hasText: 'Peso' }).getByText('3100 g')).toBeVisible();
-    await expect(page.getByText('È nata!')).toBeVisible();
+    await expect(page.getByText('È nata!', { exact: true })).toBeVisible();
+    await expect(page.getByRole('listitem').filter({ hasText: '👶' })).toContainText('È nata!');
     await expect(page.getByRole('banner')).toHaveText('Elena e Ettore');
     await expect(page.getByText('Si torna a casa')).toBeVisible();
   });

@@ -130,6 +130,17 @@ const en = {
         one: `Sent to ${sent} of ${total} subscriber.`,
         other: `Sent to ${sent} of ${total} subscribers.`,
       }),
+    audience: (n: number) =>
+      plural('en', n, { one: 'It goes to 1 subscribed device.', other: `It goes to ${n} subscribed devices.` }),
+    preview: 'Preview',
+    previewIn: (language: string) => `In ${language}`,
+    previewNote: 'Each device gets the text in the language it subscribed in.',
+    missingBody: (language: string) => `Write the message in ${language}.`,
+    checkMessages: 'Every language needs a message.',
+    confirmTitle: (n: number) => plural('en', n, { one: 'Send it to 1 device?', other: `Send it to ${n} devices?` }),
+    confirmNotBirth:
+      'This is a regular notification: your page keeps counting down. To share that the baby is born, use “Announce the birth” in your page’s settings instead. It arrives right away and can’t be taken back.',
+    keepEditing: 'Keep editing',
   },
 
   settings: {
@@ -149,6 +160,7 @@ const en = {
         other: `Announced. Notification sent to ${sent} of ${total} subscribers.`,
       }),
     notificationFailed: 'Your page is updated, but the notification wasn’t sent.',
+    birthMilestone: (sex: Sex) => ({ female: 'She is born!', male: 'He is born!', unknown: 'The baby is born!' })[sex],
     birthNotification: (name: string, sex: Sex) => ({
       title: `${name} is born!`,
       body: `Come and meet ${({ female: 'her', male: 'him', unknown: 'them' } as const)[sex]} on the page.`,
@@ -349,6 +361,17 @@ const it: PlatformCopy = {
         one: `Inviata a ${sent} iscritto su ${total}.`,
         other: `Inviata a ${sent} iscritti su ${total}.`,
       }),
+    audience: (n) =>
+      plural('it', n, { one: 'Arriva a 1 dispositivo iscritto.', other: `Arriva a ${n} dispositivi iscritti.` }),
+    preview: 'Anteprima',
+    previewIn: (language) => `In ${language}`,
+    previewNote: 'Ogni dispositivo riceve il testo nella lingua in cui si è iscritto.',
+    missingBody: (language) => `Scrivi il messaggio in ${language}.`,
+    checkMessages: 'Ogni lingua ha bisogno di un messaggio.',
+    confirmTitle: (n) => plural('it', n, { one: 'Inviarla a 1 dispositivo?', other: `Inviarla a ${n} dispositivi?` }),
+    confirmNotBirth:
+      'È una notifica normale: la tua pagina continua il conto alla rovescia. Per dire che il bambino è nato, usa invece “Annuncia la nascita” nelle impostazioni della pagina. Arriva subito e non si può ritirare.',
+    keepEditing: 'Continua a modificare',
   },
 
   settings: {
@@ -368,6 +391,7 @@ const it: PlatformCopy = {
         other: `Annunciato. Notifica inviata a ${sent} iscritti su ${total}.`,
       }),
     notificationFailed: 'La pagina è aggiornata, ma la notifica non è stata inviata.',
+    birthMilestone: (sex) => (sex === 'female' ? 'È nata!' : 'È nato!'),
     birthNotification: (name, sex) => ({
       title: `${sex === 'female' ? 'È nata' : 'È nato'} ${name}!`,
       body: `Vieni a ${sex === 'female' ? 'conoscerla' : 'conoscerlo'} sulla pagina.`,

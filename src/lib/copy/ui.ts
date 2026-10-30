@@ -19,7 +19,7 @@ const en = {
   font: 'Font',
   languages: {
     legend: 'Languages',
-    hint: "Tick every language your page speaks. You write your page's words in each of them: your Page name, Milestones and Birth message get a box per language. Visitors get the one their browser asks for, or English if your page has it, and can switch.",
+    hint: "Tick every language your page speaks. You write your page's words in each of them: your Page name, Milestones, Birth message and Notifications get a box per language. Visitors get the one their browser asks for, or English if your page has it, and can switch.",
     keepOne: 'Your page needs at least one language.',
   },
   emoji: {
@@ -46,7 +46,7 @@ const it: UiCopy = {
   font: 'Carattere',
   languages: {
     legend: 'Lingue',
-    hint: 'Spunta ogni lingua che parla la tua pagina. Scrivi le parole della pagina in ognuna: nome della pagina, tappe e messaggio di nascita hanno un campo per lingua. I visitatori vedono quella che chiede il loro browser, o l’inglese se la tua pagina lo parla, e possono cambiarla.',
+    hint: 'Spunta ogni lingua che parla la tua pagina. Scrivi le parole della pagina in ognuna: nome della pagina, tappe, messaggio di nascita e notifiche hanno un campo per lingua. I visitatori vedono quella che chiede il loro browser, o l’inglese se la tua pagina lo parla, e possono cambiarla.',
     keepOne: 'La tua pagina ha bisogno di almeno una lingua.',
   },
   emoji: {
