@@ -18,7 +18,7 @@ interface PublicPagePreviewProps {
 }
 
 /**
- * The Public page itself, drawn from Site settings at a phone's width in its
+ * The Public page itself, drawn from Site settings on an iPhone 16's screen in its
  * own Theme, as a Visitor on a phone would see it. It scrolls inside its
  * frame and nothing in it can be pressed.
  */
