@@ -1,4 +1,5 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
+import { useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { LangProvider } from '@/components/LangProvider';
 import type { SiteSettingsError } from '@/lib/siteSettings';
@@ -30,6 +31,9 @@ const meta = {
     babyName: 'Emma',
     sex: 'female',
     languages: ['en', 'it'],
+    onBabyName: () => {},
+    onSex: () => {},
+    hidden: { name: false, sex: false },
     check: (_birth: BirthDraft): SiteSettingsError[] => [],
     onSave: async () => ({ ok: true }),
     onClose: () => {},
@@ -47,6 +51,26 @@ type Story = StoryObj<typeof meta>;
 
 /** Announcing the birth: the date and time start from now, and announcing saves the whole page. */
 export const Announce: Story = {};
+
+/**
+ * Announcing a page that has no name or sex yet, with both hidden by its
+ * Privacy settings: the dialog asks for them first and says announcing shows them.
+ */
+export const AnnounceWithoutNameOrSex: Story = {
+  args: { babyName: '', sex: 'unknown', hidden: { name: true, sex: true } },
+  render: function Example(args) {
+    const [babyName, setBabyName] = useState(args.babyName);
+    const [sex, setSex] = useState(args.sex);
+    return <BirthDialog {...args} babyName={babyName} sex={sex} onBabyName={setBabyName} onSex={setSex} />;
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = within(within(canvasElement.ownerDocument.body).getByRole('dialog'));
+    await waitFor(() => expect(dialog.getByText(/Announcing shows both to everyone/)).toBeVisible());
+    await userEvent.type(dialog.getByLabelText('Name'), 'Emma');
+    await userEvent.click(dialog.getByRole('radio', { name: 'Girl' }));
+    await expect(dialog.getByRole('heading', { name: 'Welcome, Emma' })).toBeVisible();
+  },
+};
 
 /** Changing what was announced, with the way back to the Countdown. */
 export const Edit: Story = { args: { initial: born } };

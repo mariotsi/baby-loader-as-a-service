@@ -159,6 +159,13 @@ const en = {
       'Share the first details. Announcing switches your page to the Birth details, sends a notification to everyone subscribed, and saves your other changes too.',
     birthEditTitle: 'Birth details',
     birthDetailsCard: 'The first details',
+    identityCard: 'Who is here',
+    identityCardDescription: 'Your page names the baby once born, so give them a name and say girl or boy first.',
+    revealsNameAndSex:
+      'Your page hides the name and the sex until now. Announcing shows both to everyone who opens it, and in the notification.',
+    revealsName:
+      'Your page hides the name until now. Announcing shows it to everyone who opens your page, and in the notification.',
+    revealsSex: 'Your page hides the sex until now. Announcing shows it to everyone who opens your page.',
     birthEditDescription: 'Saving updates your page with these details and saves your other changes too.',
     closeBirthDialog: 'Close without saving',
     cancel: 'Cancel',
@@ -371,6 +378,14 @@ const it: PlatformCopy = {
       'Racconta i primi dettagli. L’annuncio porta la tua pagina ai dettagli della nascita, invia una notifica a tutti gli iscritti e salva anche le altre modifiche.',
     birthEditTitle: 'Dettagli della nascita',
     birthDetailsCard: 'I primi dettagli',
+    identityCard: 'Chi è arrivato',
+    identityCardDescription:
+      'Dopo la nascita la pagina chiama il bambino per nome: prima scegli il nome e di’ se è una femmina o un maschio.',
+    revealsNameAndSex:
+      'Finora la tua pagina nasconde il nome e il sesso. Con l’annuncio li vede chiunque apra la pagina, anche nella notifica.',
+    revealsName:
+      'Finora la tua pagina nasconde il nome. Con l’annuncio lo vede chiunque apra la pagina, anche nella notifica.',
+    revealsSex: 'Finora la tua pagina nasconde il sesso. Con l’annuncio lo vede chiunque apra la pagina.',
     birthEditDescription: 'Salvando aggiorni la pagina con questi dettagli e salvi anche le altre modifiche.',
     closeBirthDialog: 'Chiudi senza salvare',
     cancel: 'Annulla',

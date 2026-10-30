@@ -134,23 +134,13 @@ export function SiteSettingsForm({
       babyName,
       sex,
       dueDate: dueDate || null,
-      birth: b.born
-        ? {
-            born: true,
-            details: {
-              datetime: b.datetime ? parseISO(b.datetime).toISOString() : '',
-              weightGrams: b.weight ? Number(b.weight) : null,
-              lengthCm: b.lengthCm ? Number(b.lengthCm) : null,
-              message: writtenTexts(b.message),
-              photo: storedDraft(b.photo),
-            },
-          }
-        : { born: false, details: null },
+      birth: birthSettings(b),
       milestones: milestones.map(({ placeText: _, ...m }) => ({ ...m, label: writtenTexts(m.label) })),
       languages,
       timezone,
       theme: { palette, font },
-      privacy: { showName, showSex },
+      // Announcing the birth shows the name and the sex to everyone, so the Privacy settings say so too.
+      privacy: b.born && !birth.born ? { showName: true, showSex: true } : { showName, showSex },
       pageName: writtenTexts(pageName),
       icon: iconIsEmoji ? iconEmoji : null,
       birthVideo: storedDraft(video),
@@ -218,6 +208,8 @@ export function SiteSettingsForm({
       setFailedPaths([]);
       closeBirthDialog();
       if (announcing) {
+        setShowName(true);
+        setShowSex(true);
         await sendBirthNotification(next);
       }
     }
@@ -418,6 +410,9 @@ export function SiteSettingsForm({
           initial={birth.born ? birth : { ...birth, datetime: birth.datetime || format(new Date(), LOCAL_DATETIME) }}
           babyName={babyName}
           sex={sex}
+          onBabyName={setBabyName}
+          onSex={setSex}
+          hidden={{ name: !showName, sex: !showSex }}
           languages={languages}
           previewSlug={mediaPreviewSlug}
           check={problems}
@@ -427,6 +422,23 @@ export function SiteSettingsForm({
       ) : null}
     </>
   );
+}
+
+/** The Birth as the Site settings hold it, from the fields as typed. */
+function birthSettings(b: BirthDraft): SiteSettingsInput['birth'] {
+  if (!b.born) {
+    return { born: false, details: null };
+  }
+  return {
+    born: true,
+    details: {
+      datetime: b.datetime ? parseISO(b.datetime).toISOString() : '',
+      weightGrams: b.weight ? Number(b.weight) : null,
+      lengthCm: b.lengthCm ? Number(b.lengthCm) : null,
+      message: writtenTexts(b.message),
+      photo: storedDraft(b.photo),
+    },
+  };
 }
 
 /** The birth notification's text in `lang` when the Birth message has none in it. */

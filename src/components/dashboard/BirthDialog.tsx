@@ -9,6 +9,7 @@ import { Field } from '@/components/ui/Field';
 import { FullPageDialog } from '@/components/ui/FullPageDialog';
 import { Input } from '@/components/ui/Input';
 import { PerLanguageField } from '@/components/ui/PerLanguageField';
+import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Textarea } from '@/components/ui/Textarea';
 import { errorsCopy } from '@/lib/copy/errors';
@@ -36,8 +37,13 @@ export type SaveOutcome = { ok: true } | { ok: false; errors: SiteSettingsError[
 interface BirthDialogProps {
   /** The Birth as it was saved; announcing starts from it with the date and time filled in. */
   initial: BirthDraft;
+  /** The page's own name and sex: the dialog asks for them before announcing when either is missing. */
   babyName: string;
   sex: SiteSettings['sex'];
+  onBabyName: (name: string) => void;
+  onSex: (sex: SiteSettings['sex']) => void;
+  /** What the Privacy settings hide until now, which announcing shows to everyone. */
+  hidden: { name: boolean; sex: boolean };
   languages: Lang[];
   previewSlug?: string;
   /** Everything that would stop saving the page with this Birth. */
@@ -56,6 +62,9 @@ export function BirthDialog({
   initial,
   babyName,
   sex,
+  onBabyName,
+  onSex,
+  hidden,
   languages,
   previewSlug,
   check,
@@ -65,6 +74,9 @@ export function BirthDialog({
   const pageLang = useLang();
   const t = platformCopy[pageLang].settings;
   const announcing = !initial.born;
+  /** Asked once, when the dialog opens, so the fields stay while the Owner fills them in. */
+  const [asksIdentity] = useState(announcing && (!babyName.trim() || sex === 'unknown'));
+  const revealed = announcing ? revealedText(t, hidden) : null;
   const [draft, setDraft] = useState<BirthDraft>(() => ({ ...initial, born: true }));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -80,7 +92,11 @@ export function BirthDialog({
   }, [failedSaves]);
 
   const errors = failedPaths.length > 0 ? check(draft).filter((error) => failedPaths.includes(error.path)) : [];
-  const elsewhere = errors.filter((error) => !error.path.startsWith('birth.'));
+  /** The errors on a field of this dialog, under it or in words; the rest are on the page behind it. */
+  const inDialog = (path: string) =>
+    path.startsWith('birth.') || (asksIdentity && (path === 'babyName' || path === 'sex'));
+  const underField = (path: string) => inlinePath(path) || (asksIdentity && path === 'babyName');
+  const elsewhere = errors.filter((error) => !inDialog(error.path));
 
   function inlineError(path: string): string | undefined {
     const error = errors.find((e) => e.path === path);
@@ -119,13 +135,13 @@ export function BirthDialog({
     void save(draft);
   }
 
-  const birthErrors = errors.filter((error) => error.path.startsWith('birth.') && !inlinePath(error.path));
+  const birthErrors = errors.filter((error) => inDialog(error.path) && !underField(error.path));
   const status =
     message ||
     [
       birthErrors.length > 0 ? describeSiteSettingsErrors(birthErrors, pageLang) : null,
       elsewhere.length > 0 ? `${t.fixElsewhere} ${describeSiteSettingsErrors(elsewhere, pageLang)}` : null,
-      errors.some((error) => inlinePath(error.path)) ? errorsCopy[pageLang].checkMarkedFields : null,
+      errors.some((error) => underField(error.path)) ? errorsCopy[pageLang].checkMarkedFields : null,
     ]
       .filter(Boolean)
       .join(' ') ||
@@ -151,6 +167,27 @@ export function BirthDialog({
       }
     >
       <div ref={contentRef} className={styles.column}>
+        {revealed ? (
+          <div className={styles.birth}>
+            <p className={styles.birthSummary}>{revealed}</p>
+          </div>
+        ) : null}
+        {asksIdentity ? (
+          <Card title={t.identityCard} description={t.identityCardDescription} headingLevel={3}>
+            <Field label={t.name} error={inlineError('babyName')}>
+              <Input value={babyName} onChange={(e) => onBabyName(e.target.value)} autoComplete="off" />
+            </Field>
+            <SegmentedControl
+              legend={t.sex}
+              options={[
+                { value: 'female', label: t.sexFemale },
+                { value: 'male', label: t.sexMale },
+              ]}
+              value={sex}
+              onChange={onSex}
+            />
+          </Card>
+        ) : null}
         <Card title={t.birthDetailsCard} headingLevel={3}>
           <Field label={t.birthDatetime} error={inlineError('birth.details.datetime')}>
             <Input
@@ -224,6 +261,17 @@ function submitLabel(t: (typeof platformCopy)[Lang]['settings'], announcing: boo
     return saving ? t.announcing : t.announceBirth;
   }
   return saving ? t.saving : t.save;
+}
+
+/** What announcing shows that the Privacy settings hide until now, or null when they hide nothing. */
+function revealedText(t: (typeof platformCopy)[Lang]['settings'], hidden: { name: boolean; sex: boolean }) {
+  if (hidden.name && hidden.sex) {
+    return t.revealsNameAndSex;
+  }
+  if (hidden.name || hidden.sex) {
+    return hidden.name ? t.revealsName : t.revealsSex;
+  }
+  return null;
 }
 
 /** The Birth errors the dialog shows under their field; the status message says the rest in words. */
