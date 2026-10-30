@@ -83,10 +83,13 @@ export async function shareImage(settings: SiteSettings, address: string, lang: 
     address,
   ];
   const text = lines.join('');
+  // The body face is loaded on its own even when it shares the display's family, so body text keeps its own weight;
+  // the Address pill is the body face in bold.
   const fonts = (
     await Promise.all([
       googleFont(font.display, text, 'display'),
-      font.body.cssStack === font.display.cssStack ? null : googleFont(font.body, text, 'body'),
+      googleFont(font.body, text, 'body'),
+      googleFont({ ...font.body, weight: 700 }, address, 'body'),
     ])
   ).filter((loaded) => loaded !== null);
   const display = fonts.some((f) => f.name === 'display') ? 'display' : undefined;
@@ -105,7 +108,7 @@ export async function shareImage(settings: SiteSettings, address: string, lang: 
       icon={icon}
       px={(pixels) => pixels}
       color={(token) => vars[token]}
-      font={{ display, displayWeight: font.display.weight, body }}
+      font={{ display, displayWeight: font.display.weight, body, bodyWeight: font.body.weight }}
     />,
     { ...SHARE_IMAGE_SIZE, emoji: 'twemoji', fonts, headers }
   );
