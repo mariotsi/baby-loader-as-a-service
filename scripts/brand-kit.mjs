@@ -32,6 +32,8 @@ const APP_COPIES = [
   ['public/icon-512.png', 'Favicon/icon-512.png'],
   ['public/icon-maskable-512.png', 'Favicon/icon-maskable-512.png'],
   ['public/icon-72.png', 'Favicon/notification-badge-72.png'],
+  ['public/mark.png', 'Logo/PNG/mark.png'],
+  ['public/mark-on-dark.png', 'Logo/PNG/mark-on-dark.png'],
 ];
 
 const LIGHT = {
