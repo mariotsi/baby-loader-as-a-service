@@ -1,7 +1,8 @@
 'use client';
 
 import type { CreateTypes, Options } from 'canvas-confetti';
-import { useCallback, useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import styles from './Confetti.module.css';
 
 // Ported 1:1 from the original baby-loader celebration, palette included: these
@@ -33,14 +34,14 @@ export function confettiOrigin(element: Element): ConfettiOrigin {
 
 /** A full-screen canvas that fires the celebration bursts from `shot.origin` each time a new `shot` arrives. */
 export function Confetti({ shot }: { shot: { origin: ConfettiOrigin } | null }) {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const [canvas, setCanvas] = useState<HTMLCanvasElement | null>(null);
+  const [host, setHost] = useState<HTMLElement | null>(null);
   const instanceRef = useRef<CreateTypes | null>(null);
 
   const getInstance = useCallback(async () => {
     if (instanceRef.current) {
       return instanceRef.current;
     }
-    const canvas = canvasRef.current;
     if (!canvas) {
       return null;
     }
@@ -50,7 +51,7 @@ export function Confetti({ shot }: { shot: { origin: ConfettiOrigin } | null }) 
     // OffscreenCanvas is unavailable.
     instanceRef.current = confetti.create(canvas, { resize: true, useWorker: true });
     return instanceRef.current;
-  }, []);
+  }, [canvas]);
 
   useEffect(() => {
     if (!shot || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -83,9 +84,16 @@ export function Confetti({ shot }: { shot: { origin: ConfettiOrigin } | null }) 
     };
   }, [getInstance]);
 
-  return (
-    <div aria-hidden="true">
-      <canvas ref={canvasRef} className={styles.canvas} />
-    </div>
-  );
+  // Rendered into <body>: a translated or transformed ancestor, such as the
+  // Public page's call to action, would otherwise clip a fixed canvas to its own box.
+  useEffect(() => setHost(document.body), []);
+
+  return host
+    ? createPortal(
+        <div aria-hidden="true">
+          <canvas ref={setCanvas} className={styles.canvas} />
+        </div>,
+        host
+      )
+    : null;
 }
