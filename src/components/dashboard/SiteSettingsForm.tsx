@@ -91,6 +91,7 @@ export function SiteSettingsForm({
   const [birth, setBirth] = useState<BirthDraft>(() => savedBirth(site));
   const [birthDialogOpen, setBirthDialogOpen] = useState(false);
   const birthButton = useRef<HTMLButtonElement>(null);
+  const returnFocus = useRef(false);
   const [languages, setLanguages] = useState<Lang[]>(site.languages);
   const [timezone, setTimezone] = useState(site.timezone);
   const [palette, setPalette] = useState(site.theme.palette);
@@ -211,8 +212,16 @@ export function SiteSettingsForm({
 
   function closeBirthDialog() {
     setBirthDialogOpen(false);
-    birthButton.current?.focus();
+    returnFocus.current = true;
   }
+
+  // Back on the button that opened the dialog, which saving may have swapped for another.
+  useEffect(() => {
+    if (!birthDialogOpen && returnFocus.current) {
+      returnFocus.current = false;
+      birthButton.current?.focus();
+    }
+  });
 
   /** Uploads the new media, saves the Site settings with `b` as the Birth, and removes the media they replaced. */
   async function persist(b: BirthDraft): Promise<SaveOutcome> {
