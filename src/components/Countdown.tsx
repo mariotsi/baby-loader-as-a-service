@@ -1,3 +1,4 @@
+import type { CSSProperties } from 'react';
 import { Icon } from '@/components/ui/Icon';
 import type { PublicPageView } from '@/lib/publicPageView';
 import styles from './Countdown.module.css';
@@ -29,8 +30,11 @@ export function Countdown({
       {waiting.lateNote ? <p className={styles.note}>{waiting.lateNote}</p> : null}
       {waiting.week ? (
         <div className={styles.progress}>
-          <div className={styles.track} aria-hidden="true">
-            <span className={styles.fill} style={{ width: `${(waiting.week.number / 40) * 100}%` }} />
+          <div
+            className={styles.track}
+            aria-hidden="true"
+            style={{ '--progress': `${(waiting.week.number / 40) * 100}%` } as CSSProperties}
+          >
             <span className={styles.marker} style={{ left: `${(waiting.week.number / 40) * 100}%` }}>
               <Icon name="baby-carriage" />
             </span>
