@@ -8,7 +8,7 @@ import { publicPageView } from '@/lib/publicPageView';
 import { siteShortName, twemojiUrl } from '@/lib/siteAppIdentity';
 import { shareText } from '@/lib/siteMeta';
 import type { SiteSettings } from '@/lib/siteSettings';
-import { themeStyle } from '@/lib/theme';
+import { getPalette, themeStyle } from '@/lib/theme';
 import styles from './SitePreviews.module.css';
 
 /**
@@ -26,6 +26,7 @@ export function SitePreviews({ settings, address }: { settings: SiteSettings; ad
   const { title, description } = shareText(settings, lang);
   const view = publicPageView(settings, lang);
   const theme = themeStyle(settings.theme) as CSSProperties;
+  const dark = getPalette(settings.theme.palette).vars['--color-scheme'] === 'dark';
 
   return (
     <div className={styles.previews}>
@@ -72,7 +73,15 @@ export function SitePreviews({ settings, address }: { settings: SiteSettings; ad
               <div className={styles.shareImage} style={theme} aria-hidden="true">
                 <ShareCard
                   view={view}
-                  icon={<SiteIcon icon={settings.icon} className={styles.shareIcon} />}
+                  address={address}
+                  icon={
+                    settings.icon ? (
+                      <SiteIcon icon={settings.icon} className={styles.shareIcon} />
+                    ) : (
+                      // biome-ignore lint/performance/noImgElement: a fixed icon, shown small; next/image adds nothing.
+                      <img className={styles.shareMark} src={dark ? '/mark-on-dark.png' : '/mark.png'} alt="" />
+                    )
+                  }
                   px={(pixels) => `calc(${pixels} * 100cqw / 1200)`}
                   color={(token) => `var(${token})`}
                   font={{

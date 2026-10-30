@@ -111,6 +111,8 @@ export type PublicPageView = {
 
 const LOCALES = { en: enUS, it: itLocale };
 const DATE_FORMAT: Record<Lang, string> = { en: 'MMMM d, yyyy', it: 'd MMMM yyyy' };
+/** The word between a birth's date and its time: "October 19, 2026 at 10:30". */
+const AT: Record<Lang, string> = { en: 'at', it: 'alle' };
 
 /** One view per Language the Site speaks, in the Platform's order, as the Language switcher lists them. */
 export function publicPageViews(settings: SiteSettings, now: Date = new Date()): PublicPageView[] {
@@ -163,7 +165,7 @@ function bornView(
   now: Date
 ): NonNullable<PublicPageView['born']> {
   const t = publicPageCopy[lang];
-  const bornAt = format(new TZDate(new Date(details.datetime), timezone), `${DATE_FORMAT[lang]}, HH:mm`, {
+  const bornAt = format(new TZDate(new Date(details.datetime), timezone), `${DATE_FORMAT[lang]} '${AT[lang]}' HH:mm`, {
     locale: LOCALES[lang],
   });
   return {

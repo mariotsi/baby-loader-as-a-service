@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { ImageResponse } from 'next/og';
+import type { ReactNode } from 'react';
 import { ShareCard } from '@/components/ShareCard';
 import type { Lang } from './i18n.ts';
 import { publicPageView } from './publicPageView.ts';
@@ -42,12 +44,33 @@ export function siteIconImage(
   );
 }
 
-const loadingBaby = readFile(join(process.cwd(), 'public/icon-512.png')).then(
-  (png) => `data:image/png;base64,${png.toString('base64')}`
-);
+const loadingBabyMarks: Partial<Record<LoadingBabyMark, Promise<string | null>>> = {};
+
+type LoadingBabyMark = 'mark.png' | 'mark-on-dark.png';
+
+/**
+ * The loading baby's mark (a brand kit copy in `public/`) as a data URL, read
+ * once. A Worker has no `public/` on disk, so it asks its static assets;
+ * `next dev` has no built assets, so it reads the file. Null when neither
+ * answers: the image then goes without it rather than failing, which would
+ * leave link previews with no image at all.
+ */
+function loadingBaby(file: LoadingBabyMark): Promise<string | null> {
+  loadingBabyMarks[file] ??= (async () => {
+    const assets = await getCloudflareContext({ async: true })
+      .then(({ env }) => env.ASSETS)
+      .catch(() => undefined);
+    const response = await assets?.fetch(`https://assets.local/${file}`).catch(() => undefined);
+    const png = response?.ok
+      ? Buffer.from(await response.arrayBuffer())
+      : await readFile(join(process.cwd(), 'public', file)).catch(() => null);
+    return png && `data:image/png;base64,${png.toString('base64')}`;
+  })();
+  return loadingBabyMarks[file];
+}
 
 /** The share image: the Site icon beside the Public page's headline and Countdown, in its Palette and Font. */
-export async function shareImage(settings: SiteSettings, lang: Lang, now: Date, headers: HeadersInit) {
+export async function shareImage(settings: SiteSettings, address: string, lang: Lang, now: Date, headers: HeadersInit) {
   const view = publicPageView(settings, lang, now);
   const vars = getPalette(settings.theme.palette).vars;
   const font = getFont(settings.theme.font);
@@ -57,6 +80,7 @@ export async function shareImage(settings: SiteSettings, lang: Lang, now: Date, 
     view.sex ?? '',
     view.waiting ? `${view.waiting.count ?? ''} ${view.waiting.unit} ${view.waiting.dueDate}` : '',
     view.born?.bornOn ?? '',
+    address,
   ];
   const text = lines.join('');
   const fonts = (
@@ -68,15 +92,16 @@ export async function shareImage(settings: SiteSettings, lang: Lang, now: Date, 
   const display = fonts.some((f) => f.name === 'display') ? 'display' : undefined;
   const body = fonts.some((f) => f.name === 'body') ? 'body' : display;
 
-  const icon = settings.icon ? (
-    <span style={{ fontSize: 190 }}>{settings.icon}</span>
-  ) : (
+  let icon: ReactNode = <span style={{ fontSize: 230 }}>{settings.icon}</span>;
+  if (!settings.icon) {
+    const baby = await loadingBaby(vars['--color-scheme'] === 'dark' ? 'mark-on-dark.png' : 'mark.png');
     // biome-ignore lint/performance/noImgElement: ImageResponse draws plain elements, never next/image.
-    <img src={await loadingBaby} width={280} height={280} alt="" />
-  );
+    icon = baby && <img src={baby} width={260} height={260} alt="" />;
+  }
   return new ImageResponse(
     <ShareCard
       view={view}
+      address={address}
       icon={icon}
       px={(pixels) => pixels}
       color={(token) => vars[token]}

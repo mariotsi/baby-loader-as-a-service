@@ -255,10 +255,16 @@
   object-fit: contain;
 }
 
-/* The emoji is set at 190 of the tile's 280 pixels, as in the share image. */
+/* The emoji is set at 230 of the tile's 340 pixels, as in the share image. */
 .shareIcon[data-emoji] {
   width: 68%;
   height: 68%;
+}
+
+/* The loading baby's mark is 260 of the tile's 340 pixels, as in the share image. */
+.shareMark {
+  width: 76%;
+  height: 76%;
 }
 
 .linkText {
