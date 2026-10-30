@@ -1,17 +1,18 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSiteBySlug } from '@/lib/site';
 
-/** Serves only the media published on a Born Site from the deployment's own bucket. */
+/** Serves only a Site's own Birth video, and the photo published once it is Born, from the deployment's own bucket. */
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string; kind: string }> }) {
   const { slug, kind } = await params;
   if (kind !== 'photo' && kind !== 'video') {
     return new Response(null, { status: 404 });
   }
   const site = await getSiteBySlug(slug);
-  if (!site?.birth.born) {
+  if (!site) {
     return new Response(null, { status: 404 });
   }
-  const media = site.birth.details[kind];
+  // The editor previews the Birth video before the birth, so it is served in the Waiting state too.
+  const media = kind === 'video' ? site.birthVideo : site.birth.details?.photo;
   if (
     !media ||
     media.key !== new URL(request.url).searchParams.get('key') ||

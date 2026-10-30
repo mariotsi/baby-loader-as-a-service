@@ -2,7 +2,14 @@ import { and, desc, eq } from 'drizzle-orm';
 import { getDb, isId, isUniqueViolation, newId } from '../db/index.ts';
 import { sites } from '../db/schema.ts';
 import type { AuthenticatedUser, OwnedSite } from './ownerAccess.ts';
-import type { SiteSettings, SiteSettingsError, ValidNewSite, ValidSiteSettings } from './siteSettings.ts';
+import type {
+  BirthDetails,
+  BirthMedia,
+  SiteSettings,
+  SiteSettingsError,
+  ValidNewSite,
+  ValidSiteSettings,
+} from './siteSettings.ts';
 
 export type { Milestone } from './siteSettings.ts';
 
@@ -31,7 +38,20 @@ export function toSiteDTO(site: Site): SiteDTO {
 type SiteRow = typeof sites.$inferSelect;
 
 function fromRow({ settings, ...row }: SiteRow): Site {
-  return { ...settings, ...row };
+  return { ...withBirthVideo(settings), ...row };
+}
+
+/** Rows saved before the Birth video left the Birth details keep it there, or have none. */
+function withBirthVideo(settings: SiteSettings): SiteSettings {
+  if (settings.birthVideo !== undefined) {
+    return settings;
+  }
+  const legacy = settings.birth.details as (BirthDetails & { video?: BirthMedia | null }) | null;
+  if (!legacy || !('video' in legacy)) {
+    return { ...settings, birthVideo: null };
+  }
+  const { video, ...details } = legacy;
+  return { ...settings, birth: { born: true, details }, birthVideo: video ?? null };
 }
 
 export async function getSiteBySlug(slug: string): Promise<Site | null> {

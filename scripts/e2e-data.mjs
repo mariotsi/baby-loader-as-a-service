@@ -94,6 +94,7 @@ function siteRow(spec, ownerId, now) {
         privacy: { showName: spec.showName, showSex: spec.showSex },
         pageName: spec.pageName ?? {},
         icon: spec.icon ?? null,
+        birthVideo: null,
       },
     },
     now

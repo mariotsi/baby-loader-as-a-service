@@ -66,6 +66,7 @@ WebM video up to 50 MB. `DELETE` accepts a JSON `{ "key": "..." }` body;
 deletion purges the file's public URL from Cloudflare's cache.
 
 The Site editor holds the welcome video selection locally until the Owner saves.
+The Owner can pick it before the birth, ready for the day; the Public page plays it only in the Born state.
 The welcome video opens in a full-screen dialog once per browser, and the Born
 page offers a replay button. The editor
 provides an explicit video preview. On Preview deployments, published birth media

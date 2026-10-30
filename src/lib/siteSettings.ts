@@ -118,7 +118,6 @@ const birthSchema = z.discriminatedUnion('born', [
       // Optional, so only the Languages that have one.
       message: textPerLanguage(1000),
       photo: z.optional(birthMedia),
-      video: z.optional(birthMedia),
     }),
   }),
 ]);
@@ -147,6 +146,8 @@ const siteSettingsSchema = z
     pageName: textPerLanguage(60),
     /** The Site icon: one emoji drawn on the Palette's background, or null for the Platform's loading baby. */
     icon: z.nullable(emoji),
+    /** The Birth video: picked at any time, so the Owner is ready, and played on the Public page once the baby is born. */
+    birthVideo: birthMedia,
   })
   .check(
     z.superRefine(
@@ -193,6 +194,8 @@ export type SiteSettingsInput = z.input<typeof siteSettingsSchema>;
 export type SiteSettings = z.output<typeof siteSettingsSchema>;
 export type Birth = SiteSettings['birth'];
 export type BirthDetails = Extract<Birth, { born: true }>['details'];
+/** A file the Owner uploaded for the birth: the Birth details' photo or the Birth video. */
+export type BirthMedia = NonNullable<SiteSettings['birthVideo']>;
 export type Milestone = SiteSettings['milestones'][number];
 export type Place = NonNullable<Milestone['place']>;
 export type PageName = SiteSettings['pageName'];
@@ -224,6 +227,7 @@ export const defaultSiteSettings: SiteSettingsInput = {
   privacy: { showName: true, showSex: true },
   pageName: {},
   icon: null,
+  birthVideo: null,
 };
 
 /**

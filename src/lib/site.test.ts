@@ -1,10 +1,19 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
+import { eq } from 'drizzle-orm';
+import { getDb } from '../db/index.ts';
+import { sites } from '../db/schema.ts';
 import { insertTestUser, startTestDb } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
 import { createSite, getSiteBySlug, listSitesByOwner, saveSiteSettings } from './site.ts';
-import { defaultSiteSettings, parseNewSite, parseSiteSettings, type SiteSettingsInput } from './siteSettings.ts';
+import {
+  defaultSiteSettings,
+  parseNewSite,
+  parseSiteSettings,
+  type SiteSettings,
+  type SiteSettingsInput,
+} from './siteSettings.ts';
 
 let stopDb: () => Promise<void>;
 let token: string;
@@ -76,4 +85,23 @@ test('saveSiteSettings replaces every Site setting at once', async () => {
   assert.deepEqual(saved?.milestones, []);
   assert.equal(saved?.birth.born, true);
   assert.equal(saved?.slug, 'leo');
+});
+
+test('a Site saved with the Birth video in its Birth details reads it as the Birth video', async () => {
+  assert.ok((await createSite(owner, newSite('ada'))).ok);
+  const video = { key: 'customer-data/owner/site/video', url: 'https://media.example.com/video' };
+  const details = { datetime: '2026-10-01T10:00:00.000Z', weightGrams: null, lengthCm: null, message: {} };
+  const { birthVideo: _, ...legacy } = {
+    ...defaultSiteSettings,
+    birth: { born: true, details: { ...details, video } },
+  };
+  await getDb()
+    .update(sites)
+    .set({ settings: legacy as unknown as SiteSettings })
+    .where(eq(sites.slug, 'ada'));
+
+  const stored = await getSiteBySlug('ada');
+  assert.deepEqual(stored?.birth, { born: true, details });
+  assert.deepEqual(stored?.birthVideo, video);
+  assert.equal((await getSiteBySlug('noah'))?.birthVideo, null);
 });

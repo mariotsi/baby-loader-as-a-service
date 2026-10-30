@@ -90,6 +90,10 @@ _Avoid_: Birth stats, birth info
 The Owner's own words shown with the Birth details.
 _Avoid_: Announcement, caption
 
+**Birth video**:
+The Owner's welcome video, which the Public page plays full screen once the baby is born. The Owner can pick it in the Waiting state, ready for the day, and it stays when the born mark is removed.
+_Avoid_: Birth details video, announcement video
+
 **Milestone**:
 A labelled date in the baby's story that the Owner adds to a Site, with a Place if the Owner gives it one.
 _Avoid_: Event, timeline entry

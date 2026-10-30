@@ -31,10 +31,12 @@ const site = {
       weightGrams: 3015,
       lengthCm: 46,
       message: { en: 'Welcome to the world, little one. We are so happy you are here.' },
-      video: { key: 'preview/welcome', url: videoUrl, name: 'welcome.webm', type: 'video/webm', size: 260096 },
     },
   },
+  birthVideo: { key: 'preview/welcome', url: videoUrl, name: 'welcome.webm', type: 'video/webm', size: 260096 },
 } satisfies SiteDTO;
+
+const waitingSite: SiteDTO = { ...site, dueDate: '2026-11-20', birth: { born: false, details: null } };
 
 const meta = {
   title: 'Dashboard/Birth video preview',
@@ -57,6 +59,28 @@ export const SiteEdit: Story = {
       </PageShell>
     </LangProvider>
   ),
+};
+
+/** Before the birth the editor already offers the welcome video, so the Owner is ready for the day. */
+export const SiteEditBeforeBirth: Story = {
+  render: () => (
+    <LangProvider lang="en">
+      <PageShell width="wide">
+        <h1>Edit Emma’s page</h1>
+        <SiteSettingsForm
+          site={waitingSite}
+          timeZones={['Europe/Rome', 'Europe/London', 'America/New_York']}
+          address="https://emma-preview.loading.baby"
+        />
+      </PageShell>
+    </LangProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.queryByText('The baby has been born')).toBeInTheDocument();
+    await expect(canvas.queryByLabelText('Birth date & time')).not.toBeInTheDocument();
+    await expect(canvas.getByRole('button', { name: 'Preview the welcome' })).toBeVisible();
+  },
 };
 
 /** A Born Public page with automatic reveal and replay, using a local sample video. */
