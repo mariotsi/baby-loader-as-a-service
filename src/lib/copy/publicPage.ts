@@ -48,7 +48,9 @@ const en = {
   daysLate: (n: number): string => plural('en', n, { one: 'day late', other: 'days late' }),
   dueToday: 'Due today',
   lateNote: 'Taking their time...',
-  weekOf: (week: number): string => `Week ${week} of 40`,
+  babyLate: 'Room service? I’m staying.',
+  mumLate: 'Checkout was last week.',
+  weekOf: (week: number): string => (week > 40 ? `Week ${week}` : `Week ${week} of 40`),
   milestonesTitle: 'Milestones',
   /** Names the link from a Milestone's Place to Google Maps. */
   openInMaps: (address: string): string => `Open ${address} in Google Maps`,
@@ -122,7 +124,9 @@ const it: PublicPageCopy = {
   daysLate: (n: number): string => plural('it', n, { one: 'giorno in ritardo', other: 'giorni in ritardo' }),
   dueToday: 'Arriva oggi',
   lateNote: 'Se la sta prendendo comoda...',
-  weekOf: (week: number): string => `Settimana ${week} di 40`,
+  babyLate: 'Servizio in camera? Io resto qui.',
+  mumLate: 'Il checkout era la settimana scorsa.',
+  weekOf: (week: number): string => (week > 40 ? `Settimana ${week}` : `Settimana ${week} di 40`),
   milestonesTitle: 'Tappe',
   openInMaps: (address: string): string => `Apri ${address} in Google Maps`,
 

@@ -16,6 +16,9 @@ export function Countdown({
   /** `sm` fits a preview card. */
   size?: 'md' | 'sm';
 }) {
+  const late = Boolean(waiting.lateNote);
+  const overtime = Math.min(1, Math.max(0, (waiting.count ?? 0) / 14));
+  const progress = Math.min(100, ((waiting.week?.number ?? 0) / 40) * 100);
   return (
     <div className={`${styles.countdown} ${size === 'sm' ? styles.sm : ''}`}>
       <p className={styles.count}>
@@ -31,15 +34,40 @@ export function Countdown({
       {waiting.week ? (
         <div className={styles.progress}>
           <div
-            className={styles.track}
+            className={`${styles.journey} ${late ? styles.extended : ''}`}
             aria-hidden="true"
-            style={{ '--progress': `${(waiting.week.number / 40) * 100}%` } as CSSProperties}
+            style={{ '--late-position': `${(1 - overtime) * 100}%` } as CSSProperties}
           >
-            <span className={styles.marker} style={{ left: `${(waiting.week.number / 40) * 100}%` }}>
+            <div className={styles.track} style={{ '--progress': `${progress}%` } as CSSProperties} />
+            {late ? (
+              <>
+                <svg className={styles.turn} viewBox="0 0 36 60" aria-hidden="true" focusable="false">
+                  <path className={styles.railEdge} pathLength="100" d="M-1 6 H6 A24 24 0 0 1 6 54 H-1" />
+                  <path className={styles.railFill} pathLength="100" d="M-1 6 H6 A24 24 0 0 1 6 54 H-1" />
+                </svg>
+                <div
+                  className={`${styles.track} ${styles.returnTrack}`}
+                  style={{ '--progress': `${overtime * 100}%` } as CSSProperties}
+                />
+              </>
+            ) : null}
+            <span
+              className={styles.marker}
+              style={{ left: `${late ? (1 - overtime) * 100 : progress}%`, top: late ? '3.375rem' : '0.375rem' }}
+            >
               <Icon name="baby-carriage" />
             </span>
           </div>
           <p className={styles.week}>{waiting.week.label}</p>
+        </div>
+      ) : null}
+      {waiting.lateScene ? (
+        <div className={styles.scene}>
+          {/* The illustration is decorative; the two captions carry the joke. */}
+          {/* biome-ignore lint/performance/noImgElement: the transparent illustration uses its intrinsic aspect ratio in every preview. */}
+          <img className={styles.illustration} src="/illustrations/late-checkout.png" alt="" />
+          <p className={styles.babyQuote}>{waiting.lateScene.baby}</p>
+          <p className={styles.mumQuote}>{waiting.lateScene.mum}</p>
         </div>
       ) : null}
     </div>
