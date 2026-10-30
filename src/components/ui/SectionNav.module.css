@@ -1,0 +1,49 @@
+.list {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  overflow-x: auto;
+  scrollbar-width: none;
+  list-style: none;
+}
+
+.link {
+  display: flex;
+  align-items: center;
+  min-height: var(--control-height-sm);
+  padding-inline: var(--space-3);
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: var(--text-sm);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.link:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: calc(var(--border-width) * -2);
+}
+
+/* Bold as well as outlined, so the mark does not rest on color alone. */
+.link[aria-current] {
+  border-color: var(--color-accent-ink);
+  color: var(--color-accent-ink);
+  font-weight: 700;
+}
+
+@media (min-width: 68.75rem) {
+  .list {
+    flex-direction: column;
+    gap: var(--space-1);
+    overflow-x: visible;
+  }
+
+  .link {
+    border-color: transparent;
+    background: none;
+    white-space: normal;
+  }
+}

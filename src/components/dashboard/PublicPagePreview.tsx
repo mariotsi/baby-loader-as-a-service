@@ -20,7 +20,7 @@ interface PublicPagePreviewProps {
 /**
  * The Public page itself, drawn from Site settings on an iPhone 16's screen in its
  * own Theme, as a Visitor on a phone would see it. It scrolls inside its
- * frame and nothing in it can be pressed.
+ * frame, and only its Language switcher can be pressed.
  */
 export function PublicPagePreview({
   settings,
@@ -37,7 +37,7 @@ export function PublicPagePreview({
         className={styles.phone}
         style={themeStyle(settings.theme) as CSSProperties}
         aria-labelledby={captionId}
-        // biome-ignore lint/a11y/noNoninteractiveTabindex: The frame scrolls and nothing in it takes the focus, so the frame does, for the keyboard to scroll it.
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: The frame scrolls and little in it takes the focus, so the frame does, for the keyboard to scroll it.
         tabIndex={0}
       >
         <PublicPage

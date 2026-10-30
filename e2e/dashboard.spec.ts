@@ -1,3 +1,4 @@
+import { LANG_COOKIE } from '../src/lib/i18n.ts';
 import { perProjectSlug } from './support/data.ts';
 import { ownerStatePath } from './support/env.ts';
 import { dashboardAddress, expect, test } from './support/test.ts';
@@ -66,7 +67,7 @@ test.describe('Dashboard', () => {
     await expect(dialog.getByText('È nata Edith Rose!')).toBeVisible();
     const pagePreview = dialog.getByRole('region', { name: 'Your page on a phone' });
     await expect(pagePreview.getByText('3100 g')).toBeVisible();
-    // The preview shows the notifications button, inert: nobody can press anything in it.
+    // The preview shows the notifications button, inert: only its Language switcher can be pressed.
     await expect(pagePreview.locator('[inert]').getByText('Ricevi i prossimi aggiornamenti')).toBeVisible();
     await dialog.getByRole('button', { name: 'Announce the birth' }).click();
     // Announcing asks first, so a slip of the finger cannot send the notification.
@@ -98,6 +99,49 @@ test.describe('Dashboard', () => {
     await expect(page.getByRole('listitem').filter({ hasText: '👶' })).toContainText('È nata!');
     await expect(page.getByRole('banner')).toHaveText('Elena e Ettore');
     await expect(page.getByText('Si torna a casa')).toBeVisible();
+  });
+
+  test('previews the page in each Language and state, leaving the language cookie alone', async ({ page, context }) => {
+    await page.goto('/dashboard/e2e-waiting');
+    await page.getByRole('checkbox', { name: 'Italian' }).check();
+    await page.getByRole('checkbox', { name: 'English' }).check();
+    // The preview draws the last valid settings, and a Milestone needs its label in every Language.
+    await page.getByRole('group', { name: 'Milestone 1' }).getByLabel('Italian').fill('Prima ecografia');
+    const preview = page.getByRole('complementary', { name: 'Your page on a phone' });
+    // The frame's width is a share of its column: a shrink-wrapped column collapses it to a sliver.
+    expect((await preview.getByRole('region', { name: 'Your page on a phone' }).boundingBox())?.width).toBeGreaterThan(
+      250
+    );
+
+    await preview.getByRole('radio', { name: 'Italiano' }).check();
+    await expect(preview.locator('[lang="it"]').first()).toBeVisible();
+    await preview.getByRole('radio', { name: 'Born' }).check();
+    await expect(preview.getByRole('heading', { level: 1 })).toContainText('Benvenut');
+
+    const cookies = await context.cookies();
+    expect(cookies.find((cookie) => cookie.name === LANG_COOKIE)?.value).not.toBe('it');
+  });
+
+  test('asks before leaving with unsaved changes', async ({ page }) => {
+    await page.goto('/dashboard/e2e-waiting');
+    const name = page.getByLabel('Name', { exact: true });
+    const original = await name.inputValue();
+
+    await name.fill(`${original} Rose`);
+    await expect(page.getByText('Unsaved changes')).toBeVisible();
+    await page.getByRole('link', { name: 'Subscribers' }).click();
+    const leaving = page.getByRole('dialog', { name: 'Leave without saving?' });
+    await expect(leaving.getByRole('button', { name: 'Keep editing' })).toBeFocused();
+    await leaving.getByRole('button', { name: 'Keep editing' }).click();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-waiting$/);
+    await expect(name).toHaveValue(`${original} Rose`);
+
+    await page.getByRole('link', { name: 'Subscribers' }).click();
+    await leaving.getByRole('button', { name: 'Leave without saving' }).click();
+    await expect(page).toHaveURL(/\/dashboard\/e2e-waiting\/subscriptions$/);
+
+    await page.goBack();
+    await expect(page.getByText('Unsaved changes')).toBeHidden();
   });
 
   test('explains a missing birth date and time and a weight in fractions of a gram', async ({ page, project }) => {

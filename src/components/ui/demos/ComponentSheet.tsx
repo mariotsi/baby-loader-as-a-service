@@ -18,6 +18,7 @@ import { Input } from '../Input';
 import { LanguagesPicker } from '../LanguagesPicker';
 import { Logo } from '../Logo';
 import { PerLanguageField } from '../PerLanguageField';
+import { SectionNav } from '../SectionNav';
 import { SegmentedControl } from '../SegmentedControl';
 import { Select } from '../Select';
 import { Spinner } from '../Spinner';
@@ -103,6 +104,15 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
             </Field>
           </FullPageDialog>
         ) : null}
+      </Group>
+      <Group title="Section menu">
+        <SectionNav
+          label={`Sections of ${themeName ?? 'this page'}`}
+          sections={[
+            { id: 'sheet-baby', label: 'Baby details' },
+            { id: 'sheet-milestones', label: 'Milestones' },
+          ]}
+        />
       </Group>
       <Group title="Buttons">
         <Stack direction="row" gap={3}>

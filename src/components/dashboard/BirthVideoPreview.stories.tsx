@@ -8,7 +8,7 @@ import { PageShell } from '@/components/ui/PageShell';
 import { publicPageViews } from '@/lib/publicPageView';
 import type { SiteDTO } from '@/lib/site';
 import { defaultSiteSettings } from '@/lib/siteSettings';
-import { SiteSettingsForm } from './SiteSettingsForm';
+import { SiteEditor } from './SiteEditor';
 
 const videoUrl = new URL('./fixtures/welcome.webm', import.meta.url).href;
 const site = {
@@ -51,7 +51,7 @@ export const SiteEdit: Story = {
     <LangProvider lang="en">
       <PageShell width="wide">
         <h1>Edit Emma’s page</h1>
-        <SiteSettingsForm
+        <SiteEditor
           site={site}
           timeZones={['Europe/Rome', 'Europe/London', 'America/New_York']}
           address="https://emma-preview.loading.baby"
@@ -68,7 +68,7 @@ export const SiteEditBeforeBirth: Story = {
     <LangProvider lang="en">
       <PageShell width="wide">
         <h1>Edit Emma’s page</h1>
-        <SiteSettingsForm
+        <SiteEditor
           site={waitingSite}
           timeZones={['Europe/Rome', 'Europe/London', 'America/New_York']}
           address="https://emma-preview.loading.baby"
@@ -157,7 +157,7 @@ export const SiteEditItalian: Story = {
     <LangProvider lang="it">
       <PageShell width="wide">
         <h1>Modifica la pagina di Emma</h1>
-        <SiteSettingsForm
+        <SiteEditor
           site={italianSite}
           timeZones={['Europe/Rome', 'Europe/London', 'America/New_York']}
           address="https://emma-preview.loading.baby"
