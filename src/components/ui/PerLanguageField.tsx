@@ -80,7 +80,7 @@ export function PerLanguageField({
     <fieldset className={styles.root} aria-describedby={hint ? hintId : undefined}>
       <legend className={styles.legend}>
         {label}
-        {optional ? <Badge variant="plain">{uiCopy[pageLang].optional}</Badge> : null}
+        {optional ? <Badge variant="plain"> {uiCopy[pageLang].optional}</Badge> : null}
       </legend>
       {hint ? (
         <p id={hintId} className={styles.hint}>

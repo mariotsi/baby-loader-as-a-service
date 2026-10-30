@@ -130,7 +130,7 @@ export function Field({
       ) : (
         <label htmlFor={id} className={styles.label}>
           {label}
-          {optional ? <Badge variant="plain">{t.optional}</Badge> : null}
+          {optional ? <Badge variant="plain"> {t.optional}</Badge> : null}
         </label>
       )}
       <FieldContext.Provider value={{ id, describedBy, invalid: !!error, required }}>{children}</FieldContext.Provider>
