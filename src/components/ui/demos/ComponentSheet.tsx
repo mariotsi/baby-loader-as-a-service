@@ -25,6 +25,7 @@ import { Spinner } from '../Spinner';
 import { Stack } from '../Stack';
 import { StatusMessage } from '../StatusMessage';
 import { StatusPill } from '../StatusPill';
+import { StepProgress } from '../StepProgress';
 import { Switch } from '../Switch';
 import { Textarea } from '../Textarea';
 import styles from './sheet.module.css';
@@ -104,6 +105,9 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
             </Field>
           </FullPageDialog>
         ) : null}
+      </Group>
+      <Group title="Step progress">
+        <StepProgress label="Creating your page" steps={['The basics', 'Make it yours', 'A last look']} current={1} />
       </Group>
       <Group title="Section menu">
         <SectionNav

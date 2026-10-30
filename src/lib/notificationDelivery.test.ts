@@ -11,8 +11,8 @@ import {
   parseNotification,
 } from './notificationDelivery.ts';
 import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
-import { createSite } from './site.ts';
-import { defaultSiteSettings, parseNewSite, type SiteSettingsInput } from './siteSettings.ts';
+import { createSite, saveSiteSettings } from './site.ts';
+import { defaultSiteSettings, parseNewSite, parseSiteSettings, type SiteSettingsInput } from './siteSettings.ts';
 import { countSubscriptionsBySite, upsertSubscription } from './subscription.ts';
 
 let stopDb: () => Promise<void>;
@@ -26,12 +26,22 @@ before(async () => {
 after(() => stopDb());
 
 async function ownedSite(slug: string, settings: Partial<SiteSettingsInput> = {}): Promise<OwnedSite> {
-  const parsed = parseNewSite({ slug, settings: { ...defaultSiteSettings, babyName: 'Emma', ...settings } });
+  const full = { ...defaultSiteSettings, babyName: 'Emma', ...settings };
+  // A Site is created Waiting and announced afterwards.
+  const parsed = parseNewSite({ slug, settings: { ...full, birth: defaultSiteSettings.birth } });
   assert.ok(parsed.ok, JSON.stringify(parsed));
   assert.ok((await createSite(authenticate(token) as AuthenticatedUser, parsed.value)).ok);
   const access = await accessOwnedSite(token, slug);
   assert.ok(typeof access === 'object');
-  return access;
+  if (!full.birth.born) {
+    return access;
+  }
+  const announced = parseSiteSettings(full);
+  assert.ok(announced.ok, JSON.stringify(announced));
+  await saveSiteSettings(access, announced.value);
+  const updated = await accessOwnedSite(token, slug);
+  assert.ok(typeof updated === 'object');
+  return updated;
 }
 
 async function subscribe(owned: OwnedSite, endpoint: string, lang: Lang | null = null) {

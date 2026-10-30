@@ -1,4 +1,4 @@
-import { type ReactNode, useId } from 'react';
+import { type ReactNode, type Ref, useId } from 'react';
 import styles from './Card.module.css';
 
 interface CardProps {
@@ -7,12 +7,14 @@ interface CardProps {
   description?: ReactNode;
   /** Keeps the outline of the page in order: 1 when the card is the page, 2 under the page's h1, 3 inside an h2 section. */
   headingLevel?: 1 | 2 | 3;
+  /** Makes the heading focusable from a script, for a form that moves the focus to it. */
+  headingRef?: Ref<HTMLHeadingElement>;
   children: ReactNode;
   className?: string;
 }
 
 /** A raised surface that groups related content, like one section of the Site settings. */
-export function Card({ title, description, headingLevel = 2, children, className }: CardProps) {
+export function Card({ title, description, headingLevel = 2, headingRef, children, className }: CardProps) {
   const headingId = useId();
   const Heading = (['h1', 'h2', 'h3'] as const)[headingLevel - 1];
   const classes = [styles.card, className].filter(Boolean).join(' ');
@@ -22,7 +24,7 @@ export function Card({ title, description, headingLevel = 2, children, className
   return (
     <section className={classes} aria-labelledby={headingId}>
       <header className={styles.header}>
-        <Heading id={headingId} className={styles.title}>
+        <Heading ref={headingRef} id={headingId} className={styles.title} tabIndex={headingRef ? -1 : undefined}>
           {title}
         </Heading>
         {description ? <p className={styles.description}>{description}</p> : null}

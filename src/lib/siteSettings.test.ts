@@ -276,6 +276,21 @@ test('a new Site lowercases its Slug and rejects bad or Reserved ones', () => {
   });
 });
 
+test('a new Site starts Waiting', () => {
+  const bornSite = {
+    ...defaultSiteSettings,
+    babyName: 'Emma',
+    sex: 'female',
+    birth: {
+      born: true,
+      details: { datetime: '2026-01-01T08:00:00.000Z', weightGrams: null, lengthCm: null, message: {} },
+    },
+  };
+  const result = parseNewSite({ slug: 'emma', settings: bornSite }, NOW);
+  assert.equal(result.ok, false);
+  assert.deepEqual(result.ok ? [] : result.errors, [{ path: 'settings.birth', code: 'invalidOption' }]);
+});
+
 test('a Notification defaults to the name, hidden by Privacy settings only while Waiting', () => {
   const hidden = { showName: false, showSex: false };
   assert.equal(

@@ -15,7 +15,6 @@ import { LanguagesPicker } from '@/components/ui/LanguagesPicker';
 import { PalettePicker } from '@/components/ui/PalettePicker';
 import { PerLanguageField } from '@/components/ui/PerLanguageField';
 import { SectionNav } from '@/components/ui/SectionNav';
-import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Switch } from '@/components/ui/Switch';
@@ -30,8 +29,8 @@ import {
   responseErrorText,
   routeErrorText,
 } from '@/lib/errorText';
-import { fallbackLang, type Lang } from '@/lib/i18n';
-import { type PreviewState, settingsInState } from '@/lib/previewSettings';
+import type { Lang } from '@/lib/i18n';
+import { takeWelcome } from '@/lib/newSiteWelcome';
 import type { Milestone, SiteDTO } from '@/lib/site';
 import {
   type BirthMedia,
@@ -44,17 +43,11 @@ import {
   type SiteSettingsInput,
 } from '@/lib/siteSettings';
 import { BirthDialog, type BirthDraft, type SaveOutcome } from './BirthDialog';
-import {
-  BirthMediaEditor,
-  birthPhoto,
-  birthVideoTitle,
-  type MediaDraft,
-  storedDraft,
-  useBirthMediaUrl,
-} from './BirthMediaEditor';
+import { BirthMediaEditor, birthPhoto, birthVideoTitle, type MediaDraft, storedDraft } from './BirthMediaEditor';
+import { EditorPreview } from './EditorPreview';
 import { PlaceField } from './PlaceField';
-import { PublicPagePreview } from './PublicPagePreview';
 import styles from './SiteEditor.module.css';
+import { SiteIconField } from './SiteIconField';
 import { SitePreviews } from './SitePreviews';
 import { useLeaveGuard } from './useLeaveGuard';
 
@@ -138,6 +131,8 @@ export function SiteEditor({
   /** Counts failed saves, so each one moves the focus to the first field in error. */
   const [failedSaves, setFailedSaves] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
+  /** Whether the Owner just created this Site. */
+  const [welcome, setWelcome] = useState(false);
   const sectionIds = {
     baby: useId(),
     video: useId(),
@@ -146,6 +141,10 @@ export function SiteEditor({
     who: useId(),
     icon: useId(),
   };
+
+  useEffect(() => {
+    setWelcome(takeWelcome(site.slug));
+  }, [site.slug]);
 
   useEffect(() => {
     if (failedSaves > 0) {
@@ -354,6 +353,7 @@ export function SiteEditor({
 
   return (
     <>
+      <StatusMessage tone="success">{welcome ? t.welcome(address.replace(/^https?:\/\//, '')) : null}</StatusMessage>
       <div className={styles.editor}>
         <SectionNav
           className={styles.menu}
@@ -553,50 +553,6 @@ function SaveBar({ saving, dirty, done, problem }: SaveBarProps) {
   );
 }
 
-interface EditorPreviewProps {
-  /** The Site settings as they stand, or as they last stood valid. */
-  settings: SiteSettings;
-  slug: string;
-  photo: MediaDraft;
-  video: MediaDraft;
-  mediaPreviewSlug?: string;
-  bornPlaceholderUrl: string;
-}
-
-/** The Public page beside the form, with the toggle between its Waiting and Born states. */
-function EditorPreview({ settings, slug, photo, video, mediaPreviewSlug, bornPlaceholderUrl }: EditorPreviewProps) {
-  const pageLang = useLang();
-  const t = platformCopy[pageLang].settings;
-  /** Null until the Owner picks a state: the preview then follows the Site's. */
-  const [picked, setPicked] = useState<PreviewState | null>(null);
-  const state = picked ?? (settings.birth.born ? 'born' : 'waiting');
-  const photoUrl = useBirthMediaUrl(photo, mediaPreviewSlug, 'photo');
-  const videoUrl = useBirthMediaUrl(video, mediaPreviewSlug, 'video');
-  return (
-    <aside className={styles.preview} aria-label={t.previewPage}>
-      <SegmentedControl
-        legend={t.previewState}
-        hideLegend
-        size="sm"
-        options={[
-          { value: 'waiting', label: t.previewWaiting },
-          { value: 'born', label: t.previewBorn },
-        ]}
-        value={state}
-        onChange={setPicked}
-      />
-      <PublicPagePreview
-        settings={settingsInState(settings, state)}
-        slug={slug}
-        lang={settings.languages.includes(pageLang) ? pageLang : fallbackLang(settings.languages)}
-        caption={t.previewPage}
-        bornImageUrl={photoUrl ?? bornPlaceholderUrl}
-        birthVideoUrl={videoUrl}
-      />
-    </aside>
-  );
-}
-
 /** The Birth as the Site settings hold it, from the fields as typed. */
 function birthSettings(b: BirthDraft): SiteSettingsInput['birth'] {
   if (!b.born) {
@@ -690,18 +646,7 @@ function IconAndSharingCard({
   const t = platformCopy[useLang()].settings;
   return (
     <Card title={t.iconAndSharing} description={t.iconAndSharingDescription}>
-      <div className={styles.icon}>
-        <SegmentedControl
-          legend={t.siteIcon}
-          options={[
-            { value: 'loadingBaby', label: t.siteIconLoadingBaby },
-            { value: 'emoji', label: t.siteIconEmoji },
-          ]}
-          value={isEmoji ? 'emoji' : 'loadingBaby'}
-          onChange={(value) => onIsEmojiChange(value === 'emoji')}
-        />
-        {isEmoji ? <EmojiPicker twemoji label={t.siteIconEmojiLabel} value={emoji} onChange={onEmojiChange} /> : null}
-      </div>
+      <SiteIconField isEmoji={isEmoji} onIsEmojiChange={onIsEmojiChange} emoji={emoji} onEmojiChange={onEmojiChange} />
       <SitePreviews settings={preview} address={address} />
     </Card>
   );

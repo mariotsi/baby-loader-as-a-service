@@ -1,17 +1,33 @@
 import type { Page } from '@playwright/test';
 import { hashPassword, PASSWORD_GENERATIONS } from '../src/lib/password.ts';
 import { signSessionToken } from '../src/lib/sessionToken.ts';
+import { defaultSiteSettings } from '../src/lib/siteSettings.ts';
 import { FIXTURE_OWNERS, PASSWORD_USERS, runEmail, runSlug } from './support/data.ts';
 import { setPasswordHash, storedPasswordHash } from './support/db.ts';
 import { BASE_URL, bypassHeaders, e2ePassword, runId, sessionSecret } from './support/env.ts';
 import { dashboardAddress, expect, test } from './support/test.ts';
 
-async function createSite(page: Page, slug: string, babyName: string) {
+async function fillBasics(page: Page, slug: string, babyName: string) {
   await page.goto('/onboarding');
   await page.getByLabel('Site address').fill(slug);
   await page.getByLabel("Baby's name").fill(babyName);
   await page.getByLabel('Due date').fill('2026-12-24');
+  await page.getByRole('button', { name: 'Next' }).click();
+}
+
+/** From the second step to the last, then Create. */
+async function finishSite(page: Page) {
+  await expect(page.getByRole('heading', { name: 'Make it yours' })).toBeFocused();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByRole('heading', { name: 'Who sees what' })).toBeFocused();
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByRole('heading', { name: 'A last look' })).toBeFocused();
   await page.getByRole('button', { name: 'Create site' }).click();
+}
+
+async function createSite(page: Page, slug: string, babyName: string) {
+  await fillBasics(page, slug, babyName);
+  await finishSite(page);
 }
 
 /** Meets every rule in src/lib/passwordRules.ts. */
@@ -89,10 +105,20 @@ test('a new User signs up and creates several Sites', async ({ page }, testInfo)
   await createSite(page, second, 'Otto');
   await expect(page).toHaveURL(new RegExp(`/dashboard/${second}$`));
 
-  await createSite(page, first, 'Copycat');
+  // Leaving The basics already says a Slug is taken or reserved, so no Site is created.
+  await fillBasics(page, first, 'Copycat');
   await expect(page.getByText('Site address is already taken.')).toBeVisible();
-  await createSite(page, 'staging', 'Sneaky');
-  await expect(page.getByText('Site address is reserved.')).toBeVisible();
+  await expect(page.getByLabel('Site address')).toBeFocused();
+  await fillBasics(page, 'staging', 'Sneaky');
+  await expect(page.getByText('This address is reserved.')).toBeVisible();
+
+  // Someone can take the Slug after the check: creating brings the Owner back to the field.
+  await page.route('**/api/slug-available*', (route) => route.fulfill({ json: { available: true } }));
+  await fillBasics(page, first, 'Copycat');
+  await finishSite(page);
+  await expect(page.getByText('Site address is already taken.')).toBeVisible();
+  await expect(page.getByLabel('Site address')).toBeFocused();
+  await page.unroute('**/api/slug-available*');
 
   await page.goto('/dashboard');
   await expect(page.getByText('Ada', { exact: true })).toBeVisible();
@@ -101,6 +127,71 @@ test('a new User signs up and creates several Sites', async ({ page }, testInfo)
 
   await page.goto(await dashboardAddress(page, first));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for Ada');
+});
+
+test('creating a Site keeps its steps in the history, survives a reload and greets the Owner', async ({
+  page,
+}, testInfo) => {
+  const attempt = `${testInfo.retry}${testInfo.repeatEachIndex}`;
+  const slug = runSlug(runId(), `steps${attempt}`);
+  await page.goto('/signup');
+  await page.getByLabel('Email').fill(runEmail(runId(), `steps${attempt}`));
+  await page.getByLabel('Password', { exact: true }).fill(NEW_PASSWORD);
+  await page.getByLabel('Confirm password').fill(NEW_PASSWORD);
+  await page.getByRole('button', { name: 'Sign up' }).click();
+  await expect(page).toHaveURL(/\/onboarding$/);
+
+  await page.getByRole('button', { name: 'Next' }).click();
+  await expect(page.getByText('Write the baby’s name, or a nickname for now.')).toBeVisible();
+  await expect(page.getByLabel('Site address')).toBeFocused();
+
+  await fillBasics(page, slug, 'Ada');
+  await expect(page.getByRole('heading', { name: 'Make it yours' })).toBeFocused();
+  await expect(page.getByRole('listitem').and(page.locator('[aria-current="step"]'))).toHaveText('Make it yours');
+
+  await page.goBack();
+  await expect(page.getByLabel('Site address')).toHaveValue(slug);
+  await page.goForward();
+  await expect(page.getByRole('heading', { name: 'Make it yours' })).toBeVisible();
+
+  await page.reload();
+  await expect(page.getByRole('heading', { name: 'Make it yours' })).toBeVisible();
+  await page.getByRole('button', { name: 'Back' }).click();
+  await expect(page.getByLabel("Baby's name")).toHaveValue('Ada');
+  await page.getByRole('button', { name: 'Next' }).click();
+
+  await finishSite(page);
+  await expect(page).toHaveURL(new RegExp(`/dashboard/${slug}$`));
+  await expect(page.getByText(/^Your page is live at /)).toBeVisible();
+  await page.reload();
+  await expect(page.getByText(/^Your page is live at /)).toBeHidden();
+});
+
+test('the API refuses a new Site that is already born', async ({ page }, testInfo) => {
+  const attempt = `${testInfo.retry}${testInfo.repeatEachIndex}`;
+  await page.goto('/signup');
+  await page.getByLabel('Email').fill(runEmail(runId(), `born${attempt}`));
+  await page.getByLabel('Password', { exact: true }).fill(NEW_PASSWORD);
+  await page.getByLabel('Confirm password').fill(NEW_PASSWORD);
+  await page.getByRole('button', { name: 'Sign up' }).click();
+  await expect(page).toHaveURL(/\/onboarding$/);
+
+  const res = await page.request.post('/api/sites', {
+    data: {
+      slug: runSlug(runId(), `born${attempt}`),
+      settings: {
+        ...defaultSiteSettings,
+        babyName: 'Ada',
+        sex: 'female',
+        birth: {
+          born: true,
+          details: { datetime: '2026-01-01T08:00:00.000Z', weightGrams: null, lengthCm: null, message: {} },
+        },
+      },
+    },
+  });
+  expect(res.status()).toBe(400);
+  expect((await res.json()).errors).toEqual([{ path: 'settings.birth', code: 'invalidOption' }]);
 });
 
 test('login refuses a wrong password and logout ends the session', async ({ page }) => {
