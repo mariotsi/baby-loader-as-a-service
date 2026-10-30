@@ -146,7 +146,7 @@ test.describe('Dashboard', () => {
     // A reload drops the form's own state: what follows comes from the saved Site.
     await page.reload();
     await page.getByRole('button', { name: 'Edit the birth details' }).click();
-    await expect(dialog.getByLabel('Message optional', { exact: true })).toHaveValue('Welcome Marta!');
+    await expect(dialog.getByLabel('Message Optional', { exact: true })).toHaveValue('Welcome Marta!');
     await dialog.getByRole('button', { name: 'Cancel' }).click();
     await page.getByRole('checkbox', { name: 'Italian' }).check();
     await page.getByRole('button', { name: 'Edit the birth details' }).click();
