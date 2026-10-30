@@ -9,8 +9,7 @@
 .header {
   position: relative;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: var(--space-3);
   max-width: var(--content-wide);
@@ -25,12 +24,12 @@
   text-decoration: none;
 }
 
-/* On the right even when a phone wraps it under the Logo. */
+/* On a phone the Language switcher sits level with the Logo, and the page's links under it. */
 .end {
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--space-3);
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: var(--space-1);
   margin-inline-start: auto;
 }
 
@@ -46,6 +45,16 @@
 }
 
 @media (min-width: 40rem) {
+  .header {
+    align-items: center;
+  }
+
+  .end {
+    flex-direction: row;
+    align-items: center;
+    gap: var(--space-3);
+  }
+
   .main {
     margin-top: var(--space-7);
   }
