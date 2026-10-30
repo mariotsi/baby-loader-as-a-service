@@ -6,6 +6,10 @@
   gap: var(--space-1);
 }
 
+.pill {
+  justify-self: center;
+}
+
 .subscribedContent {
   display: inline-grid;
   justify-items: center;

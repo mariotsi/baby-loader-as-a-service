@@ -23,6 +23,7 @@ import { Select } from '../Select';
 import { Spinner } from '../Spinner';
 import { Stack } from '../Stack';
 import { StatusMessage } from '../StatusMessage';
+import { StatusPill } from '../StatusPill';
 import { Switch } from '../Switch';
 import { Textarea } from '../Textarea';
 import styles from './sheet.module.css';
@@ -211,6 +212,15 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
           <StatusMessage tone="success">Saved. Your page is up to date.</StatusMessage>
           <StatusMessage tone="info">Sent to 12 of 12 subscribers.</StatusMessage>
           <StatusMessage tone="danger">Couldn't save your changes. Try again.</StatusMessage>
+          <StatusPill
+            action={
+              <Button variant="link" size="sm" inline>
+                Turn off
+              </Button>
+            }
+          >
+            Notifications on for this device
+          </StatusPill>
           <Checklist
             items={[
               { id: 'length', label: 'At least 10 characters', met: true },

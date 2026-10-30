@@ -22,7 +22,9 @@ import styles from './PublicPage.module.css';
  * The header carries the Owner's Page name on the left and the Language
  * switcher on the right. On a phone everything stacks in one centred column;
  * on a wide screen the name and the call to action sit beside the Countdown
- * or the Birth details.
+ * or the Birth details. Once notifications are on, their pill leaves the call
+ * to action for the end of the page, after all the content: centred on a
+ * phone, on the right on a wide screen.
  */
 export function PublicPage({
   views,
@@ -44,6 +46,7 @@ export function PublicPage({
   disableVideoAutoplay?: boolean;
 }) {
   const [lang, setLang] = useState(initialLang);
+  const [pillSlot, setPillSlot] = useState<HTMLElement | null>(null);
   const view = views.find((v) => v.lang === lang) ?? views[0];
 
   useEffect(() => {
@@ -90,6 +93,7 @@ export function PublicPage({
               slug={slug}
               vapidPublicKey={vapidPublicKey}
               disableNotifications={disableNotifications}
+              pillSlot={pillSlot}
             />
           </div>
         </div>
@@ -102,6 +106,7 @@ export function PublicPage({
           {view.milestones ? <Milestones milestones={view.milestones} /> : null}
         </div>
       </main>
+      <div ref={setPillSlot} className={styles.pillSlot} />
     </div>
   );
 }
@@ -111,16 +116,24 @@ function PublicPageActions({
   slug,
   vapidPublicKey,
   disableNotifications,
+  pillSlot,
 }: {
   view: PublicPageView;
   slug: string;
   vapidPublicKey: string | undefined;
   disableNotifications: boolean;
+  pillSlot: HTMLElement | null;
 }) {
   return (
     <>
       {disableNotifications ? null : (
-        <PushSubscribeButton slug={slug} lang={view.lang} vapidPublicKey={vapidPublicKey} t={view.push} />
+        <PushSubscribeButton
+          slug={slug}
+          lang={view.lang}
+          vapidPublicKey={vapidPublicKey}
+          t={view.push}
+          pillSlot={pillSlot}
+        />
       )}
       {view.waiting ? <ShareButton view={view} /> : null}
     </>

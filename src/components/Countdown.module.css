@@ -45,13 +45,9 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-pill);
   background: var(--color-soft);
-}
-
-.fill {
-  display: block;
-  height: 100%;
-  border-radius: var(--radius-pill);
-  background: var(--color-accent);
+  background-image: linear-gradient(var(--color-accent), var(--color-accent));
+  background-repeat: no-repeat;
+  background-size: var(--progress) 100%;
 }
 
 .marker {
@@ -94,7 +90,7 @@
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .fill {
+  .track {
     animation: grow var(--duration-slow) var(--ease-out) both;
   }
 
@@ -105,7 +101,7 @@
 
 @keyframes grow {
   from {
-    width: 0;
+    background-size: 0 100%;
   }
 }
 
