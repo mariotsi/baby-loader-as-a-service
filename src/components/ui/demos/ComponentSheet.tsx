@@ -74,7 +74,7 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
       </Group>
       <Group title="Full-page dialog">
         <div>
-          <Button icon="sparkles" onClick={() => setPageDialogOpen(true)}>
+          <Button icon="megaphone" onClick={() => setPageDialogOpen(true)}>
             Announce the birth
           </Button>
         </div>
@@ -92,7 +92,7 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
             actions={
               <>
                 <Button onClick={() => setPageDialogOpen(false)}>Cancel</Button>
-                <Button variant="primary" type="submit" icon="sparkles">
+                <Button variant="primary" type="submit" icon="megaphone">
                   Announce the birth
                 </Button>
               </>
@@ -106,7 +106,7 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
       </Group>
       <Group title="Buttons">
         <Stack direction="row" gap={3}>
-          <Button variant="primary" icon="sparkles">
+          <Button variant="primary" icon="plus">
             Create page
           </Button>
           <Button>Preview</Button>

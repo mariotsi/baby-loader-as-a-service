@@ -190,7 +190,7 @@ export function BirthDialog({
         <>
           <StatusMessage tone="danger">{status}</StatusMessage>
           <Button onClick={() => !saving && onClose()}>{t.cancel}</Button>
-          <Button variant="primary" type="submit" icon={announcing ? 'sparkles' : undefined} loading={saving}>
+          <Button variant="primary" type="submit" icon={announcing ? 'megaphone' : undefined} loading={saving}>
             {submitLabel(t, announcing, saving)}
           </Button>
         </>

@@ -38,7 +38,7 @@ export default async function MarketingPage() {
           <h1 className={styles.title}>{t.title}</h1>
           <p className={styles.lead}>{t.lead}</p>
           <div className={styles.actions}>
-            <ButtonLink href="/signup" variant="primary" icon="sparkles">
+            <ButtonLink href="/signup" variant="primary" icon="plus">
               {t.createPage}
             </ButtonLink>
             <ButtonLink href="/login">{t.logIn}</ButtonLink>
