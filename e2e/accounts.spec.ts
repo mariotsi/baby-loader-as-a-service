@@ -177,6 +177,7 @@ test('the API refuses a new Site that is already born', async ({ page }, testInf
   await expect(page).toHaveURL(/\/onboarding$/);
 
   const res = await page.request.post('/api/sites', {
+    headers: bypassHeaders(),
     data: {
       slug: runSlug(runId(), `born${attempt}`),
       settings: {
