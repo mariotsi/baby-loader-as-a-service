@@ -1,0 +1,31 @@
+import type { ReactNode } from 'react';
+import { Button } from './Button';
+import styles from './PhoneStrip.module.css';
+
+interface PhoneStripProps {
+  /** Where the person stands, like the step or the baby's name. */
+  children: ReactNode;
+  showLabel: string;
+  hideLabel: string;
+  open: boolean;
+  onToggle: () => void;
+  /** The `id` of what the button shows and hides. */
+  controls: string;
+}
+
+/**
+ * A strip at the top of a phone's screen, in view while filling a field, that
+ * shows and hides what sits beside the form from 48rem, where it goes away.
+ * It is first in its grid whatever its place in the markup.
+ */
+export function PhoneStrip({ children, showLabel, hideLabel, open, onToggle, controls }: PhoneStripProps) {
+  const action = open ? hideLabel : showLabel;
+  return (
+    <div className={styles.strip}>
+      <span className={styles.label}>{children}</span>
+      <Button variant="ghost" size="sm" onClick={onToggle} aria-expanded={open} aria-controls={controls}>
+        {action}
+      </Button>
+    </div>
+  );
+}

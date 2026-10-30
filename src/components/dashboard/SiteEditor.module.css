@@ -1,6 +1,6 @@
 /*
- * One column on a phone; beside the preview from 48rem, with the chips above both; the menu, the form and the
- * preview side by side from 68.75rem, where the menu has become a column.
+ * One column on a phone, under the PhoneStrip that opens the preview; beside the preview from 48rem; with the menu as
+ * a column of its own from 68.75rem.
  */
 .editor {
   display: grid;
@@ -8,13 +8,19 @@
   align-items: start;
 }
 
+/* A plain block until the menu is a column: a sticky grid item sticks only within its own row. */
+.main {
+  min-width: 0;
+}
+
+/* Under the PhoneStrip, which is as tall as this offset. */
 .menu {
   position: sticky;
-  top: 0;
+  top: calc(var(--control-height-sm) + var(--space-2));
   z-index: 1;
   min-width: 0;
-  padding-block: var(--space-2);
-  background: var(--color-bg);
+  margin-top: var(--space-2);
+  margin-bottom: var(--space-3);
 }
 
 .form {
@@ -23,20 +29,33 @@
   min-width: 0;
 }
 
-/* Clears the sticky chips when the menu jumps here. */
+/* Clears the sticky strip and chips when the menu jumps here. */
 .section {
-  scroll-margin-top: calc(var(--control-height-sm) + var(--space-4));
+  scroll-margin-top: calc(var(--control-height-sm) * 2 + var(--space-6));
 }
 
 /* The frame's width is a share of this column, so the column stretches it: centered, the frame would collapse. */
 .preview {
-  display: grid;
+  display: none;
   gap: var(--space-3);
   min-width: 0;
 }
 
 .preview > fieldset {
   justify-self: center;
+}
+
+/* Open on a phone, right under the strip and in view while the form scrolls below it. */
+.previewOpen {
+  position: sticky;
+  top: calc(var(--control-height-sm) + var(--space-2));
+  z-index: 2;
+  order: -1;
+  display: grid;
+  margin-inline: calc(var(--gutter) * -1);
+  padding: var(--space-2) var(--gutter);
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-bg);
 }
 
 @media (min-width: 48rem) {
@@ -47,39 +66,43 @@
   }
 
   .menu {
-    grid-column: 1 / -1;
+    top: var(--space-2);
+    margin-top: 0;
+  }
+
+  .section {
+    scroll-margin-top: calc(var(--control-height-sm) + var(--space-4));
   }
 
   .preview {
     position: sticky;
-    top: calc(var(--control-height-sm) + var(--space-5));
+    top: var(--space-4);
+    z-index: auto;
+    order: 0;
+    display: grid;
+    margin-inline: 0;
+    padding: 0;
+    border-bottom: 0;
+    background: none;
   }
 }
 
 @media (min-width: 68.75rem) {
-  .editor {
-    grid-template-columns: 11rem minmax(0, 1fr) 18rem;
+  .main {
+    display: grid;
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: var(--space-5);
+    align-items: start;
   }
 
   .menu {
     top: var(--space-4);
-    grid-column: auto;
-    padding-block: 0;
-    background: none;
+    margin-bottom: 0;
   }
 
   .section {
     scroll-margin-top: var(--space-4);
   }
-
-  .preview {
-    top: var(--space-4);
-  }
-}
-
-.column {
-  display: grid;
-  gap: var(--space-5);
 }
 
 /* The Birth dialog: the fields, then the previews; on a wide screen the previews stay beside the fields. */

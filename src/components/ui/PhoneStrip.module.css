@@ -1,0 +1,30 @@
+.strip {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  order: -2;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: calc(var(--control-height-sm) + var(--space-2));
+  margin-inline: calc(var(--gutter) * -1);
+  padding-inline: var(--gutter);
+  border-bottom: var(--border-width) solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.label {
+  min-width: 0;
+  overflow: hidden;
+  font-size: var(--text-sm);
+  font-weight: var(--weight-bold);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+@media (min-width: 48rem) {
+  .strip {
+    display: none;
+  }
+}

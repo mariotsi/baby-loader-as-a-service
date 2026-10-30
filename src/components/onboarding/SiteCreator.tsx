@@ -1,7 +1,8 @@
 'use client';
 
+import { parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { type Ref, type SubmitEvent, useEffect, useRef, useState } from 'react';
+import { type Ref, type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
 import { EditorPreview } from '@/components/dashboard/EditorPreview';
 import { SiteIconField } from '@/components/dashboard/SiteIconField';
 import { useLang } from '@/components/LangProvider';
@@ -14,6 +15,7 @@ import { LanguagesPicker } from '@/components/ui/LanguagesPicker';
 import { PageShell } from '@/components/ui/PageShell';
 import { PalettePicker } from '@/components/ui/PalettePicker';
 import { PerLanguageField } from '@/components/ui/PerLanguageField';
+import { PhoneStrip } from '@/components/ui/PhoneStrip';
 import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { StepProgress } from '@/components/ui/StepProgress';
@@ -22,6 +24,7 @@ import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { type AddressConfig, siteAddress, slugProblem } from '@/lib/address';
 import { errorsCopy } from '@/lib/copy/errors';
 import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
+import { uiCopy } from '@/lib/copy/ui';
 import { inlineErrorText, responseErrorText } from '@/lib/errorText';
 import { type Lang, languageName } from '@/lib/i18n';
 import { saveWelcome } from '@/lib/newSiteWelcome';
@@ -35,7 +38,7 @@ import {
   type SiteSettingsError,
   type SiteSettingsInput,
 } from '@/lib/siteSettings';
-import { DEFAULT_FONT, DEFAULT_PALETTE } from '@/lib/theme';
+import { DEFAULT_FONT, DEFAULT_PALETTE, getFont, getPalette } from '@/lib/theme';
 import styles from './SiteCreator.module.css';
 
 const LAST_STEP = 3;
@@ -172,6 +175,8 @@ export function SiteCreator({
   const [refused, setRefused] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const previewId = useId();
   const formRef = useRef<HTMLFormElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const shownStep = useRef(0);
@@ -298,6 +303,15 @@ export function SiteCreator({
         <p className={styles.lead}>{t.lead}</p>
       </div>
       <div className={styles.layout}>
+        <PhoneStrip
+          showLabel={settingsCopy.previewShow}
+          hideLabel={settingsCopy.previewHide}
+          open={previewOpen}
+          onToggle={() => setPreviewOpen(!previewOpen)}
+          controls={previewId}
+        >
+          {t.stepOf(step + 1, LAST_STEP + 1)}
+        </PhoneStrip>
         <form ref={formRef} onSubmit={onSubmit} className={styles.form} noValidate>
           <StepProgress label={t.stepsLabel} steps={stepNames} current={step} />
           {step === 0 ? (
@@ -377,6 +391,8 @@ export function SiteCreator({
           settings={lastValid.current}
           slug={trimmedSlug || 'emma'}
           bornPlaceholderUrl={bornPlaceholderUrl}
+          open={previewOpen}
+          id={previewId}
         />
       </div>
     </PageShell>
@@ -455,29 +471,47 @@ interface LastLookStepProps {
   headingRef: Ref<HTMLHeadingElement>;
 }
 
-/** What the page will say, with a way back to the step that holds each part. */
+/** Everything entered, step by step, with a way back to each step. */
 function LastLookStep({ draft, address, onChange, headingRef }: LastLookStepProps) {
   const lang = useLang();
-  const t = platformCopy[lang].onboarding;
+  const { onboarding: t, settings, privacy } = platformCopy[lang];
+  const ui = uiCopy[lang];
+  const pageName = draft.languages.map((language) => draft.pageName[language]?.trim()).filter(Boolean);
+  const dueDate = draft.dueDate
+    ? new Intl.DateTimeFormat(lang, { dateStyle: 'long' }).format(parseISO(draft.dueDate))
+    : t.notSet;
+  const sex = { unknown: settings.sexUnknown, female: settings.sexFemale, male: settings.sexMale }[draft.sex];
   return (
     <Card title={t.lastLook} description={t.lastLookDescription} headingRef={headingRef}>
-      <dl className={styles.summary}>
-        <SummaryRow
-          label={t.basics}
-          value={`${draft.babyName}, ${address.replace(/^https?:\/\//, '')}`}
-          onChange={() => onChange(0)}
-        />
-        <SummaryRow
-          label={t.makeItYours}
-          value={draft.languages.map((language) => languageName(language, lang)).join(', ')}
-          onChange={() => onChange(1)}
-        />
-        <SummaryRow
-          label={t.whoSeesWhat}
-          value={[draft.showName ? t.nameShown : t.nameHidden, draft.showSex ? t.sexShown : t.sexHidden].join(', ')}
-          onChange={() => onChange(2)}
-        />
-      </dl>
+      <SummaryGroup
+        label={t.basics}
+        onChange={() => onChange(0)}
+        rows={[
+          [t.siteAddress, address.replace(/^https?:\/\//, '')],
+          [t.babyName, draft.babyName],
+          [settings.sex, sex],
+          [t.dueDate, dueDate],
+        ]}
+      />
+      <SummaryGroup
+        label={t.makeItYours}
+        onChange={() => onChange(1)}
+        rows={[
+          [ui.palette, getPalette(draft.palette).name],
+          [ui.font, getFont(draft.font).name],
+          [ui.languages.legend, draft.languages.map((language) => languageName(language, lang)).join(', ')],
+          [settings.pageName, pageName.join(', ') || t.notSet],
+          [settings.siteIcon, draft.iconIsEmoji ? draft.iconEmoji : settings.siteIconLoadingBaby],
+        ]}
+      />
+      <SummaryGroup
+        label={t.whoSeesWhat}
+        onChange={() => onChange(2)}
+        rows={[
+          [privacy.showName, draft.showName ? t.yes : t.no],
+          [privacy.showSex, draft.showSex ? t.yes : t.no],
+        ]}
+      />
     </Card>
   );
 }
@@ -493,18 +527,31 @@ function submitLabel(step: number, busy: boolean, t: PlatformCopy['onboarding'])
   return busy ? t.creating : t.create;
 }
 
-function SummaryRow({ label, value, onChange }: { label: string; value: string; onChange: () => void }) {
+interface SummaryGroupProps {
+  label: string;
+  rows: [label: string, value: string][];
+  onChange: () => void;
+}
+
+function SummaryGroup({ label, rows, onChange }: SummaryGroupProps) {
   const t = platformCopy[useLang()].onboarding;
   return (
-    <div className={styles.summaryRow}>
-      <div>
-        <dt className={styles.summaryLabel}>{label}</dt>
-        <dd className={styles.summaryValue}>{value}</dd>
+    <section className={styles.summaryGroup} aria-label={label}>
+      <div className={styles.summaryHeader}>
+        <h3 className={styles.summaryTitle}>{label}</h3>
+        <Button variant="ghost" size="sm" onClick={onChange}>
+          {t.change}
+          <VisuallyHidden> {label}</VisuallyHidden>
+        </Button>
       </div>
-      <Button variant="ghost" size="sm" onClick={onChange}>
-        {t.change}
-        <VisuallyHidden> {label}</VisuallyHidden>
-      </Button>
-    </div>
+      <dl className={styles.summary}>
+        {rows.map(([name, value]) => (
+          <div key={name} className={styles.summaryRow}>
+            <dt className={styles.summaryLabel}>{name}</dt>
+            <dd className={styles.summaryValue}>{value}</dd>
+          </div>
+        ))}
+      </dl>
+    </section>
   );
 }

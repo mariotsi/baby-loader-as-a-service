@@ -18,6 +18,7 @@ import { Input } from '../Input';
 import { LanguagesPicker } from '../LanguagesPicker';
 import { Logo } from '../Logo';
 import { PerLanguageField } from '../PerLanguageField';
+import { PhoneStrip } from '../PhoneStrip';
 import { SectionNav } from '../SectionNav';
 import { SegmentedControl } from '../SegmentedControl';
 import { Select } from '../Select';
@@ -105,6 +106,19 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
             </Field>
           </FullPageDialog>
         ) : null}
+      </Group>
+      <Group title="Phone strip">
+        <div style={{ display: 'grid', paddingInline: 'var(--gutter)' }}>
+          <PhoneStrip
+            showLabel="Preview your page"
+            hideLabel="Hide the preview"
+            open={false}
+            onToggle={() => {}}
+            controls="sheet-preview"
+          >
+            Step 2 of 4
+          </PhoneStrip>
+        </div>
       </Group>
       <Group title="Step progress">
         <StepProgress label="Creating your page" steps={['The basics', 'Make it yours', 'A last look']} current={1} />

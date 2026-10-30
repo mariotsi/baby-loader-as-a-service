@@ -1,3 +1,8 @@
+/* On an inner box: `className` may make the nav itself sticky. */
+.row {
+  position: relative;
+}
+
 .list {
   display: flex;
   gap: var(--space-2);
@@ -6,6 +11,22 @@
   overflow-x: auto;
   scrollbar-width: none;
   list-style: none;
+  /* The row sits over the page and over Cards, so it fades itself: a painted fade would show as a patch. */
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    black var(--fade-start, 0),
+    black calc(100% - var(--fade-end, 0rem)),
+    transparent
+  );
+}
+
+.fadeStart {
+  --fade-start: 3rem;
+}
+
+.fadeEnd {
+  --fade-end: 3rem;
 }
 
 .link {
@@ -31,12 +52,39 @@
 .link[aria-current] {
   border-color: var(--color-accent-ink);
   color: var(--color-accent-ink);
-  font-weight: 700;
+  font-weight: var(--weight-bold);
+}
+
+/* Presses go through the arrow to the chip it sits on. */
+.more {
+  position: absolute;
+  inset-block: 0;
+  display: flex;
+  align-items: center;
+  color: var(--color-text);
+  pointer-events: none;
+}
+
+.moreEnd {
+  right: 0;
+}
+
+.moreStart {
+  left: 0;
+}
+
+.moreStart svg {
+  transform: rotate(180deg);
 }
 
 @media (min-width: 68.75rem) {
+  .more {
+    display: none;
+  }
+
   .list {
     flex-direction: column;
+    mask-image: none;
     gap: var(--space-1);
     overflow-x: visible;
   }

@@ -15,10 +15,12 @@ interface PublicPagePreviewProps {
   caption: string;
   bornImageUrl?: string;
   birthVideoUrl?: string;
+  /** Below 48rem, a short window onto the page, so the form stays in view under it. */
+  compact?: boolean;
 }
 
 /**
- * The Public page itself, drawn from Site settings on an iPhone 16's screen in its
+ * The Public page itself, drawn from Site settings on an iPhone 16 Pro's screen in its
  * own Theme, as a Visitor on a phone would see it. It scrolls inside its
  * frame, and only its Language switcher can be pressed.
  */
@@ -29,12 +31,13 @@ export function PublicPagePreview({
   caption,
   bornImageUrl,
   birthVideoUrl,
+  compact = false,
 }: PublicPagePreviewProps) {
   const captionId = useId();
   return (
     <figure className={styles.figure}>
       <section
-        className={styles.phone}
+        className={compact ? `${styles.phone} ${styles.compact}` : styles.phone}
         style={themeStyle(settings.theme) as CSSProperties}
         aria-labelledby={captionId}
         // biome-ignore lint/a11y/noNoninteractiveTabindex: The frame scrolls and little in it takes the focus, so the frame does, for the keyboard to scroll it.

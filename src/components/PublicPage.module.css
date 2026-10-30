@@ -320,6 +320,11 @@
   .aside > * {
     animation-delay: var(--duration-fast);
   }
+
+  .preview .intro > *,
+  .preview .aside > * {
+    animation: none;
+  }
 }
 
 @keyframes rise {

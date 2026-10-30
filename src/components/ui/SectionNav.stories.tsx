@@ -22,7 +22,7 @@ type Story = StoryObj<typeof meta>;
 /** For a page long enough to lose your place in: a row of chips, or a column on a wide screen. */
 export const Default: Story = {};
 
-/** The row scrolls sideways when the sections do not fit. */
+/** The row scrolls sideways when the sections do not fit, and fades over a cut chip at the edge that holds more. */
 export const Narrow: Story = {
   render: (args) => (
     <div style={{ maxWidth: '20rem' }}>
