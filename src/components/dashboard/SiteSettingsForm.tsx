@@ -548,7 +548,7 @@ function IconAndSharingCard({
           value={isEmoji ? 'emoji' : 'loadingBaby'}
           onChange={(value) => onIsEmojiChange(value === 'emoji')}
         />
-        {isEmoji ? <EmojiPicker label={t.siteIconEmojiLabel} value={emoji} onChange={onEmojiChange} /> : null}
+        {isEmoji ? <EmojiPicker twemoji label={t.siteIconEmojiLabel} value={emoji} onChange={onEmojiChange} /> : null}
       </div>
       <SitePreviews settings={preview} address={address} />
     </Card>

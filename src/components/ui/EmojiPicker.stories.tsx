@@ -23,11 +23,14 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** A Milestone's emoji, or any single emoji the Owner picks. Press it to search and pick another. */
+/** An emoji shown as text on a page, like a Milestone's, in the device's font. Press it to search and pick another. */
 export const Default: Story = {};
+
+/** An emoji that ends up in the Site's generated images, like the Site icon, in the Twemoji those images draw. */
+export const Twemoji: Story = { args: { twemoji: true, label: 'Icon emoji' } };
 
 /** Joined sequences and skin tones show as one emoji. */
 export const Sequence: Story = { args: { value: '👨‍👩‍👧' } };
 
 /** An emoji newer than Twemoji shows in the device's font. The grid doesn't offer these, but a Site may already have one. */
-export const NoImage: Story = { args: { value: '🫎' } };
+export const NoImage: Story = { args: { twemoji: true, value: '🫎', label: 'Icon emoji' } };

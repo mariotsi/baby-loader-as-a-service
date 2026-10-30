@@ -18,6 +18,12 @@ interface EmojiPickerProps {
   onChange: (emoji: string) => void;
   /** Names the button, which shows only the emoji. */
   label: string;
+  /**
+   * Shows emoji in Twemoji and offers only those Twemoji has, for an emoji that
+   * ends up in the Site's generated images. Without it emoji show in the
+   * device's font, as text on a page does.
+   */
+  twemoji?: boolean;
 }
 
 /** Six columns of 44px emoji fit a 320px screen beside the page's gutters. */
@@ -28,12 +34,10 @@ const EMOJIBASE_URL = 'https://cdn.jsdelivr.net/npm/emojibase-data@18.0.0';
 
 /**
  * Picks one emoji: a button showing the current one opens a searchable grid
- * under it. Emoji show in Twemoji, the set the Site's generated images and the
- * editor's previews draw, and the grid offers only those Twemoji has. Picking
- * an emoji, Escape or a press outside closes the grid and gives the focus back
- * to the button.
+ * under it. Picking an emoji, Escape or a press outside
+ * closes the grid and gives the focus back to the button.
  */
-export function EmojiPicker({ value, onChange, label }: EmojiPickerProps) {
+export function EmojiPicker({ value, onChange, label, twemoji = false }: EmojiPickerProps) {
   const t = uiCopy[useLang()].emoji;
   const [open, setOpen] = useState(false);
   const panelId = useId();
@@ -79,15 +83,15 @@ export function EmojiPicker({ value, onChange, label }: EmojiPickerProps) {
         aria-controls={open ? panelId : undefined}
         onClick={() => setOpen(!open)}
       >
-        <EmojiImage key={value} emoji={value} />
+        {twemoji ? <EmojiImage key={value} emoji={value} /> : <span aria-hidden="true">{value}</span>}
       </button>
       {open ? (
         <div id={panelId} className={styles.panel}>
           <Frimousse.Root
             className={styles.picker}
             columns={COLUMNS}
-            emojiVersion={TWEMOJI_EMOJI_VERSION}
-            emojibaseUrl={EMOJIBASE_URL}
+            emojiVersion={twemoji ? TWEMOJI_EMOJI_VERSION : undefined}
+            emojibaseUrl={twemoji ? EMOJIBASE_URL : undefined}
             onEmojiSelect={({ emoji }) => {
               onChange(emoji);
               close();
@@ -102,7 +106,7 @@ export function EmojiPicker({ value, onChange, label }: EmojiPickerProps) {
             <Frimousse.Viewport className={styles.viewport}>
               <Frimousse.Loading className={styles.note}>{t.loading}</Frimousse.Loading>
               <Frimousse.Empty className={styles.note}>{t.empty}</Frimousse.Empty>
-              <Frimousse.List components={{ CategoryHeader, Row, Emoji }} />
+              <Frimousse.List components={{ CategoryHeader, Row, Emoji: twemoji ? TwemojiCell : DeviceCell }} />
             </Frimousse.Viewport>
           </Frimousse.Root>
         </div>
@@ -127,7 +131,15 @@ function Row({ children, ...props }: EmojiPickerListRowProps) {
   );
 }
 
-function Emoji({ emoji, ...props }: EmojiPickerListEmojiProps) {
+function DeviceCell({ emoji, ...props }: EmojiPickerListEmojiProps) {
+  return (
+    <button {...props} type="button" className={styles.emoji} data-active={emoji.isActive || undefined}>
+      {emoji.emoji}
+    </button>
+  );
+}
+
+function TwemojiCell({ emoji, ...props }: EmojiPickerListEmojiProps) {
   return (
     <button {...props} type="button" className={styles.emoji} data-active={emoji.isActive || undefined}>
       <EmojiImage key={emoji.emoji} emoji={emoji.emoji} />
