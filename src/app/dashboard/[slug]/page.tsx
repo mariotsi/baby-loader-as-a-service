@@ -23,7 +23,7 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
     <PageShell
       width="wide"
       nav={
-        <ButtonLink href="/dashboard" variant="ghost" size="sm">
+        <ButtonLink href="/dashboard" variant="ghost" size="sm" icon="arrow-left">
           {t.yourSites}
         </ButtonLink>
       }

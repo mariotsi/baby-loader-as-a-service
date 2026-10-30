@@ -5,6 +5,7 @@ const PATHS = {
       <path d="M12 8v4.5M12 16h.01" />
     </>
   ),
+  'arrow-left': <path d="M19 12H5M11 6l-6 6 6 6" />,
   'arrow-right': <path d="M5 12h14M13 6l6 6-6 6" />,
   // From Tabler Icons (MIT), https://tabler.io/icons/icon/baby-carriage
   'baby-carriage': (

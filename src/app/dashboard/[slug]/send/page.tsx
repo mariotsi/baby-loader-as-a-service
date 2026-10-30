@@ -24,7 +24,7 @@ export default async function SendPage({ params }: { params: Promise<{ slug: str
     <PageShell
       width="wide"
       nav={
-        <ButtonLink href={`/dashboard/${site.slug}`} variant="ghost" size="sm">
+        <ButtonLink href={`/dashboard/${site.slug}`} variant="ghost" size="sm" icon="arrow-left">
           {dashboard.backTo(name)}
         </ButtonLink>
       }

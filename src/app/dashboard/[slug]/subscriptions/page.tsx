@@ -21,7 +21,7 @@ export default async function SubscriptionsPage({ params }: { params: Promise<{ 
     <PageShell
       width="wide"
       nav={
-        <ButtonLink href={`/dashboard/${site.slug}`} variant="ghost" size="sm">
+        <ButtonLink href={`/dashboard/${site.slug}`} variant="ghost" size="sm" icon="arrow-left">
           {dashboard.backTo(name)}
         </ButtonLink>
       }
