@@ -58,7 +58,7 @@ export function useMediaUrl(media: MediaDraft): string | undefined {
   return media instanceof File ? local : media?.url;
 }
 
-/** Where the page shows `media`: a picked file from the browser, a saved one from storage, or from the Preview's route on a Preview deployment. */
+/** Where the page shows `media`: a picked file from the browser, a saved one from storage, or from the page's own origin on staging and Previews (see mediaFromPageOrigin). */
 export function useBirthMediaUrl(media: MediaDraft, previewSlug: string | undefined, kind: 'photo' | 'video') {
   return useMediaUrl(previewMedia(media, previewSlug, kind));
 }

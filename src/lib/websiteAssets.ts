@@ -1,4 +1,5 @@
 import type { AppEnv } from './appEnv.ts';
+import { mediaFromPageOrigin } from './birthMedia.ts';
 
 const MEDIA_ORIGINS: Record<Exclude<AppEnv, 'development'>, string> = {
   production: 'https://media.loading.baby',
@@ -11,7 +12,7 @@ export function websiteAssetUrl(path: string, appEnv: AppEnv): string {
   if (appEnv === 'development') {
     return assetPath;
   }
-  if (appEnv === 'preview') {
+  if (mediaFromPageOrigin(appEnv)) {
     return `/api/website-assets/${path}`;
   }
   return `${MEDIA_ORIGINS[appEnv]}${assetPath}`;

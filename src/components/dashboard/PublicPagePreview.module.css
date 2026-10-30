@@ -6,11 +6,11 @@
   margin: 0;
 }
 
-/* A phone's screen: 375 by 720 pixels, as an iPhone shows a page below its status bar. */
+/* An iPhone 16's screen, 393 by 852 points, narrowing on a smaller screen in the same proportions. */
 .phone {
   color-scheme: var(--color-scheme);
-  width: min(100%, 23.4375rem);
-  height: 45rem;
+  width: min(100%, 24.5625rem);
+  aspect-ratio: 393 / 852;
   overflow-y: auto;
   overscroll-behavior: contain;
   border: var(--border-width) solid var(--color-border);

@@ -3,6 +3,7 @@ import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
 import { siteAddress } from '@/lib/address';
+import { mediaFromPageOrigin } from '@/lib/birthMedia';
 import { platformCopy } from '@/lib/copy/platform';
 import { addressEnv, deploymentEnv } from '@/lib/env';
 import { platformLang } from '@/lib/i18nNext';
@@ -48,7 +49,7 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
         </Stack>
       </div>
       <SiteSettingsForm
-        mediaPreviewSlug={deploymentEnv().appEnv === 'preview' ? site.slug : undefined}
+        mediaPreviewSlug={mediaFromPageOrigin(deploymentEnv().appEnv) ? site.slug : undefined}
         site={toSiteDTO(site)}
         timeZones={Intl.supportedValuesOf('timeZone')}
         address={address}
