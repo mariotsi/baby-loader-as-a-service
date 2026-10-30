@@ -1,12 +1,8 @@
 'use client';
 
 import type { CreateTypes, Options } from 'canvas-confetti';
-import { type Ref, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import styles from './Confetti.module.css';
-
-export type ConfettiHandle = {
-  launch: () => void;
-};
 
 // Ported 1:1 from the original baby-loader celebration, palette included: these
 // colours are the original confetti, not theme tokens, so they stay fixed whatever
@@ -23,8 +19,8 @@ const BURSTS: Array<{ ratio: number; options: Options }> = [
   { ratio: 0.1, options: { spread: 120, startVelocity: 45 } },
 ];
 
-/** A full-screen canvas that fires the celebration bursts when `launch` is called. */
-export function Confetti({ ref }: { ref?: Ref<ConfettiHandle> }) {
+/** A full-screen canvas that fires the celebration bursts each time `shots` goes up. */
+export function Confetti({ shots }: { shots: number }) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const instanceRef = useRef<CreateTypes | null>(null);
 
@@ -44,27 +40,25 @@ export function Confetti({ ref }: { ref?: Ref<ConfettiHandle> }) {
     return instanceRef.current;
   }, []);
 
-  useImperativeHandle(ref, () => ({
-    launch: () => {
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  useEffect(() => {
+    if (shots === 0 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+    void getInstance().then((instance) => {
+      if (!instance) {
         return;
       }
-      void getInstance().then((instance) => {
-        if (!instance) {
-          return;
-        }
-        for (const burst of BURSTS) {
-          instance({
-            origin: { y: 0.7 },
-            colors: COLORS,
-            disableForReducedMotion: true,
-            ...burst.options,
-            particleCount: Math.floor(TOTAL_PARTICLES * burst.ratio),
-          });
-        }
-      });
-    },
-  }));
+      for (const burst of BURSTS) {
+        instance({
+          origin: { y: 0.7 },
+          colors: COLORS,
+          disableForReducedMotion: true,
+          ...burst.options,
+          particleCount: Math.floor(TOTAL_PARTICLES * burst.ratio),
+        });
+      }
+    });
+  }, [shots, getInstance]);
 
   useEffect(() => {
     // Warm up the module and the worker now, so the first launch does not pay

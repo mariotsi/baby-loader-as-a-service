@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ExternalLink } from '@/components/ui/ExternalLink';
@@ -10,7 +10,7 @@ import { buildDeviceInfo } from '@/lib/deviceInfo';
 import type { Lang } from '@/lib/i18n';
 import type { PushButtonCopy } from '@/lib/publicPageView';
 import { decodeVapidKey } from '@/lib/vapid';
-import { Confetti, type ConfettiHandle } from './Confetti';
+import { Confetti } from './Confetti';
 import styles from './PushSubscribeButton.module.css';
 
 interface Props {
@@ -256,7 +256,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe' | null>(null);
   const [device, setDevice] = useState<DeviceContext | null>(null);
-  const confettiRef = useRef<ConfettiHandle | null>(null);
+  const [confettiShots, setConfettiShots] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -285,7 +285,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
       }
       setStatus('subscribed');
       setFeedback(null);
-      confettiRef.current?.launch();
+      setConfettiShots((shots) => shots + 1);
     } catch {
       if (Notification.permission === 'denied') {
         setStatus('denied');
@@ -338,7 +338,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
         onUnsubscribe={unsubscribe}
         onConfirmOpenChange={setConfirmOpen}
       />
-      <Confetti ref={confettiRef} />
+      <Confetti shots={confettiShots} />
     </>
   );
 }

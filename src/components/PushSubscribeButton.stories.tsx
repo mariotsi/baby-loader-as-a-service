@@ -1,9 +1,9 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import type { Lang } from '@/lib/i18n';
 import { publicPageView } from '@/lib/publicPageView';
 import { defaultSiteSettings } from '@/lib/siteSettings';
-import { Confetti, type ConfettiHandle } from './Confetti';
+import { Confetti } from './Confetti';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { PushSubscribeView } from './PushSubscribeButton';
 import { Stack } from './ui/Stack';
@@ -46,7 +46,7 @@ const meta = {
     const translated = { ...copy(lang, parameters.born ?? false), appName: args.t.appName, appIcon: args.t.appIcon };
     const [status, setStatus] = useState(args.status);
     const [open, setOpen] = useState(args.confirmOpen ?? false);
-    const confettiRef = useRef<ConfettiHandle | null>(null);
+    const [confettiShots, setConfettiShots] = useState(0);
     return (
       <Stack gap={4} align="stretch">
         <Stack direction="row" justify="end">
@@ -65,7 +65,7 @@ const meta = {
           onSubscribe={() => {
             setStatus('subscribed');
             if (!parameters.reducedMotion) {
-              confettiRef.current?.launch();
+              setConfettiShots((shots) => shots + 1);
             }
           }}
           onUnsubscribe={() => {
@@ -74,7 +74,7 @@ const meta = {
           }}
           onConfirmOpenChange={setOpen}
         />
-        <Confetti ref={confettiRef} />
+        <Confetti shots={confettiShots} />
       </Stack>
     );
   },
