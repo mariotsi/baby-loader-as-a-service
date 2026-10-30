@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
-import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { LangProvider } from '@/components/LangProvider';
-import type { SiteSettingsError } from '@/lib/siteSettings';
+import { defaultSiteSettings, type SiteSettings, type SiteSettingsError } from '@/lib/siteSettings';
 import { BirthDialog, type BirthDraft } from './BirthDialog';
 
 const waiting: BirthDraft = {
@@ -22,6 +22,44 @@ const born: BirthDraft = {
   photo: null,
 };
 
+/** Emma's page as saving would store it with `birth`: what the previews draw. */
+function emmaWith(birth: BirthDraft): SiteSettings | null {
+  if (birth.born && !birth.datetime) {
+    return null;
+  }
+  return {
+    ...defaultSiteSettings,
+    babyName: 'Emma',
+    sex: 'female',
+    dueDate: '2026-11-02',
+    languages: ['en', 'it'],
+    pageName: { en: 'Stefania & Simone', it: 'Stefania e Simone' },
+    privacy: { showName: true, showSex: true },
+    birth: birth.born
+      ? {
+          born: true,
+          details: {
+            datetime: new Date(birth.datetime).toISOString(),
+            weightGrams: birth.weight ? Number(birth.weight) : null,
+            lengthCm: birth.lengthCm ? Number(birth.lengthCm) : null,
+            message: birth.message,
+            photo: null,
+          },
+        }
+      : { born: false, details: null },
+    milestones: birth.born
+      ? [
+          {
+            date: birth.datetime.slice(0, 10),
+            label: { en: 'She is born!', it: 'È nata!' },
+            emoji: '👶',
+            kind: 'birth',
+          },
+        ]
+      : [],
+  };
+}
+
 const meta = {
   title: 'Dashboard/Birth dialog',
   component: BirthDialog,
@@ -35,7 +73,12 @@ const meta = {
     onSex: () => {},
     hidden: { name: false, sex: false },
     check: (_birth: BirthDraft): SiteSettingsError[] => [],
-    onSave: async () => ({ ok: true }),
+    settingsWith: emmaWith,
+    slug: 'demo-emma',
+    address: 'https://emma.loading.baby',
+    video: null,
+    bornPlaceholderUrl: '/website-assets/born-placeholder-v1.png',
+    onSave: fn(async () => ({ ok: true as const })),
     onClose: () => {},
   },
   decorators: [
@@ -49,8 +92,28 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Announcing the birth: the date and time start from now, and announcing saves the whole page. */
+/**
+ * Announcing the birth: the date and time start from now, and beside the
+ * fields the notification and the page on a phone show what announcing sends
+ * and shows.
+ */
 export const Announce: Story = {};
+
+/** Announcing asks first, so a slip of the finger cannot send the notification; then it saves the whole page. */
+export const AnnounceAsksFirst: Story = {
+  play: async ({ args, canvasElement }) => {
+    const body = within(canvasElement.ownerDocument.body);
+    const dialog = within(body.getByRole('dialog', { name: 'Welcome, Emma' }));
+    await waitFor(() => expect(dialog.getByText('Emma is born!')).toBeVisible());
+    await expect(dialog.getByRole('region', { name: 'Your page on a phone' })).toBeVisible();
+    await userEvent.click(dialog.getByRole('button', { name: 'Announce the birth' }));
+    const confirm = within(await body.findByRole('dialog', { name: 'Announce the birth now?' }));
+    await expect(confirm.getByRole('button', { name: 'Keep editing' })).toHaveFocus();
+    await expect(args.onSave).not.toHaveBeenCalled();
+    await userEvent.click(confirm.getByRole('button', { name: 'Announce the birth' }));
+    await waitFor(() => expect(args.onSave).toHaveBeenCalledOnce());
+  },
+};
 
 /**
  * Announcing a page that has no name or sex yet, with both hidden by its

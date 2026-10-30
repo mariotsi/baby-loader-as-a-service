@@ -25,6 +25,11 @@ import styles from './PublicPage.module.css';
  * or the Birth details. Once notifications are on, their pill leaves the call
  * to action for the end of the page, after all the content: centred on a
  * phone, on the right on a wide screen.
+ *
+ * Everything it shows comes from its props, so the Dashboard draws the same
+ * page as a `preview` from Site settings not yet saved: it lays out to its
+ * own width, leaves the document's language alone, and is inert, so the
+ * notifications button shows and nobody can subscribe from it.
  */
 export function PublicPage({
   views,
@@ -35,6 +40,7 @@ export function PublicPage({
   birthVideoUrl,
   disableNotifications = false,
   disableVideoAutoplay = false,
+  preview = false,
 }: {
   views: PublicPageView[];
   initialLang: Lang;
@@ -44,14 +50,20 @@ export function PublicPage({
   birthVideoUrl?: string;
   disableNotifications?: boolean;
   disableVideoAutoplay?: boolean;
+  preview?: boolean;
 }) {
   const [lang, setLang] = useState(initialLang);
   const [pillSlot, setPillSlot] = useState<HTMLElement | null>(null);
   const view = views.find((v) => v.lang === lang) ?? views[0];
+  const noAutoplay = disableVideoAutoplay || preview;
+  // A preview sits inside a Dashboard page, which has its own main landmark.
+  const Main = preview ? 'div' : 'main';
 
   useEffect(() => {
-    document.documentElement.lang = view.lang;
-  }, [view.lang]);
+    if (!preview) {
+      document.documentElement.lang = view.lang;
+    }
+  }, [view.lang, preview]);
 
   function chooseLang(next: Lang) {
     rememberLang(next);
@@ -59,27 +71,15 @@ export function PublicPage({
   }
 
   return (
-    <div className={styles.page} data-video-autoplay={disableVideoAutoplay ? 'disabled' : 'enabled'}>
+    <div
+      className={preview ? `${styles.page} ${styles.preview}` : styles.page}
+      lang={preview ? view.lang : undefined}
+      inert={preview}
+      data-video-autoplay={noAutoplay ? 'disabled' : 'enabled'}
+    >
       <JoyBackground />
-      {view.pageName || views.length > 1 ? (
-        <header className={styles.header}>
-          {view.pageName ? (
-            <p className={styles.pageName}>
-              <Icon name="heart" className={styles.heart} />
-              {view.pageName}
-            </p>
-          ) : null}
-          {views.length > 1 ? (
-            <LanguageSwitcher
-              langs={views.map((v) => v.lang)}
-              current={view.lang}
-              label={view.languageLabel}
-              onChange={chooseLang}
-            />
-          ) : null}
-        </header>
-      ) : null}
-      <main className={styles.hero}>
+      <PublicPageHeader views={views} view={view} onLang={chooseLang} />
+      <Main className={styles.hero}>
         <div className={styles.intro}>
           <p className={styles.tagline}>{view.tagline}</p>
           <h1 className={styles.title}>
@@ -93,6 +93,7 @@ export function PublicPage({
               slug={slug}
               vapidPublicKey={vapidPublicKey}
               disableNotifications={disableNotifications}
+              preview={preview}
               pillSlot={pillSlot}
             />
           </div>
@@ -100,14 +101,47 @@ export function PublicPage({
         <div className={styles.aside}>
           {view.waiting ? <Countdown waiting={view.waiting} /> : null}
           {view.born ? (
-            <BirthVideo url={birthVideoUrl} lang={view.lang} slug={slug} disableAutoplay={disableVideoAutoplay} />
+            <BirthVideo url={birthVideoUrl} lang={view.lang} slug={slug} disableAutoplay={noAutoplay} />
           ) : null}
           {view.born ? <Born born={view.born} view={view} imageUrl={bornImageUrl} /> : null}
           {view.milestones ? <Milestones milestones={view.milestones} /> : null}
         </div>
-      </main>
+      </Main>
       <div ref={setPillSlot} className={styles.pillSlot} />
     </div>
+  );
+}
+
+/** The Page name on the left and the Language switcher on the right, when the page has either. */
+function PublicPageHeader({
+  views,
+  view,
+  onLang,
+}: {
+  views: PublicPageView[];
+  view: PublicPageView;
+  onLang: (lang: Lang) => void;
+}) {
+  if (!view.pageName && views.length < 2) {
+    return null;
+  }
+  return (
+    <header className={styles.header}>
+      {view.pageName ? (
+        <p className={styles.pageName}>
+          <Icon name="heart" className={styles.heart} />
+          {view.pageName}
+        </p>
+      ) : null}
+      {views.length > 1 ? (
+        <LanguageSwitcher
+          langs={views.map((v) => v.lang)}
+          current={view.lang}
+          label={view.languageLabel}
+          onChange={onLang}
+        />
+      ) : null}
+    </header>
   );
 }
 
@@ -116,14 +150,29 @@ function PublicPageActions({
   slug,
   vapidPublicKey,
   disableNotifications,
+  preview,
   pillSlot,
 }: {
   view: PublicPageView;
   slug: string;
   vapidPublicKey: string | undefined;
   disableNotifications: boolean;
+  preview: boolean;
   pillSlot: HTMLElement | null;
 }) {
+  if (preview) {
+    // The button as a Visitor sees it first; the preview is inert, so nobody subscribes from it.
+    return (
+      <>
+        <div className={styles.previewPush}>
+          <Button variant="primary" icon="bell" fullWidth>
+            {view.push.subscribe}
+          </Button>
+        </div>
+        {view.waiting ? <ShareButton view={view} /> : null}
+      </>
+    );
+  }
   return (
     <>
       {disableNotifications ? null : (

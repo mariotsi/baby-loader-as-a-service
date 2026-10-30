@@ -189,6 +189,12 @@ const en = {
     unannounceDescription:
       'Your page hides the Birth details again and the birth photo is removed. Your other changes are saved too.',
     keepBirthDetails: 'Keep the Birth details',
+    announceConfirmTitle: 'Announce the birth now?',
+    announceConfirmDescription:
+      'Your page switches to the Birth details and every subscriber gets the notification right away. The notification can’t be taken back.',
+    keepEditing: 'Keep editing',
+    previewNotification: 'The notification',
+    previewPage: 'Your page on a phone',
     fixElsewhere: 'Something else on this page needs fixing first.',
     birthDatetime: 'Birth date & time',
     weight: 'Weight (g)',
@@ -424,6 +430,12 @@ const it: PlatformCopy = {
     unannounceDescription:
       'La tua pagina nasconde di nuovo i dettagli della nascita e la foto viene rimossa. Vengono salvate anche le altre modifiche.',
     keepBirthDetails: 'Tieni i dettagli della nascita',
+    announceConfirmTitle: 'Annunciare la nascita adesso?',
+    announceConfirmDescription:
+      'La pagina passa ai dettagli della nascita e ogni iscritto riceve subito la notifica. La notifica non si può ritirare.',
+    keepEditing: 'Continua a modificare',
+    previewNotification: 'La notifica',
+    previewPage: 'La tua pagina su un telefono',
     fixElsewhere: 'Prima c’è qualcos’altro da sistemare in questa pagina.',
     birthDatetime: 'Data e ora di nascita',
     weight: 'Peso (g)',

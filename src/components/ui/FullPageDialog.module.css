@@ -111,3 +111,9 @@
     flex: 1 1 0;
   }
 }
+
+/* Wide: room for previews beside the fields. */
+.dialog[data-width="wide"] .content,
+.dialog[data-width="wide"] .actions {
+  max-width: var(--content-wide);
+}

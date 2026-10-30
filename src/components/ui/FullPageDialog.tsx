@@ -17,6 +17,8 @@ interface FullPageDialogProps {
   onSubmit: (event: SubmitEvent<HTMLFormElement>) => void;
   /** The dialog's actions, pinned to the bottom of the screen; the primary one last. */
   actions: ReactNode;
+  /** How wide the content grows: `wide` leaves room for previews beside the fields. */
+  width?: 'medium' | 'wide';
   children: ReactNode;
 }
 
@@ -35,6 +37,7 @@ export function FullPageDialog({
   onClose,
   onSubmit,
   actions,
+  width = 'medium',
   children,
 }: FullPageDialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -54,6 +57,7 @@ export function FullPageDialog({
     <dialog
       ref={ref}
       className={styles.dialog}
+      data-width={width}
       aria-labelledby={titleId}
       aria-describedby={description ? descriptionId : undefined}
       onCancel={(event) => {

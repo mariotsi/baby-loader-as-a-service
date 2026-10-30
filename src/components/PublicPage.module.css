@@ -1,9 +1,19 @@
 .page {
+  /* The layout follows the page's own width, so a preview drawn at a phone's width lays out as on a phone. */
+  container-type: inline-size;
   position: relative;
   isolation: isolate;
   min-height: 100dvh;
   overflow: clip;
   padding: var(--space-4) var(--gutter) var(--space-8);
+}
+
+/* A preview fills its frame, and its type scales with the frame as the page's does with the screen. */
+.preview {
+  --text-xl: clamp(1.375rem, 1.2rem + 0.8cqi, 1.75rem);
+  --text-2xl: clamp(1.75rem, 1.4rem + 1.6cqi, 2.5rem);
+  --text-hero: clamp(3.25rem, 2.2rem + 5cqi, 5.5rem);
+  min-height: 100%;
 }
 
 .header {
@@ -45,7 +55,7 @@
 }
 
 /* Wide screens: the name and the call to action on the left, the Countdown beside them. */
-@media (min-width: 60rem) {
+@container (min-width: 60rem) {
   .hero {
     grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr);
     align-items: center;
@@ -69,7 +79,7 @@
   display: none;
 }
 
-@media (min-width: 60rem) {
+@container (min-width: 60rem) {
   .pillSlot {
     justify-content: flex-end;
     max-width: var(--content-wide);
@@ -82,7 +92,7 @@
   gap: var(--space-3);
 }
 
-@media (min-width: 60rem) {
+@container (min-width: 60rem) {
   .intro {
     justify-items: start;
   }
@@ -152,6 +162,11 @@
   gap: var(--space-4);
   justify-items: inherit;
   margin-top: var(--space-3);
+}
+
+.previewPush {
+  display: grid;
+  width: 100%;
 }
 
 .aside {

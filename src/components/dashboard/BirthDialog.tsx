@@ -12,12 +12,17 @@ import { PerLanguageField } from '@/components/ui/PerLanguageField';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Textarea } from '@/components/ui/Textarea';
+import { birthNotificationMessages } from '@/lib/birthAnnouncement';
 import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
 import { describeSiteSettingsErrors, inlineErrorText } from '@/lib/errorText';
-import type { Lang } from '@/lib/i18n';
+import { fallbackLang, type Lang } from '@/lib/i18n';
+import { siteShortName } from '@/lib/siteAppIdentity';
+import { siteIconUrl } from '@/lib/siteMeta';
 import type { BirthDetails, SiteSettings, SiteSettingsError } from '@/lib/siteSettings';
-import { BirthMediaEditor, type MediaDraft } from './BirthMediaEditor';
+import { BirthMediaEditor, type MediaDraft, useBirthMediaUrl } from './BirthMediaEditor';
+import { NotificationPreviews } from './NotificationPreviews';
+import { PublicPagePreview } from './PublicPagePreview';
 import styles from './SiteSettingsForm.module.css';
 
 /** The Birth as the editor holds it: the fields as typed, and the photo picked but maybe not yet uploaded. */
@@ -48,6 +53,15 @@ interface BirthDialogProps {
   previewSlug?: string;
   /** Everything that would stop saving the page with this Birth. */
   check: (birth: BirthDraft) => SiteSettingsError[];
+  /** The Site settings saving with this Birth would store, or null while a field is half filled. */
+  settingsWith: (birth: BirthDraft) => SiteSettings | null;
+  slug: string;
+  /** The Site's Address, where the notification comes from. */
+  address: string;
+  /** The Birth video as the page around the dialog holds it. */
+  video: MediaDraft;
+  /** What the page shows in place of a birth photo. */
+  bornPlaceholderUrl: string;
   /** Saves the whole page with this Birth, the Owner's other changes included. */
   onSave: (birth: BirthDraft) => Promise<SaveOutcome>;
   onClose: () => void;
@@ -68,6 +82,11 @@ export function BirthDialog({
   languages,
   previewSlug,
   check,
+  settingsWith,
+  slug,
+  address,
+  video,
+  bornPlaceholderUrl,
   onSave,
   onClose,
 }: BirthDialogProps) {
@@ -83,7 +102,13 @@ export function BirthDialog({
   const [failedPaths, setFailedPaths] = useState<string[]>([]);
   const [failedSaves, setFailedSaves] = useState(0);
   const [confirmingUndo, setConfirmingUndo] = useState(false);
+  const [confirmingAnnounce, setConfirmingAnnounce] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
+  /** The previews keep the last Site settings that were whole while a field is half filled. */
+  const lastSettings = useRef<SiteSettings | null>(null);
+  lastSettings.current = settingsWith(draft) ?? lastSettings.current;
+  const photoUrl = useBirthMediaUrl(draft.photo, previewSlug, 'photo');
+  const videoUrl = useBirthMediaUrl(video, previewSlug, 'video');
 
   useEffect(() => {
     if (failedSaves > 0) {
@@ -96,7 +121,6 @@ export function BirthDialog({
   const inDialog = (path: string) =>
     path.startsWith('birth.') || (asksIdentity && (path === 'babyName' || path === 'sex'));
   const underField = (path: string) => inlinePath(path) || (asksIdentity && path === 'babyName');
-  const elsewhere = errors.filter((error) => !inDialog(error.path));
 
   function inlineError(path: string): string | undefined {
     const error = errors.find((e) => e.path === path);
@@ -107,15 +131,23 @@ export function BirthDialog({
     setDraft({ ...draft, ...patch });
   }
 
-  async function save(birth: BirthDraft) {
-    setMessage(null);
+  /** Marks what stops saving `birth`, and says whether anything does. */
+  function blocked(birth: BirthDraft): boolean {
     const found = check(birth);
     if (found.length > 0) {
       setFailedPaths(found.map((error) => error.path));
       setFailedSaves((count) => count + 1);
-      return;
+      return true;
     }
     setFailedPaths([]);
+    return false;
+  }
+
+  async function save(birth: BirthDraft) {
+    setMessage(null);
+    if (blocked(birth)) {
+      return;
+    }
     setSaving(true);
     const outcome = await onSave(birth);
     if (outcome.ok) {
@@ -123,6 +155,7 @@ export function BirthDialog({
     }
     setSaving(false);
     setConfirmingUndo(false);
+    setConfirmingAnnounce(false);
     setMessage(outcome.message);
     if (outcome.errors.length > 0) {
       setFailedPaths(outcome.errors.map((error) => error.path));
@@ -130,22 +163,18 @@ export function BirthDialog({
     }
   }
 
+  // Announcing sends the notification at once, so it asks first: a slip of the finger cannot announce.
   function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
-    void save(draft);
+    if (!announcing) {
+      void save(draft);
+    } else if (!blocked(draft)) {
+      setMessage(null);
+      setConfirmingAnnounce(true);
+    }
   }
 
-  const birthErrors = errors.filter((error) => inDialog(error.path) && !underField(error.path));
-  const status =
-    message ||
-    [
-      birthErrors.length > 0 ? describeSiteSettingsErrors(birthErrors, pageLang) : null,
-      elsewhere.length > 0 ? `${t.fixElsewhere} ${describeSiteSettingsErrors(elsewhere, pageLang)}` : null,
-      errors.some((error) => underField(error.path)) ? errorsCopy[pageLang].checkMarkedFields : null,
-    ]
-      .filter(Boolean)
-      .join(' ') ||
-    null;
+  const status = message || statusText(t, errors, inDialog, underField, pageLang);
 
   return (
     <FullPageDialog
@@ -156,6 +185,7 @@ export function BirthDialog({
       busy={saving}
       onClose={onClose}
       onSubmit={submit}
+      width="wide"
       actions={
         <>
           <StatusMessage tone="danger">{status}</StatusMessage>
@@ -166,82 +196,106 @@ export function BirthDialog({
         </>
       }
     >
-      <div ref={contentRef} className={styles.column}>
-        {revealed ? (
-          <div className={styles.birth}>
-            <p className={styles.birthSummary}>{revealed}</p>
-          </div>
-        ) : null}
-        {asksIdentity ? (
-          <Card title={t.identityCard} description={t.identityCardDescription} headingLevel={3}>
-            <Field label={t.name} error={inlineError('babyName')}>
-              <Input value={babyName} onChange={(e) => onBabyName(e.target.value)} autoComplete="off" />
+      <div className={styles.birthLayout}>
+        <div ref={contentRef} className={styles.column}>
+          {revealed ? (
+            <div className={styles.birth}>
+              <p className={styles.birthSummary}>{revealed}</p>
+            </div>
+          ) : null}
+          {asksIdentity ? (
+            <Card title={t.identityCard} description={t.identityCardDescription} headingLevel={3}>
+              <Field label={t.name} error={inlineError('babyName')}>
+                <Input value={babyName} onChange={(e) => onBabyName(e.target.value)} autoComplete="off" />
+              </Field>
+              <SegmentedControl
+                legend={t.sex}
+                options={[
+                  { value: 'female', label: t.sexFemale },
+                  { value: 'male', label: t.sexMale },
+                ]}
+                value={sex}
+                onChange={onSex}
+              />
+            </Card>
+          ) : null}
+          <Card title={t.birthDetailsCard} headingLevel={3}>
+            <Field label={t.birthDatetime} error={inlineError('birth.details.datetime')}>
+              <Input
+                type="datetime-local"
+                value={draft.datetime}
+                onChange={(e) => update({ datetime: e.target.value })}
+              />
             </Field>
-            <SegmentedControl
-              legend={t.sex}
-              options={[
-                { value: 'female', label: t.sexFemale },
-                { value: 'male', label: t.sexMale },
-              ]}
-              value={sex}
-              onChange={onSex}
-            />
+            <div className={styles.pair}>
+              <Field label={t.weight} optional error={inlineError('birth.details.weightGrams')}>
+                <Input
+                  type="number"
+                  inputMode="numeric"
+                  value={draft.weight}
+                  onChange={(e) => update({ weight: e.target.value })}
+                />
+              </Field>
+              <Field label={t.length} optional error={inlineError('birth.details.lengthCm')}>
+                <Input
+                  type="number"
+                  inputMode="decimal"
+                  value={draft.lengthCm}
+                  onChange={(e) => update({ lengthCm: e.target.value })}
+                />
+              </Field>
+            </div>
+            <PerLanguageField
+              label={t.message}
+              languages={languages}
+              value={draft.message}
+              onChange={(lang, text) => update({ message: { ...draft.message, [lang]: text } })}
+              errors={Object.fromEntries(languages.map((lang) => [lang, inlineError(`birth.details.message.${lang}`)]))}
+              optional
+            >
+              {({ lang, value, onChange }) => (
+                <Textarea lang={lang} value={value} onChange={(e) => onChange(e.target.value)} />
+              )}
+            </PerLanguageField>
           </Card>
+          <BirthMediaEditor
+            only="photo"
+            headingLevel={3}
+            previewSlug={previewSlug}
+            photo={draft.photo}
+            onPhoto={(photo) => update({ photo })}
+          />
+          {announcing ? null : (
+            <div>
+              <Button variant="ghost" icon="trash" onClick={() => setConfirmingUndo(true)}>
+                {t.unannounce}
+              </Button>
+            </div>
+          )}
+        </div>
+        {lastSettings.current ? (
+          <BirthPreviews
+            settings={lastSettings.current}
+            announcing={announcing}
+            message={draft.message}
+            slug={slug}
+            address={address}
+            photoUrl={photoUrl}
+            videoUrl={videoUrl}
+            bornPlaceholderUrl={bornPlaceholderUrl}
+          />
         ) : null}
-        <Card title={t.birthDetailsCard} headingLevel={3}>
-          <Field label={t.birthDatetime} error={inlineError('birth.details.datetime')}>
-            <Input
-              type="datetime-local"
-              value={draft.datetime}
-              onChange={(e) => update({ datetime: e.target.value })}
-            />
-          </Field>
-          <div className={styles.pair}>
-            <Field label={t.weight} optional error={inlineError('birth.details.weightGrams')}>
-              <Input
-                type="number"
-                inputMode="numeric"
-                value={draft.weight}
-                onChange={(e) => update({ weight: e.target.value })}
-              />
-            </Field>
-            <Field label={t.length} optional error={inlineError('birth.details.lengthCm')}>
-              <Input
-                type="number"
-                inputMode="decimal"
-                value={draft.lengthCm}
-                onChange={(e) => update({ lengthCm: e.target.value })}
-              />
-            </Field>
-          </div>
-          <PerLanguageField
-            label={t.message}
-            languages={languages}
-            value={draft.message}
-            onChange={(lang, text) => update({ message: { ...draft.message, [lang]: text } })}
-            errors={Object.fromEntries(languages.map((lang) => [lang, inlineError(`birth.details.message.${lang}`)]))}
-            optional
-          >
-            {({ lang, value, onChange }) => (
-              <Textarea lang={lang} value={value} onChange={(e) => onChange(e.target.value)} />
-            )}
-          </PerLanguageField>
-        </Card>
-        <BirthMediaEditor
-          only="photo"
-          headingLevel={3}
-          previewSlug={previewSlug}
-          photo={draft.photo}
-          onPhoto={(photo) => update({ photo })}
-        />
-        {announcing ? null : (
-          <div>
-            <Button variant="ghost" icon="trash" onClick={() => setConfirmingUndo(true)}>
-              {t.unannounce}
-            </Button>
-          </div>
-        )}
       </div>
+      <ConfirmDialog
+        open={confirmingAnnounce}
+        title={t.announceConfirmTitle}
+        description={t.announceConfirmDescription}
+        confirmLabel={t.announceBirth}
+        dismissLabel={t.keepEditing}
+        busy={saving}
+        onConfirm={() => void save(draft)}
+        onClose={() => setConfirmingAnnounce(false)}
+      />
       <ConfirmDialog
         open={confirmingUndo}
         title={t.unannounceTitle}
@@ -256,11 +310,89 @@ export function BirthDialog({
   );
 }
 
+interface BirthPreviewsProps {
+  settings: SiteSettings;
+  announcing: boolean;
+  message: BirthDetails['message'];
+  slug: string;
+  address: string;
+  photoUrl: string | undefined;
+  videoUrl: string | undefined;
+  bornPlaceholderUrl: string;
+}
+
+/**
+ * Beside the fields: the birth notification while announcing, as each
+ * Language's subscribers get it, and the page in its Born state on a phone.
+ */
+function BirthPreviews({
+  settings,
+  announcing,
+  message,
+  slug,
+  address,
+  photoUrl,
+  videoUrl,
+  bornPlaceholderUrl,
+}: BirthPreviewsProps) {
+  const pageLang = useLang();
+  const t = platformCopy[pageLang];
+  const { languages } = settings;
+  return (
+    <div className={styles.birthPreviews}>
+      {announcing ? (
+        <Card
+          title={t.settings.previewNotification}
+          description={languages.length > 1 ? t.send.previewNote : undefined}
+          headingLevel={3}
+        >
+          <NotificationPreviews
+            languages={languages}
+            texts={birthNotificationMessages(settings, message)}
+            siteName={Object.fromEntries(languages.map((lang) => [lang, siteShortName(settings, lang)]))}
+            host={address.replace(/^https?:\/\//, '')}
+            icon={photoUrl ?? siteIconUrl(settings, '192', address.replace(/\/$/, ''))}
+          />
+        </Card>
+      ) : null}
+      <PublicPagePreview
+        settings={settings}
+        slug={slug}
+        lang={languages.includes(pageLang) ? pageLang : fallbackLang(languages)}
+        caption={t.settings.previewPage}
+        bornImageUrl={photoUrl ?? bornPlaceholderUrl}
+        birthVideoUrl={videoUrl}
+      />
+    </div>
+  );
+}
+
 function submitLabel(t: (typeof platformCopy)[Lang]['settings'], announcing: boolean, saving: boolean): string {
   if (announcing) {
     return saving ? t.announcing : t.announceBirth;
   }
   return saving ? t.saving : t.save;
+}
+
+/** The dialog's errors in words: its own that no field shows, those elsewhere on the page, and a pointer to the marked fields. */
+function statusText(
+  t: (typeof platformCopy)[Lang]['settings'],
+  errors: SiteSettingsError[],
+  inDialog: (path: string) => boolean,
+  underField: (path: string) => boolean,
+  lang: Lang
+): string | null {
+  const birthErrors = errors.filter((error) => inDialog(error.path) && !underField(error.path));
+  const elsewhere = errors.filter((error) => !inDialog(error.path));
+  return (
+    [
+      birthErrors.length > 0 ? describeSiteSettingsErrors(birthErrors, lang) : null,
+      elsewhere.length > 0 ? `${t.fixElsewhere} ${describeSiteSettingsErrors(elsewhere, lang)}` : null,
+      errors.some((error) => underField(error.path)) ? errorsCopy[lang].checkMarkedFields : null,
+    ]
+      .filter(Boolean)
+      .join(' ') || null
+  );
 }
 
 /** What announcing shows that the Privacy settings hide until now, or null when they hide nothing. */

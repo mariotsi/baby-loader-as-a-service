@@ -1,3 +1,4 @@
+/* Sized to the page it sits in (`cqi`), which is the screen unless the page is drawn smaller, like a preview in a phone frame. */
 .root {
   position: absolute;
   inset: 0;
@@ -27,7 +28,7 @@
 .one {
   --depth: 1;
   --blob-color: var(--color-joy-1);
-  width: min(72vw, 28rem);
+  width: min(72cqi, 28rem);
   top: 4%;
   left: -22%;
 }
@@ -35,7 +36,7 @@
 .two {
   --depth: 0.55;
   --blob-color: var(--color-joy-2);
-  width: min(56vw, 22rem);
+  width: min(56cqi, 22rem);
   top: 34%;
   right: -16%;
 }
@@ -43,7 +44,7 @@
 .three {
   --depth: 0.3;
   --blob-color: var(--color-joy-3);
-  width: min(48vw, 18rem);
+  width: min(48cqi, 18rem);
   bottom: -6%;
   left: 12%;
 }

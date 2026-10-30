@@ -55,6 +55,7 @@ export const SiteEdit: Story = {
           site={site}
           timeZones={['Europe/Rome', 'Europe/London', 'America/New_York']}
           address="https://emma-preview.loading.baby"
+          bornPlaceholderUrl="/website-assets/born-placeholder-v1.png"
         />
       </PageShell>
     </LangProvider>
@@ -71,6 +72,7 @@ export const SiteEditBeforeBirth: Story = {
           site={waitingSite}
           timeZones={['Europe/Rome', 'Europe/London', 'America/New_York']}
           address="https://emma-preview.loading.baby"
+          bornPlaceholderUrl="/website-assets/born-placeholder-v1.png"
         />
       </PageShell>
     </LangProvider>
@@ -159,6 +161,7 @@ export const SiteEditItalian: Story = {
           site={italianSite}
           timeZones={['Europe/Rome', 'Europe/London', 'America/New_York']}
           address="https://emma-preview.loading.baby"
+          bornPlaceholderUrl="/website-assets/born-placeholder-v1.png"
         />
       </PageShell>
     </LangProvider>
