@@ -19,8 +19,10 @@ export interface ShareCardProps {
 
 /**
  * The share image's layout: the Site icon on a raised tile beside the Public
- * page's headline and Countdown, with three circles of the Palette's joy
- * colors in the corners, as the Platform's own share image has. ImageResponse
+ * page's headline (its lead in the text color and the name in the accent, as
+ * the page sets it) and Countdown, above the Address in a pill, with three
+ * circles of the Palette's joy colors in the corners, as the Platform's own
+ * share image has. ImageResponse
  * draws it at 1200×630 (see siteImages.tsx) and the editor's link preview
  * draws it scaled to its box, so the preview is the image. Only inline styles,
  * flex layout and absolute positions, which ImageResponse reads.
@@ -51,8 +53,9 @@ export function ShareCard({ view, address, icon, px, color, font }: ShareCardPro
         width: '100%',
         height: '100%',
         display: 'flex',
-        alignItems: 'center',
-        gap: px(64),
+        flexDirection: 'column',
+        paddingTop: px(36),
+        paddingBottom: px(36),
         paddingLeft: px(88),
         paddingRight: px(88),
         background: color('--color-bg'),
@@ -65,57 +68,68 @@ export function ShareCard({ view, address, icon, px, color, font }: ShareCardPro
       {circle(800, -290, 660, '--color-joy-1')}
       {circle(1000, 490, 300, '--color-joy-3')}
       {circle(-60, 520, 180, '--color-joy-2')}
-      <div
-        style={{
-          width: px(340),
-          height: px(340),
-          flexShrink: 0,
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          borderRadius: px(72),
-          overflow: 'hidden',
-          background: color('--color-surface'),
-          boxShadow: `0 ${length(4)} ${length(8)} rgba(0, 0, 0, 0.05), 0 ${length(24)} ${length(60)} rgba(0, 0, 0, 0.12)`,
-        }}
-      >
-        {icon}
-      </div>
-      <div
-        style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', gap: px(12), minWidth: 0 }}
-      >
-        <div style={{ fontSize: px(34), color: color('--color-text-muted') }}>{view.tagline}</div>
-        <div style={{ ...display, fontSize: px(64), lineHeight: 1.1, color: color('--color-accent-ink') }}>
-          {view.title}
+      <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center', gap: px(64), minHeight: 0 }}>
+        <div
+          style={{
+            width: px(340),
+            height: px(340),
+            flexShrink: 0,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: px(72),
+            overflow: 'hidden',
+            background: color('--color-surface'),
+            boxShadow: `0 ${length(4)} ${length(8)} rgba(0, 0, 0, 0.05), 0 ${length(24)} ${length(60)} rgba(0, 0, 0, 0.12)`,
+          }}
+        >
+          {icon}
         </div>
-        {view.sex ? <div style={{ ...display, fontSize: px(34) }}>{view.sex}</div> : null}
-        {view.waiting ? (
-          <div style={{ display: 'flex', flexDirection: 'column', marginTop: px(16) }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: px(20) }}>
-              {view.waiting.count === null ? null : (
-                <span style={{ ...display, fontSize: px(96), lineHeight: 1, color: color('--color-accent-ink') }}>
-                  {view.waiting.count}
-                </span>
-              )}
-              <span style={{ fontSize: px(40), lineHeight: 1 }}>{view.waiting.unit}</span>
-            </div>
-            <div style={{ fontSize: px(30), marginTop: px(12), color: color('--color-text-muted') }}>
-              {view.waiting.dueDate}
-            </div>
+        <div
+          style={{ position: 'relative', flex: 1, display: 'flex', flexDirection: 'column', gap: px(12), minWidth: 0 }}
+        >
+          <div style={{ fontSize: px(34), color: color('--color-text-muted') }}>{view.tagline}</div>
+          {/* A box per word, so the lead and the name wrap as one line of text would: ImageResponse lays out boxes, not inline text. */}
+          <div
+            style={{
+              ...display,
+              display: 'flex',
+              flexWrap: 'wrap',
+              columnGap: px(16),
+              fontSize: px(64),
+              lineHeight: 1.1,
+            }}
+          >
+            {[
+              ...words(view.titleLead).map((word) => [word, '--color-text'] as const),
+              ...words(view.titleName).map((word) => [word, '--color-accent-ink'] as const),
+            ].map(([word, token], i) => (
+              // biome-ignore lint/suspicious/noArrayIndexKey: the words are drawn once, in a fixed order; a word may repeat.
+              <span key={`${i}-${word}`} style={{ color: color(token) }}>
+                {word}
+              </span>
+            ))}
           </div>
-        ) : null}
-        {view.born ? <div style={{ fontSize: px(36), marginTop: px(16) }}>{view.born.bornOn}</div> : null}
+          {view.sex ? <div style={{ ...display, fontSize: px(34) }}>{view.sex}</div> : null}
+          {view.waiting ? (
+            <div style={{ display: 'flex', flexDirection: 'column', marginTop: px(16) }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: px(20) }}>
+                {view.waiting.count === null ? null : (
+                  <span style={{ ...display, fontSize: px(96), lineHeight: 1, color: color('--color-accent-ink') }}>
+                    {view.waiting.count}
+                  </span>
+                )}
+                <span style={{ fontSize: px(40), lineHeight: 1 }}>{view.waiting.unit}</span>
+              </div>
+              <div style={{ fontSize: px(30), marginTop: px(12), color: color('--color-text-muted') }}>
+                {view.waiting.dueDate}
+              </div>
+            </div>
+          ) : null}
+          {view.born ? <div style={{ fontSize: px(36), marginTop: px(16) }}>{view.born.bornOn}</div> : null}
+        </div>
       </div>
-      <div
-        style={{
-          position: 'absolute',
-          left: 0,
-          right: 0,
-          bottom: px(36),
-          display: 'flex',
-          justifyContent: 'center',
-        }}
-      >
+      <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', marginTop: px(28) }}>
         <div
           style={{
             display: 'flex',
@@ -138,6 +152,10 @@ export function ShareCard({ view, address, icon, px, color, font }: ShareCardPro
       </div>
     </div>
   );
+}
+
+function words(text: string): string[] {
+  return text.split(' ').filter(Boolean);
 }
 
 /**
