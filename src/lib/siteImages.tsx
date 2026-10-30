@@ -1,6 +1,8 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
+import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { ImageResponse } from 'next/og';
+import type { ReactNode } from 'react';
 import { ShareCard } from '@/components/ShareCard';
 import type { Lang } from './i18n.ts';
 import { publicPageView } from './publicPageView.ts';
@@ -42,9 +44,27 @@ export function siteIconImage(
   );
 }
 
-const loadingBaby = readFile(join(process.cwd(), 'public/icon-512.png')).then(
-  (png) => `data:image/png;base64,${png.toString('base64')}`
-);
+let loadingBabyPng: Promise<string | null> | undefined;
+
+/**
+ * The loading baby as a data URL, read once. A Worker has no `public/` on
+ * disk, so it asks its static assets; `next dev` has no built assets, so it
+ * reads the file. Null when neither answers: the image then goes without it
+ * rather than failing, which would leave link previews with no image at all.
+ */
+function loadingBaby(): Promise<string | null> {
+  loadingBabyPng ??= (async () => {
+    const assets = await getCloudflareContext({ async: true })
+      .then(({ env }) => env.ASSETS)
+      .catch(() => undefined);
+    const response = await assets?.fetch('https://assets.local/icon-512.png').catch(() => undefined);
+    const png = response?.ok
+      ? Buffer.from(await response.arrayBuffer())
+      : await readFile(join(process.cwd(), 'public/icon-512.png')).catch(() => null);
+    return png && `data:image/png;base64,${png.toString('base64')}`;
+  })();
+  return loadingBabyPng;
+}
 
 /** The share image: the Site icon beside the Public page's headline and Countdown, in its Palette and Font. */
 export async function shareImage(settings: SiteSettings, lang: Lang, now: Date, headers: HeadersInit) {
@@ -68,12 +88,12 @@ export async function shareImage(settings: SiteSettings, lang: Lang, now: Date, 
   const display = fonts.some((f) => f.name === 'display') ? 'display' : undefined;
   const body = fonts.some((f) => f.name === 'body') ? 'body' : display;
 
-  const icon = settings.icon ? (
-    <span style={{ fontSize: 190 }}>{settings.icon}</span>
-  ) : (
+  let icon: ReactNode = <span style={{ fontSize: 190 }}>{settings.icon}</span>;
+  if (!settings.icon) {
+    const baby = await loadingBaby();
     // biome-ignore lint/performance/noImgElement: ImageResponse draws plain elements, never next/image.
-    <img src={await loadingBaby} width={280} height={280} alt="" />
-  );
+    icon = baby && <img src={baby} width={280} height={280} alt="" />;
+  }
   return new ImageResponse(
     <ShareCard
       view={view}

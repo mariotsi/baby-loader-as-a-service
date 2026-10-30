@@ -231,7 +231,7 @@ const it: PlatformCopy = {
   meta: {
     title: 'Loading Baby: per i giorni prima del grande giorno',
     description:
-      'Crea in pochi minuti una pagina personalizzata con il conto alla rovescia e l’annuncio del tuo bambino.',
+      'Crea in pochi minuti una pagina personalizzata con il conto alla rovescia e l’annuncio della nascita del tuo bambino.',
   },
 
   marketing: {
