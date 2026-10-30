@@ -11,6 +11,9 @@ export function siteShortName(settings: Pick<SiteSettings, 'babyName' | 'birth' 
   return nameShown && settings.babyName ? settings.babyName : 'Loading Baby';
 }
 
+/** The newest Emoji version `twemojiUrl` has images for. */
+export const TWEMOJI_EMOJI_VERSION = 14;
+
 /**
  * The Twemoji image ImageResponse draws for `emoji`, so the editor's previews
  * show the very picture the generated images carry. A variation selector is

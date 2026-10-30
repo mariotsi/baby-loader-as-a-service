@@ -97,3 +97,10 @@
 .emoji[data-active] {
   background: var(--color-soft);
 }
+
+/* As tall as the emoji's text, so a failed image swaps to the device's font without moving anything. */
+.image {
+  display: block;
+  width: 1em;
+  height: 1em;
+}

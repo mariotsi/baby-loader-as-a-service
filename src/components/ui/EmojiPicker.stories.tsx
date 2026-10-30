@@ -28,3 +28,6 @@ export const Default: Story = {};
 
 /** Joined sequences and skin tones show as one emoji. */
 export const Sequence: Story = { args: { value: '👨‍👩‍👧' } };
+
+/** An emoji newer than Twemoji shows in the device's font. The grid doesn't offer these, but a Site may already have one. */
+export const NoImage: Story = { args: { value: '🫎' } };
