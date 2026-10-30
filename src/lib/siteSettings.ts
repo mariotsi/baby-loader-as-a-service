@@ -331,8 +331,9 @@ export function parseSiteSettings(input: unknown, now: Date = new Date()): Parse
 
 /**
  * The body of a Site's creation: `{ slug, settings }`. The Slug is lowercased
- * and never changes afterwards. A new Site starts Waiting: the birth is
- * announced from Site settings, which is what sends the birth notification.
+ * and never changes afterwards. A new Site starts Waiting, with a Due date
+ * for its Countdown: the birth is announced from Site settings, which is what
+ * sends the birth notification.
  */
 export function parseNewSite(input: unknown, now: Date = new Date()): ParseResult<ValidNewSite> {
   const result = newSiteSchema.safeParse(input);
@@ -340,6 +341,9 @@ export function parseNewSite(input: unknown, now: Date = new Date()): ParseResul
     return { ok: false, errors: toErrors(result.error.issues, input) };
   }
   const errors = crossFieldErrors(result.data.settings, now).map((e) => ({ ...e, path: `settings.${e.path}` }));
+  if (!result.data.settings.dueDate) {
+    errors.push({ path: 'settings.dueDate', code: 'required' });
+  }
   if (result.data.settings.birth.born) {
     errors.push({ path: 'settings.birth', code: 'invalidOption' });
   }

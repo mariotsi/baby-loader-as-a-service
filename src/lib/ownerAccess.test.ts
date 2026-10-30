@@ -17,7 +17,8 @@ before(async () => {
   ownerToken = () => issueSessionToken(ownerId);
   otherToken = () => issueSessionToken(otherId);
   pendingToken = () => issueSessionToken(ownerId, { passwordChangePending: true });
-  const parsed = parseNewSite({ slug: 'emma', settings: defaultSiteSettings });
+  const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const parsed = parseNewSite({ slug: 'emma', settings: { ...defaultSiteSettings, dueDate } });
   assert.ok(parsed.ok);
   const created = await createSite(authenticate(ownerToken()) as AuthenticatedUser, parsed.value);
   assert.ok(created.ok);

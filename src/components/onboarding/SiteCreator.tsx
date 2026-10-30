@@ -126,8 +126,15 @@ function basicsErrors(draft: Draft, lang: Lang): BasicsErrors {
   return {
     slug: slugError(slug, t) ?? (slug ? undefined : t.slugFormat),
     babyName: draft.babyName.trim() ? undefined : t.babyNameRequired,
-    dueDate: dueDate ? inlineErrorText({ ...dueDate, path: 'dueDate' }, draft.languages, lang) : undefined,
+    dueDate: dueDateError(draft, dueDate, lang),
   };
+}
+
+function dueDateError(draft: Draft, error: SiteSettingsError | undefined, lang: Lang): string | undefined {
+  if (!draft.dueDate) {
+    return platformCopy[lang].onboarding.dueDateRequired;
+  }
+  return error ? inlineErrorText({ ...error, path: 'dueDate' }, draft.languages, lang) : undefined;
 }
 
 async function slugIsFree(slug: string): Promise<boolean> {
@@ -450,7 +457,7 @@ function BasicsStep({ draft, update, errors, onErrors, address, headingRef }: Ba
           <option value="male">{settings.sexMale}</option>
         </Select>
       </Field>
-      <Field label={t.dueDate} optional hint={t.dueDateHint} error={errors.dueDate}>
+      <Field label={t.dueDate} hint={t.dueDateHint} error={errors.dueDate} required>
         <Input
           type="date"
           value={draft.dueDate}

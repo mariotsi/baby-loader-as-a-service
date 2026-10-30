@@ -29,7 +29,8 @@ test('an id of the wrong shape matches no User', async () => {
 
 test('a device subscribed twice to one Site is one Subscription, refreshed', async () => {
   const owner = { id: await insertTestUser() } as AuthenticatedUser;
-  const parsed = parseNewSite({ slug: 'ivy', settings: defaultSiteSettings });
+  const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const parsed = parseNewSite({ slug: 'ivy', settings: { ...defaultSiteSettings, dueDate } });
   assert.ok(parsed.ok);
   const created = await createSite(owner, parsed.value);
   assert.ok(created.ok);

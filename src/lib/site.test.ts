@@ -28,7 +28,13 @@ before(async () => {
 after(() => stopDb());
 
 function newSite(slug: string, settings: SiteSettingsInput = defaultSiteSettings) {
-  const parsed = parseNewSite({ slug, settings });
+  const parsed = parseNewSite({
+    slug,
+    settings: {
+      ...settings,
+      dueDate: settings.dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
+    },
+  });
   assert.ok(parsed.ok, JSON.stringify(parsed));
   return parsed.value;
 }

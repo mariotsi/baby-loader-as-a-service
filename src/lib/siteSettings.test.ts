@@ -259,7 +259,7 @@ test('a missing label is reported beside the other errors of the same save', () 
 });
 
 test('a new Site lowercases its Slug and rejects bad or Reserved ones', () => {
-  const ok = parseNewSite({ slug: '  Emma-Rose ', settings: defaultSiteSettings }, NOW);
+  const ok = parseNewSite({ slug: '  Emma-Rose ', settings: settings({ dueDate: '2026-11-01' }) }, NOW);
   assert.ok(ok.ok);
   assert.equal(ok.value.slug, 'emma-rose');
 
@@ -276,11 +276,17 @@ test('a new Site lowercases its Slug and rejects bad or Reserved ones', () => {
   });
 });
 
+test('a new Site needs a Due date', () => {
+  const result = parseNewSite({ slug: 'emma', settings: settings() }, NOW);
+  assert.deepEqual(result.ok ? [] : result.errors, [{ path: 'settings.dueDate', code: 'required' }]);
+});
+
 test('a new Site starts Waiting', () => {
   const bornSite = {
     ...defaultSiteSettings,
     babyName: 'Emma',
     sex: 'female',
+    dueDate: '2026-11-01',
     birth: {
       born: true,
       details: { datetime: '2026-01-01T08:00:00.000Z', weightGrams: null, lengthCm: null, message: {} },
