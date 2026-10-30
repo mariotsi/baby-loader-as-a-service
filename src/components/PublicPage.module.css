@@ -56,6 +56,30 @@
   }
 }
 
+/* Holds the "notifications on" pill: last on a phone, pinned to the corner on a wide screen. */
+.pillSlot {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  max-width: var(--content-narrow);
+  margin: var(--space-7) auto 0;
+}
+
+.pillSlot:empty {
+  display: none;
+}
+
+@media (min-width: 60rem) {
+  .pillSlot {
+    position: fixed;
+    z-index: 5;
+    right: var(--space-4);
+    bottom: var(--space-4);
+    max-width: none;
+    margin: 0;
+  }
+}
+
 .intro {
   display: grid;
   justify-items: center;

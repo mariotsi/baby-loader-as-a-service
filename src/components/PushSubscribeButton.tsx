@@ -1,11 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Button } from '@/components/ui/Button';
 import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { ExternalLink } from '@/components/ui/ExternalLink';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { StatusMessage } from '@/components/ui/StatusMessage';
+import { StatusPill } from '@/components/ui/StatusPill';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import type { Lang } from '@/lib/i18n';
 import type { PushButtonCopy } from '@/lib/publicPageView';
@@ -18,7 +20,14 @@ interface Props {
   lang: Lang;
   vapidPublicKey: string | undefined;
   t: PushButtonCopy;
+  /** Where the "notifications on" pill goes, away from the call to action. */
+  pillSlot?: HTMLElement | null;
 }
+
+type Feedback = 'subscribeOk' | 'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe';
+
+/** How long "You are all set" stays where the button was, before only the pill remains. */
+const SUBSCRIBE_OK_MS = 6000;
 
 type Status = 'checking' | 'unsupported' | 'denied' | 'ios-home-screen' | 'subscribed' | 'unsubscribed';
 type DeviceContext = {
@@ -254,11 +263,11 @@ async function detectStatus(device: DeviceContext, slug: string): Promise<Status
   }
 }
 
-export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
+export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot }: Props) {
   const [status, setStatus] = useState<Status>('checking');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
-  const [feedback, setFeedback] = useState<'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe' | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [device, setDevice] = useState<DeviceContext | null>(null);
   const [celebrate, setCelebrate] = useState(false);
 
@@ -280,6 +289,14 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
     return () => window.clearTimeout(timer);
   }, [celebrate]);
 
+  useEffect(() => {
+    if (feedback !== 'subscribeOk') {
+      return;
+    }
+    const timer = window.setTimeout(() => setFeedback(null), SUBSCRIBE_OK_MS);
+    return () => window.clearTimeout(timer);
+  }, [feedback]);
+
   async function subscribe() {
     setBusy(true);
     setFeedback(null);
@@ -297,7 +314,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
         throw new Error('server');
       }
       setStatus('subscribed');
-      setFeedback(null);
+      setFeedback('subscribeOk');
       if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         setCelebrate(true);
       }
@@ -349,6 +366,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t }: Props) {
       feedback={feedback}
       celebrate={celebrate}
       confirmOpen={confirmOpen}
+      pillSlot={pillSlot}
       onSubscribe={subscribe}
       onUnsubscribe={unsubscribe}
       onConfirmOpenChange={setConfirmOpen}
@@ -365,6 +383,7 @@ export function PushSubscribeView({
   feedback = null,
   celebrate = false,
   confirmOpen = false,
+  pillSlot,
   onSubscribe,
   onUnsubscribe,
   onConfirmOpenChange,
@@ -373,9 +392,11 @@ export function PushSubscribeView({
   device: DeviceContext | null;
   t: PushButtonCopy;
   busy?: boolean;
-  feedback?: 'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe' | null;
+  feedback?: Feedback | null;
   celebrate?: boolean;
   confirmOpen?: boolean;
+  /** Renders the pill there instead of in place; left out, it stays in place, as in stories. */
+  pillSlot?: HTMLElement | null;
   onSubscribe: () => void;
   onUnsubscribe: () => void;
   onConfirmOpenChange: (open: boolean) => void;
@@ -389,20 +410,26 @@ export function PushSubscribeView({
     );
   }
 
-  const success = feedback === 'unsubscribeOk' ? t.unsubscribeOk : null;
-  const failure = feedback !== null && feedback !== 'unsubscribeOk' ? t[feedback] : null;
+  const success = feedback === 'subscribeOk' || feedback === 'unsubscribeOk' ? t[feedback] : null;
+  const failure = feedback === 'errorGeneric' || feedback === 'errorUnsubscribe' ? t[feedback] : null;
+  const pill = (
+    <StatusPill
+      className={styles.pill}
+      action={
+        <Button variant="link" size="sm" inline onClick={() => onConfirmOpenChange(true)} loading={busy}>
+          {t.unsubscribeLink}
+        </Button>
+      }
+    >
+      {t.subscribed}
+    </StatusPill>
+  );
+  const placedPill = pillSlot === undefined ? pill : pillSlot && createPortal(pill, pillSlot);
 
   return (
     <div className={styles.push}>
       {status === 'subscribed' ? (
-        <StatusMessage tone="success" fullWidth>
-          <span className={styles.subscribedContent}>
-            <span>{t.subscribed}</span>
-            <Button variant="link" size="sm" inline onClick={() => onConfirmOpenChange(true)} loading={busy}>
-              {t.unsubscribeLink}
-            </Button>
-          </span>
-        </StatusMessage>
+        placedPill
       ) : (
         <Button variant="primary" icon="bell" fullWidth onClick={onSubscribe} loading={busy}>
           {busy ? t.subscribing : t.subscribe}
