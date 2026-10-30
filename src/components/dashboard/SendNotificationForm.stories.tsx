@@ -17,7 +17,7 @@ const meta = {
     host: 'emma-preview.loading.baby',
     subscribers: 12,
     subscriptionsHref: '/dashboard/emma-preview/subscriptions',
-    birth: null,
+    born: false,
   },
   decorators: [
     (Story) => (
@@ -36,20 +36,17 @@ type Story = StoryObj<typeof meta>;
 /** Waiting: a title and a message in each of the Site's Languages, previewed as each device gets it. */
 export const Waiting: Story = {};
 
-/** Born: the birth announcement fills in the texts, and the confirmation says it goes out a second time. */
-export const Born: Story = {
-  args: {
-    birth: {
-      it: { title: 'È nata Emma!', body: 'Benvenuta al mondo, piccola.' },
-      en: { title: 'Emma is born!', body: 'Welcome to the world, little one.' },
-    },
-  },
+/** Waiting: the confirmation says this is a regular notification and points to announcing the birth. */
+export const ConfirmWhileWaiting: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await userEvent.click(canvas.getByRole('button', { name: 'Use the birth announcement' }));
+    for (const lang of ['Italian', 'English']) {
+      const message = within(canvas.getByRole('group', { name: /^Message/ }));
+      await userEvent.type(message.getByRole('textbox', { name: lang }), 'Manca pochissimo!');
+    }
     await userEvent.click(canvas.getByRole('button', { name: 'Send notification' }));
     const dialog = within(within(canvasElement.ownerDocument.body).getByRole('dialog'));
-    await waitFor(() => expect(dialog.getByText(/already announced the birth/)).toBeVisible());
+    await waitFor(() => expect(dialog.getByText(/use “Announce the birth”/)).toBeVisible());
   },
 };
 

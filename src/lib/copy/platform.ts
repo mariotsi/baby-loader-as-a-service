@@ -135,13 +135,11 @@ const en = {
     preview: 'Preview',
     previewIn: (language: string) => `In ${language}`,
     previewNote: 'Each device gets the text in the language it subscribed in.',
-    useBirth: 'Use the birth announcement',
     missingBody: (language: string) => `Write the message in ${language}.`,
     checkMessages: 'Every language needs a message.',
     confirmTitle: (n: number) => plural('en', n, { one: 'Send it to 1 device?', other: `Send it to ${n} devices?` }),
-    confirmDescription: 'It arrives right away and can’t be taken back.',
-    confirmBirthAgain:
-      'You already announced the birth, so everyone subscribed gets the news a second time. It arrives right away and can’t be taken back.',
+    confirmNotBirth:
+      'This is a regular notification: your page keeps counting down. To share that the baby is born, use “Announce the birth” in your page’s settings instead. It arrives right away and can’t be taken back.',
     keepEditing: 'Keep editing',
   },
 
@@ -368,13 +366,11 @@ const it: PlatformCopy = {
     preview: 'Anteprima',
     previewIn: (language) => `In ${language}`,
     previewNote: 'Ogni dispositivo riceve il testo nella lingua in cui si è iscritto.',
-    useBirth: 'Usa l’annuncio della nascita',
     missingBody: (language) => `Scrivi il messaggio in ${language}.`,
     checkMessages: 'Ogni lingua ha bisogno di un messaggio.',
     confirmTitle: (n) => plural('it', n, { one: 'Inviarla a 1 dispositivo?', other: `Inviarla a ${n} dispositivi?` }),
-    confirmDescription: 'Arriva subito e non si può ritirare.',
-    confirmBirthAgain:
-      'Hai già annunciato la nascita, quindi tutti gli iscritti ricevono la notizia una seconda volta. Arriva subito e non si può ritirare.',
+    confirmNotBirth:
+      'È una notifica normale: la tua pagina continua il conto alla rovescia. Per dire che il bambino è nato, usa invece “Annuncia la nascita” nelle impostazioni della pagina. Arriva subito e non si può ritirare.',
     keepEditing: 'Continua a modificare',
   },
 

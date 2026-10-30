@@ -32,8 +32,8 @@ interface SendNotificationFormProps {
   host: string;
   subscribers: number;
   subscriptionsHref: string;
-  /** The birth notification in each Language, once the baby is born. */
-  birth: Partial<Record<Lang, { title: string; body: string }>> | null;
+  /** Whether the birth is announced: until then sending asks first, pointing to announcing it instead. */
+  born: boolean;
 }
 
 /**
@@ -50,13 +50,12 @@ export function SendNotificationForm({
   host,
   subscribers,
   subscriptionsHref,
-  birth,
+  born,
 }: SendNotificationFormProps) {
   const pageLang = useLang();
   const t = platformCopy[pageLang].send;
   const [titles, setTitles] = useState<Texts>({});
   const [bodies, setBodies] = useState<Texts>({});
-  const [usedBirth, setUsedBirth] = useState(false);
   const [confirming, setConfirming] = useState(false);
   const [sending, setSending] = useState(false);
   const [checked, setChecked] = useState(false);
@@ -83,15 +82,6 @@ export function SendNotificationForm({
     failure = t.checkMessages;
   }
 
-  function applyBirthTexts() {
-    if (!birth) {
-      return;
-    }
-    setTitles(Object.fromEntries(languages.map((lang) => [lang, birth[lang]?.title ?? ''])));
-    setBodies(Object.fromEntries(languages.map((lang) => [lang, birth[lang]?.body ?? ''])));
-    setUsedBirth(true);
-  }
-
   function submit(e: SubmitEvent<HTMLFormElement>) {
     e.preventDefault();
     setResult(null);
@@ -100,7 +90,11 @@ export function SendNotificationForm({
       setFailedSends((count) => count + 1);
       return;
     }
-    setConfirming(true);
+    if (born) {
+      void send();
+    } else {
+      setConfirming(true);
+    }
   }
 
   async function send() {
@@ -124,7 +118,6 @@ export function SendNotificationForm({
       setResult({ ok: true, text: t.sent(data.sent, data.total) });
       setTitles({});
       setBodies({});
-      setUsedBirth(false);
       setChecked(false);
     } else {
       setResult({ ok: false, text: responseErrorText(data, pageLang) });
@@ -136,16 +129,6 @@ export function SendNotificationForm({
       <Card>
         <form ref={formRef} onSubmit={submit} noValidate>
           <Stack gap={5}>
-            <p className={styles.audience}>
-              <Link href={subscriptionsHref}>{t.audience(subscribers)}</Link>
-            </p>
-            {birth ? (
-              <div>
-                <Button variant="ghost" icon="sparkles" onClick={applyBirthTexts}>
-                  {t.useBirth}
-                </Button>
-              </div>
-            ) : null}
             <PerLanguageField
               label={t.titleField}
               hint={t.titleHint}
@@ -181,6 +164,9 @@ export function SendNotificationForm({
               <StatusMessage tone="info">{result?.ok ? result.text : null}</StatusMessage>
               <StatusMessage tone="danger">{failure}</StatusMessage>
             </Stack>
+            <p className={styles.audience}>
+              <Link href={subscriptionsHref}>{t.audience(subscribers)}</Link>
+            </p>
           </Stack>
         </form>
       </Card>
@@ -215,7 +201,7 @@ export function SendNotificationForm({
       <ConfirmDialog
         open={confirming}
         title={t.confirmTitle(subscribers)}
-        description={usedBirth ? t.confirmBirthAgain : t.confirmDescription}
+        description={t.confirmNotBirth}
         confirmLabel={t.submit}
         dismissLabel={t.keepEditing}
         busy={sending}

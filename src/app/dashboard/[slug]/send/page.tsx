@@ -2,7 +2,6 @@ import { SendNotificationForm } from '@/components/dashboard/SendNotificationFor
 import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { siteAddress } from '@/lib/address';
-import { birthNotificationMessages } from '@/lib/birthAnnouncement';
 import { platformCopy } from '@/lib/copy/platform';
 import { addressEnv } from '@/lib/env';
 import { platformLang } from '@/lib/i18nNext';
@@ -45,7 +44,7 @@ export default async function SendPage({ params }: { params: Promise<{ slug: str
         host={address.replace(/^https?:\/\//, '')}
         subscribers={subscribers}
         subscriptionsHref={`/dashboard/${site.slug}/subscriptions`}
-        birth={site.birth.born ? birthNotificationMessages(site, site.birth.details.message) : null}
+        born={site.birth.born}
       />
     </PageShell>
   );
