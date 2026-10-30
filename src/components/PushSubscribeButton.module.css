@@ -6,6 +6,10 @@
   gap: var(--space-1);
 }
 
+.pill {
+  justify-self: center;
+}
+
 .confetti {
   position: fixed;
   z-index: 10;
