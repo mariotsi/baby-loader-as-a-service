@@ -64,7 +64,7 @@ test.describe('Dashboard', () => {
     await dialog.getByLabel('Length (cm)').fill('49');
     await dialog.getByRole('button', { name: 'Announce the birth' }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await expect(page.getByText(/^Announced\. The notification went to \d+ of \d+ subscribers?\.$/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Edit the birth details' })).toBeFocused();
 
     await page.reload();
@@ -118,9 +118,9 @@ test.describe('Dashboard', () => {
     await message.getByLabel('Italian').fill('Benvenuta Marta!');
     await message.getByLabel('English').fill('Welcome Marta!');
     await dialog.getByRole('button', { name: 'Announce the birth' }).click();
-    await expect(page.getByText('Saved.')).toBeVisible();
+    await expect(page.getByText(/^Announced\./)).toBeVisible();
 
-    // 'Saved.' is still on screen from the first save, so wait for the second one itself.
+    // The first save's message is still on screen, so wait for the second save itself.
     await page.getByRole('checkbox', { name: 'Italian' }).uncheck();
     const saved = page.waitForResponse((res) => res.request().method() === 'PUT');
     await page.getByRole('button', { name: 'Save changes' }).click();

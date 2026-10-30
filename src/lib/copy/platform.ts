@@ -142,14 +142,21 @@ const en = {
     sexMale: 'Boy',
     dueDate: 'Due date',
     waitingForBirth:
-      'When the baby arrives, announce it here: your page switches from the Countdown to the Birth details.',
+      'When the baby arrives, announce it here: your page switches from the Countdown to the Birth details, and everyone subscribed gets a notification.',
+    announced: (sent: number, total: number) =>
+      plural('en', total, {
+        one: `Announced. The notification went to ${sent} of ${total} subscriber.`,
+        other: `Announced. The notification went to ${sent} of ${total} subscribers.`,
+      }),
+    notificationFailed: 'Your page is updated, but the notification wasn’t sent.',
+    birthNews: (sex: Sex) => ({ female: 'She is born!', male: 'He is born!', unknown: 'The baby is born!' })[sex],
     announceBirth: 'Announce the birth',
     announcing: 'Announcing…',
     bornOn: (when: string, _sex: Sex) => `Born ${when}`,
     editBirth: 'Edit the birth details',
     birthDialogTitle: (name: string, _sex: Sex) => (name ? `Welcome, ${name}` : 'Welcome, little one'),
     birthDialogDescription:
-      'Share the first details. Announcing switches your page to the Birth details and saves your other changes too.',
+      'Share the first details. Announcing switches your page to the Birth details, sends a notification to everyone subscribed, and saves your other changes too.',
     birthEditTitle: 'Birth details',
     birthDetailsCard: 'The first details',
     birthEditDescription: 'Saving updates your page with these details and saves your other changes too.',
@@ -344,7 +351,14 @@ const it: PlatformCopy = {
     sexMale: 'Maschio',
     dueDate: 'Data prevista',
     waitingForBirth:
-      'Quando il bambino arriva, annuncialo da qui: la tua pagina passa dal conto alla rovescia ai dettagli della nascita.',
+      'Quando il bambino arriva, annuncialo da qui: la tua pagina passa dal conto alla rovescia ai dettagli della nascita e tutti gli iscritti ricevono una notifica.',
+    announced: (sent, total) =>
+      plural('it', total, {
+        one: `Annunciato. La notifica è arrivata a ${sent} iscritto su ${total}.`,
+        other: `Annunciato. La notifica è arrivata a ${sent} iscritti su ${total}.`,
+      }),
+    notificationFailed: 'La pagina è aggiornata, ma la notifica non è stata inviata.',
+    birthNews: (sex) => ({ female: 'È nata!', male: 'È nato!', unknown: 'È nato!' })[sex],
     announceBirth: 'Annuncia la nascita',
     announcing: 'Annuncio in corso…',
     bornOn: (when, sex) => `${sex === 'female' ? 'Nata' : 'Nato'} il ${when}`,
@@ -354,7 +368,7 @@ const it: PlatformCopy = {
       return name ? `${welcome}, ${name}` : `${welcome}, ${sex === 'female' ? 'piccola' : 'piccolo'}`;
     },
     birthDialogDescription:
-      'Racconta i primi dettagli. L’annuncio porta la tua pagina ai dettagli della nascita e salva anche le altre modifiche.',
+      'Racconta i primi dettagli. L’annuncio porta la tua pagina ai dettagli della nascita, invia una notifica a tutti gli iscritti e salva anche le altre modifiche.',
     birthEditTitle: 'Dettagli della nascita',
     birthDetailsCard: 'I primi dettagli',
     birthEditDescription: 'Salvando aggiorni la pagina con questi dettagli e salvi anche le altre modifiche.',

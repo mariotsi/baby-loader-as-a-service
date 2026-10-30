@@ -14,6 +14,7 @@ import styles from './BirthMediaEditor.module.css';
 const mediaCopy = {
   en: {
     title: 'Their first hello',
+    photoTitle: 'Their first photo',
     videoDescription:
       'A welcome video for the big announcement. Pick it whenever you like: it plays once you mark the baby as born, and uploads when you save.',
     photoDescription: 'A photo for their page, beside the Birth details. It uploads when you save.',
@@ -27,6 +28,7 @@ const mediaCopy = {
   },
   it: {
     title: 'Il primo ciao',
+    photoTitle: 'La sua prima foto',
     videoDescription:
       'Un video di benvenuto per il grande annuncio. Sceglilo quando vuoi: parte quando segni che il bambino è nato e viene caricato quando salvi.',
     photoDescription: 'Una foto per la pagina, accanto ai dettagli della nascita. Viene caricata quando salvi.',
@@ -84,7 +86,11 @@ export function BirthMediaEditor({
   const videoUrl = useMediaUrl(previewVideo);
 
   return (
-    <Card title={t.title} description={description(only, lang)} headingLevel={headingLevel}>
+    <Card
+      title={only === 'photo' ? t.photoTitle : t.title}
+      description={description(only, lang)}
+      headingLevel={headingLevel}
+    >
       {only !== 'video' ? (
         <>
           <FilePicker

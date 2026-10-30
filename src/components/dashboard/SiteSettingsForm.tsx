@@ -20,7 +20,13 @@ import { Switch } from '@/components/ui/Switch';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
-import { describeSiteSettingsErrors, inlineErrorText, isInlineError, routeErrorText } from '@/lib/errorText';
+import {
+  describeSiteSettingsErrors,
+  inlineErrorText,
+  isInlineError,
+  responseErrorText,
+  routeErrorText,
+} from '@/lib/errorText';
 import type { Lang } from '@/lib/i18n';
 import type { Milestone, SiteDTO } from '@/lib/site';
 import {
@@ -109,6 +115,8 @@ export function SiteSettingsForm({
   /** Why the last save failed, when the server refused it for a reason the fields cannot show. */
   const [message, setMessage] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
+  /** How the birth notification went, after announcing the birth. */
+  const [announced, setAnnounced] = useState<string | null>(null);
   /** The fields in error at the last failed save, checked again on every edit until they pass. */
   const [failedPaths, setFailedPaths] = useState<string[]>([]);
   /** Counts failed saves, so each one moves the focus to the first field in error. */
@@ -183,6 +191,7 @@ export function SiteSettingsForm({
     e.preventDefault();
     setMessage(null);
     setSaved(false);
+    setAnnounced(null);
     const found = problems();
     if (found.length > 0) {
       fail(found);
@@ -202,12 +211,35 @@ export function SiteSettingsForm({
   async function saveBirth(next: BirthDraft): Promise<SaveOutcome> {
     setMessage(null);
     setSaved(false);
+    setAnnounced(null);
+    const announcing = !birth.born && next.born;
     const outcome = await persist(next);
     if (outcome.ok) {
       setFailedPaths([]);
       closeBirthDialog();
+      if (announcing) {
+        await sendBirthNotification(next);
+      }
     }
     return outcome;
+  }
+
+  /** Tells every Subscription the baby is born, in each of the Site's Languages: the Birth message, or the news. */
+  async function sendBirthNotification(next: BirthDraft) {
+    const messages = Object.fromEntries(
+      languages.map((lang) => [lang, { body: next.message[lang]?.trim() || birthNews(lang, sex) }])
+    );
+    const res = await fetch('/api/send-notification', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ slug: site.slug, messages }),
+    }).catch(() => null);
+    const data = await res?.json().catch(() => null);
+    if (res?.ok) {
+      setAnnounced(t.announced(data.sent, data.total));
+    } else {
+      setMessage(`${t.notificationFailed} ${responseErrorText(data, pageLang)}`);
+    }
   }
 
   function closeBirthDialog() {
@@ -377,7 +409,7 @@ export function SiteSettingsForm({
           <Button variant="primary" type="submit" loading={saving}>
             {saving ? t.saving : t.save}
           </Button>
-          <StatusMessage tone="success">{saved ? t.saved : null}</StatusMessage>
+          <StatusMessage tone="success">{saved ? (announced ?? t.saved) : null}</StatusMessage>
           <StatusMessage tone="danger">{message || problemsText(errors, pageLang)}</StatusMessage>
         </div>
       </form>
@@ -395,6 +427,11 @@ export function SiteSettingsForm({
       ) : null}
     </>
   );
+}
+
+/** The birth notification's text in `lang` when the Birth message has none in it. */
+function birthNews(lang: Lang, sex: SiteSettingsInput['sex']): string {
+  return platformCopy[lang].settings.birthNews(sex);
 }
 
 function savedBirth(site: SiteDTO): BirthDraft {
