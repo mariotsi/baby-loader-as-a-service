@@ -94,7 +94,7 @@ test.describe('Dashboard', () => {
     await page.goto(await dashboardAddress(page, slug));
     await expect(page.getByRole('heading', { level: 1 })).toHaveText('Benvenuta Edith Rose');
     await expect(page.getByRole('listitem').filter({ hasText: 'Peso' }).getByText('3100 g')).toBeVisible();
-    await expect(page.getByText('È nata!', { exact: true })).toBeVisible();
+    await expect(page.getByRole('paragraph').filter({ hasText: /^È nata!$/ })).toBeVisible();
     await expect(page.getByRole('listitem').filter({ hasText: '👶' })).toContainText('È nata!');
     await expect(page.getByRole('banner')).toHaveText('Elena e Ettore');
     await expect(page.getByText('Si torna a casa')).toBeVisible();

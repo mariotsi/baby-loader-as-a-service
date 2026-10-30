@@ -253,12 +253,15 @@ function Milestones({ milestones }: { milestones: NonNullable<PublicPageView['mi
       </h2>
       <ol className={styles.timeline}>
         {milestones.items.map((item) => (
-          <li key={`${item.date}-${item.label}`}>
+          <li key={`${item.date}-${item.label}`} className={styles.moment}>
             <span className={styles.emoji} aria-hidden="true">
               {item.emoji}
             </span>
-            <span className={styles.when}>{item.date}</span> {item.label}
-            {item.place ? <MilestonePlace place={item.place} /> : null}
+            <div className={styles.memory}>
+              <p className={styles.when}>{item.date}</p>
+              <h3 className={styles.milestoneLabel}>{item.label}</h3>
+              {item.place ? <MilestonePlace place={item.place} /> : null}
+            </div>
           </li>
         ))}
       </ol>
