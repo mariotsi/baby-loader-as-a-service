@@ -101,14 +101,23 @@ function StatusNotice({ status, device, t }: { status: Status; device: DeviceCon
   const link = statusHelpLink(status, device, t);
   return (
     <div className={styles.push}>
-      <StatusMessage tone="info" fullWidth>
+      <StatusMessage tone="info" fullWidth title={t.notificationsHelpTitle}>
         <div className={styles.instructions}>
           {status === 'ios-home-screen' ? (
             <IPhoneInstructions device={device} t={t} />
           ) : (
             statusNotice(status, device, t)
           )}
-          {link ? <ExternalLink href={link.href}>{link.label}</ExternalLink> : null}
+          {link ? (
+            <span className={styles.instructionBody}>
+              <ExternalLink href={link.href}>{link.label}</ExternalLink>
+            </span>
+          ) : null}
+          {status === 'ios-home-screen' ? (
+            <span className={styles.instructionBody}>
+              <ExternalLink href="https://webkit.org/blog/13878/">{t.iosHomeScreen}</ExternalLink>
+            </span>
+          ) : null}
         </div>
       </StatusMessage>
     </div>
@@ -161,7 +170,6 @@ function IPhoneInstructions({ device, t }: { device: DeviceContext | null; t: Pu
   }
   return (
     <>
-      <ExternalLink href="https://webkit.org/blog/13878/">{t.iosHomeScreen}</ExternalLink>
       {known ? (
         <ol className={styles.steps}>
           <li>
