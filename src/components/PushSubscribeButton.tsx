@@ -12,6 +12,7 @@ import { buildDeviceInfo } from '@/lib/deviceInfo';
 import type { Lang } from '@/lib/i18n';
 import type { PushButtonCopy } from '@/lib/publicPageView';
 import { decodeVapidKey } from '@/lib/vapid';
+import { Confetti, type ConfettiOrigin, confettiOrigin } from './Confetti';
 import styles from './PushSubscribeButton.module.css';
 
 interface Props {
@@ -42,11 +43,6 @@ type HelpLink = { href: string; label: string };
 const CHROME_GUIDE = 'https://support.google.com/chrome/answer/3220216?co=GENIE.Platform%3DAndroid&hl=en';
 const APPLE_HOME_SCREEN_GUIDE = 'https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios';
 const APPLE_NOTIFICATION_GUIDE = 'https://support.apple.com/guide/iphone/change-notification-settings-iph7c3d96bab/ios';
-const CONFETTI_PIECES = Array.from({ length: 24 }, (_, index) => ({
-  id: `confetti-${index}`,
-  left: `${(index * 43) % 100}%`,
-  delay: `${(index % 8) * 0.08}s`,
-}));
 
 function deviceContext(): DeviceContext {
   const info = buildDeviceInfo(navigator.userAgent, {});
@@ -269,7 +265,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot }:
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [device, setDevice] = useState<DeviceContext | null>(null);
-  const [celebrate, setCelebrate] = useState(false);
+  const [confettiShot, setConfettiShot] = useState<{ origin: ConfettiOrigin } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -282,14 +278,6 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot }:
   }, [slug]);
 
   useEffect(() => {
-    if (!celebrate) {
-      return;
-    }
-    const timer = window.setTimeout(() => setCelebrate(false), 3200);
-    return () => window.clearTimeout(timer);
-  }, [celebrate]);
-
-  useEffect(() => {
     if (feedback !== 'subscribeOk') {
       return;
     }
@@ -297,10 +285,9 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot }:
     return () => window.clearTimeout(timer);
   }, [feedback]);
 
-  async function subscribe() {
+  async function subscribe(origin: ConfettiOrigin) {
     setBusy(true);
     setFeedback(null);
-    setCelebrate(false);
     try {
       const reg = await navigator.serviceWorker.register('/sw.js');
       const key = decodeVapidKey(vapidPublicKey);
@@ -315,9 +302,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot }:
       }
       setStatus('subscribed');
       setFeedback('subscribeOk');
-      if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        setCelebrate(true);
-      }
+      setConfettiShot({ origin });
     } catch {
       if (Notification.permission === 'denied') {
         setStatus('denied');
@@ -358,19 +343,21 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot }:
   }
 
   return (
-    <PushSubscribeView
-      status={status}
-      device={device}
-      t={t}
-      busy={busy}
-      feedback={feedback}
-      celebrate={celebrate}
-      confirmOpen={confirmOpen}
-      pillSlot={pillSlot}
-      onSubscribe={subscribe}
-      onUnsubscribe={unsubscribe}
-      onConfirmOpenChange={setConfirmOpen}
-    />
+    <>
+      <PushSubscribeView
+        status={status}
+        device={device}
+        t={t}
+        busy={busy}
+        feedback={feedback}
+        confirmOpen={confirmOpen}
+        pillSlot={pillSlot}
+        onSubscribe={subscribe}
+        onUnsubscribe={unsubscribe}
+        onConfirmOpenChange={setConfirmOpen}
+      />
+      <Confetti shot={confettiShot} />
+    </>
   );
 }
 
@@ -381,7 +368,6 @@ export function PushSubscribeView({
   t,
   busy = false,
   feedback = null,
-  celebrate = false,
   confirmOpen = false,
   pillSlot,
   onSubscribe,
@@ -393,21 +379,16 @@ export function PushSubscribeView({
   t: PushButtonCopy;
   busy?: boolean;
   feedback?: Feedback | null;
-  celebrate?: boolean;
   confirmOpen?: boolean;
   /** Renders the pill there instead of in place; left out, it stays in place, as in stories. */
   pillSlot?: HTMLElement | null;
-  onSubscribe: () => void;
+  /** Called with the pressed button's centre, where the celebration starts. */
+  onSubscribe: (origin: ConfettiOrigin) => void;
   onUnsubscribe: () => void;
   onConfirmOpenChange: (open: boolean) => void;
 }) {
   if (status === 'checking' || status === 'unsupported' || status === 'denied' || status === 'ios-home-screen') {
-    return (
-      <>
-        <StatusNotice status={status} device={device} t={t} />
-        {celebrate ? <Confetti /> : null}
-      </>
-    );
+    return <StatusNotice status={status} device={device} t={t} />;
   }
 
   const success = feedback === 'subscribeOk' || feedback === 'unsubscribeOk' ? t[feedback] : null;
@@ -431,7 +412,13 @@ export function PushSubscribeView({
       {status === 'subscribed' ? (
         placedPill
       ) : (
-        <Button variant="primary" icon="bell" fullWidth onClick={onSubscribe} loading={busy}>
+        <Button
+          variant="primary"
+          icon="bell"
+          fullWidth
+          onClick={(event) => onSubscribe(confettiOrigin(event.currentTarget))}
+          loading={busy}
+        >
           {busy ? t.subscribing : t.subscribe}
         </Button>
       )}
@@ -451,21 +438,6 @@ export function PushSubscribeView({
         onConfirm={onUnsubscribe}
         onClose={() => onConfirmOpenChange(false)}
       />
-      {celebrate ? <Confetti /> : null}
-    </div>
-  );
-}
-
-function Confetti() {
-  return (
-    <div className={styles.confetti} aria-hidden="true">
-      {CONFETTI_PIECES.map((piece) => (
-        <span
-          key={piece.id}
-          className={styles.confettiPiece}
-          style={{ left: piece.left, animationDelay: piece.delay }}
-        />
-      ))}
     </div>
   );
 }

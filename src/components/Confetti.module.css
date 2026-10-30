@@ -1,0 +1,9 @@
+/* A single canvas driven by canvas-confetti, above everything on the page. */
+.canvas {
+  position: fixed;
+  z-index: 99999;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
