@@ -145,8 +145,8 @@ const en = {
       'When the baby arrives, announce it here: your page switches from the Countdown to the Birth details, and everyone subscribed gets a notification.',
     announced: (sent: number, total: number) =>
       plural('en', total, {
-        one: `Announced. The notification went to ${sent} of ${total} subscriber.`,
-        other: `Announced. The notification went to ${sent} of ${total} subscribers.`,
+        one: `Announced. Notification sent to ${sent} of ${total} subscriber.`,
+        other: `Announced. Notification sent to ${sent} of ${total} subscribers.`,
       }),
     notificationFailed: 'Your page is updated, but the notification wasn’t sent.',
     birthNews: (sex: Sex) => ({ female: 'She is born!', male: 'He is born!', unknown: 'The baby is born!' })[sex],
@@ -361,8 +361,8 @@ const it: PlatformCopy = {
       'Quando il bambino arriva, annuncialo da qui: la tua pagina passa dal conto alla rovescia ai dettagli della nascita e tutti gli iscritti ricevono una notifica.',
     announced: (sent, total) =>
       plural('it', total, {
-        one: `Annunciato. La notifica è arrivata a ${sent} iscritto su ${total}.`,
-        other: `Annunciato. La notifica è arrivata a ${sent} iscritti su ${total}.`,
+        one: `Annunciato. Notifica inviata a ${sent} iscritto su ${total}.`,
+        other: `Annunciato. Notifica inviata a ${sent} iscritti su ${total}.`,
       }),
     notificationFailed: 'La pagina è aggiornata, ma la notifica non è stata inviata.',
     birthNews: (sex) => ({ female: 'È nata!', male: 'È nato!', unknown: 'È nato!' })[sex],

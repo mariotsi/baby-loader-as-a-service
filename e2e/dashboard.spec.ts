@@ -64,7 +64,7 @@ test.describe('Dashboard', () => {
     await dialog.getByLabel('Length (cm)').fill('49');
     await dialog.getByRole('button', { name: 'Announce the birth' }).click();
     await expect(dialog).toBeHidden();
-    await expect(page.getByText(/^Announced\. The notification went to \d+ of \d+ subscribers?\.$/)).toBeVisible();
+    await expect(page.getByText(/^Announced\. Notification sent to \d+ of \d+ subscribers?\.$/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Edit the birth details' })).toBeFocused();
 
     await page.reload();
