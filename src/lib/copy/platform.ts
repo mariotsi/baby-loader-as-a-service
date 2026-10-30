@@ -151,6 +151,7 @@ const en = {
     birthDialogDescription:
       'Share the first details. Announcing switches your page to the Birth details and saves your other changes too.',
     birthEditTitle: 'Birth details',
+    birthDetailsCard: 'The first details',
     birthEditDescription: 'Saving updates your page with these details and saves your other changes too.',
     closeBirthDialog: 'Close without saving',
     cancel: 'Cancel',
@@ -355,6 +356,7 @@ const it: PlatformCopy = {
     birthDialogDescription:
       'Racconta i primi dettagli. L’annuncio porta la tua pagina ai dettagli della nascita e salva anche le altre modifiche.',
     birthEditTitle: 'Dettagli della nascita',
+    birthDetailsCard: 'I primi dettagli',
     birthEditDescription: 'Salvando aggiorni la pagina con questi dettagli e salvi anche le altre modifiche.',
     closeBirthDialog: 'Chiudi senza salvare',
     cancel: 'Annulla',

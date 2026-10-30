@@ -142,11 +142,6 @@ export function BirthDialog({
       onSubmit={submit}
       actions={
         <>
-          {announcing ? null : (
-            <Button variant="ghost" icon="trash" onClick={() => setConfirmingUndo(true)} className={styles.undo}>
-              {t.unannounce}
-            </Button>
-          )}
           <StatusMessage tone="danger">{status}</StatusMessage>
           <Button onClick={() => !saving && onClose()}>{t.cancel}</Button>
           <Button variant="primary" type="submit" icon={announcing ? 'sparkles' : undefined} loading={saving}>
@@ -156,7 +151,7 @@ export function BirthDialog({
       }
     >
       <div ref={contentRef} className={styles.column}>
-        <Card>
+        <Card title={t.birthDetailsCard} headingLevel={3}>
           <Field label={t.birthDatetime} error={inlineError('birth.details.datetime')}>
             <Input
               type="datetime-local"
@@ -197,10 +192,18 @@ export function BirthDialog({
         </Card>
         <BirthMediaEditor
           only="photo"
+          headingLevel={3}
           previewSlug={previewSlug}
           photo={draft.photo}
           onPhoto={(photo) => update({ photo })}
         />
+        {announcing ? null : (
+          <div>
+            <Button variant="ghost" icon="trash" onClick={() => setConfirmingUndo(true)}>
+              {t.unannounce}
+            </Button>
+          </div>
+        )}
       </div>
       <ConfirmDialog
         open={confirmingUndo}

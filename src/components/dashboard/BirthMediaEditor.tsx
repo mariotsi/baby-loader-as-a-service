@@ -63,7 +63,10 @@ export function BirthMediaEditor({
   onVideo = () => {},
   only,
   previewSlug,
+  headingLevel,
 }: {
+  /** 3 inside a dialog or section that has its own heading. */
+  headingLevel?: 2 | 3;
   /** Shows one of the two: the Birth video is a setting of its own, the photo a Birth detail. */
   only?: 'photo' | 'video';
   previewSlug?: string;
@@ -81,7 +84,7 @@ export function BirthMediaEditor({
   const videoUrl = useMediaUrl(previewVideo);
 
   return (
-    <Card title={t.title} description={description(only, lang)}>
+    <Card title={t.title} description={description(only, lang)} headingLevel={headingLevel}>
       {only !== 'video' ? (
         <>
           <FilePicker

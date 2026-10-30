@@ -83,28 +83,31 @@
   background: var(--color-surface);
 }
 
-/* On a phone the actions stack, the primary one on top; from a tablet up they sit in a row, the primary one last. */
+/* The buttons share a row, the primary one last; anything else, like a StatusMessage, takes a row of its own on a phone. */
 .actions {
   display: flex;
-  flex-direction: column-reverse;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: end;
   gap: var(--space-3);
   max-width: var(--content-medium);
   margin-inline: auto;
 }
 
-.actions > * {
-  width: 100%;
+.actions > button {
+  flex: 1 1 0;
+}
+
+.actions > :not(button) {
+  flex-basis: 100%;
 }
 
 @media (min-width: 40rem) {
-  .actions {
-    flex-direction: row;
-    flex-wrap: wrap;
-    align-items: center;
-    justify-content: end;
+  .actions > button {
+    flex: none;
   }
 
-  .actions > * {
-    width: auto;
+  .actions > :not(button) {
+    flex: 1 1 0;
   }
 }

@@ -157,12 +157,4 @@
 
 .birthStats {
   margin: 0;
-  color: var(--color-text-muted);
-}
-
-/* The way back to the Countdown sits apart from the dialog's save, at the start of the row. */
-@media (min-width: 40rem) {
-  .undo {
-    margin-inline-end: auto;
-  }
 }
