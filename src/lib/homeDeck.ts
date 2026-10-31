@@ -1,158 +1,167 @@
+import type { Lang } from './i18n.ts';
+
 /**
- * The cards of the home page's deck: each one a picture of a real Public page,
- * taken by `npm run deck` from a Site seeded with these values. The deck shows
- * every Palette and Font, the Waiting and Born states, Milestones and the
- * Privacy settings, in Italian and English, and leaves out the days past the
- * Due date: that page stays a surprise.
+ * The home page's deck: pictures of real Public pages, taken by `npm run deck`
+ * from Sites seeded with these values. Each Platform language has its own
+ * cards, with its own names and Public pages, and each deck shows every
+ * Palette and Font, the Waiting and Born states, Milestones and the Privacy
+ * settings. No card is past its Due date: that page stays a surprise.
  */
 
-export type HomeDeckCard = {
-  slug: string;
-  babyName: string;
+type PerLanguage = Record<Lang, string>;
+
+type Scene = {
+  babyName: PerLanguage;
   sex: 'female' | 'male';
-  languages: ('it' | 'en')[];
   showName: boolean;
   showSex: boolean;
   dueInDays: number;
   bornDaysAgo?: number;
   weight?: number;
   lengthCm?: number;
-  birthMessage?: { it?: string; en?: string };
-  milestones?: {
-    emoji: string;
-    label: { it?: string; en?: string };
-    inDays: number;
-    place?: { address: string; lat: number; lon: number };
-  }[];
-  pageName?: { it?: string; en?: string };
+  birthMessage?: PerLanguage;
+  milestones?: { emoji: string; label: PerLanguage; inDays: number }[];
+  pageName?: PerLanguage;
   theme: { palette: string; font: string };
   /** The picture starts at the Milestones, not at the top of the page. */
   atMilestones?: boolean;
 };
 
-const shown = { showName: true, showSex: true };
-const it = ['it'] as HomeDeckCard['languages'];
-const en = ['en'] as HomeDeckCard['languages'];
+export type HomeDeckCard = Omit<Scene, 'babyName' | 'birthMessage' | 'milestones' | 'pageName'> & {
+  slug: string;
+  babyName: string;
+  lang: Lang;
+  languages: Lang[];
+  birthMessage?: Partial<PerLanguage>;
+  milestones?: { emoji: string; label: Partial<PerLanguage>; inDays: number }[];
+  pageName?: Partial<PerLanguage>;
+};
 
-export const HOME_DECK_CARDS: HomeDeckCard[] = [
+const shown = { showName: true, showSex: true };
+
+const SCENES: Scene[] = [
   {
     ...shown,
-    slug: 'deck-emma',
-    babyName: 'Emma',
+    babyName: { en: 'Emma', it: 'Sofia' },
     sex: 'female',
-    languages: en,
     dueInDays: 42,
-    pageName: { en: 'Anna & Tom' },
+    pageName: { en: 'Anna & Tom', it: 'Anna e Tommaso' },
     theme: { palette: 'blush', font: 'quicksand' },
   },
   {
     ...shown,
-    slug: 'deck-leonardo',
-    babyName: 'Leonardo',
+    babyName: { en: 'Oliver', it: 'Leonardo' },
     sex: 'male',
-    languages: it,
     dueInDays: -2,
     bornDaysAgo: 3,
     weight: 3480,
     lengthCm: 52,
-    birthMessage: { it: 'Mamma e bimbo stanno benissimo!' },
-    pageName: { it: 'Chiara e Marco' },
+    birthMessage: { en: 'Mum and baby are doing great!', it: 'Mamma e bimbo stanno benissimo!' },
+    pageName: { en: 'Grace & Jack', it: 'Chiara e Marco' },
     theme: { palette: 'sky', font: 'playfair' },
   },
   {
     ...shown,
-    slug: 'deck-giulia',
-    babyName: 'Giulia',
+    babyName: { en: 'Charlotte', it: 'Giulia' },
     sex: 'female',
-    languages: it,
     dueInDays: 75,
     milestones: [
-      { emoji: '🧪', label: { it: 'Il test è positivo!' }, inDays: -170 },
-      { emoji: '🩺', label: { it: 'Prima ecografia' }, inDays: -100 },
-      { emoji: '💗', label: { it: 'Abbiamo sentito il cuore' }, inDays: -60 },
-      { emoji: '🥰', label: { it: 'Primi calcetti' }, inDays: -20 },
-      { emoji: '🎈', label: { it: 'Baby shower' }, inDays: 30 },
-      { emoji: '🧳', label: { it: 'Valigia pronta' }, inDays: 60 },
+      { emoji: '🧪', label: { en: 'The test is positive!', it: 'Il test è positivo!' }, inDays: -170 },
+      { emoji: '🩺', label: { en: 'First scan', it: 'Prima ecografia' }, inDays: -100 },
+      { emoji: '💗', label: { en: 'We heard the heartbeat', it: 'Abbiamo sentito il cuore' }, inDays: -60 },
+      { emoji: '🥰', label: { en: 'First kicks', it: 'Primi calcetti' }, inDays: -20 },
+      { emoji: '🎈', label: { en: 'Baby shower', it: 'Baby shower' }, inDays: 30 },
+      { emoji: '🧳', label: { en: 'Hospital bag packed', it: 'Valigia pronta' }, inDays: 60 },
     ],
     atMilestones: true,
     theme: { palette: 'sage', font: 'merriweather' },
   },
   {
     ...shown,
-    slug: 'deck-oliver',
-    babyName: 'Oliver',
+    babyName: { en: 'Noah', it: 'Tommaso' },
     sex: 'male',
-    languages: en,
     dueInDays: 1,
     bornDaysAgo: 10,
     weight: 3620,
     lengthCm: 51,
-    birthMessage: { en: 'Everyone is doing well, and nobody is sleeping.' },
-    pageName: { en: 'Grace & Jack' },
+    birthMessage: { en: 'Everyone is doing well, and nobody is sleeping.', it: 'Stiamo tutti bene, ma nessuno dorme.' },
+    pageName: { en: 'Lily & Sam', it: 'Marta e Luca' },
     theme: { palette: 'midnight', font: 'poppins' },
   },
   {
-    slug: 'deck-secret',
-    babyName: 'Bianca',
+    babyName: { en: 'Alice', it: 'Bianca' },
     sex: 'female',
-    languages: it,
     showName: false,
     showSex: false,
     dueInDays: 28,
-    pageName: { it: 'Elena e Paolo' },
+    pageName: { en: 'Ella & Ben', it: 'Elena e Paolo' },
     theme: { palette: 'lavender', font: 'inter' },
   },
   {
     ...shown,
-    slug: 'deck-charlotte',
-    babyName: 'Charlotte',
+    babyName: { en: 'Olivia', it: 'Ginevra' },
     sex: 'female',
-    languages: en,
     dueInDays: 60,
     milestones: [
-      { emoji: '🧪', label: { en: 'The test is positive!' }, inDays: -180 },
-      { emoji: '🩺', label: { en: 'First scan' }, inDays: -110 },
-      { emoji: '🥰', label: { en: 'First kicks' }, inDays: -50 },
-      { emoji: '🛏️', label: { en: 'Nursery painted' }, inDays: -14 },
-      { emoji: '🎈', label: { en: 'Baby shower' }, inDays: 21 },
-      { emoji: '🧳', label: { en: 'Hospital bag packed' }, inDays: 45 },
+      { emoji: '🧪', label: { en: 'The test is positive!', it: 'Il test è positivo!' }, inDays: -180 },
+      { emoji: '🩺', label: { en: 'First scan', it: 'Prima ecografia' }, inDays: -110 },
+      { emoji: '🥰', label: { en: 'First kicks', it: 'Primi calcetti' }, inDays: -50 },
+      { emoji: '🛏️', label: { en: 'Nursery painted', it: 'Cameretta pronta' }, inDays: -14 },
+      { emoji: '🎈', label: { en: 'Baby shower', it: 'Baby shower' }, inDays: 21 },
+      { emoji: '🧳', label: { en: 'Hospital bag packed', it: 'Valigia pronta' }, inDays: 45 },
     ],
     atMilestones: true,
     theme: { palette: 'sunshine', font: 'playfair' },
   },
   {
     ...shown,
-    slug: 'deck-matteo',
-    babyName: 'Matteo',
+    babyName: { en: 'James', it: 'Matteo' },
     sex: 'male',
-    languages: it,
     dueInDays: 16,
     theme: { palette: 'midnight', font: 'quicksand' },
   },
   {
     ...shown,
-    slug: 'deck-aurora',
-    babyName: 'Aurora',
+    babyName: { en: 'Amelia', it: 'Aurora' },
     sex: 'female',
-    languages: it,
     dueInDays: 2,
     bornDaysAgo: 6,
     weight: 3150,
     lengthCm: 49,
-    birthMessage: { it: 'Benvenuta, piccola Aurora!' },
+    birthMessage: { en: 'Welcome, little Amelia!', it: 'Benvenuta, piccola Aurora!' },
     theme: { palette: 'blush', font: 'poppins' },
   },
   {
     ...shown,
-    slug: 'deck-henry',
-    babyName: 'Henry',
+    babyName: { en: 'Henry', it: 'Lorenzo' },
     sex: 'male',
-    languages: en,
     dueInDays: 94,
-    pageName: { en: 'Lily & Sam' },
+    pageName: { en: 'Kate & Will', it: 'Sara e Davide' },
     theme: { palette: 'sage', font: 'inter' },
   },
 ];
+
+function sceneCard(scene: Scene, lang: Lang): HomeDeckCard {
+  const { babyName, birthMessage, milestones, pageName, ...rest } = scene;
+  return {
+    ...rest,
+    slug: `deck-${babyName[lang].toLowerCase()}`,
+    babyName: babyName[lang],
+    lang,
+    languages: [lang],
+    ...(birthMessage ? { birthMessage: { [lang]: birthMessage[lang] } } : {}),
+    ...(milestones ? { milestones: milestones.map((m) => ({ ...m, label: { [lang]: m.label[lang] } })) } : {}),
+    ...(pageName ? { pageName: { [lang]: pageName[lang] } } : {}),
+  };
+}
+
+/** The cards of one Platform language's deck, in the order they come up. */
+export function homeDeckCards(lang: Lang): HomeDeckCard[] {
+  return SCENES.map((scene) => sceneCard(scene, lang));
+}
+
+/** Every card of every language, for seeding the Sites and taking the pictures. */
+export const HOME_DECK_CARDS: HomeDeckCard[] = [...homeDeckCards('en'), ...homeDeckCards('it')];
 
 /** Where the home page finds a card's picture. */
 export function homeDeckImage(card: Pick<HomeDeckCard, 'slug'>): string {

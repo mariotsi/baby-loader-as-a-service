@@ -23,7 +23,7 @@ export default async function MarketingPage() {
           </div>
         </div>
         <div className={styles.preview}>
-          <HomeDeck />
+          <HomeDeck lang={lang} />
         </div>
       </div>
     </PageShell>

@@ -5,6 +5,8 @@ const meta = {
   title: 'Pages/HomeDeck',
   component: HomeDeck,
   tags: ['autodocs'],
+  args: { lang: 'en' },
+  argTypes: { lang: { control: 'inline-radio', options: ['en', 'it'] } },
 } satisfies Meta<typeof HomeDeck>;
 
 export default meta;

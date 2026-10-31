@@ -1,7 +1,8 @@
 'use client';
 
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
-import { HOME_DECK_CARDS, homeDeckImage } from '@/lib/homeDeck';
+import { homeDeckCards, homeDeckImage } from '@/lib/homeDeck';
+import type { Lang } from '@/lib/i18n';
 import styles from './HomeDeck.module.css';
 
 /** How long a card stays on top. */
@@ -15,7 +16,7 @@ const BEHIND = 3;
  * hidden tab, and for anyone who asks for reduced motion. The pictures only
  * decorate the pitch beside them, so screen readers skip the whole pile.
  */
-export function HomeDeck() {
+export function HomeDeck({ lang }: { lang: Lang }) {
   const [turn, setTurn] = useState(0);
   const resting = useRef<boolean>(false);
 
@@ -29,7 +30,8 @@ export function HomeDeck() {
     return () => clearInterval(timer);
   }, []);
 
-  const count = HOME_DECK_CARDS.length;
+  const cards = homeDeckCards(lang);
+  const count = cards.length;
   return (
     <div
       className={styles.deck}
@@ -41,7 +43,7 @@ export function HomeDeck() {
         resting.current = false;
       }}
     >
-      {HOME_DECK_CARDS.map((card, index) => {
+      {cards.map((card, index) => {
         // -1 is the card that just left, 0 the top one.
         const place = ((((index - turn + 1) % count) + count) % count) - 1;
         if (place > BEHIND) {
