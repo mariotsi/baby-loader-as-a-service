@@ -149,10 +149,63 @@ test.describe('Dashboard', () => {
     await expect(page.getByLabel('Name', { exact: true })).toBeEditable();
 
     const sections = page.getByRole('navigation', { name: 'Sections of this page' });
+    // Marking a section moves no chip: each one keeps the width of its bold label.
+    const chip = sections.getByRole('link', { name: 'Appearance' });
+    const unmarked = (await chip.boundingBox())?.width;
+    await chip.click();
+    await expect(chip).toHaveAttribute('aria-current', 'location');
+    expect((await chip.boundingBox())?.width).toBe(unmarked);
+
     await sections.getByRole('link', { name: 'Keep the secret' }).click();
     await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeInViewport();
     await expect(sections.getByRole('link', { name: 'Keep the secret' })).toHaveAttribute('aria-current', 'location');
     await expect(sections.getByRole('link', { name: 'Keep the secret' })).toBeInViewport({ ratio: 0.9 });
+  });
+
+  test('lays the menu, the form and the preview side by side on a wide screen', async ({ page, project }) => {
+    test.skip(project !== 'desktop', 'the three columns need a wide screen');
+    await page.setViewportSize({ width: 1280, height: 860 });
+    await page.goto('/dashboard/e2e-waiting');
+    const menu = await page.getByRole('navigation', { name: 'Sections of this page' }).boundingBox();
+    const form = await page.locator('main form').boundingBox();
+    const preview = await page.getByRole('complementary', { name: 'Your page on a phone' }).boundingBox();
+    if (!menu || !form || !preview) {
+      throw new Error('The editor needs its menu, form and preview.');
+    }
+    expect(menu.x + menu.width).toBeLessThanOrEqual(form.x);
+    expect(form.x + form.width).toBeLessThanOrEqual(preview.x);
+    expect(Math.abs(menu.y - form.y)).toBeLessThan(1);
+    expect(form.width).toBeGreaterThan(400);
+  });
+
+  test('keeps a gap between the cards of the Birth dialog', async ({ page, project }) => {
+    await page.goto(`/dashboard/${perProjectSlug('e2e-rules', project)}`);
+    await page.getByRole('button', { name: 'Announce the birth' }).click();
+    const dialog = page.getByRole('dialog');
+    const details = await dialog.getByRole('region', { name: 'The first details' }).boundingBox();
+    const photo = await dialog.getByRole('region', { name: 'Their first photo' }).boundingBox();
+    if (!details || !photo) {
+      throw new Error('The Birth dialog needs its details and photo cards.');
+    }
+    expect(photo.y - (details.y + details.height)).toBeGreaterThan(8);
+  });
+
+  test('opens the emoji picker where it fits on screen', async ({ page }) => {
+    await page.goto('/dashboard/e2e-waiting');
+    await page.getByRole('radio', { name: 'An emoji' }).check();
+    const button = page.getByRole('button', { name: /^Icon emoji/ });
+    // Right above the bottom edge, where the panel has no room below the button.
+    await button.evaluate((el) => window.scrollTo(0, el.getBoundingClientRect().top + scrollY - innerHeight + 100));
+    await button.click();
+
+    const panel = await page.locator(`[id="${await button.getAttribute('aria-controls')}"]`).boundingBox();
+    const viewport = page.viewportSize();
+    if (!panel || !viewport) {
+      throw new Error('The emoji panel needs to be open.');
+    }
+    expect(panel.y).toBeGreaterThanOrEqual(0);
+    expect(panel.y + panel.height).toBeLessThanOrEqual(viewport.height);
+    expect(panel.x + panel.width).toBeLessThanOrEqual(viewport.width);
   });
 
   test('asks before leaving with unsaved changes', async ({ page }) => {

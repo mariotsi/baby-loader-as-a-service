@@ -95,6 +95,7 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
               <a
                 href={`#${section.id}`}
                 className={styles.link}
+                data-label={section.label}
                 aria-current={section.id === current ? 'location' : undefined}
                 onClick={() => {
                   jumped.current = section.id;

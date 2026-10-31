@@ -13,6 +13,11 @@
   min-width: 0;
 }
 
+/* Out of the flow: as a grid item it would take the menu's cell from 68.75rem. */
+.stickMarker {
+  position: absolute;
+}
+
 /* Under the PhoneStrip, which is as tall as this offset. */
 .menu {
   position: sticky;
@@ -121,6 +126,12 @@
   .section {
     scroll-margin-top: var(--space-4);
   }
+}
+
+/* A column of Cards in the Birth dialog. */
+.column {
+  display: grid;
+  gap: var(--space-5);
 }
 
 /* The Birth dialog: the fields, then the previews; on a wide screen the previews stay beside the fields. */
