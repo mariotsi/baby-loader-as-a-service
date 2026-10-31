@@ -4,12 +4,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Icon } from './Icon';
 import styles from './SectionNav.module.css';
 
-/**
- * Frames the page holds still before a jump counts as over. Counted in frames, not time: a busy main thread stalls the
- * frames along with the scroll events while the glide runs on, and a timer would end the jump halfway.
- */
-const JUMP_SETTLE_FRAMES = 15;
-
 export interface NavSection {
   /** The `id` of the element the link jumps to. */
   id: string;
@@ -34,9 +28,8 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
   const [current, setCurrent] = useState(sections[0]?.id);
   const [more, setMore] = useState({ start: false, end: false });
   const list = useRef<HTMLUListElement>(null);
-  /** The section being jumped to, until the page rests: the glide crosses others, and the last ones never reach the band. */
+  /** The section being jumped to, until the scroll ends: the glide crosses others, and the last ones never reach the band. */
   const jumped = useRef<string | null>(null);
-  const jumpFrame = useRef(0);
   const ids = sections.map((section) => section.id).join(' ');
 
   useEffect(() => {
@@ -89,26 +82,13 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
     }
   }, [current]);
 
-  useEffect(() => () => cancelAnimationFrame(jumpFrame.current), []);
-
-  function jumpTo(id: string) {
-    cancelAnimationFrame(jumpFrame.current);
-    jumped.current = id;
-    setCurrent(id);
-
-    let top = window.scrollY;
-    let stillFrames = 0;
-    function watch() {
-      stillFrames = window.scrollY === top ? stillFrames + 1 : 0;
-      top = window.scrollY;
-      if (stillFrames < JUMP_SETTLE_FRAMES) {
-        jumpFrame.current = requestAnimationFrame(watch);
-      } else {
-        jumped.current = null;
-      }
+  useEffect(() => {
+    function endJump() {
+      jumped.current = null;
     }
-    jumpFrame.current = requestAnimationFrame(watch);
-  }
+    window.addEventListener('scrollend', endJump);
+    return () => window.removeEventListener('scrollend', endJump);
+  }, []);
 
   return (
     <nav aria-label={label} className={className}>
@@ -126,7 +106,10 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
                 className={styles.link}
                 data-label={section.label}
                 aria-current={section.id === current ? 'location' : undefined}
-                onClick={() => jumpTo(section.id)}
+                onClick={() => {
+                  jumped.current = section.id;
+                  setCurrent(section.id);
+                }}
               >
                 {section.label}
               </a>

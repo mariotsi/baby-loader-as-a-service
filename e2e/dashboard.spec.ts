@@ -167,22 +167,27 @@ test.describe('Dashboard', () => {
     const sections = page.getByRole('navigation', { name: 'Sections of this page' });
     await expect(sections.getByRole('link', { name: 'Baby details' })).toHaveAttribute('aria-current', 'location');
 
-    const glide = await sections.getByRole('link', { name: 'Keep the secret' }).evaluate(async (link) => {
-      const scrolls = new Set<number>();
-      const marks = new Set<string | null | undefined>();
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe('smooth');
+
+    const marks = await sections.getByRole('link', { name: 'Keep the secret' }).evaluate(async (link) => {
+      const seen = new Set<string | null | undefined>();
       (link as HTMLAnchorElement).click();
       const start = performance.now();
       while (performance.now() - start < 1500) {
         await new Promise(requestAnimationFrame);
-        scrolls.add(window.scrollY);
-        marks.add(link.closest('nav')?.querySelector('[aria-current]')?.textContent);
+        seen.add(link.closest('nav')?.querySelector('[aria-current]')?.textContent);
       }
-      return { scrolls: scrolls.size, marks: [...marks] };
+      return [...seen];
     });
 
-    expect(glide.scrolls).toBeGreaterThan(2);
-    expect(glide.marks).toEqual(['Keep the secret']);
+    expect(marks).toEqual(['Keep the secret']);
     await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeInViewport();
+
+    // The jump is over, so the mark follows the page again.
+    await page
+      .getByRole('heading', { name: 'Appearance' })
+      .evaluate((heading) => heading.scrollIntoView({ behavior: 'instant' }));
+    await expect(sections.getByRole('link', { name: 'Appearance' })).toHaveAttribute('aria-current', 'location');
   });
 
   test('jumps to a section under reduced motion', async ({ page }) => {
