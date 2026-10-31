@@ -102,11 +102,11 @@ export function PublicPage({
         </div>
         <div className={styles.aside}>
           {view.waiting ? <Countdown waiting={view.waiting} /> : null}
+          {view.born ? <Born born={view.born} imageUrl={bornImageUrl} /> : null}
+          {view.milestones ? <Milestones milestones={view.milestones} /> : null}
           {view.born ? (
             <BirthVideo url={birthVideoUrl} lang={view.lang} slug={slug} disableAutoplay={noAutoplay} />
           ) : null}
-          {view.born ? <Born born={view.born} imageUrl={bornImageUrl} /> : null}
-          {view.milestones ? <Milestones milestones={view.milestones} /> : null}
           <div ref={setPillSlot} className={styles.pillSlot} />
         </div>
       </Main>
