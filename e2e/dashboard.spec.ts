@@ -155,6 +155,9 @@ test.describe('Dashboard', () => {
     await chip.click();
     await expect(chip).toHaveAttribute('aria-current', 'location');
     expect((await chip.boundingBox())?.width).toBe(unmarked);
+    // The row scrolls sideways only: anything taller inside it would trim the chips.
+    const row = sections.getByRole('list');
+    expect(await row.evaluate((list) => list.scrollHeight - list.clientHeight)).toBe(0);
 
     await sections.getByRole('link', { name: 'Keep the secret' }).click();
     await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeInViewport();
