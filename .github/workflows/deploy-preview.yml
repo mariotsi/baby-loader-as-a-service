@@ -1,0 +1,92 @@
+name: Deploy to preview
+
+# A push to any branch but main and staging deploys a Preview of
+# loading-baby-staging, with a D1 database lent from the Preview pool
+# (scripts/preview-pool.mjs) and migrated first, and runs the Playwright suite
+# (e2e/) against it.
+
+on:
+  push:
+    branches-ignore: [main, staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run per branch at a time; a newer push replaces a waiting or running
+# one. drop-preview-db.yml shares the group.
+concurrency:
+  group: cd-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # A manual run on main or staging would give them a Preview.
+    if: github.ref_name != 'main' && github.ref_name != 'staging'
+    # Writes the Preview link on the branch's pull requests.
+    permissions:
+      contents: read
+      issues: write
+      pull-requests: write
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    with:
+      # Holds the staging Worker's API token, which Previews belong to.
+      environment: Preview
+      r2-bucket: loading-baby-staging-media
+      media-route: staging
+      preview: true
+
+  # The rulesets "Require E2E on main" and "Require CI and E2E on staging"
+  # require a check named e2e from GitHub Actions: keep this job's name, and
+  # keep it here rather than in a reusable workflow, which would rename its
+  # check to "<caller> / e2e".
+  e2e:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Holds the Access service token and the staging Worker's API token, which
+    # the data script uses to write fixtures to staging's or the Preview's D1.
+    # Testing is no deployment: it records none.
+    environment:
+      name: Preview
+      deployment: false
+    # Playwright's image ships its browsers and their system dependencies.
+    # Its version must equal @playwright/test in package.json, which CI
+    # checks (scripts/check-playwright-image.mjs).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      # The runner's user, which owns the mounted workspace and home.
+      options: --user 1001
+    env:
+      CI: true
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # Gets the suite through Cloudflare Access, which guards staging.
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+      # The pool database the branch holds.
+      E2E_D1_DATABASE: ${{ needs.deploy.outputs.database }}
+    steps:
+      - uses: actions/checkout@v7
+      # The image's Node (24) runs the suite.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-playwright-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+
+      - name: Wait until the deployment serves this commit
+        env:
+          DEPLOYMENT_URL: ${{ needs.deploy.outputs.url }}
+          COMMIT: ${{ github.sha }}
+        run: node scripts/wait-for-deployment.mjs >> "$GITHUB_ENV"
+
+      - run: npx playwright test
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14

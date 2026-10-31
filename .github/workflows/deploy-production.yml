@@ -1,0 +1,35 @@
+name: Deploy to production
+
+# A push to main deploys the loading-baby Worker (wrangler.production.jsonc)
+# and migrates its D1 database first. main only ever receives the staging
+# commit whose e2e passed (promote, in "Deploy to staging"), and that check run
+# on the same commit is what "Require E2E on main" reads, so main gets no e2e
+# of its own.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run at a time; a newer push replaces a waiting or running one.
+concurrency:
+  group: cd-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # A manual run elsewhere would deploy another branch to production.
+    if: github.ref_name == 'main'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    with:
+      # Restricted to main, the only place the production token is available.
+      environment: Production
+      url: https://loading.baby
+      database: loading-baby
+      wrangler-config: wrangler.production.jsonc
+      r2-bucket: loading-baby-media
+      media-route: production
