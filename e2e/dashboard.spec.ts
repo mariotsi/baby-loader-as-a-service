@@ -5,6 +5,12 @@ import { dashboardAddress, expect, test } from './support/test.ts';
 
 test.use({ storageState: ownerStatePath('a') });
 
+/** A 1x1 PNG. */
+const TINY_PNG = Buffer.from(
+  'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+  'base64'
+);
+
 test.describe('Dashboard', () => {
   test('lists the Owner’s Sites with their Addresses', async ({ page }) => {
     await page.goto('/dashboard');
@@ -38,6 +44,8 @@ test.describe('Dashboard', () => {
   });
 
   test('saves Site settings and marks the baby as born', async ({ page, project }) => {
+    // The Born state's artwork holds back the load event of every page this test opens, and a slow response uses up its time.
+    await page.route('**/website-assets/**', (route) => route.fulfill({ contentType: 'image/png', body: TINY_PNG }));
     const slug = perProjectSlug('e2e-edit', project);
     await page.goto(`/dashboard/${slug}`);
 
