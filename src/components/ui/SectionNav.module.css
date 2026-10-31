@@ -85,6 +85,14 @@
   transform: rotate(180deg);
 }
 
+/* On the page itself: the links stay plain anchors, which keep the history and the focus. */
+@media (prefers-reduced-motion: no-preference) {
+  html:has(.link),
+  .list {
+    scroll-behavior: smooth;
+  }
+}
+
 @media (min-width: 68.75rem) {
   .more {
     display: none;

@@ -162,6 +162,39 @@ test.describe('Dashboard', () => {
     await expect(sections.getByRole('link', { name: 'Keep the secret' })).toBeInViewport({ ratio: 0.9 });
   });
 
+  test('glides to a section and keeps it marked on the way', async ({ page }) => {
+    await page.goto('/dashboard/e2e-waiting');
+    const sections = page.getByRole('navigation', { name: 'Sections of this page' });
+    await expect(sections.getByRole('link', { name: 'Baby details' })).toHaveAttribute('aria-current', 'location');
+
+    const glide = await sections.getByRole('link', { name: 'Keep the secret' }).evaluate(async (link) => {
+      const scrolls = new Set<number>();
+      const marks = new Set<string | null | undefined>();
+      (link as HTMLAnchorElement).click();
+      const start = performance.now();
+      while (performance.now() - start < 1500) {
+        await new Promise(requestAnimationFrame);
+        scrolls.add(window.scrollY);
+        marks.add(link.closest('nav')?.querySelector('[aria-current]')?.textContent);
+      }
+      return { scrolls: scrolls.size, marks: [...marks] };
+    });
+
+    expect(glide.scrolls).toBeGreaterThan(2);
+    expect(glide.marks).toEqual(['Keep the secret']);
+    await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeInViewport();
+  });
+
+  test('jumps to a section under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/dashboard/e2e-waiting');
+    const sections = page.getByRole('navigation', { name: 'Sections of this page' });
+    await expect(sections.getByRole('link', { name: 'Baby details' })).toHaveAttribute('aria-current', 'location');
+
+    const behavior = await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior);
+    expect(behavior).toBe('auto');
+  });
+
   test('lays the menu, the form and the preview side by side on a wide screen', async ({ page, project }) => {
     test.skip(project !== 'desktop', 'the three columns need a wide screen');
     await page.setViewportSize({ width: 1280, height: 860 });
