@@ -168,10 +168,9 @@
 
 .pair {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(100%, 9rem), 1fr));
+  /* A column fits the longest label and its "Optional" on one line; a narrower dialog stacks the two. */
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 11rem), 1fr));
   gap: var(--space-4);
-  /* A label that wraps would otherwise stretch its neighbour's control. */
-  align-items: end;
 }
 
 .milestones {
