@@ -169,6 +169,15 @@ test.describe('Dashboard', () => {
 
     expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe('smooth');
 
+    // A scroll that has already ended must not cut the next jump short.
+    await page.evaluate(
+      () =>
+        new Promise((resolve) => {
+          window.addEventListener('scrollend', resolve, { once: true });
+          window.scrollBy({ top: 40, behavior: 'instant' });
+        })
+    );
+
     const marks = await sections.getByRole('link', { name: 'Keep the secret' }).evaluate(async (link) => {
       const seen = new Set<string | null | undefined>();
       (link as HTMLAnchorElement).click();

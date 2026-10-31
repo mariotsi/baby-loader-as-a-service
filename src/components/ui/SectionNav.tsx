@@ -28,8 +28,11 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
   const [current, setCurrent] = useState(sections[0]?.id);
   const [more, setMore] = useState({ start: false, end: false });
   const list = useRef<HTMLUListElement>(null);
-  /** The section being jumped to, until the scroll ends: the glide crosses others, and the last ones never reach the band. */
-  const jumped = useRef<string | null>(null);
+  /**
+   * A jump in progress holds the mark: the glide crosses other sections, and the last ones never reach the band. The
+   * first scroll after it ends lets go, as the observer's last report comes after scrollend.
+   */
+  const jump = useRef<'running' | 'ended' | null>(null);
   const ids = sections.map((section) => section.id).join(' ');
 
   useEffect(() => {
@@ -37,7 +40,7 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
     const observer = new IntersectionObserver(
       (entries) => {
         const entered = entries.find((entry) => entry.isIntersecting);
-        if (entered && !jumped.current) {
+        if (entered && !jump.current) {
           setCurrent(entered.target.id);
         }
       },
@@ -82,16 +85,19 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
     }
   }, [current]);
 
-  // The mark waits for the first scroll after the jump's end: the observer's last report comes after scrollend, and it
-  // would mark another section.
   useEffect(() => {
-    function release() {
-      jumped.current = null;
-    }
     function endJump() {
-      window.addEventListener('scroll', release, { once: true });
+      if (jump.current) {
+        jump.current = 'ended';
+      }
+    }
+    function release() {
+      if (jump.current === 'ended') {
+        jump.current = null;
+      }
     }
     window.addEventListener('scrollend', endJump);
+    window.addEventListener('scroll', release, { passive: true });
     return () => {
       window.removeEventListener('scrollend', endJump);
       window.removeEventListener('scroll', release);
@@ -115,7 +121,7 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
                 data-label={section.label}
                 aria-current={section.id === current ? 'location' : undefined}
                 onClick={() => {
-                  jumped.current = section.id;
+                  jump.current = 'running';
                   setCurrent(section.id);
                 }}
               >
