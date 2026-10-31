@@ -38,6 +38,8 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
             <a href={address} target="_blank" rel="noreferrer">
               {address.replace(/^https?:\/\//, '')}
             </a>
+            .
+            <br />
             {t.addressStays}
           </p>
         </div>

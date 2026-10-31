@@ -6,7 +6,7 @@ import {
   type EmojiPickerListRowProps,
   EmojiPicker as Frimousse,
 } from 'frimousse';
-import { useEffect, useId, useRef, useState } from 'react';
+import { type CSSProperties, useEffect, useId, useLayoutEffect, useRef, useState } from 'react';
 import { useLang } from '@/components/LangProvider';
 import { uiCopy } from '@/lib/copy/ui';
 import { TWEMOJI_EMOJI_VERSION, twemojiUrl } from '@/lib/siteAppIdentity';
@@ -32,9 +32,36 @@ const COLUMNS = 6;
 /** Frimousse reads an Emoji version from the Emojibase release of that number, and Emojibase has no release 14. */
 const EMOJIBASE_URL = 'https://cdn.jsdelivr.net/npm/emojibase-data@18.0.0';
 
+/** The room the panel keeps from the viewport's edges, in pixels. */
+const VIEWPORT_MARGIN = 8;
+
+/** The shortest the emoji grid gets on a screen with little room, in pixels. */
+const MIN_GRID_HEIGHT = 200;
+
+interface Placement {
+  above: boolean;
+  /** The panel's end lines up with the button's, for a button near the right edge. */
+  end: boolean;
+  /** Set when neither side has room for the whole grid. */
+  gridHeight?: number;
+}
+
+/** Below the button unless the panel only fits above, or there is more room above. */
+function placePanel(button: DOMRect, panel: DOMRect, grid: DOMRect): Placement {
+  const below = window.innerHeight - button.bottom - VIEWPORT_MARGIN;
+  const above = button.top - VIEWPORT_MARGIN;
+  const opensAbove = below < panel.height && above > below;
+  const room = opensAbove ? above : below;
+  const end = button.left + panel.width > window.innerWidth - VIEWPORT_MARGIN;
+  if (room >= panel.height) {
+    return { above: opensAbove, end };
+  }
+  return { above: opensAbove, end, gridHeight: Math.max(MIN_GRID_HEIGHT, room - (panel.height - grid.height)) };
+}
+
 /**
  * Picks one emoji: a button showing the current one opens a searchable grid
- * under it. Picking an emoji, Escape or a press outside
+ * on the side of it with room. Picking an emoji, Escape or a press outside
  * closes the grid and gives the focus back to the button.
  */
 export function EmojiPicker({ value, onChange, label, twemoji = false }: EmojiPickerProps) {
@@ -43,6 +70,22 @@ export function EmojiPicker({ value, onChange, label, twemoji = false }: EmojiPi
   const panelId = useId();
   const rootRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
+  const [placement, setPlacement] = useState<Placement>({ above: false, end: false });
+
+  // Before the paint, so the panel never shows on the wrong side first.
+  useLayoutEffect(() => {
+    const grid = panelRef.current?.firstElementChild;
+    if (open && buttonRef.current && panelRef.current && grid) {
+      setPlacement(
+        placePanel(
+          buttonRef.current.getBoundingClientRect(),
+          panelRef.current.getBoundingClientRect(),
+          grid.getBoundingClientRect()
+        )
+      );
+    }
+  }, [open]);
 
   function close() {
     setOpen(false);
@@ -86,7 +129,14 @@ export function EmojiPicker({ value, onChange, label, twemoji = false }: EmojiPi
         {twemoji ? <EmojiImage key={value} emoji={value} /> : <span aria-hidden="true">{value}</span>}
       </button>
       {open ? (
-        <div id={panelId} className={styles.panel}>
+        <div
+          ref={panelRef}
+          id={panelId}
+          className={[styles.panel, placement.above && styles.above, placement.end && styles.end]
+            .filter(Boolean)
+            .join(' ')}
+          style={placement.gridHeight ? ({ '--grid-height': `${placement.gridHeight}px` } as CSSProperties) : undefined}
+        >
           <Frimousse.Root
             className={styles.picker}
             columns={COLUMNS}

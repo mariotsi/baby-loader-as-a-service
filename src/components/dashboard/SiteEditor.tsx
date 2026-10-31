@@ -371,7 +371,7 @@ export function SiteEditor({
           {site.babyName || site.slug}
         </PhoneStrip>
         <div className={styles.main} inert={preview.open}>
-          <div ref={marker} />
+          <div ref={marker} className={styles.stickMarker} />
           <SectionNav
             className={menuClass(stuck)}
             label={t.sections}

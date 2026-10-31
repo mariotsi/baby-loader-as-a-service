@@ -31,7 +31,7 @@
   border-color: var(--color-accent-ink);
 }
 
-/* Floats over what follows, starting at the button's edge so it stays on a 320px screen. */
+/* Floats over what follows; EmojiPicker moves it to the side of the button with room. */
 .panel {
   position: absolute;
   z-index: 2;
@@ -44,11 +44,21 @@
   box-shadow: var(--shadow-lg);
 }
 
+.above {
+  inset-block-start: auto;
+  inset-block-end: calc(100% + var(--space-2));
+}
+
+.end {
+  inset-inline-start: auto;
+  inset-inline-end: 0;
+}
+
 .picker {
   display: flex;
   flex-direction: column;
   gap: var(--space-2);
-  height: 20rem;
+  height: var(--grid-height, 20rem);
 }
 
 .viewport {
