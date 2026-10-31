@@ -178,6 +178,36 @@ test.describe('Dashboard', () => {
     expect(form.width).toBeGreaterThan(400);
   });
 
+  test('shows the spinner only on the action a confirmation runs', async ({ page, project }) => {
+    test.skip(project !== 'desktop', 'one browser is enough for the dialog');
+    await page.goto('/dashboard/e2e-waiting');
+    await page.getByRole('button', { name: 'Announce the birth' }).click();
+    const dialog = page.getByRole('dialog', { name: /^Welcome,/ });
+    await dialog.getByLabel('Birth date & time').fill('2026-01-15T08:30');
+    await dialog.getByRole('button', { name: 'Announce the birth' }).click();
+
+    let answer = () => {};
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve;
+    });
+    await page.route('**/api/sites/*', async (route) => {
+      await answered;
+      await route.abort();
+    });
+    const confirm = page.getByRole('dialog', { name: 'Announce the birth now?' });
+    const announce = confirm.getByRole('button', { name: 'Announce the birth' });
+    const keepEditing = confirm.getByRole('button', { name: 'Keep editing' });
+    await announce.click();
+
+    await expect(announce).toHaveAttribute('aria-busy', 'true');
+    await expect(keepEditing).not.toHaveAttribute('aria-busy');
+    await expect(keepEditing).toHaveAttribute('aria-disabled', 'true');
+    await keepEditing.click({ force: true });
+    await expect(confirm).toBeVisible();
+    answer();
+    await expect(confirm).toBeHidden();
+  });
+
   test('keeps a gap between the cards of the Birth dialog', async ({ page, project }) => {
     await page.goto(`/dashboard/${perProjectSlug('e2e-rules', project)}`);
     await page.getByRole('button', { name: 'Announce the birth' }).click();

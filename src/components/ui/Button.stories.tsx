@@ -29,6 +29,9 @@ export const Ghost: Story = { args: { variant: 'ghost', icon: 'plus', children: 
 /** While work is in flight: the label says what is happening, presses are ignored, focus stays. */
 export const Loading: Story = { args: { variant: 'primary', loading: true, children: 'Saving…' } };
 
+/** Waits for another action's work to end, like the action left over in a dialog. */
+export const Disabled: Story = { args: { disabled: true, children: 'Keep editing' } };
+
 /** An icon after the label, for actions that move forward or leave the page. */
 export const IconAtTheEnd: Story = {
   args: { variant: 'primary', icon: 'arrow-right', iconPosition: 'end', children: 'Next: the big day' },

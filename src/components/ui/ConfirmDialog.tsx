@@ -57,7 +57,7 @@ export function ConfirmDialog({
         {description}
       </p>
       <div className={styles.actions}>
-        <Button variant="primary" ref={dismiss} onClick={onClose} loading={busy}>
+        <Button variant="primary" ref={dismiss} onClick={onClose} disabled={busy}>
           {dismissLabel}
         </Button>
         <Button onClick={onConfirm} loading={busy}>
