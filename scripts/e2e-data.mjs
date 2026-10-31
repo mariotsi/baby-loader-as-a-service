@@ -28,7 +28,7 @@ import {
 } from '../e2e/support/data.ts';
 import { STAGING_DB_NAME, testDataPolicy } from '../src/lib/dbName.ts';
 import { hashPassword } from '../src/lib/password.ts';
-import { parseNewSite } from '../src/lib/siteSettings.ts';
+import { parseNewSite, parseSiteSettings } from '../src/lib/siteSettings.ts';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -58,53 +58,53 @@ function list(values) {
 }
 
 /**
- * A Site row as createSite (src/lib/site.ts) stores it, its Site settings
- * validated by the same parseNewSite the app runs, so a fixture can never
- * hold settings the app would refuse.
+ * A Site row as createSite (src/lib/site.ts) stores it, validated by the same
+ * parsers the app runs, so a fixture can never hold settings the app would
+ * refuse. A Born fixture stands for a Site created Waiting and announced later.
  */
 function siteRow(spec, ownerId, now) {
   const born = spec.bornDaysAgo !== undefined;
-  const parsed = parseNewSite(
-    {
-      slug: spec.slug,
-      settings: {
-        babyName: spec.babyName,
-        sex: spec.sex,
-        dueDate: spec.dueInDays === null ? null : isoDate(spec.dueInDays, now),
-        birth: born
-          ? {
-              born: true,
-              details: {
-                datetime: new Date(now.getTime() - spec.bornDaysAgo * DAY_MS).toISOString(),
-                weightGrams: spec.weight ?? null,
-                lengthCm: spec.lengthCm ?? null,
-                message: spec.birthMessage ?? {},
-              },
-            }
-          : { born: false, details: null },
-        milestones: (spec.milestones ?? []).map((m) => ({
-          emoji: m.emoji,
-          label: m.label,
-          date: isoDate(m.inDays, now),
-          ...(m.place ? { place: m.place } : {}),
-        })),
-        languages: [...spec.languages],
-        timezone: 'Europe/Rome',
-        theme: { palette: 'blush', font: 'inter' },
-        privacy: { showName: spec.showName, showSex: spec.showSex },
-        pageName: spec.pageName ?? {},
-        icon: spec.icon ?? null,
-        birthVideo: null,
-      },
-    },
+  const settings = {
+    babyName: spec.babyName,
+    sex: spec.sex,
+    dueDate: spec.dueInDays === null ? null : isoDate(spec.dueInDays, now),
+    birth: born
+      ? {
+          born: true,
+          details: {
+            datetime: new Date(now.getTime() - spec.bornDaysAgo * DAY_MS).toISOString(),
+            weightGrams: spec.weight ?? null,
+            lengthCm: spec.lengthCm ?? null,
+            message: spec.birthMessage ?? {},
+          },
+        }
+      : { born: false, details: null },
+    milestones: (spec.milestones ?? []).map((m) => ({
+      emoji: m.emoji,
+      label: m.label,
+      date: isoDate(m.inDays, now),
+      ...(m.place ? { place: m.place } : {}),
+    })),
+    languages: [...spec.languages],
+    timezone: 'Europe/Rome',
+    theme: { palette: 'blush', font: 'inter' },
+    privacy: { showName: spec.showName, showSex: spec.showSex },
+    pageName: spec.pageName ?? {},
+    icon: spec.icon ?? null,
+    birthVideo: null,
+  };
+  const created = parseNewSite(
+    { slug: spec.slug, settings: { ...settings, birth: { born: false, details: null } } },
     now
   );
-  if (!parsed.ok) {
-    throw new Error(`Fixture Site ${spec.slug} has invalid Site settings: ${JSON.stringify(parsed.errors)}`);
+  const parsed = parseSiteSettings(settings, now);
+  if (!created.ok || !parsed.ok) {
+    const errors = [...(created.ok ? [] : created.errors), ...(parsed.ok ? [] : parsed.errors)];
+    throw new Error(`Fixture Site ${spec.slug} has invalid Site settings: ${JSON.stringify(errors)}`);
   }
   const at = now.toISOString();
   return `INSERT INTO sites (id, slug, owner_id, settings, custom_domain, custom_domain_verified, created_at, updated_at) VALUES (${list(
-    [randomUUID(), parsed.value.slug, ownerId, JSON.stringify(parsed.value.settings), null, 0, at, at]
+    [randomUUID(), created.value.slug, ownerId, JSON.stringify(parsed.value), null, 0, at, at]
   )});`;
 }
 

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { CredentialsForm } from '@/components/auth/CredentialsForm';
-import { OnboardingForm } from '@/components/onboarding/OnboardingForm';
+import { SiteCreator } from '@/components/onboarding/SiteCreator';
 import { addressConfig } from '@/lib/address';
 import { PublicPageDemo } from './PublicPageDemo';
 
@@ -29,7 +29,12 @@ export const PublicPageBorn: Story = {
 
 /** The real onboarding form, with the live preview of the page it creates. */
 export const Onboarding: Story = {
-  render: () => <OnboardingForm addressConfig={addressConfig({ ROOT_DOMAIN: 'loading.baby' })} />,
+  render: () => (
+    <SiteCreator
+      addressConfig={addressConfig({ ROOT_DOMAIN: 'loading.baby' })}
+      bornPlaceholderUrl="/website-assets/born-placeholder-v1.png"
+    />
+  ),
 };
 
 /** The real login page. */

@@ -1,0 +1,53 @@
+.steps {
+  display: flex;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.step {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: var(--space-1);
+  color: var(--color-text-muted);
+  font-size: var(--text-sm);
+}
+
+.step::before {
+  content: "";
+  height: 0.375rem;
+  border-radius: var(--radius-full);
+  background: var(--color-soft);
+}
+
+.done::before {
+  background: var(--color-accent);
+}
+
+.step[aria-current]::before {
+  background: var(--color-accent-ink);
+}
+
+/* Bold as well as darker, so the current step does not rest on color alone. */
+.step[aria-current] {
+  color: var(--color-text);
+  font-weight: var(--weight-bold);
+}
+
+/* On a phone only the current step's name fits. */
+.name {
+  display: none;
+}
+
+.step[aria-current] .name {
+  display: block;
+  white-space: nowrap;
+}
+
+@media (min-width: 48rem) {
+  .name {
+    display: block;
+  }
+}
