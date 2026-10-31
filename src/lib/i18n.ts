@@ -27,8 +27,17 @@ export function inPlatformOrder(languages: readonly Lang[]): Lang[] {
   return LANGS.filter((lang) => languages.includes(lang));
 }
 
+/** Written here because Intl's casing differs between engines, and a name rendered on the server must match the browser's. */
+const LANGUAGE_NAMES: Record<Lang, Record<Lang, string>> = {
+  it: { it: 'italiano', en: 'inglese' },
+  en: { it: 'Italian', en: 'English' },
+};
+
 /** A language's name as `inLang` writes it mid-sentence: "Italian" in English, "inglese" in Italian. Any language Intl knows has one. */
 export function languageName(lang: string, inLang: Lang): string {
+  if (isLang(lang)) {
+    return LANGUAGE_NAMES[inLang][lang];
+  }
   return new Intl.DisplayNames(inLang, { type: 'language' }).of(lang) ?? lang;
 }
 

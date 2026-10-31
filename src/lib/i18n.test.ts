@@ -76,6 +76,8 @@ test('isLang and languageName cover the supported languages', () => {
   assert.equal(languageName('it', 'en'), 'Italian');
   assert.equal(languageName('en', 'en'), 'English');
   assert.equal(languageName('en', 'it'), 'inglese');
+  assert.equal(languageName('it', 'it'), 'italiano');
+  assert.equal(languageName('fr', 'en'), 'French');
 });
 
 test('a count takes its plural form by the language’s rules', () => {
