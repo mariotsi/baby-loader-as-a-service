@@ -388,7 +388,13 @@ export function SiteCreator({
           ) : null}
           <div className={styles.actions}>
             {step > 0 ? <Button onClick={() => goTo(step - 1)}>{t.back}</Button> : null}
-            <Button variant="primary" type="submit" icon={step === LAST_STEP ? 'plus' : undefined} loading={busy}>
+            <Button
+              className={styles.forward}
+              variant="primary"
+              type="submit"
+              icon={step === LAST_STEP ? 'plus' : undefined}
+              loading={busy}
+            >
               {submitLabel(step, busy, t)}
             </Button>
             <StatusMessage tone="danger">{message}</StatusMessage>

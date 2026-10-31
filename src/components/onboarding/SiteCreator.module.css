@@ -25,7 +25,7 @@
   color: var(--color-text-muted);
 }
 
-/* A phone reads the step, then the preview; from 48rem the preview stays beside the form. */
+/* On a phone the preview opens from the PhoneStrip; from 48rem it stays beside the form. */
 .layout {
   display: grid;
   gap: var(--space-5);
@@ -48,6 +48,11 @@
   display: grid;
   gap: var(--space-5);
   min-width: 0;
+}
+
+/* Forward is on the right, with or without Back on the left. */
+.forward {
+  margin-inline-start: auto;
 }
 
 .actions {
