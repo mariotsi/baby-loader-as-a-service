@@ -43,10 +43,15 @@
   white-space: nowrap;
 }
 
-/* Reserves the width of the bold label, so marking a section moves no chip. */
+/*
+ * Reserves the width of the bold label, so marking a section moves no chip. Its text is clipped: spilling out of the
+ * zero height, it would let the row scroll vertically.
+ */
 .link::after {
   content: attr(data-label);
+  min-width: max-content;
   height: 0;
+  overflow: hidden;
   font-weight: var(--weight-bold);
   visibility: hidden;
 }
