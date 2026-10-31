@@ -59,6 +59,11 @@
   font-size: var(--text-xl);
 }
 
+/* The title takes focus only when the dialog opens, and pressing it does nothing, so it shows no ring. */
+.title:focus {
+  outline: none;
+}
+
 .description {
   margin: 0;
   color: var(--color-text-muted);
