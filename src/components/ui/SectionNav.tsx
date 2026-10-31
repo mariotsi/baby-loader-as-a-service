@@ -82,12 +82,20 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
     }
   }, [current]);
 
+  // The mark waits for the first scroll after the jump's end: the observer's last report comes after scrollend, and it
+  // would mark another section.
   useEffect(() => {
-    function endJump() {
+    function release() {
       jumped.current = null;
     }
+    function endJump() {
+      window.addEventListener('scroll', release, { once: true });
+    }
     window.addEventListener('scrollend', endJump);
-    return () => window.removeEventListener('scrollend', endJump);
+    return () => {
+      window.removeEventListener('scrollend', endJump);
+      window.removeEventListener('scroll', release);
+    };
   }, []);
 
   return (

@@ -198,6 +198,21 @@ test.describe('Dashboard', () => {
 
     const behavior = await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior);
     expect(behavior).toBe('auto');
+
+    // The last section never reaches the band that marks the one in view, so the mark has to outlast the jump.
+    const secret = sections.getByRole('link', { name: 'Keep the secret' });
+    await secret.click();
+    await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeInViewport();
+    const marks = await secret.evaluate(async (link) => {
+      const seen = new Set<string | null | undefined>();
+      const start = performance.now();
+      while (performance.now() - start < 500) {
+        await new Promise(requestAnimationFrame);
+        seen.add(link.closest('nav')?.querySelector('[aria-current]')?.textContent);
+      }
+      return [...seen];
+    });
+    expect(marks).toEqual(['Keep the secret']);
   });
 
   test('lays the menu, the form and the preview side by side on a wide screen', async ({ page, project }) => {
