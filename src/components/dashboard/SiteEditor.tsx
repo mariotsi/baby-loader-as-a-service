@@ -52,6 +52,7 @@ import { SiteIconField } from './SiteIconField';
 import { SitePreviews } from './SitePreviews';
 import { useLeaveGuard } from './useLeaveGuard';
 import { usePhonePreview } from './usePhonePreview';
+import { useStuck } from './useStuck';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
 
@@ -134,6 +135,7 @@ export function SiteEditor({
   const [failedSaves, setFailedSaves] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
   const preview = usePhonePreview();
+  const { marker, stuck } = useStuck();
   /** Whether the Owner just created this Site. */
   const [welcome, setWelcome] = useState(false);
   const sectionIds = {
@@ -364,12 +366,14 @@ export function SiteEditor({
           open={preview.open}
           onToggle={preview.toggle}
           controls={preview.id}
+          joined={stuck}
         >
           {site.babyName || site.slug}
         </PhoneStrip>
         <div className={styles.main} inert={preview.open}>
+          <div ref={marker} />
           <SectionNav
-            className={styles.menu}
+            className={menuClass(stuck)}
             label={t.sections}
             sections={[
               { id: sectionIds.baby, label: t.babyDetails },
@@ -524,6 +528,10 @@ export function SiteEditor({
       ) : null}
     </>
   );
+}
+
+function menuClass(stuck: boolean) {
+  return stuck ? `${styles.menu} ${styles.menuStuck}` : styles.menu;
 }
 
 /** What a save would change, Places being typed and a picked video included. */

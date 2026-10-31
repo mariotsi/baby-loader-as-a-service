@@ -19,8 +19,16 @@
   top: calc(var(--control-height-sm) + var(--space-2));
   z-index: 1;
   min-width: 0;
-  margin-top: var(--space-2);
-  margin-bottom: var(--space-3);
+  margin-bottom: var(--space-1);
+  padding-block: var(--space-2);
+}
+
+/* Stuck, the chips join the PhoneStrip above them as one bar, which carries the shadow. */
+.menuStuck {
+  margin-inline: calc(var(--gutter) * -1);
+  padding-inline: var(--gutter);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-md);
 }
 
 .form {
@@ -64,8 +72,14 @@
   }
 
   .menu {
-    top: var(--space-2);
-    margin-top: 0;
+    top: 0;
+  }
+
+  /* With no strip above, and the preview beside it, the bar hangs from the top of the screen over the form's column. */
+  .menuStuck {
+    margin-inline: calc(var(--space-3) * -1);
+    padding-inline: var(--space-3);
+    border-radius: 0 0 var(--radius-md) var(--radius-md);
   }
 
   .section {
@@ -94,6 +108,14 @@
   .menu {
     top: var(--space-4);
     margin-bottom: 0;
+    padding-block: 0;
+  }
+
+  .menuStuck {
+    margin-inline: 0;
+    padding-inline: 0;
+    background: none;
+    box-shadow: none;
   }
 
   .section {
