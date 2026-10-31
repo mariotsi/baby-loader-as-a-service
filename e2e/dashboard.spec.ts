@@ -165,6 +165,59 @@ test.describe('Dashboard', () => {
     await expect(sections.getByRole('link', { name: 'Keep the secret' })).toBeInViewport({ ratio: 0.9 });
   });
 
+  test('glides to a section and keeps it marked on the way', async ({ page }) => {
+    await page.goto('/dashboard/e2e-waiting');
+    const sections = page.getByRole('navigation', { name: 'Sections of this page' });
+    await expect(sections.getByRole('link', { name: 'Baby details' })).toHaveAttribute('aria-current', 'location');
+
+    expect(await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior)).toBe('smooth');
+
+    const marks = await sections.getByRole('link', { name: 'Keep the secret' }).evaluate(async (link) => {
+      const seen = new Set<string | null | undefined>();
+      (link as HTMLAnchorElement).click();
+      const start = performance.now();
+      while (performance.now() - start < 1500) {
+        await new Promise(requestAnimationFrame);
+        seen.add(link.closest('nav')?.querySelector('[aria-current]')?.textContent);
+      }
+      return [...seen];
+    });
+
+    expect(marks).toEqual(['Keep the secret']);
+    await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeInViewport();
+
+    // The jump is over, so the mark follows the page again.
+    await page
+      .getByRole('heading', { name: 'Appearance' })
+      .evaluate((heading) => heading.scrollIntoView({ behavior: 'instant' }));
+    await expect(sections.getByRole('link', { name: 'Appearance' })).toHaveAttribute('aria-current', 'location');
+  });
+
+  test('jumps to a section under reduced motion', async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    await page.goto('/dashboard/e2e-waiting');
+    const sections = page.getByRole('navigation', { name: 'Sections of this page' });
+    await expect(sections.getByRole('link', { name: 'Baby details' })).toHaveAttribute('aria-current', 'location');
+
+    const behavior = await page.evaluate(() => getComputedStyle(document.documentElement).scrollBehavior);
+    expect(behavior).toBe('auto');
+
+    // The last section never reaches the band that marks the one in view, so the mark has to outlast the jump.
+    const secret = sections.getByRole('link', { name: 'Keep the secret' });
+    await secret.click();
+    await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeInViewport();
+    const marks = await secret.evaluate(async (link) => {
+      const seen = new Set<string | null | undefined>();
+      const start = performance.now();
+      while (performance.now() - start < 500) {
+        await new Promise(requestAnimationFrame);
+        seen.add(link.closest('nav')?.querySelector('[aria-current]')?.textContent);
+      }
+      return [...seen];
+    });
+    expect(marks).toEqual(['Keep the secret']);
+  });
+
   test('lays the menu, the form and the preview side by side on a wide screen', async ({ page, project }) => {
     test.skip(project !== 'desktop', 'the three columns need a wide screen');
     await page.setViewportSize({ width: 1280, height: 860 });

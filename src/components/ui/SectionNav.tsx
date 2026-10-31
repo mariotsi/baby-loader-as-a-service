@@ -21,13 +21,14 @@ interface SectionNavProps {
  * Links to the sections of one long page, marking the section in view: a row
  * of chips that scrolls sideways, and a column on a wide screen. A row that
  * holds more than it shows fades out at that edge, with an arrow, leaving a
- * chip cut in two.
+ * chip cut in two. A link glides the page to its section, and jumps under
+ * `prefers-reduced-motion`.
  */
 export function SectionNav({ label, sections, className }: SectionNavProps) {
   const [current, setCurrent] = useState(sections[0]?.id);
   const [more, setMore] = useState({ start: false, end: false });
   const list = useRef<HTMLUListElement>(null);
-  /** The section just jumped to: the last ones can never reach the band, so the page's end would mark another. */
+  /** The section being jumped to, until the scroll ends: the glide crosses others, and the last ones never reach the band. */
   const jumped = useRef<string | null>(null);
   const ids = sections.map((section) => section.id).join(' ');
 
@@ -81,6 +82,22 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
     }
   }, [current]);
 
+  // The mark waits for the first scroll after the jump's end: the observer's last report comes after scrollend, and it
+  // would mark another section.
+  useEffect(() => {
+    function release() {
+      jumped.current = null;
+    }
+    function endJump() {
+      window.addEventListener('scroll', release, { once: true });
+    }
+    window.addEventListener('scrollend', endJump);
+    return () => {
+      window.removeEventListener('scrollend', endJump);
+      window.removeEventListener('scroll', release);
+    };
+  }, []);
+
   return (
     <nav aria-label={label} className={className}>
       <div className={styles.row}>
@@ -100,9 +117,6 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
                 onClick={() => {
                   jumped.current = section.id;
                   setCurrent(section.id);
-                  setTimeout(() => {
-                    jumped.current = null;
-                  }, 300);
                 }}
               >
                 {section.label}
