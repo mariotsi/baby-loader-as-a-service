@@ -1,4 +1,4 @@
-import { SiteSettingsForm } from '@/components/dashboard/SiteSettingsForm';
+import { SiteEditor } from '@/components/dashboard/SiteEditor';
 import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
@@ -48,7 +48,7 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
           </ButtonLink>
         </Stack>
       </div>
-      <SiteSettingsForm
+      <SiteEditor
         mediaPreviewSlug={mediaFromPageOrigin(deploymentEnv().appEnv) ? site.slug : undefined}
         site={toSiteDTO(site)}
         timeZones={Intl.supportedValuesOf('timeZone')}

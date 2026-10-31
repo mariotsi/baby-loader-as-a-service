@@ -2,10 +2,11 @@
 
 import { format, parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { type Ref, type SubmitEvent, useEffect, useRef, useState } from 'react';
+import { type Ref, type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
 import { useLang } from '@/components/LangProvider';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
+import { ConfirmDialog } from '@/components/ui/ConfirmDialog';
 import { EmojiPicker } from '@/components/ui/EmojiPicker';
 import { Field } from '@/components/ui/Field';
 import { FontPicker } from '@/components/ui/FontPicker';
@@ -13,6 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { LanguagesPicker } from '@/components/ui/LanguagesPicker';
 import { PalettePicker } from '@/components/ui/PalettePicker';
 import { PerLanguageField } from '@/components/ui/PerLanguageField';
+import { SectionNav } from '@/components/ui/SectionNav';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
@@ -28,7 +30,8 @@ import {
   responseErrorText,
   routeErrorText,
 } from '@/lib/errorText';
-import type { Lang } from '@/lib/i18n';
+import { fallbackLang, type Lang } from '@/lib/i18n';
+import { type PreviewState, settingsInState } from '@/lib/previewSettings';
 import type { Milestone, SiteDTO } from '@/lib/site';
 import {
   type BirthMedia,
@@ -41,10 +44,19 @@ import {
   type SiteSettingsInput,
 } from '@/lib/siteSettings';
 import { BirthDialog, type BirthDraft, type SaveOutcome } from './BirthDialog';
-import { BirthMediaEditor, birthPhoto, type MediaDraft, storedDraft } from './BirthMediaEditor';
+import {
+  BirthMediaEditor,
+  birthPhoto,
+  birthVideoTitle,
+  type MediaDraft,
+  storedDraft,
+  useBirthMediaUrl,
+} from './BirthMediaEditor';
 import { PlaceField } from './PlaceField';
+import { PublicPagePreview } from './PublicPagePreview';
+import styles from './SiteEditor.module.css';
 import { SitePreviews } from './SitePreviews';
-import styles from './SiteSettingsForm.module.css';
+import { useLeaveGuard } from './useLeaveGuard';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
 
@@ -74,7 +86,7 @@ function unpickedPlaces(milestones: MilestoneDraft[]): SiteSettingsError[] {
  * `timeZones` comes from the server, so the list the page renders matches the
  * one it hydrates. `address` is the Site's, which only the server knows.
  */
-export function SiteSettingsForm({
+export function SiteEditor({
   site,
   timeZones,
   address,
@@ -126,6 +138,14 @@ export function SiteSettingsForm({
   /** Counts failed saves, so each one moves the focus to the first field in error. */
   const [failedSaves, setFailedSaves] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
+  const sectionIds = {
+    baby: useId(),
+    video: useId(),
+    milestones: useId(),
+    appearance: useId(),
+    who: useId(),
+    icon: useId(),
+  };
 
   useEffect(() => {
     if (failedSaves > 0) {
@@ -166,6 +186,9 @@ export function SiteSettingsForm({
   if (checkedNow.ok) {
     lastValid.current = checkedNow.value;
   }
+
+  const { dirty, markSaved } = useUnsavedChanges(draftState(currentSettings(), milestones, video));
+  const leaving = useLeaveGuard(dirty);
 
   /** Everything that stops a save: the Site settings rules, then Places typed and never picked. */
   function problems(b: BirthDraft = birth): SiteSettingsError[] {
@@ -225,6 +248,9 @@ export function SiteSettingsForm({
       if (announcing) {
         setShowName(true);
         setShowSex(true);
+      }
+      markSaved();
+      if (announcing) {
         await sendBirthNotification(next);
       }
     }
@@ -308,6 +334,7 @@ export function SiteSettingsForm({
       setVideo(next.video);
       setSavedMedia(next);
       setSaved(true);
+      markSaved();
       router.refresh();
       await removeReplacedMedia(savedMedia, next, remove).catch(() => {});
       return { ok: true };
@@ -327,9 +354,21 @@ export function SiteSettingsForm({
 
   return (
     <>
-      <form ref={formRef} onSubmit={save} className={styles.form} noValidate>
-        <div className={styles.columns}>
-          <div className={styles.column}>
+      <div className={styles.editor}>
+        <SectionNav
+          className={styles.menu}
+          label={t.sections}
+          sections={[
+            { id: sectionIds.baby, label: t.babyDetails },
+            { id: sectionIds.video, label: birthVideoTitle(pageLang) },
+            { id: sectionIds.milestones, label: t.milestones },
+            { id: sectionIds.appearance, label: t.appearance },
+            { id: sectionIds.who, label: t.whoSeesWhat },
+            { id: sectionIds.icon, label: t.iconAndSharing },
+          ]}
+        />
+        <form ref={formRef} onSubmit={save} className={styles.form} noValidate>
+          <div id={sectionIds.baby} className={styles.section}>
             <Card title={t.babyDetails} description={t.babyDetailsDescription}>
               <Field label={t.name}>
                 <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
@@ -346,9 +385,13 @@ export function SiteSettingsForm({
               </Field>
               <BirthStatus birth={birth} sex={sex} buttonRef={birthButton} onOpen={() => setBirthDialogOpen(true)} />
             </Card>
+          </div>
 
+          <div id={sectionIds.video} className={styles.section}>
             <BirthMediaEditor previewSlug={mediaPreviewSlug} only="video" video={video} onVideo={setVideo} />
+          </div>
 
+          <div id={sectionIds.milestones} className={styles.section}>
             <MilestonesCard
               milestones={milestones}
               onChange={setMilestones}
@@ -358,7 +401,7 @@ export function SiteSettingsForm({
             />
           </div>
 
-          <div className={styles.column}>
+          <div id={sectionIds.appearance} className={styles.section}>
             <Card title={t.appearance} description={t.appearanceDescription}>
               <PalettePicker value={palette} onChange={setPalette} />
               <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
@@ -393,12 +436,18 @@ export function SiteSettingsForm({
                 </Select>
               </Field>
             </Card>
+          </div>
+
+          <div id={sectionIds.who} className={styles.section}>
             <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription}>
               <div>
                 <Switch label={privacy.showName} checked={showName} onChange={(e) => setShowName(e.target.checked)} />
                 <Switch label={privacy.showSex} checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
               </div>
             </Card>
+          </div>
+
+          <div id={sectionIds.icon} className={styles.section}>
             <IconAndSharingCard
               isEmoji={iconIsEmoji}
               onIsEmojiChange={setIconIsEmoji}
@@ -408,16 +457,32 @@ export function SiteSettingsForm({
               address={address}
             />
           </div>
-        </div>
 
-        <div className={styles.saveBar}>
-          <Button variant="primary" type="submit" loading={saving}>
-            {saving ? t.saving : t.save}
-          </Button>
-          <StatusMessage tone="success">{saved ? (announced ?? t.saved) : null}</StatusMessage>
-          <StatusMessage tone="danger">{message || problemsText(errors, pageLang)}</StatusMessage>
-        </div>
-      </form>
+          <SaveBar
+            saving={saving}
+            dirty={dirty}
+            done={saved ? (announced ?? t.saved) : null}
+            problem={message || problemsText(errors, pageLang)}
+          />
+        </form>
+        <EditorPreview
+          settings={lastValid.current}
+          slug={site.slug}
+          photo={birth.photo}
+          video={video}
+          mediaPreviewSlug={mediaPreviewSlug}
+          bornPlaceholderUrl={bornPlaceholderUrl}
+        />
+      </div>
+      <ConfirmDialog
+        open={leaving.target !== null}
+        title={t.leaveTitle}
+        description={t.leaveDescription}
+        confirmLabel={t.leave}
+        dismissLabel={t.keepEditing}
+        onConfirm={leaving.leave}
+        onClose={leaving.stay}
+      />
       {birthDialogOpen ? (
         <BirthDialog
           initial={birth.born ? birth : { ...birth, datetime: birth.datetime || format(new Date(), LOCAL_DATETIME) }}
@@ -442,6 +507,93 @@ export function SiteSettingsForm({
         />
       ) : null}
     </>
+  );
+}
+
+/** What a save would change, Places being typed and a picked video included. */
+function draftState(settings: SiteSettingsInput, milestones: MilestoneDraft[], video: MediaDraft): string {
+  return JSON.stringify([
+    settings,
+    milestones.map((m) => m.placeText),
+    video instanceof File ? [video.name, video.size, video.lastModified] : null,
+  ]);
+}
+
+/** Whether `draft` differs from what was last saved. `markSaved` makes the draft of the next render the saved one. */
+function useUnsavedChanges(draft: string) {
+  const [savedDraft, setSavedDraft] = useState(draft);
+  const [justSaved, setJustSaved] = useState(false);
+  if (justSaved) {
+    setJustSaved(false);
+    setSavedDraft(draft);
+  }
+  return { dirty: draft !== savedDraft, markSaved: () => setJustSaved(true) };
+}
+
+interface SaveBarProps {
+  saving: boolean;
+  dirty: boolean;
+  /** How the last save went, shown until the next edit. */
+  done: string | null;
+  problem: string | null;
+}
+
+/** Save, with what is unsaved, saved or wrong beside it, against the bottom edge while the form scrolls. */
+function SaveBar({ saving, dirty, done, problem }: SaveBarProps) {
+  const t = platformCopy[useLang()].settings;
+  return (
+    <div className={styles.saveBar}>
+      <Button variant="primary" type="submit" loading={saving}>
+        {saving ? t.saving : t.save}
+      </Button>
+      <StatusMessage tone="info">{dirty ? t.unsaved : null}</StatusMessage>
+      <StatusMessage tone="success">{done && !dirty ? done : null}</StatusMessage>
+      <StatusMessage tone="danger">{problem}</StatusMessage>
+    </div>
+  );
+}
+
+interface EditorPreviewProps {
+  /** The Site settings as they stand, or as they last stood valid. */
+  settings: SiteSettings;
+  slug: string;
+  photo: MediaDraft;
+  video: MediaDraft;
+  mediaPreviewSlug?: string;
+  bornPlaceholderUrl: string;
+}
+
+/** The Public page beside the form, with the toggle between its Waiting and Born states. */
+function EditorPreview({ settings, slug, photo, video, mediaPreviewSlug, bornPlaceholderUrl }: EditorPreviewProps) {
+  const pageLang = useLang();
+  const t = platformCopy[pageLang].settings;
+  /** Null until the Owner picks a state: the preview then follows the Site's. */
+  const [picked, setPicked] = useState<PreviewState | null>(null);
+  const state = picked ?? (settings.birth.born ? 'born' : 'waiting');
+  const photoUrl = useBirthMediaUrl(photo, mediaPreviewSlug, 'photo');
+  const videoUrl = useBirthMediaUrl(video, mediaPreviewSlug, 'video');
+  return (
+    <aside className={styles.preview} aria-label={t.previewPage}>
+      <SegmentedControl
+        legend={t.previewState}
+        hideLegend
+        size="sm"
+        options={[
+          { value: 'waiting', label: t.previewWaiting },
+          { value: 'born', label: t.previewBorn },
+        ]}
+        value={state}
+        onChange={setPicked}
+      />
+      <PublicPagePreview
+        settings={settingsInState(settings, state)}
+        slug={slug}
+        lang={settings.languages.includes(pageLang) ? pageLang : fallbackLang(settings.languages)}
+        caption={t.previewPage}
+        bornImageUrl={photoUrl ?? bornPlaceholderUrl}
+        birthVideoUrl={videoUrl}
+      />
+    </aside>
   );
 }
 

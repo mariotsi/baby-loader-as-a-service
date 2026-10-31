@@ -28,8 +28,9 @@ import styles from './PublicPage.module.css';
  *
  * Everything it shows comes from its props, so the Dashboard draws the same
  * page as a `preview` from Site settings not yet saved: it lays out to its
- * own width, leaves the document's language alone, and is inert, so the
- * notifications button shows and nobody can subscribe from it.
+ * own width, leaves the document's language and the language cookie alone,
+ * and everything but its header is inert, so the notifications button shows
+ * and nobody can subscribe from it, while the Language switcher still works.
  */
 export function PublicPage({
   views,
@@ -66,7 +67,9 @@ export function PublicPage({
   }, [view.lang, preview]);
 
   function chooseLang(next: Lang) {
-    rememberLang(next);
+    if (!preview) {
+      rememberLang(next);
+    }
     setLang(next);
   }
 
@@ -74,12 +77,11 @@ export function PublicPage({
     <div
       className={preview ? `${styles.page} ${styles.preview}` : styles.page}
       lang={preview ? view.lang : undefined}
-      inert={preview}
       data-video-autoplay={noAutoplay ? 'disabled' : 'enabled'}
     >
       <JoyBackground />
       <PublicPageHeader views={views} view={view} onLang={chooseLang} />
-      <Main className={styles.hero}>
+      <Main className={styles.hero} inert={preview}>
         <div className={styles.introSlot}>
           <div className={styles.intro}>
             <p className={styles.tagline}>{view.tagline}</p>

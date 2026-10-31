@@ -1,20 +1,79 @@
-.form {
-  display: grid;
-  gap: var(--space-5);
-  /* The sticky action meets the viewport edge through PageShell's bottom gutter. */
-  margin-bottom: calc(var(--space-8) * -1);
-}
-
-/* One column on a phone; on a wide screen the story on the left, the look on the right. */
-.columns {
+/*
+ * One column on a phone; beside the preview from 48rem, with the chips above both; the menu, the form and the
+ * preview side by side from 68.75rem, where the menu has become a column.
+ */
+.editor {
   display: grid;
   gap: var(--space-5);
   align-items: start;
 }
 
-@media (min-width: 60rem) {
-  .columns {
-    grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+.menu {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  min-width: 0;
+  padding-block: var(--space-2);
+  background: var(--color-bg);
+}
+
+.form {
+  display: grid;
+  gap: var(--space-5);
+  min-width: 0;
+}
+
+/* Clears the sticky chips when the menu jumps here. */
+.section {
+  scroll-margin-top: calc(var(--control-height-sm) + var(--space-4));
+}
+
+/* The frame's width is a share of this column, so the column stretches it: centered, the frame would collapse. */
+.preview {
+  display: grid;
+  gap: var(--space-3);
+  min-width: 0;
+}
+
+.preview > fieldset {
+  justify-self: center;
+}
+
+@media (min-width: 48rem) {
+  .editor {
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    /* The sticky action meets the viewport edge through PageShell's bottom gutter. */
+    margin-bottom: calc(var(--space-8) * -1);
+  }
+
+  .menu {
+    grid-column: 1 / -1;
+  }
+
+  .preview {
+    position: sticky;
+    top: calc(var(--control-height-sm) + var(--space-5));
+  }
+}
+
+@media (min-width: 68.75rem) {
+  .editor {
+    grid-template-columns: 11rem minmax(0, 1fr) 18rem;
+  }
+
+  .menu {
+    top: var(--space-4);
+    grid-column: auto;
+    padding-block: 0;
+    background: none;
+  }
+
+  .section {
+    scroll-margin-top: var(--space-4);
+  }
+
+  .preview {
+    top: var(--space-4);
   }
 }
 

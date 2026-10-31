@@ -44,6 +44,11 @@ const mediaCopy = {
 
 export type MediaDraft = BirthMedia | File | null;
 
+/** The Birth video's section, which the Site settings' menu names. */
+export function birthVideoTitle(lang: 'en' | 'it') {
+  return mediaCopy[lang].title;
+}
+
 export function useMediaUrl(media: MediaDraft): string | undefined {
   const [local, setLocal] = useState<string>();
   useEffect(() => {

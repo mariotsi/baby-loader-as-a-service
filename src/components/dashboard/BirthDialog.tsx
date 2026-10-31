@@ -23,7 +23,7 @@ import type { BirthDetails, SiteSettings, SiteSettingsError } from '@/lib/siteSe
 import { BirthMediaEditor, type MediaDraft, useBirthMediaUrl } from './BirthMediaEditor';
 import { NotificationPreviews } from './NotificationPreviews';
 import { PublicPagePreview } from './PublicPagePreview';
-import styles from './SiteSettingsForm.module.css';
+import styles from './SiteEditor.module.css';
 
 /** The Birth as the editor holds it: the fields as typed, and the photo picked but maybe not yet uploaded. */
 export interface BirthDraft {
