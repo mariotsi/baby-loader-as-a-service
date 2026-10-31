@@ -107,7 +107,7 @@ A Milestone's street address and the point on the map it stands for, both taken 
 _Avoid_: Address, location
 
 **Sex**:
-Girl, boy, or unknown; unknown means the Owner prefers not to say.
+Girl, boy, or unknown; unknown means the Owner doesn't know yet. Hiding a known Sex is a job for the Privacy settings.
 _Avoid_: Gender
 
 ### Presentation
