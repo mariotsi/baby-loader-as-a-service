@@ -1,0 +1,32 @@
+.deck {
+  display: grid;
+  width: min(20rem, 76vw);
+  margin-inline: auto;
+}
+
+.card {
+  grid-area: 1 / 1;
+  display: block;
+  width: 100%;
+  height: auto;
+  border: var(--border-width) solid var(--color-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  z-index: calc(10 - var(--place));
+  transform: translate(calc(var(--place) * 0.75rem), calc(var(--place) * 0.5rem)) rotate(calc(var(--place) * 2deg))
+    scale(calc(1 - var(--place) * 0.04));
+  transform-origin: 50% 100%;
+  transition:
+    transform var(--duration-slow) var(--ease-out),
+    opacity var(--duration-slow) var(--ease-out);
+}
+
+.card[data-place="-1"] {
+  z-index: 11;
+  opacity: 0;
+  transform: translateX(-120%) rotate(-12deg);
+}
+
+.card[data-place="3"] {
+  opacity: 0;
+}

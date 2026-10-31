@@ -63,7 +63,7 @@ function list(values) {
  * refuse. A Born fixture stands for a Site created Waiting and announced later,
  * and a fixture with no Due date for one whose Owner cleared it in Site settings.
  */
-function siteRow(spec, ownerId, now) {
+function siteRow({ theme = { palette: 'blush', font: 'inter' }, ...spec }, ownerId, now) {
   const born = spec.bornDaysAgo !== undefined;
   const settings = {
     babyName: spec.babyName,
@@ -88,7 +88,7 @@ function siteRow(spec, ownerId, now) {
     })),
     languages: [...spec.languages],
     timezone: 'Europe/Rome',
-    theme: { palette: 'blush', font: 'inter' },
+    theme,
     privacy: { showName: spec.showName, showSex: spec.showSex },
     pageName: spec.pageName ?? {},
     icon: spec.icon ?? null,
