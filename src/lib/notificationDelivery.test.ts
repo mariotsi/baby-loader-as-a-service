@@ -28,7 +28,8 @@ after(() => stopDb());
 async function ownedSite(slug: string, settings: Partial<SiteSettingsInput> = {}): Promise<OwnedSite> {
   const full = { ...defaultSiteSettings, babyName: 'Emma', ...settings };
   // A Site is created Waiting and announced afterwards.
-  const parsed = parseNewSite({ slug, settings: { ...full, birth: defaultSiteSettings.birth } });
+  const dueDate = full.dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
+  const parsed = parseNewSite({ slug, settings: { ...full, dueDate, birth: defaultSiteSettings.birth } });
   assert.ok(parsed.ok, JSON.stringify(parsed));
   assert.ok((await createSite(authenticate(token) as AuthenticatedUser, parsed.value)).ok);
   const access = await accessOwnedSite(token, slug);

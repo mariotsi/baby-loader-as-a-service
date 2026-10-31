@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/Input';
 import { LanguagesPicker } from '@/components/ui/LanguagesPicker';
 import { PalettePicker } from '@/components/ui/PalettePicker';
 import { PerLanguageField } from '@/components/ui/PerLanguageField';
+import { PhoneStrip } from '@/components/ui/PhoneStrip';
 import { SectionNav } from '@/components/ui/SectionNav';
 import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
@@ -50,6 +51,8 @@ import styles from './SiteEditor.module.css';
 import { SiteIconField } from './SiteIconField';
 import { SitePreviews } from './SitePreviews';
 import { useLeaveGuard } from './useLeaveGuard';
+import { usePhonePreview } from './usePhonePreview';
+import { useStuck } from './useStuck';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
 
@@ -131,6 +134,8 @@ export function SiteEditor({
   /** Counts failed saves, so each one moves the focus to the first field in error. */
   const [failedSaves, setFailedSaves] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
+  const preview = usePhonePreview();
+  const { marker, stuck } = useStuck();
   /** Whether the Owner just created this Site. */
   const [welcome, setWelcome] = useState(false);
   const sectionIds = {
@@ -355,116 +360,129 @@ export function SiteEditor({
     <>
       <StatusMessage tone="success">{welcome ? t.welcome(address.replace(/^https?:\/\//, '')) : null}</StatusMessage>
       <div className={styles.editor}>
-        <SectionNav
-          className={styles.menu}
-          label={t.sections}
-          sections={[
-            { id: sectionIds.baby, label: t.babyDetails },
-            { id: sectionIds.video, label: birthVideoTitle(pageLang) },
-            { id: sectionIds.milestones, label: t.milestones },
-            { id: sectionIds.appearance, label: t.appearance },
-            { id: sectionIds.who, label: t.whoSeesWhat },
-            { id: sectionIds.icon, label: t.iconAndSharing },
-          ]}
-        />
-        <form ref={formRef} onSubmit={save} className={styles.form} noValidate>
-          <div id={sectionIds.baby} className={styles.section}>
-            <Card title={t.babyDetails} description={t.babyDetailsDescription}>
-              <Field label={t.name}>
-                <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
-              </Field>
-              <Field label={t.sex}>
-                <Select value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
-                  <option value="unknown">{t.sexUnknown}</option>
-                  <option value="female">{t.sexFemale}</option>
-                  <option value="male">{t.sexMale}</option>
-                </Select>
-              </Field>
-              <Field label={t.dueDate} optional>
-                <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
-              </Field>
-              <BirthStatus birth={birth} sex={sex} buttonRef={birthButton} onOpen={() => setBirthDialogOpen(true)} />
-            </Card>
-          </div>
-
-          <div id={sectionIds.video} className={styles.section}>
-            <BirthMediaEditor previewSlug={mediaPreviewSlug} only="video" video={video} onVideo={setVideo} />
-          </div>
-
-          <div id={sectionIds.milestones} className={styles.section}>
-            <MilestonesCard
-              milestones={milestones}
-              onChange={setMilestones}
-              languages={languages}
-              inlineError={inlineError}
-              errorsPerLanguage={errorsPerLanguage}
-            />
-          </div>
-
-          <div id={sectionIds.appearance} className={styles.section}>
-            <Card title={t.appearance} description={t.appearanceDescription}>
-              <PalettePicker value={palette} onChange={setPalette} />
-              <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
-              <LanguagesPicker value={languages} onChange={setLanguages} />
-              <PerLanguageField
-                label={t.pageName}
-                hint={t.pageNameHint}
-                languages={languages}
-                value={pageName}
-                onChange={(lang, text) => setPageName({ ...pageName, [lang]: text })}
-                errors={errorsPerLanguage('pageName')}
-                optional
-              >
-                {({ lang, value, onChange }) => (
-                  <Input
-                    lang={lang}
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
-                    placeholder={platformCopy[lang].settings.pageNamePlaceholder}
-                    maxLength={60}
-                    autoComplete="off"
-                  />
-                )}
-              </PerLanguageField>
-              <Field label={t.timezone} hint={t.timezoneHint}>
-                <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
-                  {(timeZones.includes(timezone) ? timeZones : [timezone, ...timeZones]).map((zone) => (
-                    <option key={zone} value={zone}>
-                      {zone}
-                    </option>
-                  ))}
-                </Select>
-              </Field>
-            </Card>
-          </div>
-
-          <div id={sectionIds.who} className={styles.section}>
-            <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription}>
-              <div>
-                <Switch label={privacy.showName} checked={showName} onChange={(e) => setShowName(e.target.checked)} />
-                <Switch label={privacy.showSex} checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
-              </div>
-            </Card>
-          </div>
-
-          <div id={sectionIds.icon} className={styles.section}>
-            <IconAndSharingCard
-              isEmoji={iconIsEmoji}
-              onIsEmojiChange={setIconIsEmoji}
-              emoji={iconEmoji}
-              onEmojiChange={setIconEmoji}
-              preview={lastValid.current}
-              address={address}
-            />
-          </div>
-
-          <SaveBar
-            saving={saving}
-            dirty={dirty}
-            done={saved ? (announced ?? t.saved) : null}
-            problem={message || problemsText(errors, pageLang)}
+        <PhoneStrip
+          showLabel={t.previewShow}
+          hideLabel={t.previewHide}
+          open={preview.open}
+          onToggle={preview.toggle}
+          controls={preview.id}
+          joined={stuck}
+        >
+          {site.babyName || site.slug}
+        </PhoneStrip>
+        <div className={styles.main} inert={preview.open}>
+          <div ref={marker} />
+          <SectionNav
+            className={menuClass(stuck)}
+            label={t.sections}
+            sections={[
+              { id: sectionIds.baby, label: t.babyDetails },
+              { id: sectionIds.appearance, label: t.appearance },
+              { id: sectionIds.icon, label: t.iconAndSharing },
+              { id: sectionIds.video, label: birthVideoTitle(pageLang) },
+              { id: sectionIds.milestones, label: t.milestones },
+              { id: sectionIds.who, label: t.whoSeesWhat },
+            ]}
           />
-        </form>
+          <form ref={formRef} onSubmit={save} className={styles.form} noValidate>
+            <div id={sectionIds.baby} className={styles.section}>
+              <Card title={t.babyDetails} description={t.babyDetailsDescription}>
+                <Field label={t.name}>
+                  <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
+                </Field>
+                <Field label={t.sex}>
+                  <Select value={sex} onChange={(e) => setSex(e.target.value as typeof sex)}>
+                    <option value="unknown">{t.sexUnknown}</option>
+                    <option value="female">{t.sexFemale}</option>
+                    <option value="male">{t.sexMale}</option>
+                  </Select>
+                </Field>
+                <Field label={t.dueDate} optional>
+                  <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
+                </Field>
+                <BirthStatus birth={birth} sex={sex} buttonRef={birthButton} onOpen={() => setBirthDialogOpen(true)} />
+              </Card>
+            </div>
+
+            <div id={sectionIds.appearance} className={styles.section}>
+              <Card title={t.appearance} description={t.appearanceDescription}>
+                <PalettePicker value={palette} onChange={setPalette} />
+                <FontPicker value={font} onChange={setFont} sample={babyName.trim() || 'Aa'} />
+                <LanguagesPicker value={languages} onChange={setLanguages} />
+                <PerLanguageField
+                  label={t.pageName}
+                  hint={t.pageNameHint}
+                  languages={languages}
+                  value={pageName}
+                  onChange={(lang, text) => setPageName({ ...pageName, [lang]: text })}
+                  errors={errorsPerLanguage('pageName')}
+                  optional
+                >
+                  {({ lang, value, onChange }) => (
+                    <Input
+                      lang={lang}
+                      value={value}
+                      onChange={(e) => onChange(e.target.value)}
+                      placeholder={platformCopy[lang].settings.pageNamePlaceholder}
+                      maxLength={60}
+                      autoComplete="off"
+                    />
+                  )}
+                </PerLanguageField>
+                <Field label={t.timezone} hint={t.timezoneHint}>
+                  <Select value={timezone} onChange={(e) => setTimezone(e.target.value)}>
+                    {(timeZones.includes(timezone) ? timeZones : [timezone, ...timeZones]).map((zone) => (
+                      <option key={zone} value={zone}>
+                        {zone}
+                      </option>
+                    ))}
+                  </Select>
+                </Field>
+              </Card>
+            </div>
+
+            <div id={sectionIds.icon} className={styles.section}>
+              <IconAndSharingCard
+                isEmoji={iconIsEmoji}
+                onIsEmojiChange={setIconIsEmoji}
+                emoji={iconEmoji}
+                onEmojiChange={setIconEmoji}
+                preview={lastValid.current}
+                address={address}
+              />
+            </div>
+
+            <div id={sectionIds.video} className={styles.section}>
+              <BirthMediaEditor previewSlug={mediaPreviewSlug} only="video" video={video} onVideo={setVideo} />
+            </div>
+
+            <div id={sectionIds.milestones} className={styles.section}>
+              <MilestonesCard
+                milestones={milestones}
+                onChange={setMilestones}
+                languages={languages}
+                inlineError={inlineError}
+                errorsPerLanguage={errorsPerLanguage}
+              />
+            </div>
+
+            <div id={sectionIds.who} className={styles.section}>
+              <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription}>
+                <div>
+                  <Switch label={privacy.showName} checked={showName} onChange={(e) => setShowName(e.target.checked)} />
+                  <Switch label={privacy.showSex} checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
+                </div>
+              </Card>
+            </div>
+
+            <SaveBar
+              saving={saving}
+              dirty={dirty}
+              done={saved ? (announced ?? t.saved) : null}
+              problem={message || problemsText(errors, pageLang)}
+            />
+          </form>
+        </div>
         <EditorPreview
           settings={lastValid.current}
           slug={site.slug}
@@ -472,6 +490,8 @@ export function SiteEditor({
           video={video}
           mediaPreviewSlug={mediaPreviewSlug}
           bornPlaceholderUrl={bornPlaceholderUrl}
+          open={preview.open}
+          id={preview.id}
         />
       </div>
       <ConfirmDialog
@@ -508,6 +528,10 @@ export function SiteEditor({
       ) : null}
     </>
   );
+}
+
+function menuClass(stuck: boolean) {
+  return stuck ? `${styles.menu} ${styles.menuStuck}` : styles.menu;
 }
 
 /** What a save would change, Places being typed and a picked video included. */

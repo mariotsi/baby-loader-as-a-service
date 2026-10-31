@@ -25,11 +25,13 @@
   color: var(--color-text-muted);
 }
 
-/* A phone reads the step, then the preview; from 48rem the preview stays beside the form. */
+/* On a phone the preview opens from the PhoneStrip; from 48rem it stays beside the form. */
 .layout {
   display: grid;
   gap: var(--space-5);
   align-items: start;
+  /* The sticky actions meet the viewport edge through PageShell's bottom gutter. */
+  margin-bottom: calc(var(--space-8) * -1);
 }
 
 @media (min-width: 48rem) {
@@ -50,25 +52,65 @@
   min-width: 0;
 }
 
+/* Forward is on the right, with or without Back on the left. */
+.forward {
+  margin-inline-start: auto;
+}
+
+/* Keeps moving on one tap away, as the save bar does in Site settings. */
 .actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: grid;
+  gap: var(--space-3);
+  margin-inline: calc(var(--space-2) * -1);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-lg);
+}
+
+.buttons {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: var(--space-3);
+}
+
+.summaryGroup {
+  display: grid;
+  gap: var(--space-2);
+}
+
+.summaryHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.summaryTitle {
+  margin: 0;
+  font-size: var(--text-md);
 }
 
 .summary {
   display: grid;
-  gap: var(--space-3);
+  gap: var(--space-2);
   margin: 0;
 }
 
+/* The name above its value on a phone, beside it from 30rem. */
 .summaryRow {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-2);
+  display: grid;
+}
+
+@media (min-width: 30rem) {
+  .summaryRow {
+    grid-template-columns: 11rem minmax(0, 1fr);
+    gap: var(--space-3);
+  }
 }
 
 .summaryLabel {

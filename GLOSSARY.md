@@ -107,7 +107,7 @@ A Milestone's street address and the point on the map it stands for, both taken 
 _Avoid_: Address, location
 
 **Sex**:
-Girl, boy, or unknown; unknown means the Owner prefers not to say.
+Girl, boy, or unknown; unknown means the Owner doesn't know yet. Hiding a known Sex is done in Keep the secret.
 _Avoid_: Gender
 
 ### Presentation
@@ -137,7 +137,7 @@ The Platform's own fixed Palette and Font, worn by its marketing, auth, onboardi
 _Avoid_: Default theme, admin theme
 
 **Privacy settings**:
-The Owner's choice of whether the baby's name and Sex appear on the Public page during the Waiting state. The Born state always shows them.
+The Owner's choice of whether the baby's name and Sex appear on the Public page during the Waiting state. The Born state always shows them. The Dashboard calls this section Keep the secret.
 _Avoid_: Visibility, toggles
 
 **Languages**:

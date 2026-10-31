@@ -23,7 +23,7 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
     <PageShell
       width="wide"
       nav={
-        <ButtonLink href="/dashboard" variant="ghost" size="sm">
+        <ButtonLink href="/dashboard" variant="ghost" size="sm" icon="arrow-left">
           {t.yourSites}
         </ButtonLink>
       }
@@ -42,8 +42,10 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
           </p>
         </div>
         <Stack direction="row" gap={2}>
-          <ButtonLink href={`/dashboard/${site.slug}/subscriptions`}>{t.subscribers}</ButtonLink>
-          <ButtonLink href={`/dashboard/${site.slug}/send`} icon="bell">
+          <ButtonLink href={`/dashboard/${site.slug}/subscriptions`} size="phoneSm">
+            {t.subscribers}
+          </ButtonLink>
+          <ButtonLink href={`/dashboard/${site.slug}/send`} icon="bell" size="phoneSm">
             {t.sendNotification}
           </ButtonLink>
         </Stack>

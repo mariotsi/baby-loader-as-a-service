@@ -60,7 +60,8 @@ function list(values) {
 /**
  * A Site row as createSite (src/lib/site.ts) stores it, validated by the same
  * parsers the app runs, so a fixture can never hold settings the app would
- * refuse. A Born fixture stands for a Site created Waiting and announced later.
+ * refuse. A Born fixture stands for a Site created Waiting and announced later,
+ * and a fixture with no Due date for one whose Owner cleared it in Site settings.
  */
 function siteRow(spec, ownerId, now) {
   const born = spec.bornDaysAgo !== undefined;
@@ -94,7 +95,10 @@ function siteRow(spec, ownerId, now) {
     birthVideo: null,
   };
   const created = parseNewSite(
-    { slug: spec.slug, settings: { ...settings, birth: { born: false, details: null } } },
+    {
+      slug: spec.slug,
+      settings: { ...settings, dueDate: settings.dueDate ?? isoDate(30, now), birth: { born: false, details: null } },
+    },
     now
   );
   const parsed = parseSiteSettings(settings, now);

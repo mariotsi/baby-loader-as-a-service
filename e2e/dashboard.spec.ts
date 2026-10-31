@@ -101,12 +101,19 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Si torna a casa')).toBeVisible();
   });
 
-  test('previews the page in each Language and state, leaving the language cookie alone', async ({ page, context }) => {
+  test('previews the page in each Language and state, leaving the language cookie alone', async ({
+    page,
+    context,
+    project,
+  }) => {
     await page.goto('/dashboard/e2e-waiting');
     await page.getByRole('checkbox', { name: 'Italian' }).check();
     await page.getByRole('checkbox', { name: 'English' }).check();
     // The preview draws the last valid settings, and a Milestone needs its label in every Language.
     await page.getByRole('group', { name: 'Milestone 1' }).getByLabel('Italian').fill('Prima ecografia');
+    if (project === 'iphone') {
+      await page.getByRole('button', { name: 'Preview your page' }).click();
+    }
     const preview = page.getByRole('complementary', { name: 'Your page on a phone' });
     // The frame's width is a share of its column: a shrink-wrapped column collapses it to a sliver.
     expect((await preview.getByRole('region', { name: 'Your page on a phone' }).boundingBox())?.width).toBeGreaterThan(
@@ -120,6 +127,32 @@ test.describe('Dashboard', () => {
 
     const cookies = await context.cookies();
     expect(cookies.find((cookie) => cookie.name === LANG_COOKIE)?.value).not.toBe('it');
+  });
+
+  test('keeps the preview and the sections one tap away on a phone', async ({ page, project }) => {
+    test.skip(project !== 'iphone', 'the strip shows below 48rem');
+    await page.goto('/dashboard/e2e-waiting');
+    const preview = page.getByRole('complementary', { name: 'Your page on a phone' });
+    await expect(preview).toBeHidden();
+
+    await page.getByRole('button', { name: 'Preview your page' }).click();
+    await expect(preview).toBeVisible();
+    const viewport = page.viewportSize();
+    const frame = await preview.getByRole('region', { name: 'Your page on a phone' }).boundingBox();
+    expect(frame?.height).toBeGreaterThan((viewport?.height ?? 0) * 0.7);
+    await page.keyboard.press('Escape');
+    await expect(preview).toBeHidden();
+
+    await page.getByRole('button', { name: 'Preview your page' }).click();
+    await page.getByRole('button', { name: 'Hide the preview' }).click();
+    await expect(preview).toBeHidden();
+    await expect(page.getByLabel('Name', { exact: true })).toBeEditable();
+
+    const sections = page.getByRole('navigation', { name: 'Sections of this page' });
+    await sections.getByRole('link', { name: 'Keep the secret' }).click();
+    await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeInViewport();
+    await expect(sections.getByRole('link', { name: 'Keep the secret' })).toHaveAttribute('aria-current', 'location');
+    await expect(sections.getByRole('link', { name: 'Keep the secret' })).toBeInViewport({ ratio: 0.9 });
   });
 
   test('asks before leaving with unsaved changes', async ({ page }) => {

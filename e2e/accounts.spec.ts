@@ -19,7 +19,7 @@ async function fillBasics(page: Page, slug: string, babyName: string) {
 async function finishSite(page: Page) {
   await expect(page.getByRole('heading', { name: 'Make it yours' })).toBeFocused();
   await page.getByRole('button', { name: 'Next' }).click();
-  await expect(page.getByRole('heading', { name: 'Who sees what' })).toBeFocused();
+  await expect(page.getByRole('heading', { name: 'Keep the secret' })).toBeFocused();
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByRole('heading', { name: 'A last look' })).toBeFocused();
   await page.getByRole('button', { name: 'Create site' }).click();
@@ -143,6 +143,7 @@ test('creating a Site keeps its steps in the history, survives a reload and gree
 
   await page.getByRole('button', { name: 'Next' }).click();
   await expect(page.getByText('Write the baby’s name, or a nickname for now.')).toBeVisible();
+  await expect(page.getByText(/^Pick the day your baby is due/)).toBeVisible();
   await expect(page.getByLabel('Site address')).toBeFocused();
 
   await fillBasics(page, slug, 'Ada');
@@ -184,6 +185,7 @@ test('the API refuses a new Site that is already born', async ({ page }, testInf
         ...defaultSiteSettings,
         babyName: 'Ada',
         sex: 'female',
+        dueDate: '2026-12-24',
         birth: {
           born: true,
           details: { datetime: '2026-01-01T08:00:00.000Z', weightGrams: null, lengthCm: null, message: {} },

@@ -7,7 +7,7 @@ const meta = {
   tags: ['autodocs'],
   args: {
     label: 'Creating your page',
-    steps: ['The basics', 'Make it yours', 'Who sees what', 'A last look'],
+    steps: ['The basics', 'Make it yours', 'Keep the secret', 'A last look'],
     current: 1,
   },
 } satisfies Meta<typeof StepProgress>;

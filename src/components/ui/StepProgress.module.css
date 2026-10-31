@@ -18,7 +18,7 @@
 .step::before {
   content: "";
   height: 0.375rem;
-  border-radius: var(--radius-full);
+  border-radius: var(--radius-pill);
   background: var(--color-soft);
 }
 

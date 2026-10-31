@@ -19,6 +19,9 @@ interface EditorPreviewProps {
   video?: MediaDraft;
   mediaPreviewSlug?: string;
   bornPlaceholderUrl: string;
+  /** Below 48rem the preview shows only while the PhoneStrip has it open; from 48rem it always shows. */
+  open: boolean;
+  id: string;
 }
 
 /** The Public page beside the form, with the toggle between its Waiting and Born states. */
@@ -29,6 +32,8 @@ export function EditorPreview({
   video = null,
   mediaPreviewSlug,
   bornPlaceholderUrl,
+  open,
+  id,
 }: EditorPreviewProps) {
   const pageLang = useLang();
   const t = platformCopy[pageLang].settings;
@@ -38,7 +43,11 @@ export function EditorPreview({
   const photoUrl = useBirthMediaUrl(photo, mediaPreviewSlug, 'photo');
   const videoUrl = useBirthMediaUrl(video, mediaPreviewSlug, 'video');
   return (
-    <aside className={styles.preview} aria-label={t.previewPage}>
+    <aside
+      id={id}
+      className={open ? `${styles.preview} ${styles.previewOpen}` : styles.preview}
+      aria-label={t.previewPage}
+    >
       <SegmentedControl
         legend={t.previewState}
         hideLegend
@@ -57,6 +66,7 @@ export function EditorPreview({
         caption={t.previewPage}
         bornImageUrl={photoUrl ?? bornPlaceholderUrl}
         birthVideoUrl={videoUrl}
+        compact
       />
     </aside>
   );
