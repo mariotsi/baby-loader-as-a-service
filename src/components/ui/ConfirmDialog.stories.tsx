@@ -32,5 +32,5 @@ export default meta;
 type Story = StoryObj<typeof meta>;
 /** Opens a confirmation with focus on the safe action. */
 export const Default: Story = {};
-/** Keeps the dialog open while the confirmed operation runs. */
+/** Keeps the dialog open while the confirmed operation runs: the spinner on the confirm action, the dismiss one disabled. */
 export const Busy: Story = { args: { busy: true } };

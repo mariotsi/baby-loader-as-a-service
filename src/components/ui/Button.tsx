@@ -73,6 +73,12 @@ type ButtonProps = ButtonLook &
      * ("Saving…") as children.
      */
     loading?: boolean;
+    /**
+     * Ignores presses while another action's work is in flight. The button
+     * stays focusable and announced as disabled, so a dialog keeps the focus
+     * that sits on it.
+     */
+    disabled?: boolean;
   };
 
 /** A button for an action on this page. To go to another page, use `ButtonLink`. */
@@ -85,6 +91,7 @@ export function Button({
   inline,
   labelHidden,
   loading = false,
+  disabled = false,
   className,
   type = 'button',
   onClick,
@@ -92,7 +99,7 @@ export function Button({
   ...rest
 }: ButtonProps) {
   function handleClick(event: MouseEvent<HTMLButtonElement>) {
-    if (loading) {
+    if (loading || disabled) {
       event.preventDefault();
       return;
     }
@@ -104,7 +111,7 @@ export function Button({
       {...rest}
       type={type}
       className={lookClassName({ variant, size, fullWidth, labelHidden, inline }, className)}
-      aria-disabled={loading || undefined}
+      aria-disabled={loading || disabled || undefined}
       aria-busy={loading || undefined}
       onClick={handleClick}
     >
