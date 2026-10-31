@@ -75,6 +75,11 @@ export const InAGroup: Story = {
   ),
 };
 
+/** Small with no icon below 30rem, full size above, for two actions that must share a phone's line. */
+export const PhoneSmall: Story = {
+  args: { size: 'phoneSm', icon: 'bell', children: 'Send notification' },
+};
+
 /** A muted text action with a full touch target. */
 export const Link: Story = { args: { variant: 'link', children: 'Turn off notifications' } };
 

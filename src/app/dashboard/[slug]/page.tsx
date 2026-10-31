@@ -42,8 +42,10 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
           </p>
         </div>
         <Stack direction="row" gap={2}>
-          <ButtonLink href={`/dashboard/${site.slug}/subscriptions`}>{t.subscribers}</ButtonLink>
-          <ButtonLink href={`/dashboard/${site.slug}/send`} icon="bell">
+          <ButtonLink href={`/dashboard/${site.slug}/subscriptions`} size="phoneSm">
+            {t.subscribers}
+          </ButtonLink>
+          <ButtonLink href={`/dashboard/${site.slug}/send`} icon="bell" size="phoneSm">
             {t.sendNotification}
           </ButtonLink>
         </Stack>
