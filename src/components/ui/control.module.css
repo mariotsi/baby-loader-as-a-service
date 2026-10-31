@@ -36,6 +36,11 @@
   border-color: var(--color-danger);
 }
 
+/* iOS Safari holds a natively drawn date control at its intrinsic width, past `width: 100%` and `min-width: 0`. */
+.control:is([type="date"], [type="datetime-local"]) {
+  appearance: none;
+}
+
 /* iOS Safari centers date values and gives them no height of their own. */
 .control::-webkit-date-and-time-value {
   text-align: start;
