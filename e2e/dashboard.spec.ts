@@ -59,7 +59,7 @@ test.describe('Dashboard', () => {
     // Announcing the birth saves every other change on the page with it.
     await page.getByRole('button', { name: 'Announce the birth' }).click();
     const dialog = page.getByRole('dialog', { name: 'Welcome, Edith Rose' });
-    await expect(dialog.getByLabel('Birth date & time')).toBeFocused();
+    await expect(dialog.getByRole('heading', { name: 'Welcome, Edith Rose' })).toBeFocused();
     await dialog.getByLabel('Birth date & time').fill('2026-01-15T08:30');
     await dialog.getByLabel('Weight (g)').fill('3100');
     await dialog.getByLabel('Length (cm)').fill('49');
@@ -83,7 +83,9 @@ test.describe('Dashboard', () => {
     await expect(page.getByText('Born January 15, 2026')).toBeVisible();
     await expect(page.getByText('3100 g · 49 cm')).toBeVisible();
     await page.getByRole('button', { name: 'Edit the birth details' }).click();
-    await expect(page.getByRole('dialog', { name: 'Birth details' }).getByLabel('Weight (g)')).toHaveValue('3100');
+    const editing = page.getByRole('dialog', { name: 'Birth details' });
+    await expect(editing.getByRole('heading', { name: 'Birth details', exact: true })).toBeFocused();
+    await expect(editing.getByLabel('Weight (g)')).toHaveValue('3100');
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('group', { name: 'Milestone 1' }).getByLabel('Label')).toHaveValue('Si torna a casa');
     // Announcing added the Birth milestone, in the Site's Language.

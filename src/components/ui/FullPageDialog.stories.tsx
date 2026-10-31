@@ -65,11 +65,11 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** One step that changes a lot at once, on a screen of its own: the first field has the focus. */
+/** One step that changes a lot at once, on a screen of its own: the title has the focus, so no field opens the phone's keyboard or date picker. */
 export const Default: Story = {
   play: async ({ canvasElement }) => {
     const dialog = within(canvasElement.ownerDocument.body).getByRole('dialog', { name: 'Welcome, Emma' });
-    await expect(within(dialog).getByLabelText('Birth date & time')).toHaveFocus();
+    await expect(within(dialog).getByRole('heading', { name: 'Welcome, Emma' })).toHaveFocus();
     await userEvent.click(within(dialog).getByRole('button', { name: 'Cancel' }));
     await expect(dialog).not.toBeVisible();
   },

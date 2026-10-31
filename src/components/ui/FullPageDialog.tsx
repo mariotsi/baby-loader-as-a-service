@@ -24,9 +24,10 @@ interface FullPageDialogProps {
 
 /**
  * A modal that takes the whole screen for one step that changes a lot at
- * once, like announcing the birth. It focuses its first field, scrolls its
- * content between a fixed heading and fixed actions, and returns focus to its
- * trigger when it closes.
+ * once, like announcing the birth. It focuses its title, since focusing a field
+ * would open the phone's keyboard or date picker over the content. It scrolls
+ * its content between a fixed heading and fixed actions, and returns focus to
+ * its trigger when it closes.
  */
 export function FullPageDialog({
   open,
@@ -41,14 +42,14 @@ export function FullPageDialog({
   children,
 }: FullPageDialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
-  const body = useRef<HTMLDivElement>(null);
+  const heading = useRef<HTMLHeadingElement>(null);
   const titleId = useId();
   const descriptionId = useId();
   useEffect(() => {
     const dialog = ref.current;
     if (open && dialog && !dialog.open) {
       dialog.showModal();
-      body.current?.querySelector<HTMLElement>('input, select, textarea')?.focus();
+      heading.current?.focus();
     } else if (!open && dialog?.open) {
       dialog.close();
     }
@@ -71,7 +72,7 @@ export function FullPageDialog({
         <form className={styles.frame} onSubmit={onSubmit} noValidate>
           <header className={styles.header}>
             <div className={styles.heading}>
-              <h2 id={titleId} className={styles.title}>
+              <h2 ref={heading} id={titleId} className={styles.title} tabIndex={-1}>
                 {title}
               </h2>
               {description ? (
@@ -84,7 +85,7 @@ export function FullPageDialog({
               {closeLabel}
             </Button>
           </header>
-          <div ref={body} className={styles.body}>
+          <div className={styles.body}>
             <div className={styles.content}>{children}</div>
           </div>
           <footer className={styles.footer}>
