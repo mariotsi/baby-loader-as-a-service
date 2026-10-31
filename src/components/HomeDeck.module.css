@@ -1,7 +1,14 @@
 .deck {
   display: grid;
+  gap: var(--space-5);
   width: min(20rem, 76vw);
   margin-inline: auto;
+}
+
+.pile {
+  display: grid;
+  touch-action: pan-y;
+  user-select: none;
 }
 
 .card {
@@ -29,4 +36,21 @@
 
 .card[data-place="3"] {
   opacity: 0;
+}
+
+.controls {
+  position: relative;
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+}
+
+.counter {
+  min-width: 3ch;
+  margin-inline-start: var(--space-2);
+  font-size: var(--text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-muted);
 }

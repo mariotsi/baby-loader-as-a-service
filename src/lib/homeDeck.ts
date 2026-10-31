@@ -12,6 +12,8 @@ type PerLanguage = Record<Lang, string>;
 
 type Scene = {
   babyName: PerLanguage;
+  /** What the picture shows, for screen readers. */
+  alt: PerLanguage;
   sex: 'female' | 'male';
   showName: boolean;
   showSex: boolean;
@@ -27,9 +29,10 @@ type Scene = {
   atMilestones?: boolean;
 };
 
-export type HomeDeckCard = Omit<Scene, 'babyName' | 'birthMessage' | 'milestones' | 'pageName'> & {
+export type HomeDeckCard = Omit<Scene, 'alt' | 'babyName' | 'birthMessage' | 'milestones' | 'pageName'> & {
   slug: string;
   babyName: string;
+  alt: string;
   lang: Lang;
   languages: Lang[];
   birthMessage?: Partial<PerLanguage>;
@@ -43,6 +46,10 @@ const SCENES: Scene[] = [
   {
     ...shown,
     babyName: { en: 'Emma', it: 'Sofia' },
+    alt: {
+      en: 'Emma’s page, waiting with a countdown',
+      it: 'La pagina di Sofia, in attesa con il conto alla rovescia',
+    },
     sex: 'female',
     dueInDays: 42,
     pageName: { en: 'Anna & Tom', it: 'Anna e Tommaso' },
@@ -51,6 +58,7 @@ const SCENES: Scene[] = [
   {
     ...shown,
     babyName: { en: 'Oliver', it: 'Leonardo' },
+    alt: { en: 'Oliver’s page, just born, with his picture', it: 'La pagina di Leonardo appena nato, con la sua foto' },
     sex: 'male',
     dueInDays: -2,
     bornDaysAgo: 3,
@@ -63,6 +71,10 @@ const SCENES: Scene[] = [
   {
     ...shown,
     babyName: { en: 'Charlotte', it: 'Giulia' },
+    alt: {
+      en: 'Charlotte’s page, with the milestones of the wait',
+      it: 'La pagina di Giulia, con le tappe dell’attesa',
+    },
     sex: 'female',
     dueInDays: 75,
     milestones: [
@@ -79,6 +91,10 @@ const SCENES: Scene[] = [
   {
     ...shown,
     babyName: { en: 'Noah', it: 'Tommaso' },
+    alt: {
+      en: 'Noah’s page, just born, with his picture, in dark colors',
+      it: 'La pagina di Tommaso appena nato, con la sua foto, in colori scuri',
+    },
     sex: 'male',
     dueInDays: 1,
     bornDaysAgo: 10,
@@ -90,6 +106,10 @@ const SCENES: Scene[] = [
   },
   {
     babyName: { en: 'Alice', it: 'Bianca' },
+    alt: {
+      en: 'A page that keeps the baby’s name and sex a secret',
+      it: 'Una pagina che tiene segreti il nome e il sesso',
+    },
     sex: 'female',
     showName: false,
     showSex: false,
@@ -100,6 +120,7 @@ const SCENES: Scene[] = [
   {
     ...shown,
     babyName: { en: 'Olivia', it: 'Ginevra' },
+    alt: { en: 'Olivia’s page, with the milestones of the wait', it: 'La pagina di Ginevra, con le tappe dell’attesa' },
     sex: 'female',
     dueInDays: 60,
     milestones: [
@@ -116,6 +137,10 @@ const SCENES: Scene[] = [
   {
     ...shown,
     babyName: { en: 'James', it: 'Matteo' },
+    alt: {
+      en: 'James’s page, waiting with a countdown, in dark colors',
+      it: 'La pagina di Matteo, in attesa con il conto alla rovescia, in colori scuri',
+    },
     sex: 'male',
     dueInDays: 16,
     theme: { palette: 'midnight', font: 'quicksand' },
@@ -123,6 +148,7 @@ const SCENES: Scene[] = [
   {
     ...shown,
     babyName: { en: 'Amelia', it: 'Aurora' },
+    alt: { en: 'Amelia’s page, just born, with her picture', it: 'La pagina di Aurora appena nata, con la sua foto' },
     sex: 'female',
     dueInDays: 2,
     bornDaysAgo: 6,
@@ -134,6 +160,10 @@ const SCENES: Scene[] = [
   {
     ...shown,
     babyName: { en: 'Henry', it: 'Lorenzo' },
+    alt: {
+      en: 'Henry’s page, waiting with a countdown',
+      it: 'La pagina di Lorenzo, in attesa con il conto alla rovescia',
+    },
     sex: 'male',
     dueInDays: 94,
     pageName: { en: 'Kate & Will', it: 'Sara e Davide' },
@@ -142,11 +172,12 @@ const SCENES: Scene[] = [
 ];
 
 function sceneCard(scene: Scene, lang: Lang): HomeDeckCard {
-  const { babyName, birthMessage, milestones, pageName, ...rest } = scene;
+  const { alt, babyName, birthMessage, milestones, pageName, ...rest } = scene;
   return {
     ...rest,
     slug: `deck-${babyName[lang].toLowerCase()}`,
     babyName: babyName[lang],
+    alt: alt[lang],
     lang,
     languages: [lang],
     ...(birthMessage ? { birthMessage: { [lang]: birthMessage[lang] } } : {}),
