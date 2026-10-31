@@ -74,6 +74,8 @@ const PATHS = {
       <path d="M7 10v4l2 6h4l-2-4.33M22 9v6" />
     </>
   ),
+  pause: <path d="M9 5v14M15 5v14" />,
+  play: <path d="M8 5l11 7-11 7z" />,
   plus: <path d="M12 5v14M5 12h14" />,
   star: <path d="M12 3.5l2.6 5.3 5.9.9-4.3 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.3-4.1 5.9-.9z" />,
   trash: <path d="M4 7h16M10 11v6M14 11v6M5 7l1 12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l1-12M9 7V4h6v3" />,

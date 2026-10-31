@@ -5,6 +5,8 @@
  * extensions only: node strips the types itself.
  */
 
+import { HOME_DECK_CARDS } from '../../src/lib/homeDeck.ts';
+
 /** Reserved for documentation and testing (RFC 2606), so no mail ever leaves. */
 export const TEST_EMAIL_DOMAIN = 'waitingpages.test';
 
@@ -55,6 +57,8 @@ export type SiteSpec = {
   }[];
   /** The Page name in each language that has one. */
   pageName?: { it?: string; en?: string };
+  /** The Site's Theme; the default one when unset. */
+  theme?: { palette: string; font: string };
 };
 
 /** A Place as the editor stores it from a Photon result. */
@@ -172,6 +176,7 @@ export const DEMO_SITES: SiteSpec[] = [
   { ...waiting, slug: 'demo-sofia', owner: 'a', babyName: 'Sofia', showName: false, showSex: false, dueInDays: 80 },
   { ...waiting, slug: 'demo-nina', owner: 'b', babyName: 'Nina', dueInDays: 12 },
   { ...waiting, slug: 'demo-late', owner: 'a', babyName: 'Late', languages: ['it', 'en'], dueInDays: -7 },
+  ...HOME_DECK_CARDS.map(({ atMilestones: _, ...card }) => ({ ...card, owner: 'a' as const })),
 ];
 
 /**

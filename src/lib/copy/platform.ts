@@ -21,6 +21,13 @@ const en = {
     lead: 'Create a countdown and birth announcement page for your baby. Pick your colors and your letters, choose what to show, and share it on your own link.',
     createPage: 'Create your page',
     logIn: 'Log in',
+    deck: {
+      label: 'Examples of baby pages',
+      previous: 'Previous example',
+      next: 'Next example',
+      pause: 'Pause the examples',
+      play: 'Play the examples',
+    },
   },
 
   auth: {
@@ -282,6 +289,13 @@ const it: PlatformCopy = {
     lead: 'Crea una pagina con il conto alla rovescia e l’annuncio della nascita del tuo bambino. Scegli i colori e i caratteri, decidi cosa mostrare e condividila con il tuo link.',
     createPage: 'Crea la tua pagina',
     logIn: 'Accedi',
+    deck: {
+      label: 'Esempi di pagine',
+      previous: 'Esempio precedente',
+      next: 'Esempio successivo',
+      pause: 'Metti in pausa gli esempi',
+      play: 'Riproduci gli esempi',
+    },
   },
 
   auth: {
