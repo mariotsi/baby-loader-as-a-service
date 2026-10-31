@@ -387,16 +387,18 @@ export function SiteCreator({
             <LastLookStep draft={draft} address={address} onChange={goTo} headingRef={headingRef} />
           ) : null}
           <div className={styles.actions}>
-            {step > 0 ? <Button onClick={() => goTo(step - 1)}>{t.back}</Button> : null}
-            <Button
-              className={styles.forward}
-              variant="primary"
-              type="submit"
-              icon={step === LAST_STEP ? 'plus' : undefined}
-              loading={busy}
-            >
-              {submitLabel(step, busy, t)}
-            </Button>
+            <div className={styles.buttons}>
+              {step > 0 ? <Button onClick={() => goTo(step - 1)}>{t.back}</Button> : null}
+              <Button
+                className={styles.forward}
+                variant="primary"
+                type="submit"
+                icon={step === LAST_STEP ? 'plus' : undefined}
+                loading={busy}
+              >
+                {submitLabel(step, busy, t)}
+              </Button>
+            </div>
             <StatusMessage tone="danger">{message}</StatusMessage>
           </div>
         </form>
