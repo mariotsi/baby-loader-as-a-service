@@ -210,11 +210,11 @@ uses the local D1 in `.wrangler/e2e`, apart from the one `npm run dev` uses;
 a deployed one needs `CLOUDFLARE_API_TOKEN` and `CLOUDFLARE_ACCOUNT_ID`.
 ADR-0006 has the data rules.
 
-In CI, `.github/workflows/cd.yml` runs the suite after every deploy it
-makes: each pull request branch's Preview, whose check shows on the pull
+In CI, `.github/workflows/deploy-preview.yml` and `deploy-staging.yml` run
+the suite (job `e2e`) after every deploy they make: each pull request branch's Preview, whose check shows on the pull
 request, and staging, where a pass promotes the commit to production (see
-"Environments"). The job runs in the GitHub environment `Preview`, which
-holds `CLOUDFLARE_API_TOKEN` (the data script writes the fixtures to the
+"Environments"). The job takes its secrets from the GitHub environment `Preview`, without
+recording a deployment there, which holds `CLOUDFLARE_API_TOKEN` (the data script writes the fixtures to the
 deployment's D1 database), `E2E_PASSWORD` (fixture Owners), and
 `CF_ACCESS_CLIENT_ID` and `CF_ACCESS_CLIENT_SECRET` (an Access service
 token, to get through Cloudflare Access on staging and Previews). On a
@@ -242,8 +242,13 @@ Two Workers keep production apart from everything else: `loading-baby`
 (`wrangler.jsonc`) serves `staging` and a Preview of every other branch.
 Changes reach production through staging only: pull requests merge into
 `staging`, the default branch, and `main` receives the exact commit that
-passed the E2E suite on staging. `.github/workflows/cd.yml` deploys them
-all from GitHub Actions.
+passed the E2E suite on staging. Three GitHub Actions workflows deploy
+them, each on its own branches only: "Deploy to production"
+(`deploy-production.yml`, `main`), "Deploy to staging" (`deploy-staging.yml`,
+`staging`) and "Deploy to preview" (`deploy-preview.yml`, every other
+branch). Each calls the reusable `deploy.yml`, whose job runs in the GitHub
+environment `Production`, `Staging` or `Preview`, so every deploy is recorded
+as a deployment of that environment, with its address.
 
 | Environment | Worker                                 | Branch               | Addresses                                                                        | D1 database                                                 |
 | ----------- | -------------------------------------- | -------------------- | -------------------------------------------------------------------------------- | ----------------------------------------------------------- |
@@ -254,14 +259,15 @@ all from GitHub Actions.
 - **Who deploys what**: a push to `staging` migrates `loading-baby-staging`
   and runs `wrangler deploy`; a push to any other branch but `main` claims a
   pool database, migrates it and runs `wrangler preview`. `main` gets no
-  Preview: it only receives commits whose `e2e` passed on staging. Once the
-  repository variable `PRODUCTION_ON_CLOUDFLARE` is `true` (#72), a push to
+  Preview: it only receives commits whose `e2e` passed on staging. A push to
   `main` migrates `loading-baby` and deploys the production Worker.
 - **Credentials**: Previews run unreviewed branch code, so production's
   secrets (`SESSION_SECRET`, the VAPID keypair) exist only on `loading-baby`,
   and its API token only in the GitHub environment `Production`, restricted
-  to `main`. Staging's token, the Access service token and `E2E_PASSWORD` sit
-  in the environment `Preview`. Within a deployment every Site shares one
+  to `main`. Staging's token sits in the environment `Staging`, which deploys
+  `staging`, and again in `Preview`, beside the Access service token and
+  `E2E_PASSWORD`; the E2E suite and `drop-preview-db.yml` use `Preview` without
+  recording a deployment. Within a deployment every Site shares one
   keypair (ADR-0002).
 - **Preview pool** (`PREVIEW_POOL` in `src/lib/dbName.ts`,
   `scripts/preview-pool.mjs`): five D1 databases created once by hand. A
@@ -290,9 +296,9 @@ all from GitHub Actions.
 
 1. A pull request targets `staging`. `.github/workflows/ci.yml` runs type
    checking, Biome's lint and format check, unit tests and the Worker build
-   (job `ci`), and `cd.yml` deploys the branch's Preview and runs the E2E
+   (job `ci`), and `deploy-preview.yml` deploys the branch's Preview and runs the E2E
    suite on it (job `e2e`). Both are required before it merges.
-2. Merging deploys `staging`: `cd.yml` applies the new D1 migrations to
+2. Merging deploys `staging`: `deploy-staging.yml` applies the new D1 migrations to
    `loading-baby-staging`, deploys the Worker, then runs the E2E suite against
    `staging-loading-baby.fyi` once it serves that commit.
 3. When the suite passes, job `promote` fast-forwards `main` to that commit

@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Lends the Preview pool's D1 databases (PREVIEW_POOL in src/lib/dbName.ts) to
 // branches, one branch per database, as recorded in each database's one-row
-// preview_slot table. Run by .github/workflows/cd.yml and drop-preview-db.yml.
+// preview_slot table. Run by .github/workflows/deploy.yml and drop-preview-db.yml.
 //
 //   node scripts/preview-pool.mjs claim <branch>             the database the branch holds, or the first free one
 //   node scripts/preview-pool.mjs release <branch>           wipes the branch's database and frees it

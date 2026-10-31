@@ -1,7 +1,7 @@
 name: Preview link
 
 # A pull request opened after its branch's first push has a Preview already,
-# deployed by cd.yml before the pull request existed: this writes its link
+# deployed by deploy-preview.yml before the pull request existed: this writes its link
 # there. Every later push edits the same comment (scripts/preview-comment.mjs).
 
 on:

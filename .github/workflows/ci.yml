@@ -4,7 +4,7 @@ name: CI
 # formatting (Biome), unit tests (src/**/*.test.ts, some on an in-memory D1),
 # the Cloudflare Worker build, and every Storybook story rendered in
 # Chromium with no axe violation. The Playwright suite runs on the pull request's
-# Preview (cd.yml).
+# Preview (deploy-preview.yml).
 
 on:
   pull_request:

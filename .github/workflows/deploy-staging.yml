@@ -1,0 +1,127 @@
+name: Deploy to staging
+
+# A push to staging deploys the loading-baby-staging Worker on staging's
+# domain, migrating its D1 database first, runs the Playwright suite (e2e/)
+# against it, and once that passes promotes the commit to main, which
+# "Deploy to production" deploys.
+
+on:
+  push:
+    branches: [staging]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# One run at a time; a newer push replaces a waiting or running one.
+concurrency:
+  group: cd-${{ github.ref_name }}
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    if: github.ref_name == 'staging'
+    uses: ./.github/workflows/deploy.yml
+    secrets: inherit
+    with:
+      # Holds the staging Worker's API token (CLOUDFLARE_API_TOKEN).
+      environment: Staging
+      url: https://staging-loading-baby.fyi
+      database: loading-baby-staging
+      r2-bucket: loading-baby-staging-media
+      media-route: staging
+
+  # The rulesets "Require E2E on main" and "Require CI and E2E on staging"
+  # require a check named e2e from GitHub Actions: keep this job's name, and
+  # keep it here rather than in a reusable workflow, which would rename its
+  # check to "<caller> / e2e".
+  e2e:
+    needs: deploy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # Holds the Access service token and the staging Worker's API token, which
+    # the data script uses to write fixtures to staging's or the Preview's D1.
+    # Testing is no deployment: it records none.
+    environment:
+      name: Preview
+      deployment: false
+    # Playwright's image ships its browsers and their system dependencies.
+    # Its version must equal @playwright/test in package.json, which CI
+    # checks (scripts/check-playwright-image.mjs).
+    container:
+      image: mcr.microsoft.com/playwright:v1.64.1-noble
+      # The runner's user, which owns the mounted workspace and home.
+      options: --user 1001
+    env:
+      CI: true
+      E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      # Gets the suite through Cloudflare Access, which guards staging.
+      CF_ACCESS_CLIENT_ID: ${{ secrets.CF_ACCESS_CLIENT_ID }}
+      CF_ACCESS_CLIENT_SECRET: ${{ secrets.CF_ACCESS_CLIENT_SECRET }}
+    steps:
+      - uses: actions/checkout@v7
+      # The image's Node (24) runs the suite.
+      - uses: actions/cache@v6
+        with:
+          path: ~/.npm
+          key: npm-playwright-${{ hashFiles('package-lock.json') }}
+      - run: npm ci
+
+      - name: Wait until the deployment serves this commit
+        env:
+          DEPLOYMENT_URL: ${{ needs.deploy.outputs.url }}
+          COMMIT: ${{ github.sha }}
+        run: node scripts/wait-for-deployment.mjs >> "$GITHUB_ENV"
+
+      - run: npx playwright test
+
+      - uses: actions/upload-artifact@v7
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 14
+
+  promote:
+    needs: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    # One push to main at a time. The push is a fast-forward, so main never
+    # moves back to an older commit whichever run comes last.
+    concurrency:
+      group: promote-main
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+          # Write deploy key, the only bypass actor of the ruleset that
+          # restricts updates to main.
+          ssh-key: ${{ secrets.PROMOTE_DEPLOY_KEY }}
+
+      # Retried: the SSH handshake sometimes fails, and "Require E2E on main"
+      # declines the push while any e2e on this commit is still running, as
+      # a Preview's is when another branch is pushed at the same commit.
+      - name: Fast-forward main to this commit
+        env:
+          SHA: ${{ github.sha }}
+        run: |
+          for attempt in 1 2 3 4 5 6 7 8 9 10; do
+            git fetch origin main
+            if git merge-base --is-ancestor "$SHA" origin/main; then
+              echo "main already contains $SHA"
+              exit 0
+            fi
+            if ! git merge-base --is-ancestor origin/main "$SHA"; then
+              echo "::error::main has commits $SHA lacks: merge main into staging first"
+              exit 1
+            fi
+            if git push origin "$SHA:refs/heads/main"; then
+              exit 0
+            fi
+            echo "Push declined (attempt $attempt), retrying in 30 seconds"
+            sleep 30
+          done
+          echo "::error::could not push $SHA to main"
+          exit 1

@@ -21,8 +21,11 @@ jobs:
     if: github.event_name == 'pull_request' || github.event.ref_type == 'branch'
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    # Holds the staging Worker's API token, which Previews belong to.
-    environment: Preview
+    # Holds the staging Worker's API token, which Previews belong to. Removing
+    # a Preview is no deployment: it records none.
+    environment:
+      name: Preview
+      deployment: false
     # Never at the same time as a deploy of the same branch.
     concurrency:
       group: cd-${{ github.event_name == 'pull_request' && github.head_ref || github.event.ref }}
