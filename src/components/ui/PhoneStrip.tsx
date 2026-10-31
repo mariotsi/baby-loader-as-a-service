@@ -16,12 +16,13 @@ interface PhoneStripProps {
 /**
  * A strip at the top of a phone's screen, in view while filling a field, that
  * shows and hides what sits beside the form from 48rem, where it goes away.
- * It is first in its grid whatever its place in the markup.
+ * It is first in its grid whatever its place in the markup, and pins itself
+ * to the top of the screen while open, above what it shows there.
  */
 export function PhoneStrip({ children, showLabel, hideLabel, open, onToggle, controls }: PhoneStripProps) {
   const action = open ? hideLabel : showLabel;
   return (
-    <div className={styles.strip}>
+    <div className={open ? `${styles.strip} ${styles.open}` : styles.strip}>
       <span className={styles.label}>{children}</span>
       <Button variant="ghost" size="sm" onClick={onToggle} aria-expanded={open} aria-controls={controls}>
         {action}

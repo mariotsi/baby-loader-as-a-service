@@ -2,9 +2,10 @@
 
 import { parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { type Ref, type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
+import { type Ref, type SubmitEvent, useEffect, useRef, useState } from 'react';
 import { EditorPreview } from '@/components/dashboard/EditorPreview';
 import { SiteIconField } from '@/components/dashboard/SiteIconField';
+import { usePhonePreview } from '@/components/dashboard/usePhonePreview';
 import { useLang } from '@/components/LangProvider';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -182,8 +183,7 @@ export function SiteCreator({
   const [refused, setRefused] = useState(0);
   const [message, setMessage] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const previewId = useId();
+  const preview = usePhonePreview();
   const formRef = useRef<HTMLFormElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const shownStep = useRef(0);
@@ -313,13 +313,13 @@ export function SiteCreator({
         <PhoneStrip
           showLabel={settingsCopy.previewShow}
           hideLabel={settingsCopy.previewHide}
-          open={previewOpen}
-          onToggle={() => setPreviewOpen(!previewOpen)}
-          controls={previewId}
+          open={preview.open}
+          onToggle={preview.toggle}
+          controls={preview.id}
         >
           {t.stepOf(step + 1, LAST_STEP + 1)}
         </PhoneStrip>
-        <form ref={formRef} onSubmit={onSubmit} className={styles.form} noValidate>
+        <form ref={formRef} onSubmit={onSubmit} className={styles.form} inert={preview.open} noValidate>
           <StepProgress label={t.stepsLabel} steps={stepNames} current={step} />
           {step === 0 ? (
             <BasicsStep
@@ -398,8 +398,8 @@ export function SiteCreator({
           settings={lastValid.current}
           slug={trimmedSlug || 'emma'}
           bornPlaceholderUrl={bornPlaceholderUrl}
-          open={previewOpen}
-          id={previewId}
+          open={preview.open}
+          id={preview.id}
         />
       </div>
     </PageShell>

@@ -51,6 +51,7 @@ import styles from './SiteEditor.module.css';
 import { SiteIconField } from './SiteIconField';
 import { SitePreviews } from './SitePreviews';
 import { useLeaveGuard } from './useLeaveGuard';
+import { usePhonePreview } from './usePhonePreview';
 
 const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
 
@@ -132,8 +133,7 @@ export function SiteEditor({
   /** Counts failed saves, so each one moves the focus to the first field in error. */
   const [failedSaves, setFailedSaves] = useState(0);
   const formRef = useRef<HTMLFormElement>(null);
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const previewId = useId();
+  const preview = usePhonePreview();
   /** Whether the Owner just created this Site. */
   const [welcome, setWelcome] = useState(false);
   const sectionIds = {
@@ -361,13 +361,13 @@ export function SiteEditor({
         <PhoneStrip
           showLabel={t.previewShow}
           hideLabel={t.previewHide}
-          open={previewOpen}
-          onToggle={() => setPreviewOpen(!previewOpen)}
-          controls={previewId}
+          open={preview.open}
+          onToggle={preview.toggle}
+          controls={preview.id}
         >
           {site.babyName || site.slug}
         </PhoneStrip>
-        <div className={styles.main}>
+        <div className={styles.main} inert={preview.open}>
           <SectionNav
             className={styles.menu}
             label={t.sections}
@@ -486,8 +486,8 @@ export function SiteEditor({
           video={video}
           mediaPreviewSlug={mediaPreviewSlug}
           bornPlaceholderUrl={bornPlaceholderUrl}
-          open={previewOpen}
-          id={previewId}
+          open={preview.open}
+          id={preview.id}
         />
       </div>
       <ConfirmDialog

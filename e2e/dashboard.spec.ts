@@ -137,10 +137,16 @@ test.describe('Dashboard', () => {
 
     await page.getByRole('button', { name: 'Preview your page' }).click();
     await expect(preview).toBeVisible();
-    await page.getByLabel('Name', { exact: true }).focus();
-    await expect(page.getByLabel('Name', { exact: true })).toBeInViewport();
+    const viewport = page.viewportSize();
+    const frame = await preview.getByRole('region', { name: 'Your page on a phone' }).boundingBox();
+    expect(frame?.height).toBeGreaterThan((viewport?.height ?? 0) * 0.7);
+    await page.keyboard.press('Escape');
+    await expect(preview).toBeHidden();
+
+    await page.getByRole('button', { name: 'Preview your page' }).click();
     await page.getByRole('button', { name: 'Hide the preview' }).click();
     await expect(preview).toBeHidden();
+    await expect(page.getByLabel('Name', { exact: true })).toBeEditable();
 
     const sections = page.getByRole('navigation', { name: 'Sections of this page' });
     await sections.getByRole('link', { name: 'Keep the secret' }).click();

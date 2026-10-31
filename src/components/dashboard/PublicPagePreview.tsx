@@ -15,7 +15,7 @@ interface PublicPagePreviewProps {
   caption: string;
   bornImageUrl?: string;
   birthVideoUrl?: string;
-  /** Below 48rem, a short window onto the page, so the form stays in view under it. */
+  /** Below 48rem the frame fills its parent's height, for a preview that takes the whole screen. */
   compact?: boolean;
 }
 
@@ -35,7 +35,7 @@ export function PublicPagePreview({
 }: PublicPagePreviewProps) {
   const captionId = useId();
   return (
-    <figure className={styles.figure}>
+    <figure className={compact ? `${styles.figure} ${styles.compactFigure}` : styles.figure}>
       <section
         className={compact ? `${styles.phone} ${styles.compact}` : styles.phone}
         style={themeStyle(settings.theme) as CSSProperties}

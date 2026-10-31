@@ -45,17 +45,15 @@
   justify-self: center;
 }
 
-/* Open on a phone, right under the strip and in view while the form scrolls below it. */
+/* Open on a phone, it takes the whole screen under the PhoneStrip, which is as tall as this offset. */
 .previewOpen {
-  position: sticky;
-  top: calc(var(--control-height-sm) + var(--space-2));
+  position: fixed;
+  inset: calc(var(--control-height-sm) + var(--space-2)) 0 0;
   z-index: 2;
-  order: -1;
   display: grid;
-  margin-inline: calc(var(--gutter) * -1);
+  grid-template-rows: auto minmax(0, 1fr);
   padding: var(--space-2) var(--gutter);
-  background: var(--color-surface);
-  box-shadow: var(--shadow-md);
+  background: var(--color-bg);
 }
 
 @media (min-width: 48rem) {
@@ -76,14 +74,12 @@
 
   .preview {
     position: sticky;
-    top: var(--space-4);
+    inset: var(--space-4) auto auto;
     z-index: auto;
-    order: 0;
     display: grid;
-    margin-inline: 0;
+    grid-template-rows: none;
     padding: 0;
     background: none;
-    box-shadow: none;
   }
 }
 
