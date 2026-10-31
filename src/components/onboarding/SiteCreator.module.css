@@ -30,6 +30,8 @@
   display: grid;
   gap: var(--space-5);
   align-items: start;
+  /* The sticky actions meet the viewport edge through PageShell's bottom gutter. */
+  margin-bottom: calc(var(--space-8) * -1);
 }
 
 @media (min-width: 48rem) {
@@ -55,9 +57,18 @@
   margin-inline-start: auto;
 }
 
+/* Keeps moving on one tap away, as the save bar does in Site settings. */
 .actions {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
   display: grid;
   gap: var(--space-3);
+  margin-inline: calc(var(--space-2) * -1);
+  padding: var(--space-3) var(--space-2);
+  border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+  background: var(--color-bg);
+  box-shadow: var(--shadow-lg);
 }
 
 .buttons {
