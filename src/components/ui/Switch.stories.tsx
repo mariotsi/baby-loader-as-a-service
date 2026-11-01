@@ -28,5 +28,5 @@ export const WithHint: Story = {
 
 /** The hint says why the setting cannot change. */
 export const Disabled: Story = {
-  args: { checked: true, disabled: true, readOnly: true, hint: 'There’s no name to hide yet.' },
+  args: { checked: false, disabled: true, readOnly: true, hint: 'There’s no name to show yet.' },
 };

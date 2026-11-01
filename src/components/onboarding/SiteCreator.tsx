@@ -370,6 +370,7 @@ export function SiteCreator({
             <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription} headingRef={headingRef}>
               <PrivacySwitches
                 babyName={draft.babyName}
+                sex={draft.sex}
                 showName={draft.showName}
                 showSex={draft.showSex}
                 onShowName={(showName) => update({ showName })}
@@ -510,8 +511,8 @@ function LastLookStep({ draft, address, onChange, headingRef }: LastLookStepProp
         label={t.whoSeesWhat}
         onChange={() => onChange(2)}
         rows={[
-          [privacy.showName, draft.showName || !draft.babyName.trim() ? t.yes : t.no],
-          [privacy.showSex, draft.showSex ? t.yes : t.no],
+          [privacy.showName, draft.showName && draft.babyName.trim() ? t.yes : t.no],
+          [privacy.showSex, draft.showSex && draft.sex !== 'unknown' ? t.yes : t.no],
         ]}
       />
     </Card>

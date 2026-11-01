@@ -106,8 +106,9 @@ const en = {
   /** What the onboarding form and the Site settings editor both ask. */
   privacy: {
     showName: 'Show the name',
-    noNameYet: 'There’s no name to hide yet.',
+    noNameYet: 'There’s no name to show yet.',
     showSex: 'Show the sex',
+    noSexYet: 'The sex isn’t known yet.',
   },
 
   dashboard: {
@@ -373,8 +374,9 @@ const it: PlatformCopy = {
 
   privacy: {
     showName: 'Mostra il nome',
-    noNameYet: 'Non c’è ancora un nome da nascondere.',
+    noNameYet: 'Non c’è ancora un nome da mostrare.',
     showSex: 'Mostra il sesso',
+    noSexYet: 'Il sesso non è ancora noto.',
   },
 
   dashboard: {

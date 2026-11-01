@@ -137,7 +137,7 @@ The Platform's own fixed Palette and Font, worn by its marketing, auth, onboardi
 _Avoid_: Default theme, admin theme
 
 **Privacy settings**:
-The Owner's choice of whether the baby's name and Sex appear on the Public page during the Waiting state. The Born state always shows them. A Site with no name yet has nothing to hide, so its name setting stays on until the Owner writes one. The Dashboard calls this section Keep the secret.
+The Owner's choice of whether the baby's name and Sex appear on the Public page during the Waiting state. The Born state always shows them. With no name, or no known Sex, there is nothing to show, so that setting stays off until the Owner gives one. The Dashboard calls this section Keep the secret.
 _Avoid_: Visibility, toggles
 
 **Languages**:

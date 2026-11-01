@@ -470,6 +470,7 @@ export function SiteEditor({
               <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription}>
                 <PrivacySwitches
                   babyName={babyName}
+                  sex={sex}
                   showName={showName}
                   showSex={showSex}
                   onShowName={setShowName}

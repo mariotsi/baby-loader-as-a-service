@@ -129,20 +129,27 @@ test('a new User signs up and creates several Sites', async ({ page }, testInfo)
   await page.goto(await dashboardAddress(page, first));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for Ada');
 
-  // The name can wait for the birth: until then there is nothing to hide, and announcing asks for it.
+  // The name can wait for the birth: until then there is nothing to show, and announcing asks for it.
   await page.goto('/onboarding');
   await fillBasics(page, third, '');
   await expect(page.getByRole('heading', { name: 'Make it yours' })).toBeFocused();
   await page.getByRole('button', { name: 'Next' }).click();
   const showName = page.getByRole('switch', { name: 'Show the name' });
-  await expect(showName).toBeChecked();
-  await expect(showName).toBeDisabled();
+  const showSex = page.getByRole('switch', { name: 'Show the sex' });
+  for (const unknown of [showName, showSex]) {
+    await expect(unknown).not.toBeChecked();
+    await expect(unknown).toBeDisabled();
+  }
   await page.getByRole('button', { name: 'Next' }).click();
   await page.getByRole('button', { name: 'Create site' }).click();
   await expect(page).toHaveURL(new RegExp(`/dashboard/${third}$`));
   await expect(showName).toBeDisabled();
   await page.getByLabel(/^Name/).fill('Noa');
   await expect(showName).toBeEnabled();
+  await expect(showName).toBeChecked();
+  await page.getByLabel('Sex', { exact: true }).selectOption('Girl');
+  await expect(showSex).toBeEnabled();
+  await expect(showSex).toBeChecked();
   await page.getByLabel(/^Name/).clear();
   await expect(showName).toBeDisabled();
 
