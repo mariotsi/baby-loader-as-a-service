@@ -49,11 +49,8 @@ interface FieldProps {
   /** What is wrong and how to fix it. Marks the control invalid. */
   error?: ReactNode;
   required?: boolean;
-  /**
-   * Says "optional" next to the label, or these words when a field is optional
-   * only for a while. Mark the optional fields, not the required ones.
-   */
-  optional?: boolean | string;
+  /** Says "optional" next to the label. Mark the optional fields, not the required ones. */
+  optional?: boolean;
   /**
    * Gives the error to screen readers only, while the control still shows
    * it is invalid. Only for a problem the page already shows another way,
@@ -119,7 +116,6 @@ export function Field({
   className,
 }: FieldProps) {
   const t = uiCopy[useLang()];
-  const optionalText = optional === true ? t.optional : optional;
   const id = useId();
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
@@ -134,7 +130,7 @@ export function Field({
       ) : (
         <label htmlFor={id} className={styles.label}>
           {label}
-          {optionalText ? <Badge variant="plain"> {optionalText}</Badge> : null}
+          {optional ? <Badge variant="plain"> {t.optional}</Badge> : null}
         </label>
       )}
       <FieldContext.Provider value={{ id, describedBy, invalid: !!error, required }}>{children}</FieldContext.Provider>

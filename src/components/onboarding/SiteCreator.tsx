@@ -442,7 +442,7 @@ function BasicsStep({ draft, update, errors, onErrors, address, headingRef }: Ba
           spellCheck={false}
         />
       </Field>
-      <Field label={t.babyName} optional={settings.nameOptional}>
+      <Field label={t.babyName} hint={settings.nameHint} optional>
         <Input value={draft.babyName} onChange={(e) => update({ babyName: e.target.value })} autoComplete="off" />
       </Field>
       <Field label={settings.sex}>

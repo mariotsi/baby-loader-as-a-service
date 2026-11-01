@@ -387,7 +387,7 @@ export function SiteEditor({
           <form ref={formRef} onSubmit={save} className={styles.form} noValidate>
             <div id={sectionIds.baby} className={styles.section}>
               <Card title={t.babyDetails} description={t.babyDetailsDescription}>
-                <Field label={t.name} optional={nameOptional(birth, t)}>
+                <Field label={t.name} {...nameNote(birth, t)}>
                   <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
                 </Field>
                 <Field label={t.sex}>
@@ -610,8 +610,8 @@ function savedBirth(site: SiteDTO): BirthDraft {
 }
 
 /** The name is required from the birth's announcement on. */
-function nameOptional(birth: BirthDraft, t: PlatformCopy['settings']): string | undefined {
-  return birth.born ? undefined : t.nameOptional;
+function nameNote(birth: BirthDraft, t: PlatformCopy['settings']) {
+  return birth.born ? {} : { optional: true, hint: t.nameHint };
 }
 
 interface BirthStatusProps {
