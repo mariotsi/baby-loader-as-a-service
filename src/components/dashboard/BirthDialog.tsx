@@ -53,7 +53,7 @@ interface BirthDialogProps {
   previewSlug?: string;
   /** Everything that would stop saving the page with this Birth. */
   check: (birth: BirthDraft) => SiteSettingsError[];
-  /** The Site settings saving with this Birth would store, or null while a field is half filled. */
+  /** The Site settings the previews draw with this Birth, name and Sex given or not, or null while a field is half filled. */
   settingsWith: (birth: BirthDraft) => SiteSettings | null;
   slug: string;
   /** The Site's Address, where the notification comes from. */

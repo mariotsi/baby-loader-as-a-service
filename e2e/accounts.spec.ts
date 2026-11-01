@@ -155,6 +155,9 @@ test('a new User signs up and creates several Sites', async ({ page }, testInfo)
 
   await page.getByRole('button', { name: 'Announce the birth' }).click();
   const dialog = page.getByRole('dialog');
+  await expect(
+    dialog.getByRole('region', { name: 'Your page on a phone' }).getByRole('heading', { level: 1 })
+  ).toHaveText('Welcome little one');
   await dialog.getByRole('radio', { name: 'Girl' }).check();
   await dialog.getByRole('button', { name: 'Announce the birth' }).click();
   await expect(dialog.getByLabel('Name', { exact: true })).toBeFocused();

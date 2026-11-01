@@ -330,6 +330,19 @@ export function parseSiteSettings(input: unknown, now: Date = new Date()): Parse
 }
 
 /**
+ * The Site settings the Birth dialog's previews draw: valid but for the name
+ * and the Sex, which the dialog is still asking for. Null otherwise.
+ */
+export function parseBirthPreview(input: unknown, now: Date = new Date()): SiteSettings | null {
+  const result = siteSettingsSchema.safeParse(input);
+  if (!result.success) {
+    return null;
+  }
+  const errors = crossFieldErrors(result.data, now).filter(({ path }) => path !== 'babyName' && path !== 'sex');
+  return errors.length > 0 ? null : result.data;
+}
+
+/**
  * The body of a Site's creation: `{ slug, settings }`. The Slug is lowercased
  * and never changes afterwards. A new Site starts Waiting, with a Due date
  * for its Countdown: the birth is announced from Site settings, which is what

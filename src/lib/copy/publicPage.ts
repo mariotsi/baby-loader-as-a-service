@@ -43,6 +43,8 @@ const en = {
   waitingTitle: 'We are waiting for',
   /** Stands in for the name when there is none or Privacy settings hide it. */
   someone: 'someone',
+  /** Stands in for the name in the Birth dialog's preview, until the Owner gives it. */
+  littleOne: (_sex: Sex) => 'little one',
   duePrefix: 'Due date:',
   daysLeft: (n: number): string => plural('en', n, { one: 'day to go', other: 'days to go' }),
   daysLate: (n: number): string => plural('en', n, { one: 'day late', other: 'days late' }),
@@ -120,6 +122,7 @@ const it: PublicPageCopy = {
   waitingTagline: 'In attesa',
   waitingTitle: 'Stiamo aspettando',
   someone: 'qualcuno',
+  littleOne: (sex: Sex) => (sex === 'female' ? 'piccola' : 'piccolo'),
   duePrefix: 'Arrivo previsto:',
   daysLeft: (n: number): string => plural('it', n, { one: 'giorno rimanente', other: 'giorni rimanenti' }),
   daysLate: (n: number): string => plural('it', n, { one: 'giorno in ritardo', other: 'giorni in ritardo' }),

@@ -37,6 +37,7 @@ import {
   DEFAULT_MILESTONE_EMOJI,
   DEFAULT_SITE_ICON_EMOJI,
   type PageName,
+  parseBirthPreview,
   parseSiteSettings,
   type SiteSettings,
   type SiteSettingsError,
@@ -518,10 +519,7 @@ export function SiteEditor({
           languages={languages}
           previewSlug={mediaPreviewSlug}
           check={problems}
-          settingsWith={(b) => {
-            const checked = parseSiteSettings(currentSettings(b));
-            return checked.ok ? checked.value : null;
-          }}
+          settingsWith={(b) => parseBirthPreview(currentSettings(b))}
           slug={site.slug}
           address={address}
           video={video}

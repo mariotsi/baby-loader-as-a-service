@@ -183,7 +183,7 @@ const en = {
     notificationFailed: 'Your page is updated, but the notification wasn’t sent.',
     birthMilestone: (sex: Sex) => ({ female: 'She is born!', male: 'He is born!', unknown: 'The baby is born!' })[sex],
     birthNotification: (name: string, sex: Sex) => ({
-      title: `${name} is born!`,
+      title: `${name || 'The baby'} is born!`,
       body: `Come and meet ${({ female: 'her', male: 'him', unknown: 'them' } as const)[sex]} on the page.`,
     }),
     announceBirth: 'Announce the birth',
@@ -452,7 +452,7 @@ const it: PlatformCopy = {
     notificationFailed: 'La pagina è aggiornata, ma la notifica non è stata inviata.',
     birthMilestone: (sex) => (sex === 'female' ? 'È nata!' : 'È nato!'),
     birthNotification: (name, sex) => ({
-      title: `${sex === 'female' ? 'È nata' : 'È nato'} ${name}!`,
+      title: [sex === 'female' ? 'È nata' : 'È nato', name].filter(Boolean).join(' ').concat('!'),
       body: `Vieni a ${sex === 'female' ? 'conoscerla' : 'conoscerlo'} sulla pagina.`,
     }),
     announceBirth: 'Annuncia la nascita',

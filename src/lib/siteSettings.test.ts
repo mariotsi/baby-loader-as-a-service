@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   defaultNotificationTitle,
   defaultSiteSettings,
+  parseBirthPreview,
   parseNewSite,
   parseSiteSettings,
   type SiteSettingsInput,
@@ -101,6 +102,12 @@ test('the Born state requires a name and a known Sex, even when Privacy settings
     { path: 'babyName', code: 'required' },
     { path: 'sex', code: 'required' },
   ]);
+});
+
+test('the Birth dialog previews a Born Site with no name or Sex, and nothing else that is invalid', () => {
+  assert.equal(parseBirthPreview(settings({ birth: born() }), NOW)?.babyName, '');
+  assert.equal(parseBirthPreview(settings({ birth: born({ datetime: '2026-10-20T12:00:01.000Z' }) }), NOW), null);
+  assert.equal(parseBirthPreview(settings({ birth: born({ datetime: '' }) }), NOW), null);
 });
 
 test('Birth details exist only in the Born state', () => {
