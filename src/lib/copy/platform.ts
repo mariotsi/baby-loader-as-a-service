@@ -96,7 +96,6 @@ const en = {
       'These apply while your page is waiting. After the birth it always shows the name and the sex.',
     lastLook: 'A last look',
     lastLookDescription: 'Milestones and the welcome video wait for you in the page’s settings.',
-    babyNameRequired: 'Write the baby’s name, or a nickname for now.',
     notSet: 'Not set',
     yes: 'Yes',
     no: 'No',
@@ -107,6 +106,7 @@ const en = {
   /** What the onboarding form and the Site settings editor both ask. */
   privacy: {
     showName: 'Show the name',
+    noNameYet: 'There’s no name to hide yet.',
     showSex: 'Show the sex',
   },
 
@@ -166,6 +166,7 @@ const en = {
     babyDetails: 'Baby details',
     babyDetailsDescription: 'What your page says about the little one.',
     name: 'Name',
+    nameOptional: 'Optional until the birth',
     sex: 'Sex',
     sexUnknown: 'We don’t know',
     sexFemale: 'Girl',
@@ -363,7 +364,6 @@ const it: PlatformCopy = {
     whoSeesWhatDescription: 'Valgono durante l’attesa. Dopo la nascita la tua pagina mostra sempre il nome e il sesso.',
     lastLook: 'Un ultimo sguardo',
     lastLookDescription: 'Le tappe e il video di benvenuto ti aspettano nelle impostazioni della pagina.',
-    babyNameRequired: 'Scrivi il nome del bambino, o un soprannome per ora.',
     notSet: 'Non impostato',
     yes: 'Sì',
     no: 'No',
@@ -373,6 +373,7 @@ const it: PlatformCopy = {
 
   privacy: {
     showName: 'Mostra il nome',
+    noNameYet: 'Non c’è ancora un nome da nascondere.',
     showSex: 'Mostra il sesso',
   },
 
@@ -433,6 +434,7 @@ const it: PlatformCopy = {
     babyDetails: 'Il bambino',
     babyDetailsDescription: 'Cosa racconta la tua pagina del piccolo.',
     name: 'Nome',
+    nameOptional: 'Opzionale fino alla nascita',
     sex: 'Sesso',
     sexUnknown: 'Non lo sappiamo',
     sexFemale: 'Femmina',

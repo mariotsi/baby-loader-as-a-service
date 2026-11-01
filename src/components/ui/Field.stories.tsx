@@ -30,6 +30,11 @@ export const WithHint: Story = {
   args: { hint: 'Only shown on the page if you want it to be. You can change it later.' },
 };
 
+/** Words of its own for a field that is optional only for a while. */
+export const OptionalForAWhile: Story = {
+  args: { optional: 'Optional until the birth', children: <Input /> },
+};
+
 /** The error says what happened and how to fix it; the control is marked invalid and points at it. */
 export const WithError: Story = {
   args: {

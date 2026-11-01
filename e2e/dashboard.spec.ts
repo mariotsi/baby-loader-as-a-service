@@ -49,7 +49,7 @@ test.describe('Dashboard', () => {
     const slug = perProjectSlug('e2e-edit', project);
     await page.goto(`/dashboard/${slug}`);
 
-    await page.getByLabel('Name', { exact: true }).fill('Edith Rose');
+    await page.getByLabel(/^Name/).fill('Edith Rose');
     await page.getByLabel('Sex', { exact: true }).selectOption('female');
     await page.getByRole('checkbox', { name: 'Italian' }).check();
     await page.getByRole('button', { name: 'Add milestone' }).click();
@@ -156,7 +156,7 @@ test.describe('Dashboard', () => {
     await page.getByRole('button', { name: 'Preview your page' }).click();
     await page.getByRole('button', { name: 'Hide the preview' }).click();
     await expect(preview).toBeHidden();
-    await expect(page.getByLabel('Name', { exact: true })).toBeEditable();
+    await expect(page.getByLabel(/^Name/)).toBeEditable();
 
     const sections = page.getByRole('navigation', { name: 'Sections of this page' });
     // Marking a section moves no chip: each one keeps the width of its bold label.
@@ -315,7 +315,7 @@ test.describe('Dashboard', () => {
 
   test('asks before leaving with unsaved changes', async ({ page }) => {
     await page.goto('/dashboard/e2e-waiting');
-    const name = page.getByLabel('Name', { exact: true });
+    const name = page.getByLabel(/^Name/);
     const original = await name.inputValue();
 
     await name.fill(`${original} Rose`);

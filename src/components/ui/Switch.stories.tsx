@@ -25,3 +25,8 @@ export const Off: Story = {};
 export const WithHint: Story = {
   args: { label: 'Show the sex while waiting', hint: 'After the birth your page always shows it.' },
 };
+
+/** The hint says why the setting cannot change. */
+export const Disabled: Story = {
+  args: { checked: true, disabled: true, readOnly: true, hint: 'There’s no name to hide yet.' },
+};
