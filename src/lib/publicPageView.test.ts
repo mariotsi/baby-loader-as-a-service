@@ -96,6 +96,13 @@ test('the Born state announces the name and Sex whatever the Privacy settings', 
   assert.equal(view.waiting, null);
 });
 
+test('the Birth dialog previews the Born state before the name and Sex are given', () => {
+  const nameless = { birth: BORN, babyName: '' };
+  assert.equal(publicPageView(site({ ...nameless, sex: 'unknown' }), 'en', NOW).title, 'Welcome little one');
+  assert.equal(publicPageView(site({ ...nameless, sex: 'unknown' }), 'en', NOW).tagline, 'Here at last!');
+  assert.equal(publicPageView(site(nameless), 'it', NOW).title, 'Benvenuta piccola');
+});
+
 test('the Page name shows in its language, in both states and whatever the Privacy settings', () => {
   const pageName = { it: ' Stefania e Simone ', en: 'Stefania & Simone' };
   const hidden = { showName: false, showSex: false };

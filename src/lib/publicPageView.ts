@@ -149,7 +149,7 @@ function headline(
   const born = settings.birth.born;
   const name = (born || settings.privacy.showName) && settings.babyName ? settings.babyName : null;
   const titleLead = born ? t.bornTitle(settings.sex) : t.waitingTitle;
-  const titleName = born ? settings.babyName : (name ?? t.someone);
+  const titleName = born ? settings.babyName || t.littleOne(settings.sex) : (name ?? t.someone);
   return {
     tagline: born ? t.bornTagline(settings.sex) : t.waitingTagline,
     title: [titleLead, titleName].filter(Boolean).join(' '),

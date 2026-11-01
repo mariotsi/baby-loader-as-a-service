@@ -73,6 +73,15 @@
   translate: 1.25rem -50%;
 }
 
+.input:disabled {
+  cursor: not-allowed;
+}
+
+.input:disabled + .track {
+  border-color: var(--color-border);
+  opacity: 0.5;
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .thumb {
     transition:

@@ -4,6 +4,7 @@ import { parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { type Ref, type SubmitEvent, useEffect, useRef, useState } from 'react';
 import { EditorPreview } from '@/components/dashboard/EditorPreview';
+import { PrivacySwitches } from '@/components/dashboard/PrivacySwitches';
 import { SiteIconField } from '@/components/dashboard/SiteIconField';
 import { usePhonePreview } from '@/components/dashboard/usePhonePreview';
 import { useLang } from '@/components/LangProvider';
@@ -20,7 +21,6 @@ import { PhoneStrip } from '@/components/ui/PhoneStrip';
 import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { StepProgress } from '@/components/ui/StepProgress';
-import { Switch } from '@/components/ui/Switch';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { type AddressConfig, siteAddress, slugProblem } from '@/lib/address';
 import { errorsCopy } from '@/lib/copy/errors';
@@ -62,7 +62,7 @@ interface Draft {
 }
 
 /** The fields of The basics that show an error, by name. */
-type BasicsErrors = Partial<Record<'slug' | 'babyName' | 'dueDate', string>>;
+type BasicsErrors = Partial<Record<'slug' | 'dueDate', string>>;
 
 function readDraft(): Draft | null {
   try {
@@ -126,7 +126,6 @@ function basicsErrors(draft: Draft, lang: Lang): BasicsErrors {
   const dueDate = checked.ok ? undefined : checked.errors.find((error) => error.path === 'settings.dueDate');
   return {
     slug: slugError(slug, t) ?? (slug ? undefined : t.slugFormat),
-    babyName: draft.babyName.trim() ? undefined : t.babyNameRequired,
     dueDate: dueDateError(draft, dueDate, lang),
   };
 }
@@ -161,7 +160,7 @@ export function SiteCreator({
 }) {
   const router = useRouter();
   const lang = useLang();
-  const { onboarding: t, settings: settingsCopy, privacy } = platformCopy[lang];
+  const { onboarding: t, settings: settingsCopy } = platformCopy[lang];
   const [step, setStep] = useState(0);
   const [draft, setDraft] = useState<Draft>({
     slug: '',
@@ -369,18 +368,14 @@ export function SiteCreator({
           ) : null}
           {step === 2 ? (
             <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription} headingRef={headingRef}>
-              <div>
-                <Switch
-                  label={privacy.showName}
-                  checked={draft.showName}
-                  onChange={(e) => update({ showName: e.target.checked })}
-                />
-                <Switch
-                  label={privacy.showSex}
-                  checked={draft.showSex}
-                  onChange={(e) => update({ showSex: e.target.checked })}
-                />
-              </div>
+              <PrivacySwitches
+                babyName={draft.babyName}
+                sex={draft.sex}
+                showName={draft.showName}
+                showSex={draft.showSex}
+                onShowName={(showName) => update({ showName })}
+                onShowSex={(showSex) => update({ showSex })}
+              />
             </Card>
           ) : null}
           {step === LAST_STEP ? (
@@ -448,15 +443,8 @@ function BasicsStep({ draft, update, errors, onErrors, address, headingRef }: Ba
           spellCheck={false}
         />
       </Field>
-      <Field label={t.babyName} error={errors.babyName} required>
-        <Input
-          value={draft.babyName}
-          onChange={(e) => {
-            update({ babyName: e.target.value });
-            onErrors({ ...errors, babyName: undefined });
-          }}
-          autoComplete="off"
-        />
+      <Field label={t.babyName} hint={settings.nameHint} optional>
+        <Input value={draft.babyName} onChange={(e) => update({ babyName: e.target.value })} autoComplete="off" />
       </Field>
       <Field label={settings.sex}>
         <Select value={draft.sex} onChange={(e) => update({ sex: e.target.value as Draft['sex'] })}>
@@ -503,7 +491,7 @@ function LastLookStep({ draft, address, onChange, headingRef }: LastLookStepProp
         onChange={() => onChange(0)}
         rows={[
           [t.siteAddress, address.replace(/^https?:\/\//, '')],
-          [t.babyName, draft.babyName],
+          [t.babyName, draft.babyName.trim() || t.notSet],
           [settings.sex, sex],
           [t.dueDate, dueDate],
         ]}
@@ -523,8 +511,8 @@ function LastLookStep({ draft, address, onChange, headingRef }: LastLookStepProp
         label={t.whoSeesWhat}
         onChange={() => onChange(2)}
         rows={[
-          [privacy.showName, draft.showName ? t.yes : t.no],
-          [privacy.showSex, draft.showSex ? t.yes : t.no],
+          [privacy.showName, draft.showName && draft.babyName.trim() ? t.yes : t.no],
+          [privacy.showSex, draft.showSex && draft.sex !== 'unknown' ? t.yes : t.no],
         ]}
       />
     </Card>

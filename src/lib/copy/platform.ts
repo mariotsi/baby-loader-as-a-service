@@ -96,7 +96,6 @@ const en = {
       'These apply while your page is waiting. After the birth it always shows the name and the sex.',
     lastLook: 'A last look',
     lastLookDescription: 'Milestones and the welcome video wait for you in the page’s settings.',
-    babyNameRequired: 'Write the baby’s name, or a nickname for now.',
     notSet: 'Not set',
     yes: 'Yes',
     no: 'No',
@@ -107,7 +106,9 @@ const en = {
   /** What the onboarding form and the Site settings editor both ask. */
   privacy: {
     showName: 'Show the name',
+    noNameYet: 'There’s no name to show yet.',
     showSex: 'Show the sex',
+    noSexYet: 'The sex isn’t known yet.',
   },
 
   dashboard: {
@@ -166,6 +167,7 @@ const en = {
     babyDetails: 'Baby details',
     babyDetailsDescription: 'What your page says about the little one.',
     name: 'Name',
+    nameHint: 'You can change it anytime. The birth notification needs it.',
     sex: 'Sex',
     sexUnknown: 'We don’t know',
     sexFemale: 'Girl',
@@ -181,7 +183,7 @@ const en = {
     notificationFailed: 'Your page is updated, but the notification wasn’t sent.',
     birthMilestone: (sex: Sex) => ({ female: 'She is born!', male: 'He is born!', unknown: 'The baby is born!' })[sex],
     birthNotification: (name: string, sex: Sex) => ({
-      title: `${name} is born!`,
+      title: `${name || 'The baby'} is born!`,
       body: `Come and meet ${({ female: 'her', male: 'him', unknown: 'them' } as const)[sex]} on the page.`,
     }),
     announceBirth: 'Announce the birth',
@@ -363,7 +365,6 @@ const it: PlatformCopy = {
     whoSeesWhatDescription: 'Valgono durante l’attesa. Dopo la nascita la tua pagina mostra sempre il nome e il sesso.',
     lastLook: 'Un ultimo sguardo',
     lastLookDescription: 'Le tappe e il video di benvenuto ti aspettano nelle impostazioni della pagina.',
-    babyNameRequired: 'Scrivi il nome del bambino, o un soprannome per ora.',
     notSet: 'Non impostato',
     yes: 'Sì',
     no: 'No',
@@ -373,7 +374,9 @@ const it: PlatformCopy = {
 
   privacy: {
     showName: 'Mostra il nome',
+    noNameYet: 'Non c’è ancora un nome da mostrare.',
     showSex: 'Mostra il sesso',
+    noSexYet: 'Il sesso non è ancora noto.',
   },
 
   dashboard: {
@@ -433,6 +436,7 @@ const it: PlatformCopy = {
     babyDetails: 'Il bambino',
     babyDetailsDescription: 'Cosa racconta la tua pagina del piccolo.',
     name: 'Nome',
+    nameHint: 'Puoi cambiarlo quando vuoi. Serve per la notifica di nascita.',
     sex: 'Sesso',
     sexUnknown: 'Non lo sappiamo',
     sexFemale: 'Femmina',
@@ -448,7 +452,7 @@ const it: PlatformCopy = {
     notificationFailed: 'La pagina è aggiornata, ma la notifica non è stata inviata.',
     birthMilestone: (sex) => (sex === 'female' ? 'È nata!' : 'È nato!'),
     birthNotification: (name, sex) => ({
-      title: `${sex === 'female' ? 'È nata' : 'È nato'} ${name}!`,
+      title: [sex === 'female' ? 'È nata' : 'È nato', name].filter(Boolean).join(' ').concat('!'),
       body: `Vieni a ${sex === 'female' ? 'conoscerla' : 'conoscerlo'} sulla pagina.`,
     }),
     announceBirth: 'Annuncia la nascita',

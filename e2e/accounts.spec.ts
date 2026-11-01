@@ -92,6 +92,7 @@ test('a new User signs up and creates several Sites', async ({ page }, testInfo)
   const attempt = `${testInfo.retry}${testInfo.repeatEachIndex}`;
   const first = runSlug(runId(), `first${attempt}`);
   const second = runSlug(runId(), `second${attempt}`);
+  const third = runSlug(runId(), `third${attempt}`);
 
   await page.goto('/signup');
   await page.getByLabel('Email').fill(runEmail(runId(), `signup${attempt}`));
@@ -127,6 +128,40 @@ test('a new User signs up and creates several Sites', async ({ page }, testInfo)
 
   await page.goto(await dashboardAddress(page, first));
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('We are waiting for Ada');
+
+  // The name can wait for the birth: until then there is nothing to show, and announcing asks for it.
+  await page.goto('/onboarding');
+  await fillBasics(page, third, '');
+  await expect(page.getByRole('heading', { name: 'Make it yours' })).toBeFocused();
+  await page.getByRole('button', { name: 'Next' }).click();
+  const showName = page.getByRole('switch', { name: 'Show the name' });
+  const showSex = page.getByRole('switch', { name: 'Show the sex' });
+  for (const unknown of [showName, showSex]) {
+    await expect(unknown).not.toBeChecked();
+    await expect(unknown).toBeDisabled();
+  }
+  await page.getByRole('button', { name: 'Next' }).click();
+  await page.getByRole('button', { name: 'Create site' }).click();
+  await expect(page).toHaveURL(new RegExp(`/dashboard/${third}$`));
+  await expect(showName).toBeDisabled();
+  await page.getByLabel(/^Name/).fill('Noa');
+  await expect(showName).toBeEnabled();
+  await expect(showName).toBeChecked();
+  await page.getByLabel('Sex', { exact: true }).selectOption('Girl');
+  await expect(showSex).toBeEnabled();
+  await expect(showSex).toBeChecked();
+  await page.getByLabel(/^Name/).clear();
+  await expect(showName).toBeDisabled();
+
+  await page.getByRole('button', { name: 'Announce the birth' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(
+    dialog.getByRole('region', { name: 'Your page on a phone' }).getByRole('heading', { level: 1 })
+  ).toHaveText('Welcome little one');
+  await dialog.getByRole('radio', { name: 'Girl' }).check();
+  await dialog.getByRole('button', { name: 'Announce the birth' }).click();
+  await expect(dialog.getByLabel('Name', { exact: true })).toBeFocused();
+  await expect(page.getByRole('dialog', { name: 'Announce the birth now?' })).toBeHidden();
 });
 
 test('creating a Site keeps its steps in the history, survives a reload and greets the Owner', async ({
@@ -142,7 +177,6 @@ test('creating a Site keeps its steps in the history, survives a reload and gree
   await expect(page).toHaveURL(/\/onboarding$/);
 
   await page.getByRole('button', { name: 'Next' }).click();
-  await expect(page.getByText('Write the baby’s name, or a nickname for now.')).toBeVisible();
   await expect(page.getByText(/^Pick the day your baby is due/)).toBeVisible();
   await expect(page.getByLabel('Site address')).toBeFocused();
 

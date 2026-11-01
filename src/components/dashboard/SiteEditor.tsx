@@ -18,11 +18,10 @@ import { PhoneStrip } from '@/components/ui/PhoneStrip';
 import { SectionNav } from '@/components/ui/SectionNav';
 import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
-import { Switch } from '@/components/ui/Switch';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { birthNotificationMessages, syncBirthMilestone } from '@/lib/birthAnnouncement';
 import { errorsCopy } from '@/lib/copy/errors';
-import { platformCopy } from '@/lib/copy/platform';
+import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
 import {
   describeSiteSettingsErrors,
   inlineErrorText,
@@ -38,6 +37,7 @@ import {
   DEFAULT_MILESTONE_EMOJI,
   DEFAULT_SITE_ICON_EMOJI,
   type PageName,
+  parseBirthPreview,
   parseSiteSettings,
   type SiteSettings,
   type SiteSettingsError,
@@ -47,6 +47,7 @@ import { BirthDialog, type BirthDraft, type SaveOutcome } from './BirthDialog';
 import { BirthMediaEditor, birthPhoto, birthVideoTitle, type MediaDraft, storedDraft } from './BirthMediaEditor';
 import { EditorPreview } from './EditorPreview';
 import { PlaceField } from './PlaceField';
+import { PrivacySwitches } from './PrivacySwitches';
 import styles from './SiteEditor.module.css';
 import { SiteIconField } from './SiteIconField';
 import { SitePreviews } from './SitePreviews';
@@ -98,7 +99,7 @@ export function SiteEditor({
 }) {
   const router = useRouter();
   const pageLang = useLang();
-  const { settings: t, privacy } = platformCopy[pageLang];
+  const { settings: t } = platformCopy[pageLang];
   const [babyName, setBabyName] = useState(site.babyName);
   const [sex, setSex] = useState(site.sex);
   const [dueDate, setDueDate] = useState(site.dueDate?.slice(0, 10) ?? '');
@@ -387,7 +388,7 @@ export function SiteEditor({
           <form ref={formRef} onSubmit={save} className={styles.form} noValidate>
             <div id={sectionIds.baby} className={styles.section}>
               <Card title={t.babyDetails} description={t.babyDetailsDescription}>
-                <Field label={t.name}>
+                <Field label={t.name} {...nameNote(birth, t)}>
                   <Input value={babyName} onChange={(e) => setBabyName(e.target.value)} autoComplete="off" />
                 </Field>
                 <Field label={t.sex}>
@@ -468,10 +469,14 @@ export function SiteEditor({
 
             <div id={sectionIds.who} className={styles.section}>
               <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription}>
-                <div>
-                  <Switch label={privacy.showName} checked={showName} onChange={(e) => setShowName(e.target.checked)} />
-                  <Switch label={privacy.showSex} checked={showSex} onChange={(e) => setShowSex(e.target.checked)} />
-                </div>
+                <PrivacySwitches
+                  babyName={babyName}
+                  sex={sex}
+                  showName={showName}
+                  showSex={showSex}
+                  onShowName={setShowName}
+                  onShowSex={setShowSex}
+                />
               </Card>
             </div>
 
@@ -514,10 +519,7 @@ export function SiteEditor({
           languages={languages}
           previewSlug={mediaPreviewSlug}
           check={problems}
-          settingsWith={(b) => {
-            const checked = parseSiteSettings(currentSettings(b));
-            return checked.ok ? checked.value : null;
-          }}
+          settingsWith={(b) => parseBirthPreview(currentSettings(b))}
           slug={site.slug}
           address={address}
           video={video}
@@ -604,6 +606,11 @@ function savedBirth(site: SiteDTO): BirthDraft {
     message: details?.message ?? {},
     photo: birthPhoto(details),
   };
+}
+
+/** The name is required from the birth's announcement on. */
+function nameNote(birth: BirthDraft, t: PlatformCopy['settings']) {
+  return birth.born ? {} : { optional: true, hint: t.nameHint };
 }
 
 interface BirthStatusProps {

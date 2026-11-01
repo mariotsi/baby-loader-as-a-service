@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { BIRTH_MILESTONE_EMOJI, syncBirthMilestone } from './birthAnnouncement.ts';
+import { BIRTH_MILESTONE_EMOJI, birthNotificationMessages, syncBirthMilestone } from './birthAnnouncement.ts';
 import type { Milestone } from './siteSettings.ts';
 
 const scan: Milestone = { emoji: '🩺', label: { en: 'First scan' }, date: '2026-08-01' };
@@ -37,4 +37,10 @@ test('a new day of birth moves the Birth milestone and keeps what the Owner wrot
     same
   );
   assert.deepEqual(moved, { ...birth, date: '2026-10-25' });
+});
+
+test('the preview of the birth notification reads well before the name is given', () => {
+  const messages = birthNotificationMessages({ babyName: '', sex: 'female', languages: ['it', 'en'] }, {});
+  assert.equal(messages.it?.title, 'È nata!');
+  assert.equal(messages.en?.title, 'The baby is born!');
 });
