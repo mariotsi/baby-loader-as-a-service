@@ -23,7 +23,7 @@ interface ButtonLook {
   labelHidden?: boolean;
 }
 
-function lookClassName(
+export function lookClassName(
   { variant = 'secondary', size = 'md', fullWidth, labelHidden, inline }: ButtonLook,
   className?: string
 ): string {
