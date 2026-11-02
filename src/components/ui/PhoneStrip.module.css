@@ -1,6 +1,6 @@
 .strip {
   position: sticky;
-  top: var(--space-2);
+  top: 0;
   z-index: 2;
   order: -2;
   display: flex;
@@ -15,13 +15,14 @@
 }
 
 /*
- * Safari tints its status bar from what is pinned to the top of the screen, and keeps that color after it leaves. This
- * line keeps the bar on the page's background above the stuck strip. Safari samples neither a pseudo-element nor a
- * thinner line.
+ * Safari tints its status bar from what is pinned to the top of the screen, and keeps that color when nothing is
+ * pinned there. This line, under the strip's layer, gives it the page's background until the strip sticks and covers
+ * it. Safari samples neither a pseudo-element nor a thinner line.
  */
 .edge {
   position: fixed;
   inset: 0 0 auto;
+  z-index: 1;
   height: var(--space-2);
   background: var(--color-bg);
 }
@@ -47,7 +48,8 @@
 }
 
 @media (min-width: 48rem) {
-  .strip {
+  .strip,
+  .edge {
     display: none;
   }
 }

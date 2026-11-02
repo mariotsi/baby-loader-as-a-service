@@ -50,7 +50,6 @@
   /* Controls: at least 44px tall (WCAG 2.5.8 asks 24px; 44px suits thumbs). */
   --control-height: 3rem;
   --control-height-sm: 2.75rem;
-  --phone-strip-offset: calc(var(--control-height-sm) + var(--space-2) * 2);
   --border-width: 2px;
   --focus-ring: 3px solid var(--color-accent-ink);
   --focus-offset: 3px;
