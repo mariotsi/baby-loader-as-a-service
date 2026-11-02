@@ -18,10 +18,10 @@
   position: absolute;
 }
 
-/* Under the PhoneStrip, which is as tall as this offset. */
+/* Under the PhoneStrip. */
 .menu {
   position: sticky;
-  top: calc(var(--control-height-sm) + var(--space-2));
+  top: var(--phone-strip-offset);
   z-index: 1;
   min-width: 0;
   margin-bottom: var(--space-1);
@@ -44,7 +44,7 @@
 
 /* Clears the sticky strip and chips when the menu jumps here. */
 .section {
-  scroll-margin-top: calc(var(--control-height-sm) * 2 + var(--space-6));
+  scroll-margin-top: calc(var(--phone-strip-offset) + var(--control-height-sm) + var(--space-5));
 }
 
 /* The frame's width is a share of this column, so the column stretches it: centered, the frame would collapse. */
@@ -58,10 +58,10 @@
   justify-self: center;
 }
 
-/* Open on a phone, it takes the whole screen under the PhoneStrip, which is as tall as this offset. */
+/* Open on a phone, it takes the whole screen under the PhoneStrip. */
 .previewOpen {
   position: fixed;
-  inset: calc(var(--control-height-sm) + var(--space-2)) 0 0;
+  inset: var(--phone-strip-offset) 0 0;
   z-index: 2;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
