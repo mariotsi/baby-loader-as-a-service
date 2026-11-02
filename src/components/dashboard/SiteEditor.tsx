@@ -268,7 +268,7 @@ export function SiteEditor({
     const res = await fetch('/api/send-notification', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: site.slug, messages }),
+      body: JSON.stringify({ slug: site.slug, messages, kind: 'birth' }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok) {

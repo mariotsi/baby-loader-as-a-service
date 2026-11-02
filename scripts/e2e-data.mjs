@@ -120,6 +120,8 @@ async function resetStatements(owners, sites, password) {
   const emails = list(Object.values(owners));
   const slugs = list(sites.map((s) => s.slug));
   const statements = [
+    `DELETE FROM notification_deliveries WHERE notification_id IN (SELECT id FROM notifications WHERE site_id IN (SELECT id FROM sites WHERE slug IN (${slugs}) OR owner_id IN (SELECT id FROM users WHERE email IN (${emails}))));`,
+    `DELETE FROM notifications WHERE site_id IN (SELECT id FROM sites WHERE slug IN (${slugs}) OR owner_id IN (SELECT id FROM users WHERE email IN (${emails})));`,
     `DELETE FROM subscriptions WHERE site_id IN (SELECT id FROM sites WHERE slug IN (${slugs}) OR owner_id IN (SELECT id FROM users WHERE email IN (${emails})));`,
     `DELETE FROM sites WHERE slug IN (${slugs}) OR owner_id IN (SELECT id FROM users WHERE email IN (${emails}));`,
     `DELETE FROM users WHERE email IN (${emails});`,

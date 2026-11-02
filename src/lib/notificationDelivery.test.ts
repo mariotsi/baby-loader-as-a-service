@@ -2,18 +2,23 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { insertTestUser, startTestDb } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
+import type { DeviceInfo } from './deviceInfo.ts';
 import type { Lang } from './i18n.ts';
 import {
   deliverNotification,
+  deliverySummary,
+  finishNotification,
   type PushOutcome,
   type PushService,
   type PushTarget,
   parseNotification,
+  unfinishedBirth,
 } from './notificationDelivery.ts';
+import { listNotifications } from './notificationLog.ts';
 import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
 import { createSite, saveSiteSettings } from './site.ts';
 import { defaultSiteSettings, parseNewSite, parseSiteSettings, type SiteSettingsInput } from './siteSettings.ts';
-import { countSubscriptionsBySite, upsertSubscription } from './subscription.ts';
+import { countSubscriptionsBySite, deleteSubscription, upsertSubscription } from './subscription.ts';
 
 let stopDb: () => Promise<void>;
 let token: string;
@@ -45,13 +50,13 @@ async function ownedSite(slug: string, settings: Partial<SiteSettingsInput> = {}
   return updated;
 }
 
-async function subscribe(owned: OwnedSite, endpoint: string, lang: Lang | null = null) {
+async function subscribe(owned: OwnedSite, endpoint: string, lang: Lang | null = null, device?: string) {
   await upsertSubscription({
     siteId: owned.site.id,
     endpoint,
     keys: { p256dh: 'p256dh', auth: 'auth' },
     lang,
-    deviceInfo: null,
+    deviceInfo: device ? ({ label: device } as DeviceInfo) : null,
     geo: null,
   });
 }
@@ -210,4 +215,176 @@ test('sends at most 20 at a time', async () => {
 
   assert.deepEqual(result, { sent: 45, removed: 0, total: 45 });
   assert.equal(push.maxInFlight(), 20);
+});
+
+test('a sent Notification is logged with a Delivery per Subscription', async () => {
+  const owned = await ownedSite('log-site');
+  await subscribe(owned, 'https://push.test/log/fine', null, 'iPhone, Safari');
+  await subscribe(owned, 'https://push.test/log/failed');
+  const push = fakePush({ 'https://push.test/log/failed': 'failed' });
+
+  await deliverNotification(owned, valid({ en: { title: 'News', body: 'Hi' } }), push.service);
+
+  const [notification] = await listNotifications(owned.site.id);
+  assert.equal(notification.kind, 'general');
+  assert.deepEqual(notification.messages, { en: { title: 'News', body: 'Hi' } });
+  assert.deepEqual(notification.deliveries, [
+    { deviceLabel: 'iPhone, Safari', status: 'delivered' },
+    { deviceLabel: null, status: 'failed' },
+  ]);
+  assert.deepEqual(deliverySummary(notification, owned.site), { sent: 1, removed: 0, total: 2, finishable: true });
+});
+
+test('finishing sends only what is outstanding, with the stored text', async () => {
+  const owned = await ownedSite('finish-site');
+  await subscribe(owned, 'https://push.test/finish/fine');
+  await subscribe(owned, 'https://push.test/finish/failed');
+  await deliverNotification(
+    owned,
+    valid({ en: { body: 'Hi' } }),
+    fakePush({ 'https://push.test/finish/failed': 'failed' }).service
+  );
+  // Recipients are fixed when the Notification is sent.
+  await subscribe(owned, 'https://push.test/finish/later');
+  const [{ id }] = await listNotifications(owned.site.id);
+  const push = fakePush();
+
+  const result = await finishNotification(owned, id, push.service);
+
+  assert.deepEqual(result, { sent: 2, removed: 0, total: 2 });
+  assert.deepEqual(
+    push.sent.map((s) => [s.endpoint, s.payload.body]),
+    [['https://push.test/finish/failed', 'Hi']]
+  );
+  const [finished] = await listNotifications(owned.site.id);
+  assert.equal(deliverySummary(finished, owned.site).finishable, false);
+  assert.equal(await finishNotification(owned, id, push.service), null);
+});
+
+test('a Delivery stays with its Notification after the Subscription is gone', async () => {
+  const owned = await ownedSite('gone-site');
+  await subscribe(owned, 'https://push.test/keep/gone', null, 'Pixel, Chrome');
+  await subscribe(owned, 'https://push.test/keep/fine', null, 'iPhone, Safari');
+  await deliverNotification(
+    owned,
+    valid({ en: { body: 'Hi' } }),
+    fakePush({ 'https://push.test/keep/gone': 'gone' }).service
+  );
+
+  await deleteSubscription(owned.site.id, 'https://push.test/keep/fine');
+
+  const [notification] = await listNotifications(owned.site.id);
+  assert.deepEqual(notification.deliveries, [
+    { deviceLabel: 'Pixel, Chrome', status: 'gone' },
+    { deviceLabel: 'iPhone, Safari', status: 'delivered' },
+  ]);
+  assert.deepEqual(deliverySummary(notification, owned.site), { sent: 1, removed: 1, total: 2, finishable: false });
+});
+
+test('finishing marks a Delivery gone when its Subscription no longer exists', async () => {
+  const owned = await ownedSite('lost-site');
+  await subscribe(owned, 'https://push.test/lost');
+  await deliverNotification(
+    owned,
+    valid({ en: { body: 'Hi' } }),
+    fakePush({ 'https://push.test/lost': 'failed' }).service
+  );
+  await deleteSubscription(owned.site.id, 'https://push.test/lost');
+  const [{ id }] = await listNotifications(owned.site.id);
+  const push = fakePush();
+
+  assert.deepEqual(await finishNotification(owned, id, push.service), { sent: 0, removed: 1, total: 1 });
+  assert.equal(push.sent.length, 0);
+});
+
+test('a send that stops leaves its Deliveries to finish', async () => {
+  const owned = await ownedSite('stopped-site');
+  for (let i = 0; i < 25; i += 1) {
+    await subscribe(owned, `https://push.test/stopped/${i}`);
+  }
+  let sends = 0;
+  const stopping: PushService = {
+    send() {
+      sends += 1;
+      return sends > 20 ? Promise.reject(new Error('the Worker stopped')) : Promise.resolve('delivered');
+    },
+  };
+
+  await assert.rejects(deliverNotification(owned, valid({ en: { body: 'Hi' } }), stopping));
+
+  const [notification] = await listNotifications(owned.site.id);
+  assert.deepEqual(deliverySummary(notification, owned.site), { sent: 20, removed: 0, total: 25, finishable: true });
+  assert.deepEqual(await finishNotification(owned, notification.id, fakePush().service), {
+    sent: 25,
+    removed: 0,
+    total: 25,
+  });
+});
+
+test('a push endpoint that never answers fails without holding up the rest', async () => {
+  const owned = await ownedSite('hung-site');
+  await subscribe(owned, 'https://push.test/hung');
+  await subscribe(owned, 'https://push.test/quick');
+  const hanging: PushService = {
+    send: (target) => (target.endpoint.endsWith('hung') ? new Promise(() => {}) : Promise.resolve('delivered')),
+  };
+
+  const result = await deliverNotification(owned, valid({ en: { body: 'Hi' } }), hanging, { sendTimeoutMs: 10 });
+
+  assert.deepEqual(result, { sent: 1, removed: 0, total: 2 });
+});
+
+test("a Birth notification can't be finished while the Site is Waiting", async () => {
+  const owned = await ownedSite('back-site');
+  await subscribe(owned, 'https://push.test/back');
+  await deliverNotification(
+    owned,
+    valid({ en: { body: 'She is here' } }),
+    fakePush({ 'https://push.test/back': 'failed' }).service,
+    {
+      kind: 'birth',
+    }
+  );
+  const [notification] = await listNotifications(owned.site.id);
+
+  assert.equal(notification.kind, 'birth');
+  assert.equal(deliverySummary(notification, owned.site).finishable, false);
+  assert.equal(await finishNotification(owned, notification.id, fakePush().service), null);
+  assert.deepEqual(unfinishedBirth([notification], owned.site), null);
+});
+
+test('an unfinished Birth notification is found once the Site is Born', async () => {
+  const owned = await ownedSite('born-log-site', {
+    sex: 'female',
+    birth: {
+      born: true,
+      details: { datetime: '2026-01-15T08:30:00.000Z', weightGrams: null, lengthCm: null, message: {} },
+    },
+  });
+  await subscribe(owned, 'https://push.test/born-log');
+  await deliverNotification(
+    owned,
+    valid({ en: { body: 'She is here' } }),
+    fakePush({ 'https://push.test/born-log': 'failed' }).service,
+    {
+      kind: 'birth',
+    }
+  );
+  const logged = await listNotifications(owned.site.id);
+
+  assert.equal(unfinishedBirth(logged, owned.site)?.id, logged[0].id);
+});
+
+test("another Site's Notification can't be finished", async () => {
+  const owned = await ownedSite('owner-site');
+  const other = await ownedSite('other-site');
+  await subscribe(other, 'https://push.test/other');
+  await deliverNotification(
+    other,
+    valid({ en: { body: 'Hi' } }),
+    fakePush({ 'https://push.test/other': 'failed' }).service
+  );
+  const [{ id }] = await listNotifications(other.site.id);
+
+  assert.equal(await finishNotification(owned, id, fakePush().service), null);
 });

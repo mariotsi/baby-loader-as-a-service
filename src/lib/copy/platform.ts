@@ -130,7 +130,10 @@ const en = {
     pageIsAt: 'Your page is at',
     addressStays: 'The address stays the same once the Site exists.',
     subscribers: 'Subscribers',
+    notifications: 'Notifications',
     sendNotification: 'Send notification',
+    unfinishedBirth: "Your birth notification hasn't reached everyone yet.",
+    finishIt: 'Finish sending',
   },
 
   subscriptions: {
@@ -139,6 +142,23 @@ const en = {
     unknownLocation: 'Location unknown',
     subscribedOn: (when: string) => `Subscribed ${when}`,
     nobody: 'Nobody yet. Share your page, and each device that turns on notifications shows up here.',
+  },
+
+  notifications: {
+    title: 'Notifications',
+    lead: (name: string) => `Everything sent from ${name}'s page.`,
+    nobody: 'Nothing sent yet. Each notification you send shows up here.',
+    birth: 'Birth',
+    sentOn: (when: string) => `Sent ${when}`,
+    devices: 'Devices',
+    status: {
+      pending: 'Not sent yet',
+      delivered: 'Delivered',
+      failed: 'Failed',
+      gone: 'No longer subscribed',
+    },
+    finish: 'Finish sending',
+    finishing: 'Sending…',
   },
 
   send: {
@@ -404,7 +424,10 @@ const it: PlatformCopy = {
     pageIsAt: 'La tua pagina è su',
     addressStays: 'L’indirizzo non cambia più dopo la creazione del sito.',
     subscribers: 'Iscritti',
+    notifications: 'Notifiche',
     sendNotification: 'Invia una notifica',
+    unfinishedBirth: 'La notifica della nascita non è ancora arrivata a tutti.',
+    finishIt: 'Completa l’invio',
   },
 
   subscriptions: {
@@ -413,6 +436,23 @@ const it: PlatformCopy = {
     unknownLocation: 'Posizione sconosciuta',
     subscribedOn: (when) => `Iscritto il ${when}`,
     nobody: 'Ancora nessuno. Condividi la tua pagina: ogni dispositivo che attiva le notifiche compare qui.',
+  },
+
+  notifications: {
+    title: 'Notifiche',
+    lead: (name) => `Tutto ciò che è partito dalla pagina di ${name}.`,
+    nobody: 'Ancora niente. Ogni notifica che invii compare qui.',
+    birth: 'Nascita',
+    sentOn: (when) => `Inviata il ${when}`,
+    devices: 'Dispositivi',
+    status: {
+      pending: 'Non ancora inviata',
+      delivered: 'Consegnata',
+      failed: 'Non riuscita',
+      gone: 'Non più iscritto',
+    },
+    finish: 'Completa l’invio',
+    finishing: 'Invio…',
   },
 
   send: {

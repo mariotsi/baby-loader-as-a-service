@@ -31,6 +31,14 @@ test('a Visitor subscribes and the Owner sends them a Notification', async ({
   // the one Subscription is what this checks.
   await expect(owner.getByText(/^Sent to 0 of 1 subscriber\.$/)).toBeVisible();
 
+  await owner.goto(`/dashboard/${slug}/notifications`);
+  const logged = owner.getByRole('listitem').filter({ hasText: 'Any day now!' });
+  await expect(logged.getByText('Sent to 0 of 1 subscriber.')).toBeVisible();
+  await logged.getByText('Devices').click();
+  await expect(logged.getByText('Failed')).toBeVisible();
+  await logged.getByRole('button', { name: 'Finish sending' }).click();
+  await expect(logged.getByRole('button', { name: 'Finish sending' })).toBeEnabled();
+
   await page.getByRole('button', { name: 'Turn them off' }).click();
   const confirmation = page.getByRole('dialog');
   await expect(confirmation.getByRole('button', { name: 'Keep notifications on' })).toBeFocused();

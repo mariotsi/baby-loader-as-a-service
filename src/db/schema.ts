@@ -3,6 +3,7 @@ import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqli
 import type { DeviceInfo } from '../lib/deviceInfo.ts';
 import type { GeoLocation } from '../lib/geoip.ts';
 import type { Lang } from '../lib/i18n.ts';
+import type { DeliveryStatus, NotificationKind, NotificationMessages } from '../lib/notificationLog.ts';
 import type { SiteSettings } from '../lib/siteSettings.ts';
 
 /**
@@ -60,5 +61,39 @@ export const subscriptions = sqliteTable(
     uniqueIndex('subscriptions_site_endpoint').on(table.siteId, table.endpoint),
     index('subscriptions_site_created').on(table.siteId, table.createdAt),
     index('subscriptions_endpoint').on(table.endpoint),
+  ]
+);
+
+export const notifications = sqliteTable(
+  'notifications',
+  {
+    id: text('id').primaryKey(),
+    siteId: text('site_id')
+      .notNull()
+      .references(() => sites.id),
+    kind: text('kind').$type<NotificationKind>().notNull(),
+    messages: text('messages', { mode: 'json' }).$type<NotificationMessages>().notNull(),
+    createdAt: text('created_at').notNull(),
+  },
+  (table) => [index('notifications_site_created').on(table.siteId, table.createdAt)]
+);
+
+/** Keyed by a plain row number: a Delivery's id never leaves the database. */
+export const notificationDeliveries = sqliteTable(
+  'notification_deliveries',
+  {
+    id: integer('id').primaryKey({ autoIncrement: true }),
+    notificationId: text('notification_id')
+      .notNull()
+      .references(() => notifications.id),
+    /** Null once the Subscription is gone; the Delivery stays with its Notification. */
+    subscriptionId: text('subscription_id').references(() => subscriptions.id, { onDelete: 'set null' }),
+    deviceLabel: text('device_label'),
+    status: text('status').$type<DeliveryStatus>().notNull(),
+    updatedAt: text('updated_at').notNull(),
+  },
+  (table) => [
+    index('notification_deliveries_notification_status').on(table.notificationId, table.status),
+    index('notification_deliveries_subscription').on(table.subscriptionId),
   ]
 );

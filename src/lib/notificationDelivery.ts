@@ -2,16 +2,28 @@ import { siteAddressPath } from './address.ts';
 import { birthMediaUrl } from './birthMedia.ts';
 import { addressEnv, deploymentEnv } from './env.ts';
 import { fallbackLang, type Lang } from './i18n.ts';
+import {
+  type DeliveryStatus,
+  findNotification,
+  type LoggedNotification,
+  logNotification,
+  type NotificationKind,
+  type NotificationMessages,
+  type NotificationText,
+  outstandingDeliveries,
+  recordDeliveries,
+} from './notificationLog.ts';
 import type { OwnedSite } from './ownerAccess.ts';
 import type { Site } from './site.ts';
 import { siteIconUrl } from './siteMeta.ts';
 import { defaultNotificationTitle, type ParseResult, type SiteSettingsError } from './siteSettings.ts';
-import { deleteSubscriptionsByEndpoint, listSubscriptionsBySite } from './subscription.ts';
+import { deleteSubscriptionsByEndpoint } from './subscription.ts';
 
 /**
- * Sends a Notification to every Subscription of one Site: builds the payload
- * the service worker (public/sw.js) shows, picks each Subscription's
- * language, sends in batches, and forgets endpoints the push service reports
+ * Sends a Notification to every Subscription of one Site: logs it (see
+ * notificationLog.ts), builds the payload the service worker (public/sw.js)
+ * shows, picks each Subscription's language, sends in batches, records what
+ * became of each Delivery, and forgets endpoints the push service reports
  * gone. The push service sits behind a port: web-push in production
  * (webpush.ts), a recording fake in tests.
  */
@@ -24,22 +36,27 @@ export type PushService = {
   send(target: PushTarget, payload: string): Promise<PushOutcome>;
 };
 
-export type NotificationText = { title?: string; body: string };
-
 declare const valid: unique symbol;
 
 /** A Notification that passed every rule. Only parseNotification produces one. */
 export type ValidNotification = {
-  readonly messages: Partial<Record<Lang, NotificationText>>;
+  readonly messages: NotificationMessages;
   readonly [valid]: true;
 };
 
 export type DeliveryResult = { sent: number; removed: number; total: number };
 
+export type DeliveryOptions = {
+  kind?: NotificationKind;
+  /** How long one send may take before it counts as failed. */
+  sendTimeoutMs?: number;
+};
+
 const TITLE_MAX = 100;
 const BODY_MAX = 1000;
 /** Sends in flight at once: enough for a fast send, few enough to stay inside a function's time and the push service's patience. */
 const BATCH_SIZE = 20;
+const SEND_TIMEOUT_MS = 10_000;
 
 /**
  * Parses `{ <lang>: { title?, body } }`, one entry or more among the Site's
@@ -108,31 +125,118 @@ function trimmed(value: unknown, path: string, max: number, errors: SiteSettings
 export async function deliverNotification(
   owned: OwnedSite,
   notification: ValidNotification,
-  push: PushService
+  push: PushService,
+  { kind = 'general', sendTimeoutMs = SEND_TIMEOUT_MS }: DeliveryOptions = {}
 ): Promise<DeliveryResult> {
-  const { site } = owned;
-  const payloadFor = payloads(site, notification);
-  const subscriptions = await listSubscriptionsBySite(site.id);
+  const id = await logNotification(owned.site.id, kind, notification.messages);
+  return sendOutstanding(owned.site, id, notification.messages, push, sendTimeoutMs);
+}
 
-  let sent = 0;
-  const gone = new Set<string>();
-  for (let start = 0; start < subscriptions.length; start += BATCH_SIZE) {
-    const batch = subscriptions.slice(start, start + BATCH_SIZE);
+/** Sends what is outstanding on one of the Site's Notifications; null when there is nothing it may finish. */
+export async function finishNotification(
+  owned: OwnedSite,
+  id: string,
+  push: PushService
+): Promise<DeliveryResult | null> {
+  const notification = await findNotification(owned.site.id, id);
+  if (!notification || !deliverySummary(notification, owned.site).finishable) {
+    return null;
+  }
+  return sendOutstanding(owned.site, id, notification.messages, push, SEND_TIMEOUT_MS);
+}
+
+/**
+ * What the log says of a Notification. A Birth notification is not finished
+ * while the Site is Waiting: it would announce what the page no longer says.
+ */
+export function deliverySummary(
+  { kind, deliveries }: LoggedNotification,
+  site: Pick<Site, 'birth'>
+): DeliveryResult & { finishable: boolean } {
+  const count = (status: DeliveryStatus) => deliveries.filter((delivery) => delivery.status === status).length;
+  const outstanding = count('pending') + count('failed') > 0;
+  return {
+    sent: count('delivered'),
+    removed: count('gone'),
+    total: deliveries.length,
+    finishable: outstanding && (kind !== 'birth' || site.birth.born),
+  };
+}
+
+/** The Birth notification still to finish, the newest if there were several. */
+export function unfinishedBirth(
+  notifications: LoggedNotification[],
+  site: Pick<Site, 'birth'>
+): LoggedNotification | null {
+  return (
+    notifications.find(
+      (notification) => notification.kind === 'birth' && deliverySummary(notification, site).finishable
+    ) ?? null
+  );
+}
+
+async function sendOutstanding(
+  site: Site,
+  id: string,
+  messages: NotificationMessages,
+  push: PushService,
+  sendTimeoutMs: number
+): Promise<DeliveryResult> {
+  const payloadFor = payloads(site, messages);
+  const outstanding = await outstandingDeliveries(id);
+  const lost = outstanding.filter((delivery) => !delivery.subscription).map((delivery) => delivery.id);
+  if (lost.length > 0) {
+    await recordInBatches(lost);
+  }
+  const reachable = outstanding.flatMap(({ id: deliveryId, subscription }) =>
+    subscription ? [{ deliveryId, subscription }] : []
+  );
+
+  const goneEndpoints = new Set<string>();
+  for (let start = 0; start < reachable.length; start += BATCH_SIZE) {
+    const batch = reachable.slice(start, start + BATCH_SIZE);
     const outcomes = await Promise.all(
-      batch.map((s) => push.send({ endpoint: s.endpoint, keys: s.keys }, payloadFor(s.lang ?? null)))
+      batch.map(({ subscription: s }) =>
+        withinTime(push.send({ endpoint: s.endpoint, keys: s.keys }, payloadFor(s.lang ?? null)), sendTimeoutMs)
+      )
     );
+    const recorded = new Map<DeliveryStatus, number[]>();
     outcomes.forEach((outcome, i) => {
-      if (outcome === 'delivered') {
-        sent += 1;
-      } else if (outcome === 'gone') {
-        gone.add(batch[i].endpoint);
+      recorded.set(outcome, [...(recorded.get(outcome) ?? []), batch[i].deliveryId]);
+      if (outcome === 'gone') {
+        goneEndpoints.add(batch[i].subscription.endpoint);
       }
     });
+    await recordDeliveries(recorded);
   }
-  for (const endpoint of gone) {
+  for (const endpoint of goneEndpoints) {
     await deleteSubscriptionsByEndpoint(endpoint);
   }
-  return { sent, removed: gone.size, total: subscriptions.length };
+  const logged = await findNotification(site.id, id);
+  if (!logged) {
+    throw new Error(`Notification ${id} left the log while sending`);
+  }
+  const { sent, removed, total } = deliverySummary(logged, site);
+  return { sent, removed, total };
+}
+
+async function recordInBatches(ids: number[]): Promise<void> {
+  for (let start = 0; start < ids.length; start += BATCH_SIZE) {
+    await recordDeliveries(new Map([['gone', ids.slice(start, start + BATCH_SIZE)]]));
+  }
+}
+
+/** Waits for one send, but no longer than `ms`: a batch goes at the pace of its slowest endpoint. */
+async function withinTime(send: Promise<PushOutcome>, ms: number): Promise<PushOutcome> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const late = new Promise<PushOutcome>((resolve) => {
+    timer = setTimeout(() => resolve('failed'), ms);
+  });
+  try {
+    return await Promise.race([send, late]);
+  } finally {
+    clearTimeout(timer);
+  }
 }
 
 /**
@@ -140,8 +244,8 @@ export async function deliverNotification(
  * language's text, else the text in the Site's fallback Language (see
  * fallbackLang), else any text sent.
  */
-function payloads(site: Site, notification: ValidNotification): (lang: Lang | null) => string {
-  const texts = notification.messages;
+function payloads(site: Site, messages: NotificationMessages): (lang: Lang | null) => string {
+  const texts = messages;
   const fallback = texts[fallbackLang(site.languages)] ?? Object.values(texts)[0];
   const built = new Map<Lang | null, string>();
   const address = siteAddressPath(site.slug, addressEnv());

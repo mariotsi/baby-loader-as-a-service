@@ -3,6 +3,7 @@ import { deliverNotification, parseNotification } from '@/lib/notificationDelive
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
 import { routeError } from '@/lib/routeError';
 import { countSubscriptionsBySite } from '@/lib/subscription';
+import { surviveDisconnect } from '@/lib/surviveDisconnect';
 import { webPushService } from '@/lib/webpush';
 
 export async function GET(req: NextRequest) {
@@ -15,7 +16,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ count });
 }
 
-/** Sends `{ slug, messages: { <lang>: { title?, body } } }` to every Subscription of the Site. */
+/** Sends `{ slug, messages: { <lang>: { title?, body } }, kind? }` to every Subscription of the Site. */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const slug = typeof body?.slug === 'string' ? body.slug : '';
@@ -32,5 +33,6 @@ export async function POST(req: NextRequest) {
   if (!parsed.ok) {
     return NextResponse.json({ errors: parsed.errors }, { status: 400 });
   }
-  return NextResponse.json(await deliverNotification(access.owned, parsed.value, push));
+  const kind = body?.kind === 'birth' ? 'birth' : 'general';
+  return NextResponse.json(await surviveDisconnect(deliverNotification(access.owned, parsed.value, push, { kind })));
 }

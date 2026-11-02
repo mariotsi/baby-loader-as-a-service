@@ -2,11 +2,14 @@ import { SiteEditor } from '@/components/dashboard/SiteEditor';
 import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
+import { StatusMessage } from '@/components/ui/StatusMessage';
 import { siteAddress } from '@/lib/address';
 import { mediaFromPageOrigin } from '@/lib/birthMedia';
 import { platformCopy } from '@/lib/copy/platform';
 import { addressEnv, deploymentEnv } from '@/lib/env';
 import { platformLang } from '@/lib/i18nNext';
+import { unfinishedBirth } from '@/lib/notificationDelivery';
+import { listNotifications } from '@/lib/notificationLog';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { toSiteDTO } from '@/lib/site';
 import { FONTS, googleFontsHref } from '@/lib/theme';
@@ -18,6 +21,7 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
   const { site } = await pageOwnedSite(slug);
   const address = siteAddress(site.slug, addressEnv());
   const t = platformCopy[await platformLang()].dashboard;
+  const birthToFinish = unfinishedBirth(await listNotifications(site.id), site);
 
   return (
     <PageShell
@@ -47,11 +51,19 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
           <ButtonLink href={`/dashboard/${site.slug}/subscriptions`} size="phoneSm">
             {t.subscribers}
           </ButtonLink>
+          <ButtonLink href={`/dashboard/${site.slug}/notifications`} size="phoneSm">
+            {t.notifications}
+          </ButtonLink>
           <ButtonLink href={`/dashboard/${site.slug}/send`} icon="bell" size="phoneSm">
             {t.sendNotification}
           </ButtonLink>
         </Stack>
       </div>
+      {birthToFinish ? (
+        <StatusMessage tone="info" fullWidth className={styles.notice}>
+          {t.unfinishedBirth} <a href={`/dashboard/${site.slug}/notifications`}>{t.finishIt}</a>
+        </StatusMessage>
+      ) : null}
       <SiteEditor
         mediaPreviewSlug={mediaFromPageOrigin(deploymentEnv().appEnv) ? site.slug : undefined}
         site={toSiteDTO(site)}
