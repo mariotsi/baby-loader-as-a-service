@@ -6,12 +6,13 @@ import { LangProvider } from '@/components/LangProvider';
 import { platformCopy } from '@/lib/copy/platform';
 import { addressEnv } from '@/lib/env';
 import { platformLang } from '@/lib/i18nNext';
+import { platformShareMeta } from '@/lib/platformShare';
 import { googleFontsHref, PLATFORM_FONT, platformStyle, rootTokenCss } from '@/lib/theme';
 
 /**
- * The Platform's name and how its links look when shared. The icons and Open
- * Graph images are files beside the routes (`icon.svg`, `apple-icon.png`,
- * `opengraph-image.png`, and the Dashboard's own under `dashboard/`), which
+ * The Platform's name and how its links look when shared, in the language of
+ * whoever asks (see platformShare.ts; the Dashboard has its own image). The
+ * icons are files beside the routes (`icon.svg`, `apple-icon.png`), which
  * Next.js turns into the tags. `favicon.ico` sits in `public/`, which browsers
  * ask for on their own: in `app/`, Next.js would link it from every page,
  * a Public page with its Site's emoji icon included. `metadataBase`
@@ -21,7 +22,8 @@ import { googleFontsHref, PLATFORM_FONT, platformStyle, rootTokenCss } from '@/l
  */
 export async function generateMetadata(): Promise<Metadata> {
   const { protocol, rootDomain } = addressEnv();
-  const t = platformCopy[await platformLang()].meta;
+  const lang = await platformLang();
+  const t = platformCopy[lang].meta;
   return {
     metadataBase: new URL(`${protocol}://${rootDomain}`),
     title: { default: t.title, template: '%s · Loading Baby' },
@@ -29,8 +31,7 @@ export async function generateMetadata(): Promise<Metadata> {
     applicationName: 'Loading Baby',
     // A saved Platform page opens in Safari, as a bookmark; a Public page overrides this to open full screen.
     appleWebApp: { title: 'Loading Baby', capable: false },
-    openGraph: { siteName: 'Loading Baby', type: 'website', description: t.description },
-    twitter: { card: 'summary_large_image' },
+    ...platformShareMeta('marketing', lang),
   };
 }
 

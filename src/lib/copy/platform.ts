@@ -13,6 +13,11 @@ const en = {
   meta: {
     title: 'Loading Baby: for the days before the big day',
     description: 'Create a customizable countdown & announcement page for your baby, in minutes.',
+    imageAlt: {
+      marketing: 'Loading Baby: a sleeping baby inside a loading ring, and the tagline For the days before the big day',
+      dashboard:
+        'Loading Baby Dashboard: a sleeping baby inside a loading ring, and Your page, your updates, everyone waiting with you',
+    },
   },
 
   marketing: {
@@ -283,6 +288,12 @@ const it: PlatformCopy = {
     title: 'Loading Baby: per i giorni prima del grande giorno',
     description:
       'Crea in pochi minuti una pagina personalizzata con il conto alla rovescia e l’annuncio della nascita del tuo bambino.',
+    imageAlt: {
+      marketing:
+        'Loading Baby: un bambino addormentato dentro un anello di caricamento, e la frase Per i giorni prima del grande giorno',
+      dashboard:
+        'Loading Baby Dashboard: un bambino addormentato dentro un anello di caricamento, e la frase La tua pagina, i tuoi aggiornamenti, chi aspetta con te',
+    },
   },
 
   marketing: {
