@@ -4,13 +4,16 @@ import type { BirthMedia } from './siteSettings.ts';
 export type BirthMediaKind = 'photo' | 'video';
 
 /**
- * Whether media is served from the page's own origin. On staging and its
- * Previews the media domain sits behind Cloudflare Access too, and a browser
- * signed in to the page is not always signed in to it, so an image from it
- * breaks; the page's origin serves the same file from the same bucket.
+ * Whether media is served from the page's own origin. A Preview lives on
+ * `workers.dev`, another site than its media domain, which sits behind
+ * Cloudflare Access: the browser does not send the Access cookie to it from
+ * there, so an image from it breaks; the page's origin serves the same file
+ * from the same bucket. Staging and its media domain share one Access
+ * application that sets the cookie on both at sign-in, so staging uses the
+ * media domain like production.
  */
 export function mediaFromPageOrigin(appEnv: AppEnv): boolean {
-  return appEnv === 'staging' || appEnv === 'preview';
+  return appEnv === 'preview';
 }
 
 export function birthMediaUrl(slug: string, kind: BirthMediaKind, media: BirthMedia, appEnv: AppEnv): string {
