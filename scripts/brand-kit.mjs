@@ -16,6 +16,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
 import opentype from 'opentype.js';
+import { LANGS } from '../src/lib/i18n.ts';
+import { PLATFORM_SHARE_PAGES, platformShareImagePath } from '../src/lib/platformShare.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const OUT = join(ROOT, 'brand');
@@ -26,8 +28,9 @@ const APP_COPIES = [
   ['public/favicon.ico', 'Favicon/favicon.ico'],
   ['src/app/icon.svg', 'Favicon/icon.svg'],
   ['src/app/apple-icon.png', 'Favicon/apple-touch-icon.png'],
-  ['src/app/opengraph-image.png', 'Social/og-marketing-en.png'],
-  ['src/app/dashboard/opengraph-image.png', 'Social/og-dashboard-en.png'],
+  ...PLATFORM_SHARE_PAGES.flatMap((sharePage) =>
+    LANGS.map((lang) => [`public${platformShareImagePath(sharePage, lang)}`, `Social/og-${sharePage}-${lang}.png`])
+  ),
   ['public/icon-192.png', 'Favicon/icon-192.png'],
   ['public/icon-512.png', 'Favicon/icon-512.png'],
   ['public/icon-maskable-512.png', 'Favicon/icon-maskable-512.png'],
@@ -334,6 +337,7 @@ rmSync(page);
 await browser.close();
 
 for (const [destination, source] of APP_COPIES) {
+  mkdirSync(dirname(join(ROOT, destination)), { recursive: true });
   copyFileSync(join(OUT, source), join(ROOT, destination));
 }
 console.log(`Brand kit written to brand/, and ${APP_COPIES.length} files copied into the app.`);
