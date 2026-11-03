@@ -61,7 +61,8 @@ export function SendNotificationForm({
   const [sending, setSending] = useState(false);
   const [checked, setChecked] = useState(false);
   const [failedSends, setFailedSends] = useState(0);
-  const [result, setResult] = useState<{ ok: boolean; text: string } | null>(null);
+  // `everyone` is a send that reached every subscriber, shown as a success.
+  const [result, setResult] = useState<{ ok: boolean; text: string; everyone?: boolean } | null>(null);
   const formRef = useRef<HTMLFormElement>(null);
 
   useEffect(() => {
@@ -116,7 +117,7 @@ export function SendNotificationForm({
     setSending(false);
     setConfirming(false);
     if (res?.ok) {
-      setResult({ ok: true, text: t.sent(data.sent, data.total) });
+      setResult({ ok: true, text: t.sent(data.sent, data.total), everyone: data.sent === data.total });
       setTitles({});
       setBodies({});
       setChecked(false);
@@ -162,7 +163,8 @@ export function SendNotificationForm({
               <Button variant="primary" type="submit" icon="bell" loading={sending}>
                 {sending ? t.sending : t.submit}
               </Button>
-              <StatusMessage tone="info">{result?.ok ? result.text : null}</StatusMessage>
+              <StatusMessage tone="success">{result?.ok && result.everyone ? result.text : null}</StatusMessage>
+              <StatusMessage tone="info">{result?.ok && !result.everyone ? result.text : null}</StatusMessage>
               <StatusMessage tone="danger">{failure}</StatusMessage>
             </Stack>
             <p className={styles.audience}>
