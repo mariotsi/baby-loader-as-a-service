@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { LANG_COOKIE } from '../src/lib/i18n.ts';
 import { perProjectSlug } from './support/data.ts';
 import { ownerStatePath } from './support/env.ts';
@@ -10,6 +11,15 @@ const TINY_PNG = Buffer.from(
   'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
   'base64'
 );
+
+/** Follows the link to the Subscriptions, unfolding the menu that holds it on a phone. */
+async function goToSubscribers(page: Page) {
+  const more = page.locator('summary', { hasText: 'More' });
+  if (await more.isVisible()) {
+    await more.click();
+  }
+  await page.getByRole('link', { name: 'Subscribers' }).click();
+}
 
 test.describe('Dashboard', () => {
   test('lists the Owner’s Sites with their Addresses', async ({ page }) => {
@@ -313,6 +323,24 @@ test.describe('Dashboard', () => {
     expect(panel.x + panel.width).toBeLessThanOrEqual(viewport.width);
   });
 
+  test('folds the Site’s links into a menu on a phone', async ({ page, project }) => {
+    test.skip(project !== 'iphone', 'The row fits them on a wide screen');
+    await page.goto('/dashboard/e2e-waiting');
+    const notifications = page.getByRole('link', { name: 'Notifications', exact: true });
+    await expect(notifications).toBeHidden();
+
+    const more = page.locator('summary', { hasText: 'More' });
+    await more.click();
+    await expect(notifications).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(notifications).toBeHidden();
+    await expect(more).toBeFocused();
+
+    await more.click();
+    await page.getByRole('heading', { name: 'Baby details' }).click();
+    await expect(notifications).toBeHidden();
+  });
+
   test('asks before leaving with unsaved changes', async ({ page }) => {
     await page.goto('/dashboard/e2e-waiting');
     const name = page.getByLabel(/^Name/);
@@ -320,14 +348,14 @@ test.describe('Dashboard', () => {
 
     await name.fill(`${original} Rose`);
     await expect(page.getByText('Unsaved changes')).toBeVisible();
-    await page.getByRole('link', { name: 'Subscribers' }).click();
+    await goToSubscribers(page);
     const leaving = page.getByRole('dialog', { name: 'Leave without saving?' });
     await expect(leaving.getByRole('button', { name: 'Keep editing' })).toBeFocused();
     await leaving.getByRole('button', { name: 'Keep editing' }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-waiting$/);
     await expect(name).toHaveValue(`${original} Rose`);
 
-    await page.getByRole('link', { name: 'Subscribers' }).click();
+    await goToSubscribers(page);
     await leaving.getByRole('button', { name: 'Leave without saving' }).click();
     await expect(page).toHaveURL(/\/dashboard\/e2e-waiting\/subscriptions$/);
 

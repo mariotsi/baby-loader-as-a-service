@@ -8,7 +8,7 @@ import { VisuallyHidden } from './VisuallyHidden';
 interface ButtonLook {
   /** `primary` is the one main action of a view; `secondary` is the default; `ghost` is for quiet, repeated actions. */
   variant?: 'primary' | 'secondary' | 'ghost' | 'link';
-  /** `phoneSm` is `sm` with no icon below 30rem and `md` above, for two actions that must share a phone's line. */
+  /** `phoneSm` is `sm` below 30rem and `md` above, for actions that must share a phone's line. */
   size?: 'md' | 'sm' | 'phoneSm';
   icon?: IconName;
   /** `end` puts the icon after the label, for actions that move forward or leave the page. */
@@ -23,7 +23,7 @@ interface ButtonLook {
   labelHidden?: boolean;
 }
 
-function lookClassName(
+export function lookClassName(
   { variant = 'secondary', size = 'md', fullWidth, labelHidden, inline }: ButtonLook,
   className?: string
 ): string {

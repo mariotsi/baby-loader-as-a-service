@@ -50,6 +50,51 @@ export const ConfirmWhileWaiting: Story = {
   },
 };
 
+/** Answers the send with `sent` of 12 reached, and passes every other request through. */
+function answerSend(sent: number) {
+  return () => {
+    const fetch = window.fetch;
+    window.fetch = (input, init) =>
+      String(input instanceof Request ? input.url : input).includes('/api/send-notification')
+        ? Promise.resolve(Response.json({ sent, total: 12 }))
+        : fetch(input, init);
+    return () => {
+      window.fetch = fetch;
+    };
+  };
+}
+
+async function sendBoth(canvasElement: HTMLElement) {
+  const canvas = within(canvasElement);
+  for (const lang of ['Italian', 'English']) {
+    const message = within(canvas.getByRole('group', { name: /^Message/ }));
+    await userEvent.type(message.getByRole('textbox', { name: lang }), 'Manca pochissimo!');
+  }
+  await userEvent.click(canvas.getByRole('button', { name: 'Send notification' }));
+  const dialog = within(within(canvasElement.ownerDocument.body).getByRole('dialog'));
+  await userEvent.click(dialog.getByRole('button', { name: 'Send notification' }));
+}
+
+/** Reaching every subscriber is a success. */
+export const SentToEveryone: Story = {
+  beforeEach: answerSend(12),
+  play: async ({ canvasElement }) => {
+    await sendBoth(canvasElement);
+    const sent = await within(canvasElement).findByText('Sent to 12 of 12 subscribers.');
+    await expect(sent.closest('[class*="success"]')).not.toBeNull();
+  },
+};
+
+/** Missing some subscribers stays information: the Notifications page can finish sending. */
+export const SentToSome: Story = {
+  beforeEach: answerSend(9),
+  play: async ({ canvasElement }) => {
+    await sendBoth(canvasElement);
+    const sent = await within(canvasElement).findByText('Sent to 9 of 12 subscribers.');
+    await expect(sent.closest('[class*="info"]')).not.toBeNull();
+  },
+};
+
 /** A message missing in one Language names it, and nothing is sent. */
 export const MissingMessage: Story = {
   play: async ({ canvasElement }) => {

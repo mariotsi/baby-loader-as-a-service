@@ -16,6 +16,7 @@ import { FilePicker } from '../FilePicker';
 import { FullPageDialog } from '../FullPageDialog';
 import { Input } from '../Input';
 import { LanguagesPicker } from '../LanguagesPicker';
+import { LinksMenu } from '../LinksMenu';
 import { Logo } from '../Logo';
 import { PerLanguageField } from '../PerLanguageField';
 import { PhoneStrip } from '../PhoneStrip';
@@ -256,6 +257,7 @@ export function ComponentSheet({ headingLevel = 2, themeName }: { headingLevel?:
             ]}
             flagUnmet
           />
+          <LinksMenu label="More" links={[{ href: '#subscribers', label: 'Subscribers' }]} />
           <Stack direction="row" gap={2}>
             <Badge tone="highlight" icon="star">
               Recommended

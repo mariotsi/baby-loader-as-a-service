@@ -162,6 +162,10 @@ _Avoid_: Locale, region
 A message an Owner sends to every Subscriber of one Site.
 _Avoid_: Push, alert, update, broadcast
 
+**Delivery**:
+What became of one Notification for one Subscription: waiting to go, delivered, failed, or gone. Delivered means the push service accepted it, not that the device showed it. A Delivery belongs to its Notification and stays with it after the Subscription is gone.
+_Avoid_: Receipt, send, recipient
+
 **Birth notification**:
-The Notification announcing the birth; what a Subscriber opts in to during the Waiting state.
+The Notification announcing the birth; what a Subscriber opts in to during the Waiting state. Announcing again after going back to the Countdown sends it again.
 _Avoid_: Birth alert, arrival push

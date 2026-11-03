@@ -53,3 +53,49 @@
   color: var(--color-text-muted);
   overflow-wrap: anywhere;
 }
+
+/* Each device a Notification went to, folded away until asked for. */
+.deliveries {
+  color: var(--color-text-muted);
+}
+
+.deliveries ul {
+  display: grid;
+  gap: var(--space-2);
+  margin: var(--space-3) 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.deliveries li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: var(--space-2);
+  overflow-wrap: anywhere;
+}
+
+.notice {
+  margin-bottom: var(--space-6);
+}
+
+/* The actions keep to the end of the line, also once they wrap under the title. */
+.actions {
+  margin-inline-start: auto;
+}
+
+/* Past two actions a phone's line runs out: the others fold into a menu until the row fits them. */
+.wideActions {
+  display: none;
+}
+
+@media (min-width: 40rem) {
+  .phoneActions {
+    display: none;
+  }
+
+  .wideActions {
+    display: flex;
+    gap: var(--space-2);
+  }
+}
