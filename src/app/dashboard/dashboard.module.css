@@ -79,6 +79,11 @@
   margin-bottom: var(--space-6);
 }
 
+/* The actions keep to the end of the line, also once they wrap under the title. */
+.actions {
+  margin-inline-start: auto;
+}
+
 /* Past two actions a phone's line runs out: the others fold into a menu until the row fits them. */
 .wideActions {
   display: none;

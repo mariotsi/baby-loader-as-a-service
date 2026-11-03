@@ -50,7 +50,7 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
             {t.addressStays}
           </p>
         </div>
-        <Stack direction="row" gap={2}>
+        <Stack direction="row" gap={2} className={styles.actions}>
           <div className={styles.wideActions}>
             <ButtonLink href={subscriptionsHref} size="phoneSm">
               {t.subscribers}

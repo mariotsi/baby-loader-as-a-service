@@ -78,7 +78,7 @@ export const InAGroup: Story = {
   ),
 };
 
-/** Small with no icon below 30rem, full size above, for two actions that must share a phone's line. */
+/** Small below 30rem, full size above, for actions that must share a phone's line. */
 export const PhoneSmall: Story = {
   args: { size: 'phoneSm', icon: 'bell', children: 'Send notification' },
 };

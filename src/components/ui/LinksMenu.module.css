@@ -10,11 +10,6 @@
   display: none;
 }
 
-/* Button hides a phoneSm icon, and the chevron is what says this one unfolds. */
-.summary .chevron {
-  display: block;
-}
-
 .menu[open] .chevron {
   transform: rotate(180deg);
 }

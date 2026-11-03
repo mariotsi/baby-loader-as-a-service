@@ -43,19 +43,11 @@
   font-size: var(--text-sm);
 }
 
-.phoneSm svg {
-  display: none;
-}
-
 @media (min-width: 30rem) {
   .phoneSm {
     min-height: var(--control-height);
     padding: var(--space-2) var(--space-5);
     font-size: var(--text-md);
-  }
-
-  .phoneSm svg {
-    display: block;
   }
 }
 
