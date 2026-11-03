@@ -114,6 +114,8 @@ const en = {
     noNameYet: 'There’s no name to show yet.',
     showSex: 'Show the sex',
     noSexYet: 'The sex isn’t known yet.',
+    bornNote:
+      'The birth is announced, so your page shows the name and the sex to everyone. These choices apply again if you go back to the Countdown.',
   },
 
   dashboard: {
@@ -218,7 +220,7 @@ const en = {
     editBirth: 'Edit the birth details',
     birthDialogTitle: (name: string, _sex: Sex) => (name ? `Welcome, ${name}` : 'Welcome, little one'),
     birthDialogDescription:
-      'Share the first details. Announcing switches your page to the Birth details, sends a notification to everyone subscribed, and saves your other changes too.',
+      'Share the first details. Announcing switches your page to the Birth details and sends a notification to everyone subscribed. Your other changes stay on the page, for you to save.',
     birthEditTitle: 'Birth details',
     birthDetailsCard: 'The first details',
     identityCard: 'Who is here',
@@ -228,13 +230,14 @@ const en = {
     revealsName:
       'Your page hides the name until now. Announcing shows it to everyone who opens your page, and in the notification.',
     revealsSex: 'Your page hides the sex until now. Announcing shows it to everyone who opens your page.',
-    birthEditDescription: 'Saving updates your page with these details and saves your other changes too.',
+    birthEditDescription:
+      'Saving updates your page with these details. Your other changes stay on the page, for you to save.',
     closeBirthDialog: 'Close without saving',
     cancel: 'Cancel',
     unannounce: 'Back to the Countdown',
     unannounceTitle: 'Go back to the Countdown?',
     unannounceDescription:
-      'Your page hides the Birth details again and the birth photo is removed. Your other changes are saved too.',
+      'Your page hides the Birth details again and the birth photo is removed. The Birth video stays, ready for the day.',
     keepBirthDetails: 'Keep the Birth details',
     announceConfirmTitle: 'Announce the birth now?',
     announceConfirmDescription:
@@ -244,6 +247,10 @@ const en = {
     previewPage: 'Your page on a phone',
     fixElsewhere: 'Something else on this page needs fixing first.',
     birthDatetime: 'Birth date & time',
+    birthDatetimeHint: (zone: string) => `In your page’s time zone, ${zone}.`,
+    birthMilestoneDate: 'Always the day of birth.',
+    changeBirthDay: 'Change the day of birth',
+    reload: 'Reload',
     weight: 'Weight (g)',
     length: 'Length (cm)',
     message: 'Message',
@@ -409,6 +416,8 @@ const it: PlatformCopy = {
     noNameYet: 'Non c’è ancora un nome da mostrare.',
     showSex: 'Mostra il sesso',
     noSexYet: 'Il sesso non è ancora noto.',
+    bornNote:
+      'La nascita è annunciata, quindi la pagina mostra a tutti il nome e il sesso. Queste scelte tornano a valere se torni al conto alla rovescia.',
   },
 
   dashboard: {
@@ -517,7 +526,7 @@ const it: PlatformCopy = {
       return name ? `${welcome}, ${name}` : `${welcome}, ${sex === 'female' ? 'piccola' : 'piccolo'}`;
     },
     birthDialogDescription:
-      'Racconta i primi dettagli. L’annuncio porta la tua pagina ai dettagli della nascita, invia una notifica a tutti gli iscritti e salva anche le altre modifiche.',
+      'Racconta i primi dettagli. L’annuncio porta la tua pagina ai dettagli della nascita e invia una notifica a tutti gli iscritti. Le altre modifiche restano nella pagina, da salvare.',
     birthEditTitle: 'Dettagli della nascita',
     birthDetailsCard: 'I primi dettagli',
     identityCard: 'Chi è arrivato',
@@ -528,13 +537,14 @@ const it: PlatformCopy = {
     revealsName:
       'Finora la tua pagina nasconde il nome. Con l’annuncio lo vede chiunque apra la pagina, anche nella notifica.',
     revealsSex: 'Finora la tua pagina nasconde il sesso. Con l’annuncio lo vede chiunque apra la pagina.',
-    birthEditDescription: 'Salvando aggiorni la pagina con questi dettagli e salvi anche le altre modifiche.',
+    birthEditDescription:
+      'Salvando aggiorni la pagina con questi dettagli. Le altre modifiche restano nella pagina, da salvare.',
     closeBirthDialog: 'Chiudi senza salvare',
     cancel: 'Annulla',
     unannounce: 'Torna al conto alla rovescia',
     unannounceTitle: 'Tornare al conto alla rovescia?',
     unannounceDescription:
-      'La tua pagina nasconde di nuovo i dettagli della nascita e la foto viene rimossa. Vengono salvate anche le altre modifiche.',
+      'La tua pagina nasconde di nuovo i dettagli della nascita e la foto viene rimossa. Il video di benvenuto resta, pronto per il giorno.',
     keepBirthDetails: 'Tieni i dettagli della nascita',
     announceConfirmTitle: 'Annunciare la nascita adesso?',
     announceConfirmDescription:
@@ -544,6 +554,10 @@ const it: PlatformCopy = {
     previewPage: 'La tua pagina su un telefono',
     fixElsewhere: 'Prima c’è qualcos’altro da sistemare in questa pagina.',
     birthDatetime: 'Data e ora di nascita',
+    birthDatetimeHint: (zone) => `Nel fuso orario della pagina, ${zone}.`,
+    birthMilestoneDate: 'È sempre il giorno della nascita.',
+    changeBirthDay: 'Cambia il giorno della nascita',
+    reload: 'Ricarica',
     weight: 'Peso (g)',
     length: 'Lunghezza (cm)',
     message: 'Messaggio',

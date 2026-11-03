@@ -1,11 +1,8 @@
 import { type NextRequest, NextResponse } from 'next/server';
-import type { OwnedSite } from '@/lib/ownerAccess';
+import { saveSettings } from '@/lib/birthChange';
+import { birthWriteDeps, birthWriteResponse } from '@/lib/birthChangeNext';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
-import { routeError } from '@/lib/routeError';
-import { saveSiteSettings, toSiteDTO } from '@/lib/site';
-import type { SiteSettings } from '@/lib/siteSettings';
-import { parseSiteSettings } from '@/lib/siteSettings';
-import { customerMediaPrefix, getStorageProvider } from '@/lib/storage';
+import { toSiteDTO } from '@/lib/site';
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -16,43 +13,13 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
   return NextResponse.json({ site: toSiteDTO(access.owned.site) });
 }
 
-/** Replaces every Site setting; the body is the complete Site settings. */
+/** Replaces every Site setting but the Birth, from `{ updatedAt, settings }`; the Birth has its own route. */
 export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
   const access = await requireOwnedSite(req, slug);
   if ('error' in access) {
     return access.error;
   }
-
-  const parsed = parseSiteSettings(await req.json().catch(() => null));
-  if (!parsed.ok) {
-    return NextResponse.json({ errors: parsed.errors }, { status: 400 });
-  }
-  if (!validBirthMedia(parsed.value, access.owned)) {
-    return routeError(400, { code: 'invalidRequest' });
-  }
-  const saved = await saveSiteSettings(access.owned, parsed.value);
-  if (!saved) {
-    return routeError(404, { code: 'notFound' });
-  }
-  return NextResponse.json({ site: toSiteDTO(saved) });
-}
-
-function validBirthMedia({ birth, birthVideo }: SiteSettings, owned: OwnedSite): boolean {
-  for (const media of [birth.details?.photo, birthVideo]) {
-    if (!media) {
-      continue;
-    }
-    try {
-      if (
-        !media.key.startsWith(customerMediaPrefix(owned)) ||
-        media.url !== getStorageProvider().publicUrl(media.key)
-      ) {
-        return false;
-      }
-    } catch {
-      return false;
-    }
-  }
-  return true;
+  const body = await req.json().catch(() => null);
+  return birthWriteResponse(await saveSettings(access.owned, body, birthWriteDeps()));
 }

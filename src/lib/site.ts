@@ -108,12 +108,33 @@ export async function createSite(owner: AuthenticatedUser, newSite: ValidNewSite
   return { ok: true, site: fromRow(row) };
 }
 
-/** Replaces every Site setting at once. Null when the Site no longer exists. */
-export async function saveSiteSettings(owned: OwnedSite, settings: ValidSiteSettings): Promise<Site | null> {
+/**
+ * Replaces every Site setting at once. With `expectedUpdatedAt`, only while
+ * the Site is still as last read, so a tab that missed a save cannot
+ * overwrite it. Null when the Site no longer exists or has changed since.
+ */
+export async function saveSiteSettings(
+  owned: OwnedSite,
+  settings: ValidSiteSettings,
+  expectedUpdatedAt?: string
+): Promise<Site | null> {
   const [row] = await getDb()
     .update(sites)
-    .set({ settings, updatedAt: new Date().toISOString() })
-    .where(and(eq(sites.id, owned.site.id), eq(sites.ownerId, owned.owner.id)))
+    .set({ settings, updatedAt: laterThan(owned.site.updatedAt) })
+    .where(
+      and(
+        eq(sites.id, owned.site.id),
+        eq(sites.ownerId, owned.owner.id),
+        expectedUpdatedAt === undefined ? undefined : eq(sites.updatedAt, expectedUpdatedAt)
+      )
+    )
     .returning();
   return row ? fromRow(row) : null;
+}
+
+/** Now, or a millisecond after `previous` when the clock has not moved past it: each save gets its own `updatedAt`. */
+function laterThan(previous: string): string {
+  const now = Date.now();
+  const last = Date.parse(previous);
+  return new Date(Number.isNaN(last) || now > last ? now : last + 1).toISOString();
 }

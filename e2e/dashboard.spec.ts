@@ -73,8 +73,11 @@ test.describe('Dashboard', () => {
     await expect(milestone.getByText('Write this Milestone in Italian.')).toBeHidden();
     await page.getByRole('checkbox', { name: 'English' }).uncheck();
     await page.getByLabel('Page name').fill('Elena e Ettore');
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByText('Saved. Your page is up to date.')).toBeVisible();
 
-    // Announcing the birth saves every other change on the page with it.
+    // Announcing saves the Birth, the name and the Sex: other changes on the page stay unsaved.
+    await page.getByLabel('Page name').fill('Not yet');
     await page.getByRole('button', { name: 'Announce the birth' }).click();
     const dialog = page.getByRole('dialog', { name: 'Welcome, Edith Rose' });
     await expect(dialog.getByRole('heading', { name: 'Welcome, Edith Rose' })).toBeFocused();
@@ -95,6 +98,10 @@ test.describe('Dashboard', () => {
     await expect(dialog).toBeHidden();
     await expect(page.getByText(/^Announced\. Notification sent to \d+ of \d+ subscribers?\.$/)).toBeVisible();
     await expect(page.getByRole('button', { name: 'Edit the birth details' })).toBeFocused();
+    await expect(page.getByLabel('Page name')).toHaveValue('Not yet');
+    await expect(page.getByText('Unsaved changes')).toBeVisible();
+    await page.getByLabel('Page name').fill('Elena e Ettore');
+    await expect(page.getByText('Unsaved changes')).toBeHidden();
 
     await page.reload();
     await expect(page.getByLabel('Name', { exact: true })).toHaveValue('Edith Rose');
@@ -106,8 +113,14 @@ test.describe('Dashboard', () => {
     await expect(editing.getByLabel('Weight (g)')).toHaveValue('3100');
     await page.getByRole('button', { name: 'Cancel' }).click();
     await expect(page.getByRole('group', { name: 'Milestone 1' }).getByLabel('Label')).toHaveValue('Si torna a casa');
-    // Announcing added the Birth milestone, in the Site's Language.
-    await expect(page.getByRole('group', { name: 'Milestone 2' }).getByLabel('Label')).toHaveValue('È nata!');
+    // Announcing added the Birth milestone, in the Site's Language, on the day of birth: only the Birth details move it.
+    const birthMilestone = page.getByRole('group', { name: 'Milestone 2' });
+    await expect(birthMilestone.getByLabel('Label')).toHaveValue('È nata!');
+    await expect(birthMilestone.getByLabel('Date')).toHaveValue('2026-01-15');
+    await expect(birthMilestone.getByLabel('Date')).toHaveJSProperty('readOnly', true);
+    // The Born page shows the name and the sex whatever Keep the secret says, so it rests until the Countdown is back.
+    await expect(page.getByLabel('Show the name')).toBeDisabled();
+    await expect(page.getByText(/^The birth is announced, so your page shows the name/)).toBeVisible();
     await expect(page.getByRole('checkbox', { name: 'Italian' })).toBeChecked();
     await expect(page.getByRole('checkbox', { name: 'English' })).not.toBeChecked();
     await expect(page.getByLabel('Page name')).toHaveValue('Elena e Ettore');
@@ -275,7 +288,7 @@ test.describe('Dashboard', () => {
     const answered = new Promise<void>((resolve) => {
       answer = resolve;
     });
-    await page.route('**/api/sites/*', async (route) => {
+    await page.route('**/api/sites/*/birth', async (route) => {
       await answered;
       await route.abort();
     });
@@ -361,6 +374,25 @@ test.describe('Dashboard', () => {
 
     await page.goBack();
     await expect(page.getByText('Unsaved changes')).toBeHidden();
+  });
+
+  test('offers a reload when the page changed in another tab', async ({ page, context, project }) => {
+    const slug = perProjectSlug('e2e-stale', project);
+    await page.goto(`/dashboard/${slug}`);
+    const other = await context.newPage();
+    await other.goto(`/dashboard/${slug}`);
+    const name = `Stella ${Date.now()}`;
+    await other.getByLabel(/^Name/).fill(name);
+    await other.getByRole('button', { name: 'Save changes' }).click();
+    await expect(other.getByText('Saved. Your page is up to date.')).toBeVisible();
+
+    await page.getByLabel(/^Name/).fill('Stella Rose');
+    await page.getByRole('button', { name: 'Save changes' }).click();
+    await expect(page.getByText(/^This page changed in another tab/)).toBeVisible();
+    // Reloading drops the change made here, which the leave guard asks about first.
+    page.once('dialog', (dialog) => dialog.accept());
+    await page.getByRole('button', { name: 'Reload' }).click();
+    await expect(page.getByLabel(/^Name/)).toHaveValue(name);
   });
 
   test('explains a missing birth date and time and a weight in fractions of a gram', async ({ page, project }) => {
