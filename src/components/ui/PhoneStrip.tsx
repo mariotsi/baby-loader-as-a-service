@@ -25,11 +25,14 @@ export function PhoneStrip({ children, showLabel, hideLabel, open, onToggle, con
   const action = open ? hideLabel : showLabel;
   const classes = [styles.strip, open && styles.open, joined && !open && styles.joined].filter(Boolean).join(' ');
   return (
-    <div className={classes}>
-      <span className={styles.label}>{children}</span>
-      <Button variant="ghost" size="sm" onClick={onToggle} aria-expanded={open} aria-controls={controls}>
-        {action}
-      </Button>
-    </div>
+    <>
+      <div className={styles.edge} />
+      <div className={classes}>
+        <span className={styles.label}>{children}</span>
+        <Button variant="ghost" size="sm" onClick={onToggle} aria-expanded={open} aria-controls={controls}>
+          {action}
+        </Button>
+      </div>
+    </>
   );
 }

@@ -14,6 +14,22 @@
   box-shadow: var(--shadow-md);
 }
 
+/*
+ * Safari tints its status bar from what is pinned to the top of the screen, and keeps that color when nothing is
+ * pinned there. This line gives it the page's background until the strip sticks and covers it. Safari reads the color
+ * through the opacity, which is as low as it samples, so the line does not show. It also skips a pseudo-element and a
+ * thinner line.
+ */
+.edge {
+  position: fixed;
+  inset: 0 0 auto;
+  z-index: 1;
+  height: var(--space-2);
+  background: var(--color-bg);
+  opacity: 0.12;
+  pointer-events: none;
+}
+
 .joined {
   box-shadow: none;
 }
@@ -35,7 +51,8 @@
 }
 
 @media (min-width: 48rem) {
-  .strip {
+  .strip,
+  .edge {
     display: none;
   }
 }
