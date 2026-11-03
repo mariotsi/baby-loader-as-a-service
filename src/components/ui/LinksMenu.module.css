@@ -23,7 +23,7 @@
   position: absolute;
   z-index: 4;
   inset-block-start: calc(100% + var(--space-1));
-  inset-inline-start: 0;
+  inset-inline-end: 0;
   display: grid;
   min-width: 100%;
   margin: 0;

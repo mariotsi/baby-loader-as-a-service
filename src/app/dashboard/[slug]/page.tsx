@@ -51,15 +51,6 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
           </p>
         </div>
         <Stack direction="row" gap={2}>
-          <div className={styles.phoneActions}>
-            <LinksMenu
-              label={t.moreActions}
-              links={[
-                { href: subscriptionsHref, label: t.subscribers },
-                { href: notificationsHref, label: t.notifications },
-              ]}
-            />
-          </div>
           <div className={styles.wideActions}>
             <ButtonLink href={subscriptionsHref} size="phoneSm">
               {t.subscribers}
@@ -71,6 +62,15 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
           <ButtonLink href={`/dashboard/${site.slug}/send`} icon="bell" size="phoneSm">
             {t.sendNotification}
           </ButtonLink>
+          <div className={styles.phoneActions}>
+            <LinksMenu
+              label={t.moreActions}
+              links={[
+                { href: subscriptionsHref, label: t.subscribers },
+                { href: notificationsHref, label: t.notifications },
+              ]}
+            />
+          </div>
         </Stack>
       </div>
       {birthToFinish ? (

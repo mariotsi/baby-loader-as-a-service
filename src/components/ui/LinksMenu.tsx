@@ -16,7 +16,8 @@ interface LinksMenuProps {
 
 /**
  * A button that unfolds links to other pages, for actions that don't fit a
- * phone's line. A tap outside it or Escape folds it again.
+ * phone's line. It goes last in its row, and the links unfold under it toward
+ * the row's start. A tap outside it or Escape folds it again.
  */
 export function LinksMenu({ label, links, className }: LinksMenuProps) {
   const menu = useRef<HTMLDetailsElement>(null);

@@ -17,5 +17,5 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-/** Beside a phone's main action, holding the actions that don't fit its line. */
+/** After a phone's main action, holding the actions that don't fit its line. */
 export const Folded: Story = {};
