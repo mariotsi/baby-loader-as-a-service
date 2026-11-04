@@ -1,10 +1,24 @@
-/** What announcing the birth does besides saving it: the Birth milestone and the birth notification. */
+/**
+ * What the Birth does to the rest of the Site settings: the Birth milestone
+ * and the Birth notification. Free of server imports, so the editor and its
+ * previews follow the same rules as the server that saves them.
+ */
+import { TZDate } from '@date-fns/tz';
+import { format, isValid, parseISO } from 'date-fns';
 import { platformCopy } from './copy/platform.ts';
 import type { Lang } from './i18n.ts';
-import type { Milestone, SiteSettings } from './siteSettings.ts';
+import type { Birth, BirthDetails, Milestone, SiteSettings } from './siteSettings.ts';
 
 /** The Birth milestone's emoji, until the Owner picks another. */
 export const BIRTH_MILESTONE_EMOJI = '👶';
+
+/** What the Birth dialog saves: the Birth details, with the name, the Sex and the Birth video beside them. */
+export interface BirthFields {
+  babyName: SiteSettings['babyName'];
+  sex: SiteSettings['sex'];
+  details: BirthDetails;
+  birthVideo: SiteSettings['birthVideo'];
+}
 
 interface BirthChange {
   /** Whether the Site was Born before this change. */
@@ -14,6 +28,30 @@ interface BirthChange {
   date: string;
   languages: readonly Lang[];
   sex: SiteSettings['sex'];
+}
+
+/** The day of birth, yyyy-MM-dd, in the Site's Timezone; null while `datetime` is not a date and time yet. */
+export function birthDay(datetime: string, timezone: string): string | null {
+  const instant = parseISO(datetime);
+  return isValid(instant) ? format(new TZDate(instant, timezone), 'yyyy-MM-dd') : null;
+}
+
+const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
+
+/** A `datetime-local` value, read as the wall clock in `timezone`, as an ISO 8601 instant; '' while it is not one. */
+export function instantIn(local: string, timezone: string): string {
+  const match = /^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})$/.exec(local);
+  if (!match) {
+    return '';
+  }
+  const [year, month, day, hour, minute] = match.slice(1).map(Number);
+  const instant = new TZDate(year, month - 1, day, hour, minute, timezone);
+  return isValid(instant) ? new Date(instant.getTime()).toISOString() : '';
+}
+
+/** An instant as a `datetime-local` value on the wall clock in `timezone`: the opposite of instantIn. */
+export function localIn(instant: Date | string, timezone: string): string {
+  return format(new TZDate(new Date(instant), timezone), LOCAL_DATETIME);
 }
 
 /**
@@ -37,6 +75,49 @@ export function syncBirthMilestone<M extends Milestone>(
   }
   const label = Object.fromEntries(languages.map((lang) => [lang, platformCopy[lang].settings.birthMilestone(sex)]));
   return [...others, create({ emoji: BIRTH_MILESTONE_EMOJI, label, date, kind: 'birth' })];
+}
+
+/**
+ * The Site settings with `fields` as the Birth, or back in the Countdown with
+ * null. The Birth milestone follows; the Privacy settings stay as the Owner
+ * chose them, since the Born state shows the name and the Sex whatever they say.
+ */
+export function withBirth(settings: SiteSettings, fields: BirthFields | null): SiteSettings {
+  if (!fields) {
+    return {
+      ...settings,
+      birth: { born: false, details: null },
+      milestones: settings.milestones.filter((m) => m.kind !== 'birth'),
+    };
+  }
+  const day = birthDay(fields.details.datetime, settings.timezone);
+  return {
+    ...settings,
+    babyName: fields.babyName,
+    sex: fields.sex,
+    birth: { born: true, details: fields.details },
+    birthVideo: fields.birthVideo,
+    milestones:
+      day === null
+        ? settings.milestones
+        : syncBirthMilestone(
+            settings.milestones,
+            { wasBorn: settings.birth.born, born: true, date: day, languages: settings.languages, sex: fields.sex },
+            (m) => m
+          ),
+  };
+}
+
+/**
+ * The Birth milestone in Site settings saved apart from the Birth: its date
+ * is the day of birth in `timezone`, and there is none while Waiting. One the
+ * Owner removed stays removed.
+ */
+export function settledBirthMilestones<M extends Milestone>(milestones: M[], birth: Birth, timezone: string): M[] {
+  const day = birth.born ? birthDay(birth.details.datetime, timezone) : null;
+  return day === null
+    ? milestones.filter((m) => m.kind !== 'birth')
+    : milestones.map((m) => (m.kind === 'birth' ? { ...m, date: day } : m));
 }
 
 /**

@@ -28,6 +28,8 @@ const en = {
     mediaCachePurgeFailed: 'The media was deleted, but its cached copy could not be purged.',
     mediaStorageUnavailable: 'Media storage is unavailable.',
     unknownSite: 'Unknown site.',
+    staleSite:
+      'This page changed in another tab or on another device since you opened it. Reload to see it: what you changed here is lost.',
   } satisfies Record<RouteErrorCode, string | ((max: number) => string)>,
 
   /** A Site settings error in the form's status message: a field's name and what is wrong with it. */
@@ -112,6 +114,8 @@ const it: ErrorsCopy = {
     mediaCachePurgeFailed: 'Il file è stato eliminato, ma la copia nella cache non è stata eliminata.',
     mediaStorageUnavailable: 'Lo spazio per i file non è disponibile.',
     unknownSite: 'Sito sconosciuto.',
+    staleSite:
+      'Questa pagina è cambiata in un’altra scheda o su un altro dispositivo da quando l’hai aperta. Ricarica per vederla: le modifiche fatte qui vanno perse.',
   },
 
   // A colon keeps each problem free of the field's gender: "Data prevista: campo obbligatorio."

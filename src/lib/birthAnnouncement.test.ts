@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { BIRTH_MILESTONE_EMOJI, birthNotificationMessages, syncBirthMilestone } from './birthAnnouncement.ts';
+import {
+  BIRTH_MILESTONE_EMOJI,
+  birthDay,
+  birthNotificationMessages,
+  instantIn,
+  localIn,
+  settledBirthMilestones,
+  syncBirthMilestone,
+} from './birthAnnouncement.ts';
 import type { Milestone } from './siteSettings.ts';
 
 const scan: Milestone = { emoji: '🩺', label: { en: 'First scan' }, date: '2026-08-01' };
@@ -43,4 +51,32 @@ test('the preview of the birth notification reads well before the name is given'
   const messages = birthNotificationMessages({ babyName: '', sex: 'female', languages: ['it', 'en'] }, {});
   assert.equal(messages.it?.title, 'È nata!');
   assert.equal(messages.en?.title, 'The baby is born!');
+});
+
+test('the day of birth is the one in the Site’s Timezone', () => {
+  assert.equal(birthDay('2026-10-25T20:00:00.000Z', 'Pacific/Auckland'), '2026-10-26');
+  assert.equal(birthDay('2026-10-25T20:00:00.000Z', 'America/Los_Angeles'), '2026-10-25');
+  assert.equal(birthDay('', 'Europe/Rome'), null);
+});
+
+test('Site settings saved apart from the Birth keep the Birth milestone on the day of birth, and none while Waiting', () => {
+  const birth: Milestone = { emoji: '🎀', label: { en: 'Our girl' }, date: '2026-01-01', kind: 'birth' };
+  const born = {
+    born: true as const,
+    details: { datetime: '2026-10-25T20:00:00.000Z', weightGrams: null, lengthCm: null, message: {} },
+  };
+  assert.deepEqual(settledBirthMilestones([scan, birth], born, 'Pacific/Auckland'), [
+    scan,
+    { ...birth, date: '2026-10-26' },
+  ]);
+  assert.deepEqual(settledBirthMilestones([scan], born, 'Pacific/Auckland'), [scan]);
+  assert.deepEqual(settledBirthMilestones([scan, birth], { born: false, details: null }, 'Europe/Rome'), [scan]);
+});
+
+test('the birth time field means the wall clock in the Site’s Timezone', () => {
+  assert.equal(instantIn('2026-10-26T09:00', 'Pacific/Auckland'), '2026-10-25T20:00:00.000Z');
+  assert.equal(instantIn('2026-10-25T21:00', 'Europe/Rome'), '2026-10-25T20:00:00.000Z');
+  assert.equal(localIn('2026-10-25T20:00:00.000Z', 'Pacific/Auckland'), '2026-10-26T09:00');
+  assert.equal(instantIn('', 'Europe/Rome'), '');
+  assert.equal(instantIn('2026-10-2', 'Europe/Rome'), '');
 });

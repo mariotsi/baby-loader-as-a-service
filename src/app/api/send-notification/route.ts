@@ -16,7 +16,7 @@ export async function GET(req: NextRequest) {
   return NextResponse.json({ count });
 }
 
-/** Sends `{ slug, messages: { <lang>: { title?, body } }, kind? }` to every Subscription of the Site. */
+/** Sends `{ slug, messages: { <lang>: { title?, body } } }` to every Subscription of the Site. The Birth notification goes out with the Birth (see birthChange.ts). */
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const slug = typeof body?.slug === 'string' ? body.slug : '';
@@ -33,6 +33,5 @@ export async function POST(req: NextRequest) {
   if (!parsed.ok) {
     return NextResponse.json({ errors: parsed.errors }, { status: 400 });
   }
-  const kind = body?.kind === 'birth' ? 'birth' : 'general';
-  return NextResponse.json(await surviveDisconnect(deliverNotification(access.owned, parsed.value, push, { kind })));
+  return NextResponse.json(await surviveDisconnect(deliverNotification(access.owned, parsed.value, push)));
 }

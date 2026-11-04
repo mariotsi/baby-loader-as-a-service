@@ -28,7 +28,7 @@ import styles from './SiteEditor.module.css';
 /** The Birth as the editor holds it: the fields as typed, and the photo picked but maybe not yet uploaded. */
 export interface BirthDraft {
   born: boolean;
-  /** A `datetime-local` value, in the Owner's own time. */
+  /** A `datetime-local` value, on the wall clock in the Site's Timezone. */
   datetime: string;
   weight: string;
   lengthCm: string;
@@ -36,8 +36,11 @@ export interface BirthDraft {
   photo: MediaDraft;
 }
 
-/** How saving the whole page went: the errors are the Site settings', from the browser or the server. */
-export type SaveOutcome = { ok: true } | { ok: false; errors: SiteSettingsError[]; message: string | null };
+/** Why a save did not go through: Site settings errors, from the browser or the server, or a message. `stale` when the Site changed in another tab. */
+export type SaveFailure = { ok: false; errors: SiteSettingsError[]; message: string | null; stale?: boolean };
+
+/** How a save went. */
+export type SaveOutcome = { ok: true } | SaveFailure;
 
 interface BirthDialogProps {
   /** The Birth as it was saved; announcing starts from it with the date and time filled in. */
@@ -50,19 +53,22 @@ interface BirthDialogProps {
   /** What the Privacy settings hide until now, which announcing shows to everyone. */
   hidden: { name: boolean; sex: boolean };
   languages: Lang[];
+  /** The Site's saved Timezone, which the birth's time is on. */
+  timezone: string;
   previewSlug?: string;
-  /** Everything that would stop saving the page with this Birth. */
+  /** Everything that would stop saving this Birth. */
   check: (birth: BirthDraft) => SiteSettingsError[];
   /** The Site settings the previews draw with this Birth, name and Sex given or not, or null while a field is half filled. */
   settingsWith: (birth: BirthDraft) => SiteSettings | null;
   slug: string;
   /** The Site's Address, where the notification comes from. */
   address: string;
-  /** The Birth video as the page around the dialog holds it. */
+  /** The Birth video, the same draft the page around the dialog edits. */
   video: MediaDraft;
+  onVideo: (video: MediaDraft) => void;
   /** What the page shows in place of a birth photo. */
   bornPlaceholderUrl: string;
-  /** Saves the whole page with this Birth, the Owner's other changes included. */
+  /** Saves this Birth with the name, the Sex and the Birth video; the page's other changes stay unsaved. */
   onSave: (birth: BirthDraft) => Promise<SaveOutcome>;
   onClose: () => void;
 }
@@ -70,7 +76,8 @@ interface BirthDialogProps {
 /**
  * The Birth details on a page of their own: announcing the birth, or changing
  * what was announced. Nothing changes until the Owner saves, and saving saves
- * the whole Site settings, so the page and the dialog never disagree.
+ * the Birth with the name, the Sex and the Birth video, which the page around
+ * the dialog shows too.
  */
 export function BirthDialog({
   initial,
@@ -80,12 +87,14 @@ export function BirthDialog({
   onSex,
   hidden,
   languages,
+  timezone,
   previewSlug,
   check,
   settingsWith,
   slug,
   address,
   video,
+  onVideo,
   bornPlaceholderUrl,
   onSave,
   onClose,
@@ -99,6 +108,7 @@ export function BirthDialog({
   const [draft, setDraft] = useState<BirthDraft>(() => ({ ...initial, born: true }));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
+  const [stale, setStale] = useState(false);
   const [failedPaths, setFailedPaths] = useState<string[]>([]);
   const [failedSaves, setFailedSaves] = useState(0);
   const [confirmingUndo, setConfirmingUndo] = useState(false);
@@ -157,6 +167,7 @@ export function BirthDialog({
     setConfirmingUndo(false);
     setConfirmingAnnounce(false);
     setMessage(outcome.message);
+    setStale(outcome.stale === true);
     if (outcome.errors.length > 0) {
       setFailedPaths(outcome.errors.map((error) => error.path));
       setFailedSaves((count) => count + 1);
@@ -189,6 +200,7 @@ export function BirthDialog({
       actions={
         <>
           <StatusMessage tone="danger">{status}</StatusMessage>
+          {stale ? <Button onClick={() => window.location.reload()}>{t.reload}</Button> : null}
           <Button onClick={() => !saving && onClose()}>{t.cancel}</Button>
           <Button variant="primary" type="submit" icon={announcing ? 'megaphone' : undefined} loading={saving}>
             {submitLabel(t, announcing, saving)}
@@ -220,7 +232,11 @@ export function BirthDialog({
             </Card>
           ) : null}
           <Card title={t.birthDetailsCard} headingLevel={3}>
-            <Field label={t.birthDatetime} error={inlineError('birth.details.datetime')}>
+            <Field
+              label={t.birthDatetime}
+              hint={t.birthDatetimeHint(timezone)}
+              error={inlineError('birth.details.datetime')}
+            >
               <Input
                 type="datetime-local"
                 value={draft.datetime}
@@ -265,6 +281,7 @@ export function BirthDialog({
             photo={draft.photo}
             onPhoto={(photo) => update({ photo })}
           />
+          <BirthMediaEditor only="video" headingLevel={3} previewSlug={previewSlug} video={video} onVideo={onVideo} />
           {announcing ? null : (
             <div>
               <Button variant="ghost" icon="trash" onClick={() => setConfirmingUndo(true)}>

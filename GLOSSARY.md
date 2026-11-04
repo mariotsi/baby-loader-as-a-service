@@ -91,7 +91,7 @@ The Owner's own words shown with the Birth details.
 _Avoid_: Announcement, caption
 
 **Birth milestone**:
-The Milestone that announcing the birth adds on the day of birth, "È nata!" / "She is born!", marked `kind: 'birth'`. Announcing again replaces it, going back to the Countdown removes it, and a new day of birth moves it; the Owner may change its label and emoji like any other.
+The Milestone that announcing the birth adds on the day of birth in the Site's Timezone, "È nata!" / "She is born!", marked `kind: 'birth'`. Announcing again replaces it, going back to the Countdown removes it, and a new day of birth moves it. Its date always follows the birth; the Owner may change its label and emoji like any other, or remove it.
 _Avoid_: Birth event
 
 **Birth video**:
@@ -137,7 +137,7 @@ The Platform's own fixed Palette and Font, worn by its marketing, auth, onboardi
 _Avoid_: Default theme, admin theme
 
 **Privacy settings**:
-The Owner's choice of whether the baby's name and Sex appear on the Public page during the Waiting state. The Born state always shows them. With no name, or no known Sex, there is nothing to show, so that setting stays off until the Owner gives one. The Dashboard calls this section Keep the secret.
+The Owner's choice of whether the baby's name and Sex appear on the Public page during the Waiting state. The Born state always shows them, and announcing leaves the choice as it was, so going back to the Countdown restores it. With no name, or no known Sex, there is nothing to show, so that setting stays off until the Owner gives one. The Dashboard calls this section Keep the secret.
 _Avoid_: Visibility, toggles
 
 **Languages**:

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { LangProvider } from '@/components/LangProvider';
 import { defaultSiteSettings, type SiteSettings, type SiteSettingsError } from '@/lib/siteSettings';
-import { BirthDialog, type BirthDraft } from './BirthDialog';
+import { BirthDialog, type BirthDraft, type SaveOutcome } from './BirthDialog';
 
 const waiting: BirthDraft = {
   born: false,
@@ -69,6 +69,7 @@ const meta = {
     babyName: 'Emma',
     sex: 'female',
     languages: ['en', 'it'],
+    timezone: 'Europe/Rome',
     onBabyName: () => {},
     onSex: () => {},
     hidden: { name: false, sex: false },
@@ -77,8 +78,9 @@ const meta = {
     slug: 'demo-emma',
     address: 'https://emma.loading.baby',
     video: null,
+    onVideo: () => {},
     bornPlaceholderUrl: '/website-assets/born-placeholder-v1.png',
-    onSave: fn(async () => ({ ok: true as const })),
+    onSave: fn(async (_birth: BirthDraft): Promise<SaveOutcome> => ({ ok: true })),
     onClose: () => {},
   },
   decorators: [
@@ -99,7 +101,7 @@ type Story = StoryObj<typeof meta>;
  */
 export const Announce: Story = {};
 
-/** Announcing asks first, so a slip of the finger cannot send the notification; then it saves the whole page. */
+/** Announcing asks first, so a slip of the finger cannot send the notification; then it saves the Birth. */
 export const AnnounceAsksFirst: Story = {
   play: async ({ args, canvasElement }) => {
     const body = within(canvasElement.ownerDocument.body);
@@ -153,5 +155,27 @@ export const Errors: Story = {
     await userEvent.click(dialog.getByRole('button', { name: 'Announce the birth' }));
     await expect(dialog.getByLabelText('Birth date & time')).toHaveFocus();
     await waitFor(() => expect(dialog.getByText(/Something else on this page needs fixing first/)).toBeVisible());
+  },
+};
+
+/** A save from a tab that missed a change made elsewhere: the dialog says so and offers to reload. */
+export const StaleTab: Story = {
+  args: {
+    initial: born,
+    onSave: fn(
+      async (_birth: BirthDraft): Promise<SaveOutcome> => ({
+        ok: false,
+        errors: [],
+        message:
+          'This page changed in another tab or on another device since you opened it. Reload to see it: what you changed here is lost.',
+        stale: true,
+      })
+    ),
+  },
+  play: async ({ canvasElement }) => {
+    const dialog = within(within(canvasElement.ownerDocument.body).getByRole('dialog'));
+    await userEvent.click(dialog.getByRole('button', { name: 'Save changes' }));
+    await waitFor(() => expect(dialog.getByText(/changed in another tab/)).toBeVisible());
+    await expect(dialog.getByRole('button', { name: 'Reload' })).toBeVisible();
   },
 };

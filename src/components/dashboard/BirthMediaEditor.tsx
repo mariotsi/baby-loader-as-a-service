@@ -16,7 +16,7 @@ const mediaCopy = {
     title: 'Their first hello',
     photoTitle: 'Their first photo',
     videoDescription:
-      'A welcome video for the big announcement. Pick it whenever you like: it plays once you mark the baby as born, and uploads when you save.',
+      'A welcome video for the big announcement. Once the baby is born, it plays full screen the first time each visitor opens the page, and they can watch it again from there. Pick it whenever you like: it uploads when you save.',
     photoDescription: 'A photo for their page, beside the Birth details. It uploads when you save.',
     photo: 'Birth photo',
     photoAlt: 'Birth photo preview',
@@ -30,7 +30,7 @@ const mediaCopy = {
     title: 'Il primo ciao',
     photoTitle: 'La sua prima foto',
     videoDescription:
-      'Un video di benvenuto per il grande annuncio. Sceglilo quando vuoi: parte quando segni che il bambino è nato e viene caricato quando salvi.',
+      'Un video di benvenuto per il grande annuncio. Quando il bambino è nato, parte a schermo intero la prima volta che ogni visitatore apre la pagina, e da lì si può rivedere. Sceglilo quando vuoi: viene caricato quando salvi.',
     photoDescription: 'Una foto per la pagina, accanto ai dettagli della nascita. Viene caricata quando salvi.',
     photo: 'Foto della nascita',
     photoAlt: 'Anteprima della foto della nascita',

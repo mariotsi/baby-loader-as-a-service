@@ -1,6 +1,6 @@
 'use client';
 
-import { format, parseISO } from 'date-fns';
+import { parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
 import { type Ref, type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
 import { useLang } from '@/components/LangProvider';
@@ -19,20 +19,16 @@ import { SectionNav } from '@/components/ui/SectionNav';
 import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
-import { birthNotificationMessages, syncBirthMilestone } from '@/lib/birthAnnouncement';
+import { birthDay, instantIn, localIn, settledBirthMilestones, withBirth } from '@/lib/birthAnnouncement';
 import { errorsCopy } from '@/lib/copy/errors';
 import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
-import {
-  describeSiteSettingsErrors,
-  inlineErrorText,
-  isInlineError,
-  responseErrorText,
-  routeErrorText,
-} from '@/lib/errorText';
+import { describeSiteSettingsErrors, inlineErrorText, isInlineError, routeErrorText } from '@/lib/errorText';
 import type { Lang } from '@/lib/i18n';
 import { takeWelcome } from '@/lib/newSiteWelcome';
+import type { DeliveryResult } from '@/lib/notificationDelivery';
 import type { Milestone, SiteDTO } from '@/lib/site';
 import {
+  type BirthDetails,
   type BirthMedia,
   DEFAULT_MILESTONE_EMOJI,
   DEFAULT_SITE_ICON_EMOJI,
@@ -42,8 +38,9 @@ import {
   type SiteSettings,
   type SiteSettingsError,
   type SiteSettingsInput,
+  siteSettingsOf,
 } from '@/lib/siteSettings';
-import { BirthDialog, type BirthDraft, type SaveOutcome } from './BirthDialog';
+import { BirthDialog, type BirthDraft, type SaveFailure, type SaveOutcome } from './BirthDialog';
 import { BirthMediaEditor, birthPhoto, birthVideoTitle, type MediaDraft, storedDraft } from './BirthMediaEditor';
 import { EditorPreview } from './EditorPreview';
 import { PlaceField } from './PlaceField';
@@ -54,8 +51,6 @@ import { SitePreviews } from './SitePreviews';
 import { useLeaveGuard } from './useLeaveGuard';
 import { usePhonePreview } from './usePhonePreview';
 import { useStuck } from './useStuck';
-
-const LOCAL_DATETIME = "yyyy-MM-dd'T'HH:mm";
 
 /**
  * The texts written, one per language, as the Birth message, the Page name
@@ -68,6 +63,16 @@ function writtenTexts(texts: Partial<Record<Lang, string>>): Partial<Record<Lang
 
 /** A Milestone as the editor holds it: with the text in its Place field, which is not yet a Place while being typed. */
 type MilestoneDraft = Milestone & { placeText: string };
+
+/** Every field on the page but the Milestones, as a save would send them, the Birth included. */
+type DraftFields = Omit<SiteSettingsInput, 'milestones'>;
+
+/** What the page holds, as last saved or as edited since: the unsaved changes are where the two differ. */
+interface Draft {
+  fields: DraftFields;
+  milestones: MilestoneDraft[];
+  video: MediaDraft;
+}
 
 /**
  * The Place fields holding text that was never picked from the suggestions.
@@ -103,9 +108,9 @@ export function SiteEditor({
   const [babyName, setBabyName] = useState(site.babyName);
   const [sex, setSex] = useState(site.sex);
   const [dueDate, setDueDate] = useState(site.dueDate?.slice(0, 10) ?? '');
-  const details = site.birth.details;
   const [video, setVideo] = useState<MediaDraft>(site.birthVideo);
-  const [savedMedia, setSavedMedia] = useState({ photo: birthPhoto(details), video: site.birthVideo });
+  /** The Site as last saved: where the Birth dialog's saves start from, and the `updatedAt` every save sends back. */
+  const [stored, setStored] = useState<SiteDTO>(site);
   /** The Birth as last saved: only the Birth dialog changes it, and only by saving. */
   const [birth, setBirth] = useState<BirthDraft>(() => savedBirth(site));
   const [birthDialogOpen, setBirthDialogOpen] = useState(false);
@@ -129,7 +134,9 @@ export function SiteEditor({
   const [message, setMessage] = useState<string | null>(null);
   const [saved, setSaved] = useState(false);
   /** How the birth notification went, after announcing the birth. */
-  const [announced, setAnnounced] = useState<string | null>(null);
+  const [announced, setAnnounced] = useState<Announced | null>(null);
+  /** Whether the last save found the Site changed in another tab, which only a reload brings here. */
+  const [stale, setStale] = useState(false);
   /** The fields in error at the last failed save, checked again on every edit until they pass. */
   const [failedPaths, setFailedPaths] = useState<string[]>([]);
   /** Counts failed saves, so each one moves the focus to the first field in error. */
@@ -158,31 +165,35 @@ export function SiteEditor({
     }
   }, [failedSaves]);
 
-  /** The Milestones with `b` as the Birth: the Birth milestone follows the announcement (see syncBirthMilestone). */
-  function milestonesWith(b: BirthDraft): MilestoneDraft[] {
-    return syncBirthMilestone(
-      milestones,
-      { wasBorn: birth.born, born: b.born, date: b.datetime.slice(0, 10), languages, sex },
-      (m) => ({ ...m, placeText: '' })
-    );
-  }
-
-  function currentSettings(b: BirthDraft = birth): SiteSettingsInput {
+  /** The fields as they stand, with `b` as the Birth, its time read in the Site's saved Timezone. */
+  function fieldsNow(b: BirthDraft = birth): DraftFields {
     return {
       babyName,
       sex,
       dueDate: dueDate || null,
-      birth: birthSettings(b),
-      milestones: milestonesWith(b).map(({ placeText: _, ...m }) => ({ ...m, label: writtenTexts(m.label) })),
+      birth: birthSettings(b, stored.timezone),
       languages,
       timezone,
       theme: { palette, font },
-      // Announcing the birth shows the name and the sex to everyone, so the Privacy settings say so too.
-      privacy: b.born && !birth.born ? { showName: true, showSex: true } : { showName, showSex },
+      privacy: { showName, showSex },
       pageName: writtenTexts(pageName),
       icon: iconIsEmoji ? iconEmoji : null,
       birthVideo: storedDraft(video),
     };
+  }
+
+  function currentSettings(): SiteSettingsInput {
+    return settingsOfDraft(fieldsNow(), milestones);
+  }
+
+  /** The Site as saving `b` from the Birth dialog would leave it: as last saved, with `b`, the name, the Sex and the Birth video. */
+  function birthWrite(b: BirthDraft): SiteSettings {
+    const before = siteSettingsOf(stored);
+    if (!b.born) {
+      return withBirth(before, null);
+    }
+    const { details } = birthSettings(b, stored.timezone) as { details: BirthDetails };
+    return withBirth(before, { babyName, sex, details, birthVideo: storedDraft(video) });
   }
 
   /** The previews draw the Site settings as they stand, or as they last stood valid while a field is half filled. */
@@ -192,13 +203,20 @@ export function SiteEditor({
     lastValid.current = checkedNow.value;
   }
 
-  const { dirty, markSaved } = useUnsavedChanges(draftState(currentSettings(), milestones, video));
+  const [baseline, setBaseline] = useState<Draft>(() => ({ fields: fieldsNow(), milestones, video }));
+  const dirty = draftState({ fields: fieldsNow(), milestones, video }) !== draftState(baseline);
   const leaving = useLeaveGuard(dirty);
 
   /** Everything that stops a save: the Site settings rules, then Places typed and never picked. */
-  function problems(b: BirthDraft = birth): SiteSettingsError[] {
-    const checked = parseSiteSettings(currentSettings(b));
+  function problems(): SiteSettingsError[] {
+    const checked = parseSiteSettings(currentSettings());
     return [...(checked.ok ? [] : checked.errors), ...unpickedPlaces(milestones)];
+  }
+
+  /** Everything that stops the Birth dialog saving `b`. */
+  function birthProblems(b: BirthDraft): SiteSettingsError[] {
+    const checked = parseSiteSettings(birthWrite(b));
+    return checked.ok ? [] : checked.errors;
   }
 
   // Only the fields that failed the last save are checked while the Owner fixes them: nothing new turns red mid-edit.
@@ -229,7 +247,7 @@ export function SiteEditor({
       return;
     }
     setFailedPaths([]);
-    const outcome = await persist(birth);
+    const outcome = await saveSettings();
     if (!outcome.ok) {
       setMessage(outcome.message);
       if (outcome.errors.length > 0) {
@@ -238,44 +256,163 @@ export function SiteEditor({
     }
   }
 
-  /** Saves the Birth from the dialog with everything else on the page, then closes the dialog. */
-  async function saveBirth(next: BirthDraft): Promise<SaveOutcome> {
+  /** Uploads a new Birth video and saves every Site setting but the Birth. */
+  function saveSettings(): Promise<SaveOutcome> {
+    return withUploads(async (upload) => {
+      const { birth: _, ...settings } = { ...currentSettings(), birthVideo: await upload(video) };
+      const result = await sent(
+        fetch(`/api/sites/${site.slug}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ updatedAt: stored.updatedAt, settings }),
+        })
+      );
+      if (!result.ok) {
+        return result;
+      }
+      const written = result.site;
+      const savedDraft = savedBirth(written);
+      setStored(written);
+      setBirth(savedDraft);
+      setVideo(written.birthVideo);
+      setBaseline({
+        fields: { ...fieldsNow(), birth: birthSettings(savedDraft, written.timezone), birthVideo: written.birthVideo },
+        milestones,
+        video: written.birthVideo,
+      });
+      setSaved(true);
+      router.refresh();
+      return { ok: true };
+    });
+  }
+
+  /**
+   * Saves the Birth from the dialog, with the name, the Sex and the Birth
+   * video, then closes the dialog. The page's other changes stay as they
+   * are, still unsaved.
+   */
+  function saveBirth(next: BirthDraft): Promise<SaveOutcome> {
     setMessage(null);
     setSaved(false);
     setAnnounced(null);
-    const announcing = !birth.born && next.born;
-    const nextMilestones = milestonesWith(next);
-    const outcome = await persist(next);
-    if (outcome.ok) {
-      setMilestones(nextMilestones);
+    return withUploads(async (upload) => {
+      const request = next.born
+        ? {
+            method: 'PUT',
+            body: {
+              updatedAt: stored.updatedAt,
+              babyName,
+              sex,
+              details: { ...birthSettings(next, stored.timezone).details, photo: await upload(next.photo) },
+              birthVideo: await upload(video),
+            },
+          }
+        : { method: 'DELETE', body: { updatedAt: stored.updatedAt } };
+      const result = await sent(
+        fetch(`/api/sites/${site.slug}/birth`, {
+          method: request.method,
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(request.body),
+        })
+      );
+      if (!result.ok) {
+        return result;
+      }
+      const written = result.site;
+      const savedDraft = savedBirth(written);
+      setStored(written);
+      setBirth(savedDraft);
+      setVideo(written.birthVideo);
+      setMilestones(withSavedBirthMilestone(milestones, written.milestones, hasBirthMilestone(baseline.milestones)));
+      setBaseline({
+        fields: {
+          ...baseline.fields,
+          babyName: written.babyName,
+          sex: written.sex,
+          birth: birthSettings(savedDraft, written.timezone),
+          birthVideo: written.birthVideo,
+        },
+        milestones: withSavedBirthMilestone(baseline.milestones, written.milestones, false),
+        video: written.birthVideo,
+      });
       setFailedPaths([]);
       closeBirthDialog();
-      if (announcing) {
-        setShowName(true);
-        setShowSex(true);
+      router.refresh();
+      if (result.notification === 'failed') {
+        setMessage(t.notificationFailed);
+      } else if (result.notification) {
+        const { sent: reached, total } = result.notification;
+        setAnnounced({ text: t.announced(reached, total), everyone: reached === total });
+      } else {
+        setSaved(true);
       }
-      markSaved();
-      if (announcing) {
-        await sendBirthNotification(next);
+      return { ok: true };
+    });
+  }
+
+  /**
+   * Runs a save that may upload media first. A failed upload stops the save,
+   * and the media uploaded for a save that did not go through is removed.
+   */
+  async function withUploads(
+    run: (upload: (draft: MediaDraft) => Promise<BirthMedia | null>) => Promise<SaveOutcome>
+  ): Promise<SaveOutcome> {
+    setSaving(true);
+    setStale(false);
+    const uploaded: string[] = [];
+    async function upload(draft: MediaDraft): Promise<BirthMedia | null> {
+      if (!(draft instanceof File)) {
+        return draft;
       }
+      const body = new FormData();
+      body.set('file', draft);
+      const response = await fetch(`/api/sites/${site.slug}/media`, { method: 'POST', body });
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(routeErrorText(data.error, pageLang));
+      }
+      uploaded.push(data.media.key);
+      return { ...data.media, name: draft.name, type: draft.type, size: draft.size };
     }
+    let outcome: SaveOutcome;
+    try {
+      outcome = await run(upload);
+    } catch (error) {
+      outcome = {
+        ok: false,
+        errors: [],
+        message: error instanceof Error ? error.message : routeErrorText(undefined, pageLang),
+      };
+    }
+    if (!outcome.ok) {
+      await Promise.allSettled(uploaded.map((key) => removeMedia(key)));
+      setStale(outcome.stale === true);
+    }
+    setSaving(false);
     return outcome;
   }
 
-  /** Tells every Subscription the baby is born, in each of the Site's Languages: "È nata Sofia!" and the Birth message, or an invitation to the page. */
-  async function sendBirthNotification(next: BirthDraft) {
-    const messages = birthNotificationMessages({ babyName, sex, languages }, next.message);
-    const res = await fetch('/api/send-notification', {
-      method: 'POST',
+  async function removeMedia(key: string) {
+    await fetch(`/api/sites/${site.slug}/media`, {
+      method: 'DELETE',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: site.slug, messages, kind: 'birth' }),
-    }).catch(() => null);
+      body: JSON.stringify({ key }),
+    });
+  }
+
+  /** What the Site settings and Birth routes answered: the saved Site, or what went wrong as the page shows it. */
+  async function sent(request: Promise<Response>): Promise<Written | SaveFailure> {
+    const res = await request.catch(() => null);
     const data = await res?.json().catch(() => null);
     if (res?.ok) {
-      setAnnounced(t.announced(data.sent, data.total));
-    } else {
-      setMessage(`${t.notificationFailed} ${responseErrorText(data, pageLang)}`);
+      return { ok: true, site: data.site, notification: data.notification };
     }
+    if (res?.status === 409) {
+      return { ok: false, errors: [], message: routeErrorText(data?.error, pageLang), stale: true };
+    }
+    return data?.errors
+      ? { ok: false, errors: data.errors, message: null }
+      : { ok: false, errors: [], message: routeErrorText(data?.error, pageLang) };
   }
 
   function closeBirthDialog() {
@@ -290,72 +427,6 @@ export function SiteEditor({
       birthButton.current?.focus();
     }
   });
-
-  /** Uploads the new media, saves the Site settings with `b` as the Birth, and removes the media they replaced. */
-  async function persist(b: BirthDraft): Promise<SaveOutcome> {
-    const settings = currentSettings(b);
-    setSaving(true);
-    const uploaded: { key: string; url: string }[] = [];
-    let committed = false;
-    async function upload(draft: MediaDraft) {
-      if (!(draft instanceof File)) {
-        return draft;
-      }
-      const body = new FormData();
-      body.set('file', draft);
-      const response = await fetch(`/api/sites/${site.slug}/media`, { method: 'POST', body });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(routeErrorText(data.error, pageLang));
-      }
-      uploaded.push(data.media);
-      return { ...data.media, name: draft.name, type: draft.type, size: draft.size } as BirthMedia;
-    }
-    async function remove(key: string) {
-      const response = await fetch(`/api/sites/${site.slug}/media`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ key }),
-      });
-      if (!response.ok) {
-        throw new Error(routeErrorText((await response.json()).error, pageLang));
-      }
-    }
-    try {
-      const next = await prepareBirthMedia(settings, b.photo, video, upload);
-      const res = await fetch(`/api/sites/${site.slug}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(settings),
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => null);
-        return data?.errors
-          ? { ok: false, errors: data.errors, message: null }
-          : { ok: false, errors: [], message: routeErrorText(data?.error, pageLang) };
-      }
-      committed = true;
-      setBirth({ ...b, photo: next.photo });
-      setVideo(next.video);
-      setSavedMedia(next);
-      setSaved(true);
-      markSaved();
-      router.refresh();
-      await removeReplacedMedia(savedMedia, next, remove).catch(() => {});
-      return { ok: true };
-    } catch (error) {
-      return {
-        ok: false,
-        errors: [],
-        message: error instanceof Error ? error.message : routeErrorText(undefined, pageLang),
-      };
-    } finally {
-      if (!committed) {
-        await Promise.allSettled(uploaded.map((media) => remove(media.key)));
-      }
-      setSaving(false);
-    }
-  }
 
   return (
     <>
@@ -401,7 +472,13 @@ export function SiteEditor({
                 <Field label={t.dueDate} optional>
                   <Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} />
                 </Field>
-                <BirthStatus birth={birth} sex={sex} buttonRef={birthButton} onOpen={() => setBirthDialogOpen(true)} />
+                <BirthStatus
+                  birth={birth}
+                  sex={sex}
+                  timezone={stored.timezone}
+                  buttonRef={birthButton}
+                  onOpen={() => setBirthDialogOpen(true)}
+                />
               </Card>
             </div>
 
@@ -460,6 +537,8 @@ export function SiteEditor({
             <div id={sectionIds.milestones} className={styles.section}>
               <MilestonesCard
                 milestones={milestones}
+                birthDate={birth.born ? birthDay(instantIn(birth.datetime, stored.timezone), timezone) : null}
+                onChangeBirthDay={() => setBirthDialogOpen(true)}
                 onChange={setMilestones}
                 languages={languages}
                 inlineError={inlineError}
@@ -470,6 +549,7 @@ export function SiteEditor({
             <div id={sectionIds.who} className={styles.section}>
               <Card title={t.whoSeesWhat} description={t.whoSeesWhatDescription}>
                 <PrivacySwitches
+                  born={birth.born}
                   babyName={babyName}
                   sex={sex}
                   showName={showName}
@@ -483,8 +563,10 @@ export function SiteEditor({
             <SaveBar
               saving={saving}
               dirty={dirty}
-              done={saved ? (announced ?? t.saved) : null}
+              saved={saved}
+              announced={announced}
               problem={message || problemsText(errors, pageLang)}
+              stale={stale}
             />
           </form>
         </div>
@@ -510,7 +592,7 @@ export function SiteEditor({
       />
       {birthDialogOpen ? (
         <BirthDialog
-          initial={birth.born ? birth : { ...birth, datetime: birth.datetime || format(new Date(), LOCAL_DATETIME) }}
+          initial={birth.born ? birth : { ...birth, datetime: birth.datetime || localIn(new Date(), stored.timezone) }}
           babyName={babyName}
           sex={sex}
           onBabyName={setBabyName}
@@ -518,11 +600,13 @@ export function SiteEditor({
           hidden={{ name: !showName, sex: !showSex }}
           languages={languages}
           previewSlug={mediaPreviewSlug}
-          check={problems}
-          settingsWith={(b) => parseBirthPreview(currentSettings(b))}
+          timezone={stored.timezone}
+          check={birthProblems}
+          settingsWith={(b) => parseBirthPreview(birthWrite(b))}
           slug={site.slug}
           address={address}
           video={video}
+          onVideo={setVideo}
           bornPlaceholderUrl={bornPlaceholderUrl}
           onSave={saveBirth}
           onClose={closeBirthDialog}
@@ -537,57 +621,91 @@ function menuClass(stuck: boolean) {
 }
 
 /** What a save would change, Places being typed and a picked video included. */
-function draftState(settings: SiteSettingsInput, milestones: MilestoneDraft[], video: MediaDraft): string {
+function draftState({ fields, milestones, video }: Draft): string {
   return JSON.stringify([
-    settings,
+    settingsOfDraft(fields, milestones),
     milestones.map((m) => m.placeText),
     video instanceof File ? [video.name, video.size, video.lastModified] : null,
   ]);
 }
 
-/** Whether `draft` differs from what was last saved. `markSaved` makes the draft of the next render the saved one. */
-function useUnsavedChanges(draft: string) {
-  const [savedDraft, setSavedDraft] = useState(draft);
-  const [justSaved, setJustSaved] = useState(false);
-  if (justSaved) {
-    setJustSaved(false);
-    setSavedDraft(draft);
+/** The Site settings the page holds, with the Birth milestone on the day of birth as the server saves it. */
+function settingsOfDraft(fields: DraftFields, milestones: MilestoneDraft[]): SiteSettingsInput {
+  const settled = settledBirthMilestones(milestones, fields.birth as SiteSettings['birth'], fields.timezone);
+  return { ...fields, milestones: settled.map(({ placeText: _, ...m }) => ({ ...m, label: writtenTexts(m.label) })) };
+}
+
+function hasBirthMilestone(milestones: Milestone[]): boolean {
+  return milestones.some((m) => m.kind === 'birth');
+}
+
+/**
+ * The editor's Milestones once the Birth is saved: the Birth milestone on the
+ * day the server saved, with the Owner's unsaved label and emoji. One the
+ * Owner removed and has not saved yet (`removedHere`) stays removed.
+ */
+function withSavedBirthMilestone(drafts: MilestoneDraft[], saved: Milestone[], removedHere: boolean): MilestoneDraft[] {
+  const savedOne = saved.find((m) => m.kind === 'birth');
+  if (!savedOne) {
+    return drafts.filter((m) => m.kind !== 'birth');
   }
-  return { dirty: draft !== savedDraft, markSaved: () => setJustSaved(true) };
+  if (hasBirthMilestone(drafts)) {
+    return drafts.map((m) => (m.kind === 'birth' ? { ...m, date: savedOne.date } : m));
+  }
+  return removedHere ? drafts : [...drafts, { ...savedOne, placeText: savedOne.place?.address ?? '' }];
+}
+
+/** A save that went through: the Site as saved, and the Birth notification it sent, if any. */
+type Written = { ok: true; site: SiteDTO; notification: DeliveryResult | 'failed' | null };
+
+/** How the Birth notification went: `everyone` once it reached every subscriber. */
+interface Announced {
+  text: string;
+  everyone: boolean;
 }
 
 interface SaveBarProps {
   saving: boolean;
   dirty: boolean;
-  /** How the last save went, shown until the next edit. */
-  done: string | null;
+  /** Whether the last save went through, said until the next edit. */
+  saved: boolean;
+  /** How the Birth notification went, said until the next save, whatever else is unsaved. */
+  announced: Announced | null;
   problem: string | null;
+  /** Whether the Site changed in another tab: the page offers to reload. */
+  stale: boolean;
 }
 
 /** Save, with what is unsaved, saved or wrong beside it, against the bottom edge while the form scrolls. */
-function SaveBar({ saving, dirty, done, problem }: SaveBarProps) {
+function SaveBar({ saving, dirty, saved, announced, problem, stale }: SaveBarProps) {
   const t = platformCopy[useLang()].settings;
+  let success = saved && !dirty ? t.saved : null;
+  if (announced?.everyone) {
+    success = announced.text;
+  }
+  const info = [announced && !announced.everyone ? announced.text : null, dirty ? t.unsaved : null].filter(Boolean);
   return (
     <div className={styles.saveBar}>
       <Button variant="primary" type="submit" loading={saving}>
         {saving ? t.saving : t.save}
       </Button>
-      <StatusMessage tone="info">{dirty ? t.unsaved : null}</StatusMessage>
-      <StatusMessage tone="success">{done && !dirty ? done : null}</StatusMessage>
+      <StatusMessage tone="info">{info.length > 0 ? info.join(' ') : null}</StatusMessage>
+      <StatusMessage tone="success">{success}</StatusMessage>
       <StatusMessage tone="danger">{problem}</StatusMessage>
+      {stale ? <Button onClick={() => window.location.reload()}>{t.reload}</Button> : null}
     </div>
   );
 }
 
-/** The Birth as the Site settings hold it, from the fields as typed. */
-function birthSettings(b: BirthDraft): SiteSettingsInput['birth'] {
+/** The Birth as the Site settings hold it, from the fields as typed: the time is the wall clock in `timezone`. */
+function birthSettings(b: BirthDraft, timezone: string): SiteSettingsInput['birth'] {
   if (!b.born) {
     return { born: false, details: null };
   }
   return {
     born: true,
     details: {
-      datetime: b.datetime ? parseISO(b.datetime).toISOString() : '',
+      datetime: instantIn(b.datetime, timezone),
       weightGrams: b.weight ? Number(b.weight) : null,
       lengthCm: b.lengthCm ? Number(b.lengthCm) : null,
       message: writtenTexts(b.message),
@@ -600,7 +718,7 @@ function savedBirth(site: SiteDTO): BirthDraft {
   const details = site.birth.details;
   return {
     born: site.birth.born,
-    datetime: details ? format(parseISO(details.datetime), LOCAL_DATETIME) : '',
+    datetime: details ? localIn(details.datetime, site.timezone) : '',
     weight: details?.weightGrams?.toString() ?? '',
     lengthCm: details?.lengthCm?.toString() ?? '',
     message: details?.message ?? {},
@@ -616,12 +734,14 @@ function nameNote(birth: BirthDraft, t: PlatformCopy['settings']) {
 interface BirthStatusProps {
   birth: BirthDraft;
   sex: SiteSettingsInput['sex'];
+  /** The Site's saved Timezone, which the Birth's time is told in. */
+  timezone: string;
   buttonRef: Ref<HTMLButtonElement>;
   onOpen: () => void;
 }
 
 /** Where the Birth stands, waiting or announced, and the button that opens the Birth details. */
-function BirthStatus({ birth, sex, buttonRef, onOpen }: BirthStatusProps) {
+function BirthStatus({ birth, sex, timezone, buttonRef, onOpen }: BirthStatusProps) {
   const pageLang = useLang();
   const t = platformCopy[pageLang].settings;
   if (!birth.born) {
@@ -634,8 +754,8 @@ function BirthStatus({ birth, sex, buttonRef, onOpen }: BirthStatusProps) {
       </div>
     );
   }
-  const when = new Intl.DateTimeFormat(pageLang, { dateStyle: 'long', timeStyle: 'short' }).format(
-    parseISO(birth.datetime)
+  const when = new Intl.DateTimeFormat(pageLang, { dateStyle: 'long', timeStyle: 'short', timeZone: timezone }).format(
+    parseISO(instantIn(birth.datetime, timezone))
   );
   const stats = [birth.weight ? `${birth.weight} g` : null, birth.lengthCm ? `${birth.lengthCm} cm` : null].filter(
     Boolean
@@ -685,6 +805,10 @@ function IconAndSharingCard({
 
 interface MilestonesCardProps {
   milestones: MilestoneDraft[];
+  /** The day of birth in the Site's Timezone, which the Birth milestone always stands on; null while Waiting. */
+  birthDate: string | null;
+  /** Opens the Birth details, where the day of birth changes. */
+  onChangeBirthDay: () => void;
   onChange: (milestones: MilestoneDraft[]) => void;
   languages: Lang[];
   inlineError: (path: string) => string | undefined;
@@ -692,7 +816,15 @@ interface MilestonesCardProps {
 }
 
 /** Every Milestone as a group: its emoji, its date, its label in each of the Site's Languages and its Place. */
-function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPerLanguage }: MilestonesCardProps) {
+function MilestonesCard({
+  milestones,
+  birthDate,
+  onChangeBirthDay,
+  onChange,
+  languages,
+  inlineError,
+  errorsPerLanguage,
+}: MilestonesCardProps) {
   const pageLang = useLang();
   const t = platformCopy[pageLang].settings;
   function add() {
@@ -723,14 +855,32 @@ function MilestonesCard({ milestones, onChange, languages, inlineError, errorsPe
                     onChange={(emoji) => update(i, { emoji })}
                   />
                 </div>
-                <Field
-                  label={t.date}
-                  labelHidden
-                  error={inlineError(`milestones.${i}.date`)}
-                  className={styles.milestoneDate}
-                >
-                  <Input type="date" value={m.date} onChange={(e) => update(i, { date: e.target.value })} />
-                </Field>
+                {m.kind === 'birth' ? (
+                  <Field
+                    label={t.date}
+                    labelHidden
+                    hint={
+                      <>
+                        {t.birthMilestoneDate}{' '}
+                        <Button variant="link" inline onClick={onChangeBirthDay}>
+                          {t.changeBirthDay}
+                        </Button>
+                      </>
+                    }
+                    className={styles.milestoneDate}
+                  >
+                    <Input type="date" value={birthDate ?? m.date} readOnly />
+                  </Field>
+                ) : (
+                  <Field
+                    label={t.date}
+                    labelHidden
+                    error={inlineError(`milestones.${i}.date`)}
+                    className={styles.milestoneDate}
+                  >
+                    <Input type="date" value={m.date} onChange={(e) => update(i, { date: e.target.value })} />
+                  </Field>
+                )}
                 <Button icon="trash" labelHidden className={styles.milestoneRemove} onClick={() => remove(i)}>
                   {t.removeMilestone(i + 1)}
                 </Button>
@@ -782,31 +932,4 @@ function problemsText(errors: SiteSettingsError[], lang: Lang): string | null {
     elsewhere.length > 0 ? describeSiteSettingsErrors(elsewhere, lang) : null,
   ];
   return parts.filter(Boolean).join(' ') || null;
-}
-
-async function removeReplacedMedia(
-  previous: { photo: ReturnType<typeof storedDraft>; video: ReturnType<typeof storedDraft> },
-  next: typeof previous,
-  remove: (key: string) => Promise<void>
-) {
-  for (const old of [previous.photo, previous.video]) {
-    if (old && old.key !== next.photo?.key && old.key !== next.video?.key) {
-      await remove(old.key);
-    }
-  }
-}
-
-async function prepareBirthMedia(
-  settings: SiteSettingsInput,
-  photo: MediaDraft,
-  video: MediaDraft,
-  upload: (draft: MediaDraft) => Promise<ReturnType<typeof storedDraft>>
-) {
-  // The Birth video is kept in the Waiting state too, ready for the day; the photo is a Birth detail.
-  const next = { photo: settings.birth.born ? await upload(photo) : null, video: await upload(video) };
-  if (settings.birth.born) {
-    settings.birth.details.photo = next.photo;
-  }
-  settings.birthVideo = next.video;
-  return next;
 }

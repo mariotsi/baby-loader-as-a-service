@@ -239,6 +239,13 @@ export const defaultSiteSettings: SiteSettingsInput = {
   birthVideo: null,
 };
 
+/** The Site settings alone, out of a Site that also holds what the Owner never edits directly. */
+export function siteSettingsOf(site: SiteSettings): SiteSettings {
+  return Object.fromEntries(
+    Object.keys(defaultSiteSettings).map((key) => [key, site[key as keyof SiteSettings]])
+  ) as SiteSettings;
+}
+
 /**
  * The title of a Notification sent without one: the baby's name, which
  * Privacy settings hide only in the Waiting state. Undefined leaves the

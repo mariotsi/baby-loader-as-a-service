@@ -22,7 +22,8 @@ export type RouteErrorCode =
   | 'mediaTooLarge'
   | 'mediaCachePurgeFailed'
   | 'mediaStorageUnavailable'
-  | 'unknownSite';
+  | 'unknownSite'
+  | 'staleSite';
 
 export interface RouteError {
   code: RouteErrorCode;

@@ -87,8 +87,10 @@ function encodeKey(key: string): string {
 
 class R2StorageProvider implements StorageProvider {
   private readonly client: AwsClient;
+  private readonly config: NonNullable<ReturnType<typeof mediaStorageEnv>>;
 
-  constructor(private readonly config: NonNullable<ReturnType<typeof mediaStorageEnv>>) {
+  constructor(config: NonNullable<ReturnType<typeof mediaStorageEnv>>) {
+    this.config = config;
     this.client = new AwsClient({
       accessKeyId: config.accessKeyId,
       secretAccessKey: config.secretAccessKey,

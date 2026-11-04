@@ -21,13 +21,17 @@ test('a Site already in the state stays as it is', () => {
   assert.equal(settingsInState(born, 'born', NOW), born);
 });
 
-test('a Waiting Site previews Born with today, no numbers, and the name and sex showing', () => {
-  const previewed = settingsInState(site({ privacy: { showName: false, showSex: false } }), 'born', NOW);
+test('a Waiting Site previews Born with today, no numbers, and the Birth milestone', () => {
+  const previewed = settingsInState(site({ sex: 'female', privacy: { showName: false, showSex: false } }), 'born', NOW);
   assert.deepEqual(previewed.birth, {
     born: true,
     details: { datetime: NOW.toISOString(), weightGrams: null, lengthCm: null, message: {} },
   });
-  assert.deepEqual(previewed.privacy, { showName: true, showSex: true });
+  assert.deepEqual(previewed.milestones, [
+    { emoji: '👶', label: { en: 'She is born!' }, date: '2026-10-20', kind: 'birth' },
+  ]);
+  // The Born state shows the name and the Sex whatever the Privacy settings say, and announcing leaves them be.
+  assert.deepEqual(previewed.privacy, { showName: false, showSex: false });
 });
 
 test('a Born Site previews Waiting without its Birth details or Birth milestone', () => {

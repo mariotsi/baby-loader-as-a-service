@@ -112,8 +112,9 @@ const perProjectFixtureBases: Omit<SiteSpec, 'slug'>[] = [
     babyName: 'Paola',
     milestones: [{ emoji: '🎈', label: { en: 'Baby shower' }, inDays: 10 }],
   },
+  { ...waiting, owner: 'a', babyName: 'Stella' },
 ];
-const PER_PROJECT_BASES = ['e2e-edit', 'e2e-notify', 'e2e-rules', 'e2e-messages', 'e2e-places'] as const;
+const PER_PROJECT_BASES = ['e2e-edit', 'e2e-notify', 'e2e-rules', 'e2e-messages', 'e2e-places', 'e2e-stale'] as const;
 export type PerProjectFixture = (typeof PER_PROJECT_BASES)[number];
 
 export function perProjectSlug(base: PerProjectFixture, project: ProjectName): string {
