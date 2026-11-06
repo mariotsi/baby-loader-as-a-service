@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { insertTestUser, startTestDb } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
+import { birthMediaPreviewPath } from './birthMedia.ts';
 import type { DeviceInfo } from './deviceInfo.ts';
 import type { Lang } from './i18n.ts';
 import {
@@ -163,7 +164,10 @@ test('the icon is the birth photo once born, else the Site icon', async () => {
   await deliverNotification(emoji, valid({ en: { body: 'Hi' } }), emojiPush.service);
   assert.match(String(emojiPush.sent[0].payload.icon), /^\/site-icon\/192\?v=1f423\./);
 
-  const photo = { key: 'customer-data/o/s/photo', url: 'https://media.test/customer-data/o/s/photo' };
+  const photo = {
+    key: 'customer-data/o/s/0b9f3c1e-2a4d-4c5e-8f60-71829304a5b6',
+    url: 'https://media.test/customer-data/o/s/0b9f3c1e-2a4d-4c5e-8f60-71829304a5b6',
+  };
   const born = await ownedSite('icon-born', {
     icon: '🐣',
     sex: 'female',
@@ -175,7 +179,8 @@ test('the icon is the birth photo once born, else the Site icon', async () => {
   await subscribe(born, 'https://push.test/icon-born');
   const bornPush = fakePush();
   await deliverNotification(born, valid({ en: { body: 'Hi' } }), bornPush.service);
-  assert.equal(bornPush.sent[0].payload.icon, photo.url);
+  // Tests run as development, whose media the page's own origin serves.
+  assert.equal(bornPush.sent[0].payload.icon, birthMediaPreviewPath('icon-born', 'photo', photo.key));
 });
 
 test('no default title while Privacy settings hide the name', async () => {

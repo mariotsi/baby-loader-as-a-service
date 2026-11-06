@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { publicPageViews } from '@/lib/publicPageView';
 import type { SiteDTO } from '@/lib/site';
+import { mediaKeySchema } from '@/lib/siteMedia';
 import { defaultSiteSettings } from '@/lib/siteSettings';
 import { SiteEditor } from './SiteEditor';
 
@@ -33,7 +34,13 @@ const site = {
       message: { en: 'Welcome to the world, little one. We are so happy you are here.' },
     },
   },
-  birthVideo: { key: 'preview/welcome', url: videoUrl, name: 'welcome.webm', type: 'video/webm', size: 260096 },
+  birthVideo: {
+    key: mediaKeySchema.parse('customer-data/owner/site/0b9f3c1e-2a4d-4c5e-8f60-71829304a5b6'),
+    url: videoUrl,
+    name: 'welcome.webm',
+    type: 'video/webm',
+    size: 260096,
+  },
 } satisfies SiteDTO;
 
 const waitingSite: SiteDTO = { ...site, dueDate: '2026-11-20', birth: { born: false, details: null } };

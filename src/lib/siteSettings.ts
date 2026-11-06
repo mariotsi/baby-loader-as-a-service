@@ -2,6 +2,7 @@ import { addMonths, format, isAfter, isMatch, isValid, parseISO } from 'date-fns
 import * as z from 'zod/mini';
 import { slugProblem } from './address.ts';
 import { LANGS, type Lang } from './i18n.ts';
+import { MAX_MEDIA_BYTES, MEDIA_TYPES, mediaKeySchema } from './siteMedia.ts';
 import { DEFAULT_FONT, DEFAULT_PALETTE, FONTS, PALETTES } from './theme.ts';
 
 /**
@@ -99,11 +100,11 @@ const placeSchema = z.strictObject({
 
 const birthMedia = z.nullable(
   z.strictObject({
-    key: z.string().check(z.minLength(1), z.maxLength(500)),
+    key: mediaKeySchema,
     url: z.url().check(z.refine((url) => url.startsWith('https://'))),
     name: z.optional(z.string().check(z.maxLength(255))),
-    type: z.optional(z.enum(['image/avif', 'image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'])),
-    size: z.optional(z.int().check(z.minimum(1), z.maximum(50 * 1024 * 1024))),
+    type: z.optional(z.enum(MEDIA_TYPES)),
+    size: z.optional(z.int().check(z.minimum(1), z.maximum(MAX_MEDIA_BYTES))),
   })
 );
 
@@ -224,7 +225,7 @@ export type ValidNewSite = {
 };
 
 /** Where onboarding and the editor start from. */
-export const defaultSiteSettings: SiteSettingsInput = {
+export const defaultSiteSettings: SiteSettings = {
   babyName: '',
   sex: 'unknown',
   dueDate: null,
