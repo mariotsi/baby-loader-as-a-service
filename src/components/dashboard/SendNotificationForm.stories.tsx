@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
 import { LangProvider } from '@/components/LangProvider';
 import { PageShell } from '@/components/ui/PageShell';
+import { defaultSiteSettings } from '@/lib/siteSettings';
 import { SendNotificationForm } from './SendNotificationForm';
 
 const meta = {
@@ -10,10 +11,13 @@ const meta = {
   parameters: { layout: 'fullscreen', nextjs: { appDirectory: true } },
   args: {
     slug: 'emma-preview',
-    languages: ['it', 'en'],
-    defaultTitle: 'Emma',
+    site: {
+      ...defaultSiteSettings,
+      babyName: 'Emma',
+      languages: ['it', 'en'],
+      pageName: { it: 'Stefania e Simone', en: 'Stefania & Simone' },
+    },
     icon: '/icon-192.png',
-    siteName: { it: 'Stefania e Simone', en: 'Stefania & Simone' },
     host: 'emma-preview.loading.baby',
     subscribers: 12,
     subscriptionsHref: '/dashboard/emma-preview/subscriptions',
