@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // Takes the pictures of the home page's deck from a running app: one screen of
 // each card's Public page, at a phone's size, into public/website-assets/, named
-// by a hash of the file, which src/lib/homeDeckImages.json records.
+// by a hash of the file, which src/lib/homeDeckImages.ts records.
 //
 //   npm run seed && npm run dev
 //   npm run deck [base URL]    http://localhost:3000 by default
@@ -81,8 +81,13 @@ async function main() {
   } finally {
     await browser.close();
   }
-  const sorted = Object.fromEntries(Object.entries(hashes).sort(([a], [b]) => a.localeCompare(b)));
-  writeFileSync(join(ROOT, 'src/lib/homeDeckImages.json'), `${JSON.stringify(sorted, null, 2)}\n`);
+  const lines = Object.keys(hashes)
+    .sort()
+    .map((slug) => `  '${slug}': '${hashes[slug]}',\n`);
+  writeFileSync(
+    join(ROOT, 'src/lib/homeDeckImages.ts'),
+    `// Written by \`npm run deck\`: each card's Slug and the hash its picture's name carries.\nexport const HOME_DECK_IMAGES: Record<string, string> = {\n${lines.join('')}};\n`
+  );
 }
 
 main().catch((err) => {

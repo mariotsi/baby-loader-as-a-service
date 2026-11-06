@@ -1,4 +1,4 @@
-import images from './homeDeckImages.json' with { type: 'json' };
+import { HOME_DECK_IMAGES } from './homeDeckImages.ts';
 import type { Lang } from './i18n.ts';
 import { FONTS, PALETTES } from './theme.ts';
 
@@ -184,9 +184,9 @@ export const HOME_DECK_CARDS: HomeDeckCard[] = [...DECKS.en, ...DECKS.it];
 
 /**
  * A card's picture among the website assets. The name carries a hash of the
- * file, which `npm run deck` records in homeDeckImages.json: the media domain
+ * file, which `npm run deck` records in homeDeckImages.ts: the media domain
  * caches these files for a year, so a new picture needs a new name.
  */
 export function homeDeckImage(card: Pick<HomeDeckCard, 'slug'>): string {
-  return `${card.slug}.${(images as Record<string, string>)[card.slug]}.webp`;
+  return `${card.slug}.${HOME_DECK_IMAGES[card.slug]}.webp`;
 }
