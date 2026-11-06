@@ -2,12 +2,21 @@ import { HomeDeck } from '@/components/HomeDeck';
 import { ButtonLink } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { platformCopy } from '@/lib/copy/platform';
+import { deploymentEnv } from '@/lib/env';
+import { homeDeckCards, homeDeckImage } from '@/lib/homeDeck';
 import { platformLang } from '@/lib/i18nNext';
+import { websiteAssetUrl } from '@/lib/websiteAssets';
 import styles from './page.module.css';
 
 export default async function MarketingPage() {
   const lang = await platformLang();
   const t = platformCopy[lang].marketing;
+  const { appEnv } = deploymentEnv();
+  const cards = homeDeckCards(lang).map((card) => ({
+    slug: card.slug,
+    alt: card.alt,
+    src: websiteAssetUrl(homeDeckImage(card), appEnv),
+  }));
   return (
     <PageShell width="wide">
       <div className={styles.hero}>
@@ -23,7 +32,7 @@ export default async function MarketingPage() {
           </div>
         </div>
         <div className={styles.preview}>
-          <HomeDeck lang={lang} copy={t.deck} />
+          <HomeDeck cards={cards} copy={t.deck} />
         </div>
       </div>
     </PageShell>
