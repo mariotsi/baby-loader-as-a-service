@@ -389,10 +389,15 @@ test.describe('Dashboard', () => {
     await page.getByLabel(/^Name/).fill('Stella Rose');
     await page.getByRole('button', { name: 'Save changes' }).click();
     await expect(page.getByText(/^This page changed in another tab/)).toBeVisible();
-    // Reloading drops the change made here, which the leave guard asks about first.
-    page.once('dialog', (dialog) => dialog.accept());
+    // The message already says the change made here is lost, so Reload asks nothing more.
+    const prompts: string[] = [];
+    page.on('dialog', async (dialog) => {
+      prompts.push(dialog.type());
+      await dialog.accept();
+    });
     await page.getByRole('button', { name: 'Reload' }).click();
     await expect(page.getByLabel(/^Name/)).toHaveValue(name);
+    expect(prompts).toEqual([]);
   });
 
   test('explains a missing birth date and time and a weight in fractions of a gram', async ({ page, project }) => {
