@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from 'next/server';
 import { authRateLimit, createUser, EmailTakenError, issueSessionToken, sessionCookieOptions } from '@/lib/auth';
+import { emailSchema } from '@/lib/email';
 import { newPasswordProblem } from '@/lib/passwordRules';
 import { routeError } from '@/lib/routeError';
 
@@ -9,10 +10,10 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const email = typeof body?.email === 'string' ? body.email.trim() : '';
+  const email = emailSchema.safeParse(body?.email);
   const password = typeof body?.password === 'string' ? body.password : '';
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+  if (!email.success) {
     return routeError(400, { code: 'invalidEmail' });
   }
   const passwordProblem = newPasswordProblem(password);
@@ -21,7 +22,7 @@ export async function POST(req: NextRequest) {
   }
 
   try {
-    const user = await createUser(email, password);
+    const user = await createUser(email.data, password);
     const token = issueSessionToken(user.id);
     const res = NextResponse.json({ ok: true });
     res.cookies.set({ ...sessionCookieOptions(), value: token });

@@ -5,6 +5,7 @@ import { LangProvider } from '@/components/LangProvider';
 import { PublicPage } from '@/components/PublicPage';
 import { Button } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
+import { slugSchema } from '@/lib/address';
 import { publicPageViews } from '@/lib/publicPageView';
 import type { SiteDTO } from '@/lib/site';
 import { defaultSiteSettings } from '@/lib/siteSettings';
@@ -15,7 +16,7 @@ const site = {
   ...defaultSiteSettings,
   id: 'preview-emma',
   ownerId: 'preview-owner',
-  slug: 'emma-preview',
+  slug: slugSchema.parse('emma-preview'),
   createdAt: '2026-10-26T08:30:00Z',
   updatedAt: '2026-10-29T10:00:00Z',
   customDomain: null,

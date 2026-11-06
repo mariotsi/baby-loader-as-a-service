@@ -1,6 +1,8 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import type { Slug } from '../lib/address.ts';
 import type { DeviceInfo } from '../lib/deviceInfo.ts';
+import type { Email } from '../lib/email.ts';
 import type { GeoLocation } from '../lib/geoip.ts';
 import type { Lang } from '../lib/i18n.ts';
 import type { DeliveryStatus, NotificationKind, NotificationMessages } from '../lib/notificationLog.ts';
@@ -14,7 +16,7 @@ import type { SiteSettings } from '../lib/siteSettings.ts';
 
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
-  email: text('email').notNull().unique(),
+  email: text('email').$type<Email>().notNull().unique(),
   passwordHash: text('password_hash').notNull(),
   createdAt: text('created_at').notNull(),
 });
@@ -23,7 +25,7 @@ export const sites = sqliteTable(
   'sites',
   {
     id: text('id').primaryKey(),
-    slug: text('slug').notNull().unique(),
+    slug: text('slug').$type<Slug>().notNull().unique(),
     ownerId: text('owner_id')
       .notNull()
       .references(() => users.id),

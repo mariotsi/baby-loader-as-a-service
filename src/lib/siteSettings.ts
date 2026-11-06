@@ -1,6 +1,6 @@
 import { addMonths, format, isAfter, isMatch, isValid, parseISO } from 'date-fns';
 import * as z from 'zod/mini';
-import { slugProblem } from './address.ts';
+import { type Slug, slugSchema } from './address.ts';
 import { LANGS, type Lang } from './i18n.ts';
 import { DEFAULT_FONT, DEFAULT_PALETTE, FONTS, PALETTES } from './theme.ts';
 
@@ -189,12 +189,7 @@ export function missingLanguages(text: Partial<Record<Lang, string>>, languages:
 }
 
 const newSiteSchema = z.strictObject({
-  slug: z.string().check(
-    z.trim(),
-    z.toLowerCase(),
-    z.refine((slug) => slugProblem(slug) !== 'invalidFormat', { params: { code: 'invalidFormat' } }),
-    z.refine((slug) => slugProblem(slug) !== 'slugReserved', { params: { code: 'slugReserved' } })
-  ),
+  slug: z.pipe(z.string().check(z.trim(), z.toLowerCase()), slugSchema),
   settings: siteSettingsSchema,
 });
 
@@ -218,7 +213,7 @@ export type ValidSiteSettings = SiteSettings & { readonly [validSettings]: true 
 
 /** A Slug and Site settings that passed every rule. Only parseNewSite produces one. */
 export type ValidNewSite = {
-  readonly slug: string;
+  readonly slug: Slug;
   readonly settings: ValidSiteSettings;
   readonly [validNewSite]: true;
 };

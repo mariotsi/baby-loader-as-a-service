@@ -1,6 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { drizzle } from 'drizzle-orm/d1';
 import { getPlatformProxy } from 'wrangler';
+import { emailSchema } from '../lib/email.ts';
 import { getDb, newId, setTestDb } from './index.ts';
 import * as schema from './schema.ts';
 
@@ -9,7 +10,12 @@ export async function insertTestUser(): Promise<string> {
   const id = newId();
   await getDb()
     .insert(schema.users)
-    .values({ id, email: `${id}@example.com`, passwordHash: 'test', createdAt: new Date().toISOString() });
+    .values({
+      id,
+      email: emailSchema.parse(`${id}@example.com`),
+      passwordHash: 'test',
+      createdAt: new Date().toISOString(),
+    });
   return id;
 }
 

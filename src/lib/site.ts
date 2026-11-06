@@ -1,6 +1,7 @@
 import { and, desc, eq } from 'drizzle-orm';
 import { getDb, isId, isUniqueViolation, newId } from '../db/index.ts';
 import { sites } from '../db/schema.ts';
+import { isSlug, type Slug } from './address.ts';
 import type { AuthenticatedUser, OwnedSite } from './ownerAccess.ts';
 import type {
   BirthDetails,
@@ -16,7 +17,7 @@ export type { Milestone } from './siteSettings.ts';
 /** One Site: its Site settings plus what the Owner never edits directly. */
 export type Site = SiteSettings & {
   id: string;
-  slug: string;
+  slug: Slug;
   ownerId: string;
   /** ISO 8601 UTC. */
   createdAt: string;
@@ -54,8 +55,13 @@ function withBirthVideo(settings: SiteSettings): SiteSettings {
   return { ...settings, birth: { born: true, details }, birthVideo: video ?? null };
 }
 
-export async function getSiteBySlug(slug: string): Promise<Site | null> {
-  const row = await getDb().query.sites.findFirst({ where: eq(sites.slug, slug.toLowerCase()) });
+/** The Site with `slug`, in any case; null for anything that can't be a Slug, so a URL's can be passed as is. */
+export async function getSiteBySlug(slug: unknown): Promise<Site | null> {
+  const lower = typeof slug === 'string' ? slug.toLowerCase() : slug;
+  if (!isSlug(lower)) {
+    return null;
+  }
+  const row = await getDb().query.sites.findFirst({ where: eq(sites.slug, lower) });
   return row ? fromRow(row) : null;
 }
 
