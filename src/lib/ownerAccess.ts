@@ -10,10 +10,6 @@ import { getSiteBySlug, type Site } from './site.ts';
  * and pages.
  */
 
-declare const signedIn: unique symbol;
-declare const authenticated: unique symbol;
-declare const owned: unique symbol;
-
 /**
  * Anyone with a valid session, a password change pending or not. It is
  * enough to set a new password and nothing else.
@@ -21,11 +17,10 @@ declare const owned: unique symbol;
 export type SignedInUser = {
   readonly id: string;
   readonly passwordChangePending: boolean;
-  readonly [signedIn]: true;
-};
+} & { readonly __brand: 'SignedInUser' };
 /** A signed-in User with no password change pending. */
-export type AuthenticatedUser = { readonly id: string; readonly [authenticated]: true };
-export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Site; readonly [owned]: true };
+export type AuthenticatedUser = { readonly id: string } & { readonly __brand: 'AuthenticatedUser' };
+export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Site } & { readonly __brand: 'OwnedSite' };
 
 /**
  * A missing Site and another Owner's Site are the same denial: neither is

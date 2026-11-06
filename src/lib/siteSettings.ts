@@ -210,18 +210,14 @@ export type Place = NonNullable<Milestone['place']>;
 export type PageName = SiteSettings['pageName'];
 export type TextPerLanguage = Milestone['label'];
 
-declare const validSettings: unique symbol;
-declare const validNewSite: unique symbol;
-
 /** Site settings that passed every rule. Only parseSiteSettings and parseNewSite produce one. */
-export type ValidSiteSettings = SiteSettings & { readonly [validSettings]: true };
+export type ValidSiteSettings = SiteSettings & { readonly __brand: 'ValidSiteSettings' };
 
 /** A Slug and Site settings that passed every rule. Only parseNewSite produces one. */
 export type ValidNewSite = {
   readonly slug: string;
   readonly settings: ValidSiteSettings;
-  readonly [validNewSite]: true;
-};
+} & { readonly __brand: 'ValidNewSite' };
 
 /** Where onboarding and the editor start from. */
 export const defaultSiteSettings: SiteSettingsInput = {

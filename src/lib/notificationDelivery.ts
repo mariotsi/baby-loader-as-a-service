@@ -36,13 +36,10 @@ export type PushService = {
   send(target: PushTarget, payload: string): Promise<PushOutcome>;
 };
 
-declare const valid: unique symbol;
-
 /** A Notification that passed every rule. Only parseNotification produces one. */
 export type ValidNotification = {
   readonly messages: NotificationMessages;
-  readonly [valid]: true;
-};
+} & { readonly __brand: 'ValidNotification' };
 
 export type DeliveryResult = { sent: number; removed: number; total: number };
 
