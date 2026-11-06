@@ -5,6 +5,7 @@ import type { GeoLocation } from '../lib/geoip.ts';
 import type { Lang } from '../lib/i18n.ts';
 import type { DeliveryStatus, NotificationKind, NotificationMessages } from '../lib/notificationLog.ts';
 import type { SiteSettings } from '../lib/siteSettings.ts';
+import type { PushEndpoint } from '../lib/subscription.ts';
 
 /**
  * The D1 schema (ADR-0009). Ids are random UUIDs (newId) and
@@ -48,7 +49,7 @@ export const subscriptions = sqliteTable(
     siteId: text('site_id')
       .notNull()
       .references(() => sites.id),
-    endpoint: text('endpoint').notNull(),
+    endpoint: text('endpoint').$type<PushEndpoint>().notNull(),
     p256dh: text('p256dh').notNull(),
     auth: text('auth').notNull(),
     lang: text('lang').$type<Lang>(),

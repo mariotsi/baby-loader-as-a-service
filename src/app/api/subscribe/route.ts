@@ -8,9 +8,9 @@ import { routeError } from '@/lib/routeError';
 import { getSiteBySlug } from '@/lib/site';
 import {
   deleteSubscription,
-  ENDPOINT_MAX,
   hasSubscription,
-  parseSubscription,
+  isPushEndpoint,
+  subscriptionSchema,
   upsertSubscription,
 } from '@/lib/subscription';
 
@@ -21,9 +21,9 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const slug = typeof body?.slug === 'string' ? body.slug : '';
-  const subscription = parseSubscription(body?.subscription);
+  const subscription = subscriptionSchema.safeParse(body?.subscription);
 
-  if (!slug || !subscription.ok) {
+  if (!slug || !subscription.success) {
     return routeError(400, { code: 'invalidRequest' });
   }
 
@@ -39,7 +39,7 @@ export async function POST(req: NextRequest) {
 
   await upsertSubscription({
     siteId: site.id,
-    subscription: subscription.value,
+    subscription: subscription.data,
     lang,
     deviceInfo,
     geo,
@@ -51,9 +51,9 @@ export async function POST(req: NextRequest) {
 export async function DELETE(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const slug = typeof body?.slug === 'string' ? body.slug : '';
-  const endpoint = typeof body?.endpoint === 'string' ? body.endpoint : '';
+  const endpoint = body?.endpoint;
 
-  if (!slug || !endpoint || endpoint.length > ENDPOINT_MAX) {
+  if (!slug || !isPushEndpoint(endpoint)) {
     return routeError(400, { code: 'invalidRequest' });
   }
 
@@ -69,7 +69,7 @@ export async function DELETE(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get('slug');
   const endpoint = req.nextUrl.searchParams.get('endpoint');
-  if (!slug || !endpoint || endpoint.length > ENDPOINT_MAX) {
+  if (!slug || !isPushEndpoint(endpoint)) {
     return routeError(400, { code: 'invalidRequest' });
   }
   const site = await getSiteBySlug(slug);

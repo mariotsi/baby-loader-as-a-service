@@ -2,7 +2,7 @@ import { createECDH, randomBytes } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { drizzle } from 'drizzle-orm/d1';
 import { getPlatformProxy } from 'wrangler';
-import { parseSubscription, type ValidSubscription } from '../lib/subscription.ts';
+import { subscriptionSchema, type ValidSubscription } from '../lib/subscription.ts';
 import { getDb, newId, setTestDb } from './index.ts';
 import * as schema from './schema.ts';
 
@@ -19,14 +19,10 @@ export async function insertTestUser(): Promise<string> {
 export function testSubscription(endpoint: string): ValidSubscription {
   const ecdh = createECDH('prime256v1');
   ecdh.generateKeys();
-  const parsed = parseSubscription({
+  return subscriptionSchema.parse({
     endpoint,
     keys: { p256dh: ecdh.getPublicKey().toString('base64url'), auth: randomBytes(16).toString('base64url') },
   });
-  if (!parsed.ok) {
-    throw new Error(JSON.stringify(parsed.errors));
-  }
-  return parsed.value;
 }
 
 const MIGRATIONS_DIR = new URL('../../migrations/', import.meta.url);

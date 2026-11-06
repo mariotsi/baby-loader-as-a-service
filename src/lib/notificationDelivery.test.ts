@@ -18,7 +18,12 @@ import { listNotifications } from './notificationLog.ts';
 import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
 import { createSite, saveSiteSettings } from './site.ts';
 import { defaultSiteSettings, parseNewSite, parseSiteSettings, type SiteSettingsInput } from './siteSettings.ts';
-import { countSubscriptionsBySite, deleteSubscription, upsertSubscription } from './subscription.ts';
+import {
+  countSubscriptionsBySite,
+  deleteSubscription,
+  pushEndpointSchema,
+  upsertSubscription,
+} from './subscription.ts';
 
 let stopDb: () => Promise<void>;
 let token: string;
@@ -270,7 +275,7 @@ test('a Delivery stays with its Notification after the Subscription is gone', as
     fakePush({ 'https://push.test/keep/gone': 'gone' }).service
   );
 
-  await deleteSubscription(owned.site.id, 'https://push.test/keep/fine');
+  await deleteSubscription(owned.site.id, pushEndpointSchema.parse('https://push.test/keep/fine'));
 
   const [notification] = await listNotifications(owned.site.id);
   assert.deepEqual(notification.deliveries, [
@@ -288,7 +293,7 @@ test('finishing marks a Delivery gone when its Subscription no longer exists', a
     valid({ en: { body: 'Hi' } }),
     fakePush({ 'https://push.test/lost': 'failed' }).service
   );
-  await deleteSubscription(owned.site.id, 'https://push.test/lost');
+  await deleteSubscription(owned.site.id, pushEndpointSchema.parse('https://push.test/lost'));
   const [{ id }] = await listNotifications(owned.site.id);
   const push = fakePush();
 
