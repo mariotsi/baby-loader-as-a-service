@@ -29,14 +29,11 @@ function fromRow({ p256dh, auth, ...row }: typeof subscriptions.$inferSelect): P
 /** Longest push endpoint accepted or looked up. Real ones run to a few hundred characters. */
 export const ENDPOINT_MAX = 2048;
 
-declare const valid: unique symbol;
-
 /** A browser's push subscription that passed every rule. Only parseSubscription produces one. */
 export type ValidSubscription = {
   readonly endpoint: string;
   readonly keys: { readonly p256dh: string; readonly auth: string };
-  readonly [valid]: true;
-};
+} & { readonly __brand: 'ValidSubscription' };
 
 /**
  * Parses the `PushSubscription.toJSON()` a Visitor's browser hands over.
@@ -63,7 +60,7 @@ export function parseSubscription(input: unknown): ParseResult<ValidSubscription
   if (errors.length > 0 || endpoint === null) {
     return { ok: false, errors };
   }
-  return { ok: true, value: { endpoint, keys: { p256dh, auth } } as unknown as ValidSubscription };
+  return { ok: true, value: { endpoint, keys: { p256dh, auth } } as ValidSubscription };
 }
 
 function parseEndpoint(value: unknown, errors: SiteSettingsError[]): string | null {
