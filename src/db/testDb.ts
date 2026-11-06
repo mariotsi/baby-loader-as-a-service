@@ -1,7 +1,7 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { drizzle } from 'drizzle-orm/d1';
 import { getPlatformProxy } from 'wrangler';
-import type { PasswordHash } from '../lib/password.ts';
+import { passwordHashSchema } from '../lib/password.ts';
 import { getDb, newId, setTestDb } from './index.ts';
 import * as schema from './schema.ts';
 
@@ -13,7 +13,7 @@ export async function insertTestUser(): Promise<string> {
     .values({
       id,
       email: `${id}@example.com`,
-      passwordHash: 'test' as PasswordHash,
+      passwordHash: passwordHashSchema.parse('test'),
       createdAt: new Date().toISOString(),
     });
   return id;

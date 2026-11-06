@@ -6,6 +6,7 @@ import {
   type PasswordGeneration,
   type PasswordHash,
   type PasswordPolicy,
+  passwordHashSchema,
   verifyPassword,
 } from './password.ts';
 
@@ -62,7 +63,7 @@ test('a generation whose policy is retired asks for a reset only for the right p
 
 /** What the users table could hold after a bad write or a hand edit: any string at all. */
 function anyStoredHash(hash: string): PasswordHash {
-  return hash as PasswordHash;
+  return passwordHashSchema.parse(hash);
 }
 
 test('an unknown generation is invalid', async () => {

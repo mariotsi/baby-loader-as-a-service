@@ -1,6 +1,6 @@
 import { randomBytes, type ScryptOptions, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
-import type * as z from 'zod/mini';
+import * as z from 'zod/mini';
 
 /**
  * Password hashing in scheme generations. Every stored hash records the
@@ -8,7 +8,7 @@ import type * as z from 'zod/mini';
  * generation's policy decides what a login does with a hash of that
  * generation. A hash with no `v` prefix is generation 1.
  *
- * Imports only Node built-ins, so scripts run by plain `node` (the E2E data
+ * Imports nothing of the app's, so scripts run by plain `node` (the E2E data
  * script) hash passwords exactly as the app does.
  */
 
@@ -22,7 +22,8 @@ import type * as z from 'zod/mini';
  *   The Platform has no password reset yet (#80): retiring a generation locks its Owners out.
  */
 /** A stored password hash, `v<generation>$<scheme fields>`. Only hashPassword makes one, so a plain password can't be stored as a hash. */
-export type PasswordHash = string & z.$brand<'PasswordHash'>;
+export const passwordHashSchema = z.string().brand<'PasswordHash'>();
+export type PasswordHash = z.output<typeof passwordHashSchema>;
 
 export type PasswordPolicy = 'current' | 'rehash' | 'change' | 'retired';
 
@@ -110,7 +111,7 @@ export async function hashPassword(
 ): Promise<PasswordHash> {
   const fields = await generation.scheme.hash(password);
   // Generation 1 predates the prefix, so its hashes are stored without one.
-  return (generation.id === 1 ? fields : `v${generation.id}$${fields}`) as PasswordHash;
+  return passwordHashSchema.parse(generation.id === 1 ? fields : `v${generation.id}$${fields}`);
 }
 
 /** The generation id a stored hash names, and its scheme fields. */
