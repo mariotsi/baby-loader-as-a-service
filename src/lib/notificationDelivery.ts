@@ -38,9 +38,8 @@ export type PushService = {
 };
 
 /** A Notification that passed every rule. Only parseNotification produces one. */
-export type ValidNotification = {
-  readonly messages: NotificationMessages;
-} & z.$brand<'ValidNotification'>;
+const validNotificationSchema = z.object({ messages: z.custom<NotificationMessages>() }).brand<'ValidNotification'>();
+export type ValidNotification = Readonly<z.output<typeof validNotificationSchema>>;
 
 export type DeliveryResult = { sent: number; removed: number; total: number };
 
@@ -91,7 +90,9 @@ export function parseNotification(messages: unknown, langs: readonly Lang[]): Pa
       );
     }
   }
-  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: { messages: parsed } as ValidNotification };
+  return errors.length > 0
+    ? { ok: false, errors }
+    : { ok: true, value: validNotificationSchema.parse({ messages: parsed }) };
 }
 
 export async function deliverNotification(
