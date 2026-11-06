@@ -16,7 +16,7 @@ export function isUserId(value: unknown): value is UserId {
   return userIdSchema.safeParse(value).success;
 }
 export function newUserId(): UserId {
-  return crypto.randomUUID() as UserId;
+  return userIdSchema.parse(crypto.randomUUID());
 }
 
 export const siteIdSchema = uuid().brand<'SiteId'>();
@@ -25,7 +25,7 @@ export function isSiteId(value: unknown): value is SiteId {
   return siteIdSchema.safeParse(value).success;
 }
 export function newSiteId(): SiteId {
-  return crypto.randomUUID() as SiteId;
+  return siteIdSchema.parse(crypto.randomUUID());
 }
 
 export const subscriptionIdSchema = uuid().brand<'SubscriptionId'>();
@@ -34,7 +34,7 @@ export function isSubscriptionId(value: unknown): value is SubscriptionId {
   return subscriptionIdSchema.safeParse(value).success;
 }
 export function newSubscriptionId(): SubscriptionId {
-  return crypto.randomUUID() as SubscriptionId;
+  return subscriptionIdSchema.parse(crypto.randomUUID());
 }
 
 export const notificationIdSchema = uuid().brand<'NotificationId'>();
@@ -43,8 +43,9 @@ export function isNotificationId(value: unknown): value is NotificationId {
   return notificationIdSchema.safeParse(value).success;
 }
 export function newNotificationId(): NotificationId {
-  return crypto.randomUUID() as NotificationId;
+  return notificationIdSchema.parse(crypto.randomUUID());
 }
 
 /** A Delivery's row number: D1 assigns it, and it never leaves the database. */
-export type DeliveryId = number & z.$brand<'DeliveryId'>;
+export const deliveryIdSchema = z.int().brand<'DeliveryId'>();
+export type DeliveryId = z.output<typeof deliveryIdSchema>;
