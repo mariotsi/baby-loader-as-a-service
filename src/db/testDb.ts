@@ -1,12 +1,13 @@
 import { readdir, readFile } from 'node:fs/promises';
 import { drizzle } from 'drizzle-orm/d1';
 import { getPlatformProxy } from 'wrangler';
-import { getDb, newId, setTestDb } from './index.ts';
+import { newUserId, type UserId } from './ids.ts';
+import { getDb, setTestDb } from './index.ts';
 import * as schema from './schema.ts';
 
 /** Inserts a User with an unusable password hash and returns its id, for tests that need an Owner. */
-export async function insertTestUser(): Promise<string> {
-  const id = newId();
+export async function insertTestUser(): Promise<UserId> {
+  const id = newUserId();
   await getDb()
     .insert(schema.users)
     .values({ id, email: `${id}@example.com`, passwordHash: 'test', createdAt: new Date().toISOString() });

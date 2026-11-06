@@ -1,4 +1,4 @@
-import { isId } from '../db/index.ts';
+import { isUserId, type UserId } from '../db/ids.ts';
 import { verifySessionToken } from './auth.ts';
 import { getSiteBySlug, type Site } from './site.ts';
 
@@ -19,12 +19,12 @@ declare const owned: unique symbol;
  * enough to set a new password and nothing else.
  */
 export type SignedInUser = {
-  readonly id: string;
+  readonly id: UserId;
   readonly passwordChangePending: boolean;
   readonly [signedIn]: true;
 };
 /** A signed-in User with no password change pending. */
-export type AuthenticatedUser = { readonly id: string; readonly [authenticated]: true };
+export type AuthenticatedUser = { readonly id: UserId; readonly [authenticated]: true };
 export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Site; readonly [owned]: true };
 
 /**
@@ -35,7 +35,7 @@ export type AccessDenial = 'unauthenticated' | 'passwordChangePending' | 'notFou
 
 export function signIn(sessionToken: string | undefined): SignedInUser | null {
   const session = verifySessionToken(sessionToken);
-  if (!session || !isId(session.userId)) {
+  if (!session || !isUserId(session.userId)) {
     return null;
   }
   return { id: session.userId, passwordChangePending: session.passwordChangePending } as SignedInUser;

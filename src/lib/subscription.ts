@@ -1,13 +1,14 @@
 import { and, count, desc, eq } from 'drizzle-orm';
-import { getDb, newId } from '../db/index.ts';
+import { newSubscriptionId, type SiteId, type SubscriptionId } from '../db/ids.ts';
+import { getDb } from '../db/index.ts';
 import { subscriptions } from '../db/schema.ts';
 import type { DeviceInfo } from './deviceInfo.ts';
 import type { GeoLocation } from './geoip.ts';
 import type { Lang } from './i18n.ts';
 
 export interface PushSubscriptionRecord {
-  id: string;
-  siteId: string;
+  id: SubscriptionId;
+  siteId: SiteId;
   endpoint: string;
   keys: { p256dh: string; auth: string };
   /** The Public page's language when the Visitor opted in; null on Subscriptions older than the field. */
@@ -25,7 +26,7 @@ function fromRow({ p256dh, auth, ...row }: typeof subscriptions.$inferSelect): P
 }
 
 export interface UpsertSubscriptionInput {
-  siteId: string;
+  siteId: SiteId;
   endpoint: string;
   keys: { p256dh: string; auth: string };
   lang: Lang | null;
@@ -46,12 +47,12 @@ export async function upsertSubscription(input: UpsertSubscriptionInput): Promis
   };
   await getDb()
     .insert(subscriptions)
-    .values({ ...refreshed, id: newId(), siteId: input.siteId, endpoint: input.endpoint, createdAt: now })
+    .values({ ...refreshed, id: newSubscriptionId(), siteId: input.siteId, endpoint: input.endpoint, createdAt: now })
     .onConflictDoUpdate({ target: [subscriptions.siteId, subscriptions.endpoint], set: refreshed })
     .run();
 }
 
-export async function deleteSubscription(siteId: string, endpoint: string): Promise<void> {
+export async function deleteSubscription(siteId: SiteId, endpoint: string): Promise<void> {
   await getDb()
     .delete(subscriptions)
     .where(and(eq(subscriptions.siteId, siteId), eq(subscriptions.endpoint, endpoint)));
@@ -62,7 +63,7 @@ export async function deleteSubscriptionsByEndpoint(endpoint: string): Promise<v
   await getDb().delete(subscriptions).where(eq(subscriptions.endpoint, endpoint));
 }
 
-export async function listSubscriptionsBySite(siteId: string): Promise<PushSubscriptionRecord[]> {
+export async function listSubscriptionsBySite(siteId: SiteId): Promise<PushSubscriptionRecord[]> {
   const rows = await getDb().query.subscriptions.findMany({
     where: eq(subscriptions.siteId, siteId),
     orderBy: desc(subscriptions.createdAt),
@@ -70,13 +71,13 @@ export async function listSubscriptionsBySite(siteId: string): Promise<PushSubsc
   return rows.map(fromRow);
 }
 
-export async function countSubscriptionsBySite(siteId: string): Promise<number> {
+export async function countSubscriptionsBySite(siteId: SiteId): Promise<number> {
   const [row] = await getDb().select({ n: count() }).from(subscriptions).where(eq(subscriptions.siteId, siteId));
   return row?.n ?? 0;
 }
 
 /** Whether this Site has a saved Subscription for the browser endpoint. */
-export async function hasSubscription(siteId: string, endpoint: string): Promise<boolean> {
+export async function hasSubscription(siteId: SiteId, endpoint: string): Promise<boolean> {
   const row = await getDb().query.subscriptions.findFirst({
     where: and(eq(subscriptions.siteId, siteId), eq(subscriptions.endpoint, endpoint)),
     columns: { id: true },
