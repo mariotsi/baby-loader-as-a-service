@@ -4,6 +4,7 @@ import type { DeviceInfo } from '../lib/deviceInfo.ts';
 import type { GeoLocation } from '../lib/geoip.ts';
 import type { Lang } from '../lib/i18n.ts';
 import type { DeliveryStatus, NotificationKind, NotificationMessages } from '../lib/notificationLog.ts';
+import type { PasswordHash } from '../lib/password.ts';
 import type { SiteSettings } from '../lib/siteSettings.ts';
 
 /**
@@ -15,7 +16,7 @@ import type { SiteSettings } from '../lib/siteSettings.ts';
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   email: text('email').notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  passwordHash: text('password_hash').$type<PasswordHash>().notNull(),
   createdAt: text('created_at').notNull(),
 });
 

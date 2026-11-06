@@ -1,5 +1,6 @@
 import { randomBytes, type ScryptOptions, scrypt, timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
+import type * as z from 'zod/mini';
 
 /**
  * Password hashing in scheme generations. Every stored hash records the
@@ -20,6 +21,9 @@ import { promisify } from 'node:util';
  *   still verifies, so only someone who types the right password learns that the account exists.
  *   The Platform has no password reset yet (#80): retiring a generation locks its Owners out.
  */
+/** A stored password hash, `v<generation>$<scheme fields>`. Only hashPassword makes one, so a plain password can't be stored as a hash. */
+export type PasswordHash = string & z.$brand<'PasswordHash'>;
+
 export type PasswordPolicy = 'current' | 'rehash' | 'change' | 'retired';
 
 /** How one generation turns a password into its scheme fields, and checks a password against them. */
@@ -103,10 +107,10 @@ function currentGeneration(generations: readonly PasswordGeneration[]): Password
 export async function hashPassword(
   password: string,
   generation: PasswordGeneration = currentGeneration(PASSWORD_GENERATIONS)
-): Promise<string> {
+): Promise<PasswordHash> {
   const fields = await generation.scheme.hash(password);
   // Generation 1 predates the prefix, so its hashes are stored without one.
-  return generation.id === 1 ? fields : `v${generation.id}$${fields}`;
+  return (generation.id === 1 ? fields : `v${generation.id}$${fields}`) as PasswordHash;
 }
 
 /** The generation id a stored hash names, and its scheme fields. */
@@ -120,7 +124,7 @@ function splitHash(stored: string): { id: number; fields: string } {
 
 export async function verifyPassword(
   password: string,
-  stored: string,
+  stored: PasswordHash,
   generations: readonly PasswordGeneration[] = PASSWORD_GENERATIONS
 ): Promise<PasswordCheck> {
   const split = splitHash(stored);
