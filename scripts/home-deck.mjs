@@ -82,7 +82,7 @@ async function main() {
     await browser.close();
   }
   const lines = Object.keys(hashes)
-    .sort()
+    .sort((a, b) => a.localeCompare(b))
     .map((slug) => `  '${slug}': '${hashes[slug]}',\n`);
   writeFileSync(
     join(ROOT, 'src/lib/homeDeckImages.ts'),
