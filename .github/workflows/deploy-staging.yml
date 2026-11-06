@@ -31,11 +31,7 @@ jobs:
       r2-bucket: loading-baby-staging-media
       media-route: staging
 
-  # The rulesets "Require E2E on main" and "Require CI and E2E on staging"
-  # require a check named e2e from GitHub Actions: keep this job's name, and
-  # keep it here rather than in a reusable workflow, which would rename its
-  # check to "<caller> / e2e".
-  e2e:
+  playwright:
     needs: deploy
     runs-on: ubuntu-latest
     timeout-minutes: 30
@@ -82,6 +78,23 @@ jobs:
           name: playwright-report
           path: playwright-report/
           retention-days: 14
+
+  # Required by the merge rules: both prerequisites must finish successfully.
+  e2e:
+    needs: [deploy, playwright]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Require a successful deployment and browser suite
+        env:
+          DEPLOY_RESULT: ${{ needs.deploy.result }}
+          PLAYWRIGHT_RESULT: ${{ needs.playwright.result }}
+        run: |
+          if [ "$DEPLOY_RESULT" != success ] || [ "$PLAYWRIGHT_RESULT" != success ]; then
+            echo "::error::E2E requires successful deployment and browser tests (deploy=$DEPLOY_RESULT, playwright=$PLAYWRIGHT_RESULT)"
+            exit 1
+          fi
 
   promote:
     needs: e2e
