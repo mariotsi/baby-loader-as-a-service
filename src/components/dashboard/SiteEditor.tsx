@@ -205,7 +205,8 @@ export function SiteEditor({
 
   const [baseline, setBaseline] = useState<Draft>(() => ({ fields: fieldsNow(), milestones, video }));
   const dirty = draftState({ fields: fieldsNow(), milestones, video }) !== draftState(baseline);
-  const leaving = useLeaveGuard(dirty);
+  // A stale page can't save what it holds, and Reload says so: guarding it would ask again before reloading.
+  const leaving = useLeaveGuard(dirty && !stale);
 
   /** Everything that stops a save: the Site settings rules, then Places typed and never picked. */
   function problems(): SiteSettingsError[] {
