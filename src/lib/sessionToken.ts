@@ -1,13 +1,18 @@
 import { createHmac, timingSafeEqual } from 'node:crypto';
+import * as z from 'zod/mini';
 
 /**
  * The session cookie's value: `<userId>.<expiresAt>[.change].<signature>`,
  * the HMAC signature covering everything before it. `change` marks a session
  * whose User must choose a new password before anything else.
  *
- * Imports only Node built-ins and takes the secret as an argument, so the E2E
- * suite signs sessions exactly as the app does.
+ * Imports nothing of the app's and takes the secret as an argument, so the
+ * E2E suite signs sessions exactly as the app does.
  */
+
+/** A signed session cookie value. Only signSessionToken makes one; a token from a request is a plain string until readSessionToken checks it. */
+export const sessionTokenSchema = z.string().brand<'SessionToken'>();
+export type SessionToken = z.output<typeof sessionTokenSchema>;
 
 export interface Session {
   userId: string;
@@ -20,13 +25,13 @@ function sign(payload: string, secret: string): string {
   return createHmac('sha256', secret).update(payload).digest('base64url');
 }
 
-export function signSessionToken(session: Session, expiresAt: number, secret: string): string {
+export function signSessionToken(session: Session, expiresAt: number, secret: string): SessionToken {
   const parts = [session.userId, String(expiresAt)];
   if (session.passwordChangePending) {
     parts.push(PASSWORD_CHANGE_PENDING);
   }
   const payload = parts.join('.');
-  return `${payload}.${sign(payload, secret)}`;
+  return sessionTokenSchema.parse(`${payload}.${sign(payload, secret)}`);
 }
 
 /** The session a token carries, or null if the token is missing, forged or expired. */
