@@ -1,3 +1,4 @@
+import type * as z from 'zod/mini';
 import { isId } from '../db/index.ts';
 import { verifySessionToken } from './auth.ts';
 import { getSiteBySlug, type Site } from './site.ts';
@@ -17,10 +18,10 @@ import { getSiteBySlug, type Site } from './site.ts';
 export type SignedInUser = {
   readonly id: string;
   readonly passwordChangePending: boolean;
-} & { readonly __brand: 'SignedInUser' };
+} & z.$brand<'SignedInUser'>;
 /** A signed-in User with no password change pending. */
-export type AuthenticatedUser = { readonly id: string } & { readonly __brand: 'AuthenticatedUser' };
-export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Site } & { readonly __brand: 'OwnedSite' };
+export type AuthenticatedUser = { readonly id: string } & z.$brand<'AuthenticatedUser'>;
+export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Site } & z.$brand<'OwnedSite'>;
 
 /**
  * A missing Site and another Owner's Site are the same denial: neither is

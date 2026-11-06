@@ -211,13 +211,13 @@ export type PageName = SiteSettings['pageName'];
 export type TextPerLanguage = Milestone['label'];
 
 /** Site settings that passed every rule. Only parseSiteSettings and parseNewSite produce one. */
-export type ValidSiteSettings = SiteSettings & { readonly __brand: 'ValidSiteSettings' };
+export type ValidSiteSettings = SiteSettings & z.$brand<'ValidSiteSettings'>;
 
 /** A Slug and Site settings that passed every rule. Only parseNewSite produces one. */
 export type ValidNewSite = {
   readonly slug: string;
   readonly settings: ValidSiteSettings;
-} & { readonly __brand: 'ValidNewSite' };
+} & z.$brand<'ValidNewSite'>;
 
 /** Where onboarding and the editor start from. */
 export const defaultSiteSettings: SiteSettingsInput = {
@@ -266,7 +266,8 @@ function rawAt(input: unknown, path: readonly PropertyKey[]): unknown {
   return value;
 }
 
-function toErrors(issues: readonly z.core.$ZodIssue[], input: unknown): SiteSettingsError[] {
+/** Zod's issues as the errors forms show: a path to the field and a code its words come from. */
+export function toErrors(issues: readonly z.core.$ZodIssue[], input: unknown): SiteSettingsError[] {
   return issues.flatMap((issue): SiteSettingsError[] => {
     const path = issue.path.join('.');
     switch (issue.code) {
