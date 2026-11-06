@@ -1,6 +1,8 @@
+import { createECDH, randomBytes } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { drizzle } from 'drizzle-orm/d1';
 import { getPlatformProxy } from 'wrangler';
+import { parseSubscription, type ValidSubscription } from '../lib/subscription.ts';
 import { getDb, newId, setTestDb } from './index.ts';
 import * as schema from './schema.ts';
 
@@ -11,6 +13,20 @@ export async function insertTestUser(): Promise<string> {
     .insert(schema.users)
     .values({ id, email: `${id}@example.com`, passwordHash: 'test', createdAt: new Date().toISOString() });
   return id;
+}
+
+/** A Subscription with fresh keys a browser could have handed over, for tests that store one. */
+export function testSubscription(endpoint: string): ValidSubscription {
+  const ecdh = createECDH('prime256v1');
+  ecdh.generateKeys();
+  const parsed = parseSubscription({
+    endpoint,
+    keys: { p256dh: ecdh.getPublicKey().toString('base64url'), auth: randomBytes(16).toString('base64url') },
+  });
+  if (!parsed.ok) {
+    throw new Error(JSON.stringify(parsed.errors));
+  }
+  return parsed.value;
 }
 
 const MIGRATIONS_DIR = new URL('../../migrations/', import.meta.url);

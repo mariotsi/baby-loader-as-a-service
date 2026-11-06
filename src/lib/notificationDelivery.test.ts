@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { insertTestUser, startTestDb } from '../db/testDb.ts';
+import { insertTestUser, startTestDb, testSubscription } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import type { DeviceInfo } from './deviceInfo.ts';
 import type { Lang } from './i18n.ts';
@@ -53,8 +53,7 @@ async function ownedSite(slug: string, settings: Partial<SiteSettingsInput> = {}
 async function subscribe(owned: OwnedSite, endpoint: string, lang: Lang | null = null, device?: string) {
   await upsertSubscription({
     siteId: owned.site.id,
-    endpoint,
-    keys: { p256dh: 'p256dh', auth: 'auth' },
+    subscription: testSubscription(endpoint),
     lang,
     deviceInfo: device ? ({ label: device } as DeviceInfo) : null,
     geo: null,

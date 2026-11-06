@@ -6,7 +6,13 @@ import { isLang } from '@/lib/i18n';
 import { rateLimit } from '@/lib/rateLimit';
 import { routeError } from '@/lib/routeError';
 import { getSiteBySlug } from '@/lib/site';
-import { deleteSubscription, hasSubscription, upsertSubscription } from '@/lib/subscription';
+import {
+  deleteSubscription,
+  ENDPOINT_MAX,
+  hasSubscription,
+  parseSubscription,
+  upsertSubscription,
+} from '@/lib/subscription';
 
 export async function POST(req: NextRequest) {
   if (!rateLimit(`subscribe:${clientIp(req)}`, 20, 60_000)) {
@@ -15,9 +21,9 @@ export async function POST(req: NextRequest) {
 
   const body = await req.json().catch(() => null);
   const slug = typeof body?.slug === 'string' ? body.slug : '';
-  const subscription = body?.subscription;
+  const subscription = parseSubscription(body?.subscription);
 
-  if (!slug || !subscription?.endpoint || !subscription?.keys?.p256dh || !subscription?.keys?.auth) {
+  if (!slug || !subscription.ok) {
     return routeError(400, { code: 'invalidRequest' });
   }
 
@@ -33,8 +39,7 @@ export async function POST(req: NextRequest) {
 
   await upsertSubscription({
     siteId: site.id,
-    endpoint: subscription.endpoint,
-    keys: { p256dh: subscription.keys.p256dh, auth: subscription.keys.auth },
+    subscription: subscription.value,
     lang,
     deviceInfo,
     geo,
@@ -48,7 +53,7 @@ export async function DELETE(req: NextRequest) {
   const slug = typeof body?.slug === 'string' ? body.slug : '';
   const endpoint = typeof body?.endpoint === 'string' ? body.endpoint : '';
 
-  if (!slug || !endpoint) {
+  if (!slug || !endpoint || endpoint.length > ENDPOINT_MAX) {
     return routeError(400, { code: 'invalidRequest' });
   }
 
@@ -64,7 +69,7 @@ export async function DELETE(req: NextRequest) {
 export async function GET(req: NextRequest) {
   const slug = req.nextUrl.searchParams.get('slug');
   const endpoint = req.nextUrl.searchParams.get('endpoint');
-  if (!slug || !endpoint) {
+  if (!slug || !endpoint || endpoint.length > ENDPOINT_MAX) {
     return routeError(400, { code: 'invalidRequest' });
   }
   const site = await getSiteBySlug(slug);

@@ -1,9 +1,11 @@
 import { and, count, desc, eq } from 'drizzle-orm';
+import webpush from 'web-push';
 import { getDb, newId } from '../db/index.ts';
 import { subscriptions } from '../db/schema.ts';
 import type { DeviceInfo } from './deviceInfo.ts';
 import type { GeoLocation } from './geoip.ts';
 import type { Lang } from './i18n.ts';
+import type { ParseResult, SiteSettingsError } from './siteSettings.ts';
 
 export interface PushSubscriptionRecord {
   id: string;
@@ -24,10 +26,96 @@ function fromRow({ p256dh, auth, ...row }: typeof subscriptions.$inferSelect): P
   return { ...row, keys: { p256dh, auth } };
 }
 
+/** Longest push endpoint accepted or looked up. Real ones run to a few hundred characters. */
+export const ENDPOINT_MAX = 2048;
+
+declare const valid: unique symbol;
+
+/** A browser's push subscription that passed every rule. Only parseSubscription produces one. */
+export type ValidSubscription = {
+  readonly endpoint: string;
+  readonly keys: { readonly p256dh: string; readonly auth: string };
+  readonly [valid]: true;
+};
+
+/**
+ * Parses the `PushSubscription.toJSON()` a Visitor's browser hands over.
+ * The endpoint is a URL the server later POSTs to, so it must be https, carry
+ * no credentials, and name a host rather than an IP address or localhost. The
+ * keys pass when web-push could encrypt a payload for them: its own checks
+ * decide, so the rule follows the library that sends. Other fields, such as
+ * `expirationTime`, are ignored.
+ */
+export function parseSubscription(input: unknown): ParseResult<ValidSubscription> {
+  if (!isRecord(input)) {
+    return { ok: false, errors: [{ path: 'subscription', code: 'required' }] };
+  }
+  const errors: SiteSettingsError[] = [];
+  const endpoint = parseEndpoint(input.endpoint, errors);
+  const keys = isRecord(input.keys) ? input.keys : null;
+  const p256dh = keys?.p256dh;
+  const auth = keys?.auth;
+  if (typeof p256dh !== 'string' || typeof auth !== 'string') {
+    errors.push({ path: 'subscription.keys', code: 'required' });
+  } else if (endpoint !== null && !encryptsFor(endpoint, p256dh, auth)) {
+    errors.push({ path: 'subscription.keys', code: 'invalidFormat' });
+  }
+  if (errors.length > 0 || endpoint === null) {
+    return { ok: false, errors };
+  }
+  return { ok: true, value: { endpoint, keys: { p256dh, auth } } as unknown as ValidSubscription };
+}
+
+function parseEndpoint(value: unknown, errors: SiteSettingsError[]): string | null {
+  const path = 'subscription.endpoint';
+  if (typeof value !== 'string' || value === '') {
+    errors.push({ path, code: 'required' });
+    return null;
+  }
+  if (value.length > ENDPOINT_MAX) {
+    errors.push({ path, code: 'tooLong', params: { max: ENDPOINT_MAX } });
+    return null;
+  }
+  let url: URL;
+  try {
+    url = new URL(value);
+  } catch {
+    errors.push({ path, code: 'invalidFormat' });
+    return null;
+  }
+  if (url.protocol !== 'https:' || url.username || url.password || !isNamedHost(url.hostname)) {
+    errors.push({ path, code: 'invalidFormat' });
+    return null;
+  }
+  return value;
+}
+
+/** A DNS name: not localhost, and not an IPv4 or IPv6 address (URL keeps IPv6 in brackets). */
+function isNamedHost(hostname: string): boolean {
+  const host = hostname.toLowerCase().replace(/\.$/, '');
+  if (host === 'localhost' || host.endsWith('.localhost') || host.startsWith('[')) {
+    return false;
+  }
+  return !/^[\d.]+$/.test(host);
+}
+
+/** Whether web-push accepts the keys: it encrypts a payload for them and builds the request, without sending it. */
+function encryptsFor(endpoint: string, p256dh: string, auth: string): boolean {
+  try {
+    webpush.generateRequestDetails({ endpoint, keys: { p256dh, auth } }, 'check');
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
 export interface UpsertSubscriptionInput {
   siteId: string;
-  endpoint: string;
-  keys: { p256dh: string; auth: string };
+  subscription: ValidSubscription;
   lang: Lang | null;
   deviceInfo: DeviceInfo | null;
   geo: GeoLocation | null;
@@ -36,9 +124,10 @@ export interface UpsertSubscriptionInput {
 /** Keyed by (siteId, endpoint): the same device re-subscribing just refreshes its record. */
 export async function upsertSubscription(input: UpsertSubscriptionInput): Promise<void> {
   const now = new Date().toISOString();
+  const { endpoint, keys } = input.subscription;
   const refreshed = {
-    p256dh: input.keys.p256dh,
-    auth: input.keys.auth,
+    p256dh: keys.p256dh,
+    auth: keys.auth,
     lang: input.lang,
     deviceInfo: input.deviceInfo,
     geo: input.geo,
@@ -46,7 +135,7 @@ export async function upsertSubscription(input: UpsertSubscriptionInput): Promis
   };
   await getDb()
     .insert(subscriptions)
-    .values({ ...refreshed, id: newId(), siteId: input.siteId, endpoint: input.endpoint, createdAt: now })
+    .values({ ...refreshed, id: newId(), siteId: input.siteId, endpoint, createdAt: now })
     .onConflictDoUpdate({ target: [subscriptions.siteId, subscriptions.endpoint], set: refreshed })
     .run();
 }
