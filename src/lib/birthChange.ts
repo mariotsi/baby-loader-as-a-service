@@ -13,14 +13,14 @@ import {
 } from './notificationDelivery.ts';
 import type { OwnedSite } from './ownerAccess.ts';
 import { type Site, saveSiteSettings } from './site.ts';
+import type { SiteMedia } from './siteMedia.ts';
 import { parseSiteSettings, type SiteSettings, type SiteSettingsError, siteSettingsOf } from './siteSettings.ts';
-import { customerMediaPrefix, type StorageProvider } from './storage.ts';
 
 export interface BirthWriteDeps {
   /** Null when push is not configured: announcing still saves, and says the notification failed. */
   push: PushService | null;
   /** Called only when a write carries media or replaces some. */
-  storage: () => Pick<StorageProvider, 'delete' | 'publicUrl'>;
+  media: () => Pick<SiteMedia, 'owns' | 'removeReplaced'>;
   now?: Date;
 }
 
@@ -114,32 +114,29 @@ async function announce(owned: OwnedSite, { push }: BirthWriteDeps): Promise<Del
 }
 
 /** Whether every file the settings point at is one the Owner uploaded to this Site. */
-function ownMedia({ birth, birthVideo }: SiteSettings, owned: OwnedSite, { storage }: BirthWriteDeps): boolean {
-  const files = [birth.details?.photo, birthVideo].filter((media) => !!media);
+function ownMedia({ birth, birthVideo }: SiteSettings, owned: OwnedSite, { media }: BirthWriteDeps): boolean {
+  const files = [birth.details?.photo, birthVideo].filter((file) => !!file);
   if (files.length === 0) {
     return true;
   }
   try {
-    const store = storage();
-    return files.every(
-      (media) => media.key.startsWith(customerMediaPrefix(owned)) && media.url === store.publicUrl(media.key)
-    );
+    const siteMedia = media();
+    return files.every((file) => siteMedia.owns(owned.site, file));
   } catch {
     return false;
   }
 }
 
 /** Deletes the photo and Birth video the save replaced. A failure leaves the file behind, and the save stands. */
-async function removeReplacedMedia(owned: OwnedSite, saved: Site, { storage }: BirthWriteDeps): Promise<void> {
-  const kept = new Set([saved.birth.details?.photo?.key, saved.birthVideo?.key]);
-  const replaced = [owned.site.birth.details?.photo?.key, owned.site.birthVideo?.key].filter(
-    (key): key is string => !!key && !kept.has(key)
-  );
-  for (const key of replaced) {
-    try {
-      await storage().delete(owned, key);
-    } catch {}
+async function removeReplacedMedia(owned: OwnedSite, saved: Site, { media }: BirthWriteDeps): Promise<void> {
+  const replaced = (site: Site) => [site.birth.details?.photo?.key, site.birthVideo?.key];
+  const [before, after] = [replaced(owned.site), replaced(saved)];
+  if (before.every((key) => !key || after.includes(key))) {
+    return;
   }
+  try {
+    await media().removeReplaced(owned.site, saved);
+  } catch {}
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

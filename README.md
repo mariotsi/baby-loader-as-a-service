@@ -55,22 +55,33 @@ switcher), due-date countdown + milestones, born-state fields, per-Site
 push notifications, the list of a Site's Subscriptions and the R2-backed
 media storage layer, birth video uploads and the welcome video reveal.
 
-Owner uploads live under `customer-data/<owner-id>/<site-id>/`; application-managed
-website files use `website-assets/`. Deletion requires an authenticated `OwnedSite`
-and accepts keys only from that owner's Site folder.
+Site media (`src/lib/siteMedia.ts`) owns every rule about an Owner's files:
+the accepted types and limits, the key each is stored under
+(`customer-data/<owner-id>/<site-id>/<uuid>`, a `MediaKey`), which keys belong
+to a Site, reading one back, and removing what a Site no longer uses. It
+reaches the bucket only through `MediaStore` (`src/lib/mediaStore.ts`): the
+Worker's `WEBSITE_ASSETS` R2 binding in every deployment and under
+`npm run dev`, a map in memory in tests. Application-managed website files use
+`website-assets/`, which the deploy uploads over R2's S3 API.
+
+Each upload also removes that Site's files older than a day that its settings
+do not point at: uploads from a save that failed or a tab closed before
+saving, and replaced files whose removal failed. No scheduled job is needed.
 
 The Owner media API is `POST` and `DELETE /api/sites/<slug>/media`. `POST`
 accepts multipart form data with a `file` field and returns its object key and
 public URL. It accepts AVIF, JPEG, PNG and WebP images up to 5 MB, and MP4 or
-WebM video up to 50 MB. `DELETE` accepts a JSON `{ "key": "..." }` body;
-deletion purges the file's public URL from Cloudflare's cache.
+WebM video up to 50 MB. `DELETE` accepts a JSON `{ "key": "..." }` body
+naming an upload the Site's settings do not use; deletion purges the file's
+public URL from Cloudflare's cache.
 
 The Site editor holds the welcome video selection locally until the Owner saves.
 The Owner can pick it before the birth, ready for the day; the Public page plays it only in the Born state.
 The welcome video opens in a full-screen dialog once per browser, and the Born
 page offers a replay button. The editor
-provides an explicit video preview. On Preview deployments, published birth media
-is served on the page origin from R2, including byte-range video requests. Replaced and removed files are deleted after
+provides an explicit video preview. On Preview deployments and under `npm run
+dev`, published birth media is served on the page origin from R2, including
+byte-range video requests. Replaced and removed files are deleted after
 the Site settings save succeeds. Birth photo selection in the Send birth
 notification flow is tracked in [#15](https://github.com/mariotsi/baby-loader-as-a-service/issues/15).
 

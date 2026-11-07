@@ -3,10 +3,12 @@ import { after, before, test } from 'node:test';
 import { insertTestUser, startTestDb, testSubscription } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import { type BirthWriteDeps, clearBirth, saveSettings, setBirth } from './birthChange.ts';
+import { memoryMediaStore, noCachePurge } from './mediaStore.ts';
 import type { PushOutcome, PushService } from './notificationDelivery.ts';
 import { listNotifications } from './notificationLog.ts';
 import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
 import { createSite, type Site } from './site.ts';
+import { type MediaKey, siteMedia } from './siteMedia.ts';
 import {
   type BirthMedia,
   defaultSiteSettings,
@@ -14,7 +16,6 @@ import {
   type SiteSettingsInput,
   siteSettingsOf,
 } from './siteSettings.ts';
-import { customerMediaPrefix } from './storage.ts';
 import { upsertSubscription } from './subscription.ts';
 
 const NOW = new Date('2026-11-03T10:00:00Z');
@@ -59,26 +60,30 @@ async function reload(slug: string): Promise<OwnedSite> {
   return access;
 }
 
-/** A storage that serves every key from one host and records what it is asked to delete. */
-function fakeStorage(failDeletes = false) {
+/** Site media in memory, served from one host, recording what it is asked to delete. */
+function fakeMedia(failDeletes = false) {
   const deleted: string[] = [];
-  return {
-    deleted,
-    storage: {
-      publicUrl: (key: string) => `https://media.test/${key}`,
-      delete(_site: OwnedSite, key: string) {
+  const { store } = memoryMediaStore();
+  const recording = siteMedia({
+    store: {
+      ...store,
+      delete(key) {
         if (failDeletes) {
           return Promise.reject(new Error('storage is down'));
         }
         deleted.push(key);
-        return Promise.resolve();
+        return store.delete(key);
       },
     },
-  };
+    purge: noCachePurge,
+    publicUrl: 'https://media.test',
+    log: () => {},
+  });
+  return { deleted, media: recording };
 }
 
 function media(owned: OwnedSite, name: string, type: BirthMedia['type'] = 'image/jpeg'): BirthMedia {
-  const key = `${customerMediaPrefix(owned)}${name}`;
+  const key = `customer-data/${owned.owner.id}/${owned.site.id}/${crypto.randomUUID()}` as MediaKey;
   return { key, url: `https://media.test/${key}`, name, type, size: 1000 };
 }
 
@@ -94,7 +99,7 @@ function fakePush(outcome: PushOutcome = 'delivered') {
 }
 
 function deps(overrides: Partial<BirthWriteDeps> = {}): BirthWriteDeps {
-  return { push: fakePush().service, storage: () => fakeStorage().storage, now: NOW, ...overrides };
+  return { push: fakePush().service, media: () => fakeMedia().media, now: NOW, ...overrides };
 }
 
 function birthBody(site: Site, overrides: Record<string, unknown> = {}) {
@@ -196,12 +201,12 @@ test('going back to the Countdown drops the Birth details, the Birth milestone a
       deps()
     )
   );
-  const { storage, deleted } = fakeStorage();
+  const { media: recording, deleted } = fakeMedia();
 
   const result = await clearBirth(
     await reload('birth-undo'),
     { updatedAt: announced.updatedAt },
-    deps({ storage: () => storage })
+    deps({ media: () => recording })
   );
 
   const site = okSite(result);
@@ -296,7 +301,10 @@ test('the Birth endpoint takes only the Birth’s own fields', async () => {
 
 test('media outside the Site’s own folder is refused', async () => {
   const owned = await waitingSite('birth-foreign-media');
-  const foreign = { ...media(owned, 'video.mp4', 'video/mp4'), key: 'customer-data/someone/else/video.mp4' };
+  const foreign = {
+    ...media(owned, 'video.mp4', 'video/mp4'),
+    key: `customer-data/someone/else/${crypto.randomUUID()}` as MediaKey,
+  };
   foreign.url = `https://media.test/${foreign.key}`;
   assert.deepEqual(await setBirth(owned, birthBody(owned.site, { birthVideo: foreign }), deps()), {
     ok: false,
@@ -372,21 +380,21 @@ test('the media a save replaces leaves storage, and a failed removal does not fa
     deps()
   );
   assert.ok(withFirst.ok, JSON.stringify(withFirst));
-  const { storage, deleted } = fakeStorage();
+  const { media: recording, deleted } = fakeMedia();
 
   const withSecond = await saveSettings(
     await reload('settings-media'),
     { updatedAt: withFirst.site.updatedAt, settings: { ...settings, birthVideo: second } },
-    deps({ storage: () => storage })
+    deps({ media: () => recording })
   );
   assert.ok(withSecond.ok, JSON.stringify(withSecond));
   assert.deepEqual(deleted, [first.key]);
 
-  const failing = fakeStorage(true);
+  const failing = fakeMedia(true);
   const cleared = await saveSettings(
     await reload('settings-media'),
     { updatedAt: withSecond.site.updatedAt, settings: { ...settings, birthVideo: null } },
-    deps({ storage: () => failing.storage })
+    deps({ media: () => failing.media })
   );
   assert.ok(cleared.ok, JSON.stringify(cleared));
   assert.equal(cleared.site.birthVideo, null);

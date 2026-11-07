@@ -8,10 +8,6 @@ const VALID = {
   NEXT_PUBLIC_VAPID_PUBLIC_KEY: `B${'A'.repeat(86)}`,
   VAPID_PRIVATE_KEY: 'A'.repeat(43),
   ROOT_DOMAIN: 'localhost:3000',
-  MEDIA_STORAGE_ENDPOINT: 'https://account-id.r2.cloudflarestorage.com',
-  MEDIA_STORAGE_BUCKET: 'loading-baby-media',
-  MEDIA_STORAGE_ACCESS_KEY_ID: 'access-key',
-  MEDIA_STORAGE_SECRET_ACCESS_KEY: 'secret-key',
   MEDIA_PUBLIC_URL: 'https://media.loading.baby',
   MEDIA_CACHE_PURGE_TOKEN: 'cache-purge-token',
   MEDIA_CACHE_PURGE_ZONE_ID: '0123456789abcdef0123456789abcdef',
@@ -69,4 +65,14 @@ test('validateEnv names the problems across variables along with the rest', () =
     '- SESSION_SECRET is not set',
     '- VAPID_PRIVATE_KEY is not set, while the rest of the VAPID keypair is',
   ]);
+});
+
+test('a deployment needs both cache purge variables, development neither', () => {
+  const { MEDIA_CACHE_PURGE_TOKEN: _token, MEDIA_CACHE_PURGE_ZONE_ID: _zone, ...local } = VALID;
+  assert.deepEqual(problems(local), []);
+  assert.deepEqual(
+    problems({ ...local, APP_ENV: 'preview', MEDIA_CACHE_PURGE_ZONE_ID: VALID.MEDIA_CACHE_PURGE_ZONE_ID }),
+    ['- MEDIA_CACHE_PURGE_TOKEN is not set, while APP_ENV is a deployment']
+  );
+  assert.deepEqual(problems({ ...VALID, APP_ENV: 'production' }), []);
 });
