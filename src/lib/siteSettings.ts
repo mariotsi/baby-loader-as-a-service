@@ -1,6 +1,6 @@
 import { addMonths, format, isAfter, isMatch, isValid, parseISO } from 'date-fns';
 import * as z from 'zod/mini';
-import { slugProblem } from './address.ts';
+import { slugSchema } from './address.ts';
 import { LANGS, type Lang } from './i18n.ts';
 import { DEFAULT_FONT, DEFAULT_PALETTE, FONTS, PALETTES } from './theme.ts';
 
@@ -194,12 +194,7 @@ const validSiteSettingsSchema = siteSettingsSchema.brand<'ValidSiteSettings'>();
 /** A Slug and Site settings that passed every rule. Only parseNewSite produces one. */
 const newSiteSchema = z
   .strictObject({
-    slug: z.string().check(
-      z.trim(),
-      z.toLowerCase(),
-      z.refine((slug) => slugProblem(slug) !== 'invalidFormat', { params: { code: 'invalidFormat' } }),
-      z.refine((slug) => slugProblem(slug) !== 'slugReserved', { params: { code: 'slugReserved' } })
-    ),
+    slug: z.pipe(z.string().check(z.trim(), z.toLowerCase()), slugSchema),
     settings: validSiteSettingsSchema,
   })
   .brand<'ValidNewSite'>();

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { insertTestUser, startTestDb, testSubscription } from '../db/testDb.ts';
 import { createUser, EmailTakenError, getUserByEmail, getUserById } from './auth.ts';
+import { emailSchema } from './email.ts';
 import type { AuthenticatedUser } from './ownerAccess.ts';
 import { createSite } from './site.ts';
 import { defaultSiteSettings, parseNewSite } from './siteSettings.ts';
@@ -16,11 +17,11 @@ before(async () => {
 after(() => stopDb());
 
 test('an email has one account, whatever its case', async () => {
-  const user = await createUser('Ada@Example.com ', 'Correct-horse-1');
+  const user = await createUser(emailSchema.parse('Ada@Example.com '), 'Correct-horse-1');
   assert.match(user.id, /^[0-9a-f-]{36}$/);
   assert.equal((await getUserByEmail('ada@example.com'))?.id, user.id);
   assert.equal((await getUserById(user.id))?.email, 'ada@example.com');
-  await assert.rejects(createUser('ADA@example.com', 'Another-horse-2'), EmailTakenError);
+  await assert.rejects(createUser(emailSchema.parse('ADA@example.com'), 'Another-horse-2'), EmailTakenError);
 });
 
 test('an id of the wrong shape matches no User', async () => {

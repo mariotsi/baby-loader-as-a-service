@@ -2,6 +2,7 @@ import { createECDH, randomBytes } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { drizzle } from 'drizzle-orm/d1';
 import { getPlatformProxy } from 'wrangler';
+import { emailSchema } from '../lib/email.ts';
 import { subscriptionSchema, type ValidSubscription } from '../lib/subscription.ts';
 import { newUserId, type UserId } from './ids.ts';
 import { getDb, setTestDb } from './index.ts';
@@ -12,7 +13,12 @@ export async function insertTestUser(): Promise<UserId> {
   const id = newUserId();
   await getDb()
     .insert(schema.users)
-    .values({ id, email: `${id}@example.com`, passwordHash: 'test', createdAt: new Date().toISOString() });
+    .values({
+      id,
+      email: emailSchema.parse(`${id}@example.com`),
+      passwordHash: 'test',
+      createdAt: new Date().toISOString(),
+    });
   return id;
 }
 

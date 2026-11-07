@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
   }
 
   const body = await req.json().catch(() => null);
-  const email = typeof body?.email === 'string' ? body.email.trim() : '';
+  const email = body?.email;
   const password = typeof body?.password === 'string' ? body.password : '';
 
   const result = await logIn(email, password);
