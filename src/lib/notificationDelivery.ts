@@ -3,7 +3,8 @@ import { type DeliveryId, isNotificationId, type NotificationId } from '../db/id
 import { siteAddressPath } from './address.ts';
 import { birthMediaUrl } from './birthMedia.ts';
 import { addressEnv, deploymentEnv } from './env.ts';
-import { fallbackLang, type Lang } from './i18n.ts';
+import type { Lang } from './i18n.ts';
+import { notificationContent, notificationIcon } from './notificationContent.ts';
 import {
   type DeliveryStatus,
   findNotification,
@@ -17,16 +18,15 @@ import {
 } from './notificationLog.ts';
 import type { OwnedSite } from './ownerAccess.ts';
 import type { Site } from './site.ts';
-import { siteIconUrl } from './siteMeta.ts';
-import { defaultNotificationTitle, type ParseResult, type SiteSettingsError, toErrors } from './siteSettings.ts';
+import { type ParseResult, type SiteSettingsError, toErrors } from './siteSettings.ts';
 import { deleteSubscriptionsByEndpoint, type PushEndpoint } from './subscription.ts';
 
 /**
  * Sends a Notification to every Subscription of one Site: logs it (see
  * notificationLog.ts), builds the payload the service worker (public/sw.js)
- * shows, picks each Subscription's language, sends in batches, records what
- * became of each Delivery, and forgets endpoints the push service reports
- * gone. The push service sits behind a port: web-push in production
+ * shows from each Subscription's content (notificationContent.ts), sends in
+ * batches, records what became of each Delivery, and forgets endpoints the
+ * push service reports gone. The push service sits behind a port: web-push in production
  * (webpush.ts), a recording fake in tests.
  */
 
@@ -222,38 +222,28 @@ async function withinTime(send: Promise<PushOutcome>, ms: number): Promise<PushO
  * fallbackLang), else any text sent.
  */
 function payloads(site: Site, messages: NotificationMessages): (lang: Lang | null) => string {
-  const texts = messages;
-  const fallback = texts[fallbackLang(site.languages)] ?? Object.values(texts)[0];
   const built = new Map<Lang | null, string>();
   const address = siteAddressPath(site.slug, addressEnv());
-  const icon = notificationIcon(site, address);
+  const icon = siteNotificationIcon(site, address);
   return (lang) => {
     let payload = built.get(lang);
     if (payload === undefined) {
-      const text = (lang && texts[lang]) || fallback;
-      payload = JSON.stringify({
-        title: text?.title || defaultNotificationTitle(site),
-        body: text?.body,
-        icon,
-        url: address,
-        tag: `site-${site.slug}`,
-      });
+      const { title, body, actions } = notificationContent(site, messages, lang, icon);
+      payload = JSON.stringify({ title, body, icon, url: address, tag: `site-${site.slug}`, actions });
       built.set(lang, payload);
     }
     return payload;
   };
 }
 
-/**
- * The picture beside the text: the birth photo once the baby is born, else the
- * Site icon, which is the loading baby unless the Owner picked an emoji.
- */
-export function notificationIcon(site: Site, address: string): string {
+/** The picture beside a sent Notification's text (see notificationIcon), with the birth photo where this deployment serves it. */
+export function siteNotificationIcon(site: Site, address: string): string {
   const photo = site.birth.details?.photo;
-  if (site.birth.born && photo) {
-    return birthMediaUrl(site.slug, 'photo', photo, deploymentEnv().appEnv);
-  }
-  return siteIconUrl(site, '192', address.replace(/\/$/, ''));
+  return notificationIcon(
+    site,
+    address,
+    photo ? birthMediaUrl(site.slug, 'photo', photo, deploymentEnv().appEnv) : null
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {
