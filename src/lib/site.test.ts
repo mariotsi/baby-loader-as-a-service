@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db/index.ts';
 import { sites } from '../db/schema.ts';
 import { insertTestUser, startTestDb } from '../db/testDb.ts';
+import { slugSchema } from './address.ts';
 import { issueSessionToken } from './auth.ts';
 import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
 import { createSite, getSiteBySlug, listSitesByOwner, saveSiteSettings } from './site.ts';
@@ -107,7 +108,7 @@ test('a Site saved with the Birth video in its Birth details reads it as the Bir
   await getDb()
     .update(sites)
     .set({ settings: legacy as unknown as SiteSettings })
-    .where(eq(sites.slug, 'ada'));
+    .where(eq(sites.slug, slugSchema.parse('ada')));
 
   const stored = await getSiteBySlug('ada');
   assert.deepEqual(stored?.birth, { born: true, details });

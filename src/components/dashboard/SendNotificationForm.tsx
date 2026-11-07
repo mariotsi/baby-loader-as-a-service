@@ -14,6 +14,8 @@ import { Textarea } from '@/components/ui/Textarea';
 import { platformCopy } from '@/lib/copy/platform';
 import { responseErrorText } from '@/lib/errorText';
 import { type Lang, languageName } from '@/lib/i18n';
+import { type NotificationSite, notificationContent } from '@/lib/notificationContent';
+import { siteShortName } from '@/lib/siteAppIdentity';
 import { NotificationPreviews } from './NotificationPreviews';
 import styles from './SendNotificationForm.module.css';
 
@@ -21,14 +23,10 @@ type Texts = Partial<Record<Lang, string>>;
 
 interface SendNotificationFormProps {
   slug: string;
-  /** The Site's Languages: one title and one message each. */
-  languages: Lang[];
-  /** The title a Notification has when none is written, or none while the Privacy settings hide the name. */
-  defaultTitle?: string;
+  /** The Site's settings: its Languages (one title and one message each) and what a Notification's content draws on. */
+  site: NotificationSite;
   /** What the notification shows beside the text, as delivery picks it (see notificationIcon). */
   icon: string;
-  /** The Site's name in each Language, as a home screen shows it. */
-  siteName: Partial<Record<Lang, string>>;
   /** The Site's Address without its scheme, where a notification comes from. */
   host: string;
   subscribers: number;
@@ -44,10 +42,8 @@ interface SendNotificationFormProps {
  */
 export function SendNotificationForm({
   slug,
-  languages,
-  defaultTitle,
+  site,
   icon,
-  siteName,
   host,
   subscribers,
   subscriptionsHref,
@@ -55,6 +51,7 @@ export function SendNotificationForm({
 }: SendNotificationFormProps) {
   const pageLang = useLang();
   const t = platformCopy[pageLang].send;
+  const { languages } = site;
   const [titles, setTitles] = useState<Texts>({});
   const [bodies, setBodies] = useState<Texts>({});
   const [confirming, setConfirming] = useState(false);
@@ -180,13 +177,20 @@ export function SendNotificationForm({
           texts={Object.fromEntries(
             languages.map((lang) => [
               lang,
-              {
-                title: titles[lang]?.trim() || defaultTitle || siteName[lang] || '',
-                body: bodies[lang]?.trim() || platformCopy[lang].send.messagePlaceholder,
-              },
+              notificationContent(
+                site,
+                {
+                  [lang]: {
+                    title: titles[lang]?.trim(),
+                    body: bodies[lang]?.trim() || platformCopy[lang].send.messagePlaceholder,
+                  },
+                },
+                lang,
+                icon
+              ),
             ])
           )}
-          siteName={siteName}
+          siteName={Object.fromEntries(languages.map((lang) => [lang, siteShortName(site, lang)]))}
           host={host}
           icon={icon}
         />

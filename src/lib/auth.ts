@@ -1,7 +1,9 @@
 import { eq } from 'drizzle-orm';
 import type { NextRequest } from 'next/server';
-import { getDb, isId, isUniqueViolation, newId } from '../db/index.ts';
+import { isUserId, newUserId, type UserId } from '../db/ids.ts';
+import { getDb, isUniqueViolation } from '../db/index.ts';
 import { users } from '../db/schema.ts';
+import { type Email, emailSchema } from './email.ts';
 import { addressEnv, sessionSecret } from './env.ts';
 import { hashPassword, PASSWORD_GENERATIONS, type PasswordGeneration, verifyPassword } from './password.ts';
 import { rateLimit } from './rateLimit.ts';
@@ -16,13 +18,19 @@ export type User = typeof users.$inferSelect;
 
 // --- Accounts ----------------------------------------------------------------
 
-export async function getUserByEmail(email: string): Promise<User | null> {
-  const user = await getDb().query.users.findFirst({ where: eq(users.email, email.trim().toLowerCase()) });
+/** The User with `email`, in any case and with any spaces round it; null for anything that is no email address. */
+export async function getUserByEmail(email: unknown): Promise<User | null> {
+  const parsed = emailSchema.safeParse(email);
+  if (!parsed.success) {
+    return null;
+  }
+  const user = await getDb().query.users.findFirst({ where: eq(users.email, parsed.data) });
   return user ?? null;
 }
 
-export async function getUserById(id: string): Promise<User | null> {
-  if (!isId(id)) {
+/** The User with `id`; null for anything that is not a User's id, so an id from a cookie or URL can be passed as is. */
+export async function getUserById(id: unknown): Promise<User | null> {
+  if (!isUserId(id)) {
     return null;
   }
   const user = await getDb().query.users.findFirst({ where: eq(users.id, id) });
@@ -33,10 +41,10 @@ export async function getUserById(id: string): Promise<User | null> {
 export class EmailTakenError extends Error {}
 
 /** The unique email column decides whether an email is taken. */
-export async function createUser(email: string, password: string): Promise<User> {
+export async function createUser(email: Email, password: string): Promise<User> {
   const user: User = {
-    id: newId(),
-    email: email.trim().toLowerCase(),
+    id: newUserId(),
+    email,
     passwordHash: await hashPassword(password),
     createdAt: new Date().toISOString(),
   };
@@ -51,7 +59,7 @@ export async function createUser(email: string, password: string): Promise<User>
   return user;
 }
 
-export async function updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+export async function updatePasswordHash(userId: UserId, passwordHash: string): Promise<void> {
   await getDb().update(users).set({ passwordHash }).where(eq(users.id, userId));
 }
 
@@ -66,7 +74,7 @@ export type LogInResult =
  * `retired` hash is refused with passwordResetRequired.
  */
 export async function logIn(
-  email: string,
+  email: unknown,
   password: string,
   generations: readonly PasswordGeneration[] = PASSWORD_GENERATIONS
 ): Promise<LogInResult> {

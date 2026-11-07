@@ -5,6 +5,8 @@
  * browser can too once the server hands it the configuration.
  */
 
+import * as z from 'zod/mini';
+
 export type AddressMode = 'subdomain' | 'path';
 
 export type AddressConfig = {
@@ -68,6 +70,19 @@ export function slugProblem(slug: string): 'invalidFormat' | 'slugReserved' | nu
     return 'invalidFormat';
   }
   return RESERVED_SLUGS.has(slug) ? 'slugReserved' : null;
+}
+
+/** A Site's Slug: what its Address is built from, never changed once the Site exists. */
+export const slugSchema = z
+  .string()
+  .check(
+    z.refine((slug) => slugProblem(slug) !== 'invalidFormat', { params: { code: 'invalidFormat' } }),
+    z.refine((slug) => slugProblem(slug) !== 'slugReserved', { params: { code: 'slugReserved' } })
+  )
+  .brand<'Slug'>();
+export type Slug = z.output<typeof slugSchema>;
+export function isSlug(value: unknown): value is Slug {
+  return slugSchema.safeParse(value).success;
 }
 
 /** Absolute URL of a Site's Public page. */

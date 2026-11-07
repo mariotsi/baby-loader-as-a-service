@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 import { startTestDb } from '../db/testDb.ts';
 import { createUser, getUserByEmail, logIn, updatePasswordHash } from './auth.ts';
+import { emailSchema } from './email.ts';
 import {
   hashPassword,
   PASSWORD_GENERATIONS,
@@ -27,7 +28,7 @@ function withGenerationOne(policy: PasswordPolicy): PasswordGeneration[] {
 
 /** A User whose stored hash is generation 1. */
 async function generationOneUser(email: string): Promise<string> {
-  const user = await createUser(email, PASSWORD);
+  const user = await createUser(emailSchema.parse(email), PASSWORD);
   const stored = await hashPassword(PASSWORD, generationOne);
   await updatePasswordHash(user.id, stored);
   return stored;
@@ -40,7 +41,7 @@ async function storedHash(email: string): Promise<string> {
 }
 
 test('a current hash logs in as it is', async () => {
-  await createUser('current@example.test', PASSWORD);
+  await createUser(emailSchema.parse('current@example.test'), PASSWORD);
   const stored = await storedHash('current@example.test');
   const result = await logIn('current@example.test', PASSWORD);
   assert.ok(result.ok);
@@ -49,7 +50,7 @@ test('a current hash logs in as it is', async () => {
 });
 
 test('a wrong password or an unknown email is wrongCredentials', async () => {
-  await createUser('wrong@example.test', PASSWORD);
+  await createUser(emailSchema.parse('wrong@example.test'), PASSWORD);
   assert.deepEqual(await logIn('wrong@example.test', 'Wrong horse 9!'), { ok: false, code: 'wrongCredentials' });
   assert.deepEqual(await logIn('nobody@example.test', PASSWORD), { ok: false, code: 'wrongCredentials' });
 });

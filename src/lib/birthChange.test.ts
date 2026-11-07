@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { insertTestUser, startTestDb } from '../db/testDb.ts';
+import { insertTestUser, startTestDb, testSubscription } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import { type BirthWriteDeps, clearBirth, saveSettings, setBirth } from './birthChange.ts';
 import { memoryMediaStore, noCachePurge } from './mediaStore.ts';
@@ -121,8 +121,7 @@ function okSite(result: Awaited<ReturnType<typeof setBirth>>): Site {
 async function subscribe(owned: OwnedSite, endpoint: string) {
   await upsertSubscription({
     siteId: owned.site.id,
-    endpoint,
-    keys: { p256dh: 'p256dh', auth: 'auth' },
+    subscription: testSubscription(endpoint),
     lang: 'en',
     deviceInfo: null,
     geo: null,

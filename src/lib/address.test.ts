@@ -3,6 +3,7 @@ import { test } from 'node:test';
 import {
   type AddressConfig,
   addressConfig,
+  isSlug,
   resolveRequest,
   siteAddress,
   siteAddressPath,
@@ -131,4 +132,11 @@ test('slugProblem rejects what a subdomain cannot carry and what the Platform ke
   assert.equal(slugProblem('staging'), 'slugReserved');
   assert.equal(slugProblem('admin'), 'slugReserved');
   assert.equal(slugProblem('dashboard'), 'slugReserved');
+});
+
+test('isSlug takes what slugProblem accepts and nothing else', () => {
+  assert.equal(isSlug('emma'), true);
+  for (const value of [undefined, 42, 'ab', '-emma', 'Emma', 'www', 'dashboard']) {
+    assert.equal(isSlug(value), false, String(value));
+  }
 });
