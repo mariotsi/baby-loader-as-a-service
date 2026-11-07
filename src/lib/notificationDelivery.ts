@@ -18,7 +18,7 @@ import {
 import type { OwnedSite } from './ownerAccess.ts';
 import type { Site } from './site.ts';
 import { type ParseResult, type SiteSettingsError, toErrors } from './siteSettings.ts';
-import { deleteSubscriptionsByEndpoint } from './subscription.ts';
+import { deleteSubscriptionsByEndpoint, type PushEndpoint } from './subscription.ts';
 
 /**
  * Sends a Notification to every Subscription of one Site: logs it (see
@@ -165,7 +165,7 @@ async function sendOutstanding(
     subscription ? [{ deliveryId, subscription }] : []
   );
 
-  const goneEndpoints = new Set<string>();
+  const goneEndpoints = new Set<PushEndpoint>();
   for (let start = 0; start < reachable.length; start += BATCH_SIZE) {
     const batch = reachable.slice(start, start + BATCH_SIZE);
     const outcomes = await Promise.all(
