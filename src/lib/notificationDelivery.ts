@@ -1,4 +1,5 @@
 import * as z from 'zod/mini';
+import { type DeliveryId, isNotificationId, type NotificationId } from '../db/ids.ts';
 import { siteAddressPath } from './address.ts';
 import { birthMediaUrl } from './birthMedia.ts';
 import { addressEnv, deploymentEnv } from './env.ts';
@@ -108,9 +109,12 @@ export async function deliverNotification(
 /** Sends what is outstanding on one of the Site's Notifications; null when there is nothing it may finish. */
 export async function finishNotification(
   owned: OwnedSite,
-  id: string,
+  id: unknown,
   push: PushService
 ): Promise<DeliveryResult | null> {
+  if (!isNotificationId(id)) {
+    return null;
+  }
   const notification = await findNotification(owned.site.id, id);
   if (!notification || !deliverySummary(notification, owned.site).finishable) {
     return null;
@@ -150,7 +154,7 @@ export function unfinishedBirth(
 
 async function sendOutstanding(
   site: Site,
-  id: string,
+  id: NotificationId,
   messages: NotificationMessages,
   push: PushService,
   sendTimeoutMs: number
@@ -173,7 +177,7 @@ async function sendOutstanding(
         withinTime(push.send({ endpoint: s.endpoint, keys: s.keys }, payloadFor(s.lang ?? null)), sendTimeoutMs)
       )
     );
-    const recorded = new Map<DeliveryStatus, number[]>();
+    const recorded = new Map<DeliveryStatus, DeliveryId[]>();
     outcomes.forEach((outcome, i) => {
       recorded.set(outcome, [...(recorded.get(outcome) ?? []), batch[i].deliveryId]);
       if (outcome === 'gone') {
@@ -193,7 +197,7 @@ async function sendOutstanding(
   return { sent, removed, total };
 }
 
-async function recordInBatches(ids: number[]): Promise<void> {
+async function recordInBatches(ids: DeliveryId[]): Promise<void> {
   for (let start = 0; start < ids.length; start += BATCH_SIZE) {
     await recordDeliveries(new Map([['gone', ids.slice(start, start + BATCH_SIZE)]]));
   }

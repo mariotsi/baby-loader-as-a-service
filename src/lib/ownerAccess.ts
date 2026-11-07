@@ -1,5 +1,5 @@
 import * as z from 'zod/mini';
-import { isId } from '../db/index.ts';
+import { isUserId, userIdSchema } from '../db/ids.ts';
 import { verifySessionToken } from './auth.ts';
 import { getSiteBySlug, type Site } from './site.ts';
 
@@ -15,11 +15,11 @@ import { getSiteBySlug, type Site } from './site.ts';
  * Anyone with a valid session, a password change pending or not. It is
  * enough to set a new password and nothing else.
  */
-const signedInUserSchema = z.object({ id: z.string(), passwordChangePending: z.boolean() }).brand<'SignedInUser'>();
+const signedInUserSchema = z.object({ id: userIdSchema, passwordChangePending: z.boolean() }).brand<'SignedInUser'>();
 export type SignedInUser = Readonly<z.output<typeof signedInUserSchema>>;
 
 /** A signed-in User with no password change pending. */
-const authenticatedUserSchema = z.object({ id: z.string() }).brand<'AuthenticatedUser'>();
+const authenticatedUserSchema = z.object({ id: userIdSchema }).brand<'AuthenticatedUser'>();
 export type AuthenticatedUser = Readonly<z.output<typeof authenticatedUserSchema>>;
 
 /** The Site's own checks ran when it was read; the brand says only that its owner is this User. */
@@ -34,7 +34,7 @@ export type AccessDenial = 'unauthenticated' | 'passwordChangePending' | 'notFou
 
 export function signIn(sessionToken: string | undefined): SignedInUser | null {
   const session = verifySessionToken(sessionToken);
-  if (!session || !isId(session.userId)) {
+  if (!session || !isUserId(session.userId)) {
     return null;
   }
   return signedInUserSchema.parse({ id: session.userId, passwordChangePending: session.passwordChangePending });
