@@ -1,5 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
+import { siteIdSchema, userIdSchema } from '../db/ids.ts';
+import { slugSchema } from './address.ts';
 import { type CachePurge, memoryMediaStore, noCachePurge } from './mediaStore.ts';
 import type { OwnedSite } from './ownerAccess.ts';
 import type { Site } from './site.ts';
@@ -14,15 +16,16 @@ import {
 } from './siteMedia.ts';
 import { type BirthMedia, defaultSiteSettings } from './siteSettings.ts';
 
-const OWNER_ID = '6f1d2c3b-4a5e-4f60-8172-839405a6b7c8';
-const SITE_ID = '7a2e3d4c-5b6f-4071-9283-94a516b7c8d9';
+const OWNER_ID = userIdSchema.parse('6f1d2c3b-4a5e-4f60-8172-839405a6b7c8');
+const SITE_ID = siteIdSchema.parse('7a2e3d4c-5b6f-4071-9283-94a516b7c8d9');
+const OTHER_SITE_ID = siteIdSchema.parse('8b3f4e5d-6c70-4182-a394-a5b6c7d8e9f0');
 
 function site(overrides: Partial<Site> = {}): Site {
   return {
     ...defaultSiteSettings,
     id: SITE_ID,
     ownerId: OWNER_ID,
-    slug: 'leo',
+    slug: slugSchema.parse('leo'),
     createdAt: '2026-11-01T00:00:00.000Z',
     updatedAt: '2026-11-01T00:00:00.000Z',
     customDomain: null,
@@ -94,7 +97,7 @@ test('a Site owns only its own keys, at their own URL', async () => {
   const { key, url } = await media.upload(owned(), photo());
   assert.equal(media.owns(site(), stored(key)), true);
   assert.equal(media.owns(site(), { ...stored(key), url: `${url}?x` }), false);
-  assert.equal(media.owns(site({ id: '8b3f4e5d-6c70-4182-a394-a5b6c7d8e9f0' }), stored(key)), false);
+  assert.equal(media.owns(site({ id: OTHER_SITE_ID }), stored(key)), false);
 });
 
 test('an Owner removes an unused upload of their Site, never one in use or another Site’s', async () => {
@@ -104,10 +107,7 @@ test('an Owner removes an unused upload of their Site, never one in use or anoth
   const withVideo = site({ birthVideo: stored(inUse.key) });
 
   await assert.rejects(media.remove(owned(withVideo), inUse.key), MediaNotFoundError);
-  await assert.rejects(
-    media.remove(owned(site({ id: '8b3f4e5d-6c70-4182-a394-a5b6c7d8e9f0' })), unused.key),
-    MediaNotFoundError
-  );
+  await assert.rejects(media.remove(owned(site({ id: OTHER_SITE_ID })), unused.key), MediaNotFoundError);
   await assert.rejects(media.remove(owned(), '../secrets'), MediaNotFoundError);
   await assert.rejects(media.remove(owned(), undefined), MediaNotFoundError);
 
@@ -127,7 +127,7 @@ test('an upload sweeps the Site’s files nothing uses once they are a day old',
   const { media, keys, later } = setup();
   const abandoned = await media.upload(owned(), photo());
   const kept = await media.upload(owned(), photo());
-  const other = site({ id: '8b3f4e5d-6c70-4182-a394-a5b6c7d8e9f0' });
+  const other = site({ id: OTHER_SITE_ID });
   const othersFile = await media.upload(owned(other), photo());
   const current = site({ birthVideo: stored(kept.key) });
 
