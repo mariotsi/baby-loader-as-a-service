@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { insertTestUser, startTestDb } from '../db/testDb.ts';
+import { insertTestUser, startTestDb, testSubscription } from '../db/testDb.ts';
 import { createUser, EmailTakenError, getUserByEmail, getUserById } from './auth.ts';
 import { emailSchema } from './email.ts';
 import type { AuthenticatedUser } from './ownerAccess.ts';
@@ -37,18 +37,18 @@ test('a device subscribed twice to one Site is one Subscription, refreshed', asy
   assert.ok(created.ok);
   const subscription = {
     siteId: created.site.id,
-    endpoint: 'https://push.example/ivy',
-    keys: { p256dh: 'first', auth: 'auth' },
+    subscription: testSubscription('https://push.example/ivy'),
     lang: null,
     deviceInfo: null,
     geo: null,
   };
 
   await upsertSubscription(subscription);
-  await upsertSubscription({ ...subscription, keys: { p256dh: 'second', auth: 'auth' }, lang: 'it' });
+  const refreshed = testSubscription('https://push.example/ivy');
+  await upsertSubscription({ ...subscription, subscription: refreshed, lang: 'it' });
 
   assert.equal(await countSubscriptionsBySite(created.site.id), 1);
   const [stored] = await listSubscriptionsBySite(created.site.id);
-  assert.deepEqual(stored.keys, { p256dh: 'second', auth: 'auth' });
+  assert.deepEqual(stored.keys, refreshed.keys);
   assert.equal(stored.lang, 'it');
 });
