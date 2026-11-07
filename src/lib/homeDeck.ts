@@ -1,3 +1,4 @@
+import { HOME_DECK_IMAGES } from './homeDeckImages.ts';
 import type { Lang } from './i18n.ts';
 import { FONTS, PALETTES } from './theme.ts';
 
@@ -181,7 +182,11 @@ export function homeDeckCards(lang: Lang): HomeDeckCard[] {
 /** Every card of every language, for seeding the Sites and taking the pictures. */
 export const HOME_DECK_CARDS: HomeDeckCard[] = [...DECKS.en, ...DECKS.it];
 
-/** Where the home page finds a card's picture. */
+/**
+ * A card's picture among the website assets. The name carries a hash of the
+ * file, which `npm run deck` records in homeDeckImages.ts: the media domain
+ * caches these files for a year, so a new picture needs a new name.
+ */
 export function homeDeckImage(card: Pick<HomeDeckCard, 'slug'>): string {
-  return `/home-deck/${card.slug}.webp`;
+  return `${card.slug}.${HOME_DECK_IMAGES[card.slug]}.webp`;
 }

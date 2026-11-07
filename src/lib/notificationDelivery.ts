@@ -1,3 +1,4 @@
+import * as z from 'zod/mini';
 import { type DeliveryId, isNotificationId, type NotificationId } from '../db/ids.ts';
 import { siteAddressPath } from './address.ts';
 import { birthMediaUrl } from './birthMedia.ts';
@@ -17,7 +18,7 @@ import {
 import type { OwnedSite } from './ownerAccess.ts';
 import type { Site } from './site.ts';
 import { siteIconUrl } from './siteMeta.ts';
-import { defaultNotificationTitle, type ParseResult, type SiteSettingsError } from './siteSettings.ts';
+import { defaultNotificationTitle, type ParseResult, type SiteSettingsError, toErrors } from './siteSettings.ts';
 import { deleteSubscriptionsByEndpoint } from './subscription.ts';
 
 /**
@@ -37,13 +38,9 @@ export type PushService = {
   send(target: PushTarget, payload: string): Promise<PushOutcome>;
 };
 
-declare const valid: unique symbol;
-
 /** A Notification that passed every rule. Only parseNotification produces one. */
-export type ValidNotification = {
-  readonly messages: NotificationMessages;
-  readonly [valid]: true;
-};
+const validNotificationSchema = z.object({ messages: z.custom<NotificationMessages>() }).brand<'ValidNotification'>();
+export type ValidNotification = Readonly<z.output<typeof validNotificationSchema>>;
 
 export type DeliveryResult = { sent: number; removed: number; total: number };
 
@@ -58,6 +55,15 @@ const BODY_MAX = 1000;
 /** Sends in flight at once: enough for a fast send, few enough to stay inside a function's time and the push service's patience. */
 const BATCH_SIZE = 20;
 const SEND_TIMEOUT_MS = 10_000;
+
+/** One Language's text: a body, and a title that is dropped when blank. */
+const notificationTextSchema = z.pipe(
+  z.strictObject({
+    body: z.string().check(z.trim(), z.minLength(1), z.maxLength(BODY_MAX)),
+    title: z.optional(z.string().check(z.trim(), z.maxLength(TITLE_MAX))),
+  }),
+  z.transform(({ body, title }): NotificationText => (title ? { title, body } : { body }))
+);
 
 /**
  * Parses `{ <lang>: { title?, body } }`, one entry or more among the Site's
@@ -76,51 +82,18 @@ export function parseNotification(messages: unknown, langs: readonly Lang[]): Pa
       errors.push({ path, code: 'invalidOption' });
       continue;
     }
-    const text = parseText(raw, path, errors);
-    if (text) {
-      parsed[lang as Lang] = text;
+    const result = notificationTextSchema.safeParse(raw);
+    if (result.success) {
+      parsed[lang as Lang] = result.data;
+    } else {
+      errors.push(
+        ...toErrors(result.error.issues, raw).map((e) => ({ ...e, path: e.path ? `${path}.${e.path}` : path }))
+      );
     }
   }
-  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: { messages: parsed } as ValidNotification };
-}
-
-function parseText(raw: unknown, path: string, errors: SiteSettingsError[]): NotificationText | null {
-  if (!isRecord(raw)) {
-    errors.push({ path, code: 'invalidType' });
-    return null;
-  }
-  const before = errors.length;
-  for (const key of Object.keys(raw)) {
-    if (key !== 'title' && key !== 'body') {
-      errors.push({ path: `${path}.${key}`, code: 'unknownField' });
-    }
-  }
-  const body = trimmed(raw.body, `${path}.body`, BODY_MAX, errors);
-  if (body === '') {
-    errors.push({ path: `${path}.body`, code: 'required' });
-  }
-  const title = raw.title === undefined ? '' : trimmed(raw.title, `${path}.title`, TITLE_MAX, errors);
-  if (errors.length > before || body === null) {
-    return null;
-  }
-  return title ? { title, body } : { body };
-}
-
-/** The trimmed string, '' when absent, or null after recording why it is not acceptable. */
-function trimmed(value: unknown, path: string, max: number, errors: SiteSettingsError[]): string | null {
-  if (value === undefined) {
-    return '';
-  }
-  if (typeof value !== 'string') {
-    errors.push({ path, code: 'invalidType' });
-    return null;
-  }
-  const text = value.trim();
-  if (text.length > max) {
-    errors.push({ path, code: 'tooLong', params: { max } });
-    return null;
-  }
-  return text;
+  return errors.length > 0
+    ? { ok: false, errors }
+    : { ok: true, value: validNotificationSchema.parse({ messages: parsed }) };
 }
 
 export async function deliverNotification(
