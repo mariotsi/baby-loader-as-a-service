@@ -1,9 +1,10 @@
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import { isWebsiteAssetName } from '@/lib/websiteAssets';
 
 /** Serves website artwork from this deployment's R2 bucket on the page's authenticated origin. */
 export async function GET(_request: Request, { params }: { params: Promise<{ name: string }> }) {
   const { name } = await params;
-  if (name !== 'born-placeholder-v1.png') {
+  if (!isWebsiteAssetName(name)) {
     return new Response(null, { status: 404 });
   }
   const object = await getCloudflareContext().env.WEBSITE_ASSETS.get(`website-assets/${name}`);

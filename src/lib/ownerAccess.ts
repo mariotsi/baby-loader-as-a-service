@@ -1,3 +1,4 @@
+import * as z from 'zod/mini';
 import { isId } from '../db/index.ts';
 import { verifySessionToken } from './auth.ts';
 import { getSiteBySlug, type Site } from './site.ts';
@@ -10,22 +11,20 @@ import { getSiteBySlug, type Site } from './site.ts';
  * and pages.
  */
 
-declare const signedIn: unique symbol;
-declare const authenticated: unique symbol;
-declare const owned: unique symbol;
-
 /**
  * Anyone with a valid session, a password change pending or not. It is
  * enough to set a new password and nothing else.
  */
-export type SignedInUser = {
-  readonly id: string;
-  readonly passwordChangePending: boolean;
-  readonly [signedIn]: true;
-};
+const signedInUserSchema = z.object({ id: z.string(), passwordChangePending: z.boolean() }).brand<'SignedInUser'>();
+export type SignedInUser = Readonly<z.output<typeof signedInUserSchema>>;
+
 /** A signed-in User with no password change pending. */
-export type AuthenticatedUser = { readonly id: string; readonly [authenticated]: true };
-export type OwnedSite = { readonly owner: AuthenticatedUser; readonly site: Site; readonly [owned]: true };
+const authenticatedUserSchema = z.object({ id: z.string() }).brand<'AuthenticatedUser'>();
+export type AuthenticatedUser = Readonly<z.output<typeof authenticatedUserSchema>>;
+
+/** The Site's own checks ran when it was read; the brand says only that its owner is this User. */
+const ownedSiteSchema = z.object({ owner: authenticatedUserSchema, site: z.custom<Site>() }).brand<'OwnedSite'>();
+export type OwnedSite = Readonly<z.output<typeof ownedSiteSchema>>;
 
 /**
  * A missing Site and another Owner's Site are the same denial: neither is
@@ -38,7 +37,7 @@ export function signIn(sessionToken: string | undefined): SignedInUser | null {
   if (!session || !isId(session.userId)) {
     return null;
   }
-  return { id: session.userId, passwordChangePending: session.passwordChangePending } as SignedInUser;
+  return signedInUserSchema.parse({ id: session.userId, passwordChangePending: session.passwordChangePending });
 }
 
 /** The session's User, or why there is none. */
@@ -52,7 +51,7 @@ export function authenticateOrDeny(
   if (user.passwordChangePending) {
     return 'passwordChangePending';
   }
-  return { id: user.id } as AuthenticatedUser;
+  return authenticatedUserSchema.parse({ id: user.id });
 }
 
 export function authenticate(sessionToken: string | undefined): AuthenticatedUser | null {
@@ -72,5 +71,5 @@ export async function accessOwnedSite(
   if (site?.ownerId !== owner.id) {
     return 'notFound';
   }
-  return { owner, site } as OwnedSite;
+  return ownedSiteSchema.parse({ owner, site });
 }

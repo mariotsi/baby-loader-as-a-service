@@ -3,8 +3,6 @@
 import { type CSSProperties, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
-import { homeDeckCards, homeDeckImage } from '@/lib/homeDeck';
-import type { Lang } from '@/lib/i18n';
 import styles from './HomeDeck.module.css';
 
 /** How long a card stays on top. */
@@ -14,6 +12,7 @@ const BEHIND = 3;
 /** How far a swipe travels before it moves the deck, in CSS pixels. */
 const SWIPE_PX = 40;
 
+type DeckCard = { slug: string; alt: string; src: string };
 type DeckCopy = { label: string; previous: string; next: string; pause: string; play: string };
 
 /**
@@ -24,7 +23,7 @@ type DeckCopy = { label: string; previous: string; next: string; pause: string; 
  * description when it changes, only while paused, as a turning deck would
  * interrupt them.
  */
-export function HomeDeck({ lang, copy }: { lang: Lang; copy: DeckCopy }) {
+export function HomeDeck({ cards, copy }: { cards: DeckCard[]; copy: DeckCopy }) {
   const [turn, setTurn] = useState(0);
   const [paused, setPaused] = useState(false);
   const [held, setHeld] = useState(false);
@@ -44,7 +43,6 @@ export function HomeDeck({ lang, copy }: { lang: Lang; copy: DeckCopy }) {
     return () => clearTimeout(timer);
   }, [turn, paused, held]);
 
-  const cards = homeDeckCards(lang);
   const count = cards.length;
   const position = ((turn % count) + count) % count;
 
@@ -92,7 +90,7 @@ export function HomeDeck({ lang, copy }: { lang: Lang; copy: DeckCopy }) {
               className={styles.card}
               data-place={place}
               style={{ '--place': place } as CSSProperties}
-              src={homeDeckImage(card)}
+              src={card.src}
               alt=""
               draggable={false}
               width={780}
