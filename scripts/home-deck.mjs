@@ -1,15 +1,17 @@
 #!/usr/bin/env node
 // Takes the pictures of the home page's deck from a running app: one screen of
-// each card's Public page, at a phone's size, into public/home-deck/.
+// each card's Public page, at a phone's size, into public/website-assets/, named
+// by a hash of the file, which src/lib/homeDeckImages.ts records.
 //
 //   npm run seed && npm run dev
 //   npm run deck [base URL]    http://localhost:3000 by default
 
-import { mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { readdirSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from '@playwright/test';
-import { HOME_DECK_CARDS, homeDeckImage } from '../src/lib/homeDeck.ts';
+import { HOME_DECK_CARDS } from '../src/lib/homeDeck.ts';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const VIEWPORT = { width: 390, height: 640 };
@@ -53,9 +55,11 @@ async function capture(page, base, card) {
 
 async function main() {
   const base = process.argv[2] ?? 'http://localhost:3000';
-  const out = join(ROOT, 'public/home-deck');
-  rmSync(out, { recursive: true, force: true });
-  mkdirSync(out, { recursive: true });
+  const out = join(ROOT, 'public/website-assets');
+  for (const name of readdirSync(out).filter((file) => file.startsWith('deck-'))) {
+    rmSync(join(out, name));
+  }
+  const hashes = {};
 
   const browser = await chromium.launch();
   try {
@@ -69,12 +73,21 @@ async function main() {
     const page = await context.newPage();
     for (const card of HOME_DECK_CARDS) {
       const webp = await capture(page, base, card);
-      writeFileSync(join(ROOT, 'public', homeDeckImage(card)), webp);
+      const hash = createHash('sha256').update(webp).digest('hex').slice(0, 8);
+      hashes[card.slug] = hash;
+      writeFileSync(join(out, `${card.slug}.${hash}.webp`), webp);
       console.log(`${card.slug}: ${Math.round(webp.length / 1024)} KB`);
     }
   } finally {
     await browser.close();
   }
+  const lines = Object.keys(hashes)
+    .sort((a, b) => a.localeCompare(b))
+    .map((slug) => `  '${slug}': '${hashes[slug]}',\n`);
+  writeFileSync(
+    join(ROOT, 'src/lib/homeDeckImages.ts'),
+    `// Written by \`npm run deck\`: each card's Slug and the hash its picture's name carries.\nexport const HOME_DECK_IMAGES: Record<string, string> = {\n${lines.join('')}};\n`
+  );
 }
 
 main().catch((err) => {
