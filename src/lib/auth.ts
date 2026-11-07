@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm';
 import type { NextRequest } from 'next/server';
-import { getDb, isId, isUniqueViolation, newId } from '../db/index.ts';
+import { isUserId, newUserId, type UserId } from '../db/ids.ts';
+import { getDb, isUniqueViolation } from '../db/index.ts';
 import { users } from '../db/schema.ts';
 import { type Email, emailSchema } from './email.ts';
 import { addressEnv, sessionSecret } from './env.ts';
@@ -27,8 +28,9 @@ export async function getUserByEmail(email: unknown): Promise<User | null> {
   return user ?? null;
 }
 
-export async function getUserById(id: string): Promise<User | null> {
-  if (!isId(id)) {
+/** The User with `id`; null for anything that is not a User's id, so an id from a cookie or URL can be passed as is. */
+export async function getUserById(id: unknown): Promise<User | null> {
+  if (!isUserId(id)) {
     return null;
   }
   const user = await getDb().query.users.findFirst({ where: eq(users.id, id) });
@@ -41,7 +43,7 @@ export class EmailTakenError extends Error {}
 /** The unique email column decides whether an email is taken. */
 export async function createUser(email: Email, password: string): Promise<User> {
   const user: User = {
-    id: newId(),
+    id: newUserId(),
     email,
     passwordHash: await hashPassword(password),
     createdAt: new Date().toISOString(),
@@ -57,7 +59,7 @@ export async function createUser(email: Email, password: string): Promise<User> 
   return user;
 }
 
-export async function updatePasswordHash(userId: string, passwordHash: string): Promise<void> {
+export async function updatePasswordHash(userId: UserId, passwordHash: string): Promise<void> {
   await getDb().update(users).set({ passwordHash }).where(eq(users.id, userId));
 }
 

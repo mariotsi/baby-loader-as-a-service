@@ -1,7 +1,9 @@
 // baby-loader-as-a-service Service Worker v1.0
 // Handles push events and notification clicks for every Site.
-// Title/body/icon always come from the push payload (set by the sender per
-// Site in api/send-notification) — this file has no Site branding baked in.
+// Everything a notification shows comes from the push payload, built per
+// Subscription by src/lib/notificationContent.ts: title, body, icon and the
+// buttons' labels in the Subscription's Language. This file has no Site
+// branding or copy of its own; a payload that fails to parse shows the host.
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -13,8 +15,8 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('push', (event) => {
   let data = {
-    title: 'Update',
-    body: 'You have a new notification.',
+    title: self.location.host,
+    body: '',
     icon: '/icon-192.png',
     badge: '/icon-72.png',
     url: '/',
@@ -25,7 +27,7 @@ self.addEventListener('push', (event) => {
       const payload = event.data.json();
       data = { ...data, ...payload };
     } catch {
-      data.body = event.data.text();
+      // Not JSON: nothing sent by this Platform, so show the host alone.
     }
   }
 
@@ -41,10 +43,12 @@ self.addEventListener('push', (event) => {
       renotify: true,
       requireInteraction: false,
       data: { url: data.url },
-      actions: [
-        { action: 'open', title: 'Open' },
-        { action: 'dismiss', title: 'Dismiss' },
-      ],
+      actions: data.actions
+        ? [
+            { action: 'open', title: data.actions.open },
+            { action: 'dismiss', title: data.actions.dismiss },
+          ]
+        : [],
     })
   );
 });

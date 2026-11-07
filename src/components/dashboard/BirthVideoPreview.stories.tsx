@@ -5,6 +5,7 @@ import { LangProvider } from '@/components/LangProvider';
 import { PublicPage } from '@/components/PublicPage';
 import { Button } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
+import { newSiteId, newUserId } from '@/db/ids';
 import { slugSchema } from '@/lib/address';
 import { publicPageViews } from '@/lib/publicPageView';
 import type { SiteDTO } from '@/lib/site';
@@ -14,8 +15,8 @@ import { SiteEditor } from './SiteEditor';
 const videoUrl = new URL('./fixtures/welcome.webm', import.meta.url).href;
 const site = {
   ...defaultSiteSettings,
-  id: 'preview-emma',
-  ownerId: 'preview-owner',
+  id: newSiteId(),
+  ownerId: newUserId(),
   slug: slugSchema.parse('emma-preview'),
   createdAt: '2026-10-26T08:30:00Z',
   updatedAt: '2026-10-29T10:00:00Z',

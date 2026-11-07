@@ -24,16 +24,6 @@ export function setTestDb(db: Database | undefined): void {
   testDb = db;
 }
 
-/** A new row id: a random UUID, which can't be guessed from another one (ids travel in session cookies and URLs). */
-export function newId(): string {
-  return crypto.randomUUID();
-}
-
-/** Whether `id` has the shape newId produces; anything else matches no row. */
-export function isId(id: string): boolean {
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/.test(id);
-}
-
 /** True for D1's error on a UNIQUE constraint, optionally on one column (`table.column`). */
 export function isUniqueViolation(err: unknown, column?: string): boolean {
   const message = String(err instanceof Error ? (err.cause ?? err) : err);

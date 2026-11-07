@@ -4,6 +4,7 @@ import { insertTestUser, startTestDb, testSubscription } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import type { DeviceInfo } from './deviceInfo.ts';
 import type { Lang } from './i18n.ts';
+import { notificationContent } from './notificationContent.ts';
 import {
   deliverNotification,
   deliverySummary,
@@ -12,6 +13,7 @@ import {
   type PushService,
   type PushTarget,
   parseNotification,
+  siteNotificationIcon,
   unfinishedBirth,
 } from './notificationDelivery.ts';
 import { listNotifications } from './notificationLog.ts';
@@ -144,7 +146,7 @@ test("each Subscription gets its language, else the Site's fallback one", async 
   assert.ok(onlyItalian.sent.every((s) => s.payload.body === 'Solo'));
 });
 
-test("the payload opens the Site's Address, with its tag and a default title", async () => {
+test("the payload opens the Site's Address, with its tag, a default title and its buttons' labels", async () => {
   const owned = await ownedSite('payload-site');
   await subscribe(owned, 'https://push.test/payload');
   const push = fakePush();
@@ -157,7 +159,29 @@ test("the payload opens the Site's Address, with its tag and a default title", a
     icon: '/icon-192.png',
     url: '/',
     tag: 'site-payload-site',
+    actions: { open: 'Open', dismiss: 'Dismiss' },
   });
+});
+
+test('the payload is the content the previews show, in the Subscription’s Language', async () => {
+  const owned = await ownedSite('preview-site', {
+    languages: ['it', 'en'],
+    privacy: { showName: false, showSex: true },
+    pageName: { it: 'Casa Rossi' },
+  });
+  await subscribe(owned, 'https://push.test/preview-it', 'it');
+  await subscribe(owned, 'https://push.test/preview-en', 'en');
+  const push = fakePush();
+  const messages = { it: { body: 'Ciao' }, en: { title: 'News', body: 'Hi' } };
+
+  await deliverNotification(owned, valid(messages, ['it', 'en']), push.service);
+
+  const icon = siteNotificationIcon(owned.site, '/');
+  for (const lang of ['it', 'en'] as const) {
+    const { payload } = push.sent.find((s) => s.endpoint === `https://push.test/preview-${lang}`) ?? {};
+    const { title, body, actions } = notificationContent(owned.site, messages, lang, icon);
+    assert.deepEqual(payload, { title, body, icon, url: '/', tag: 'site-preview-site', actions });
+  }
 });
 
 test('the icon is the birth photo once born, else the Site icon', async () => {
@@ -182,14 +206,14 @@ test('the icon is the birth photo once born, else the Site icon', async () => {
   assert.equal(bornPush.sent[0].payload.icon, photo.url);
 });
 
-test('no default title while Privacy settings hide the name', async () => {
+test('the Site’s name is the title while Privacy settings hide the baby’s', async () => {
   const owned = await ownedSite('hidden-site', { privacy: { showName: false, showSex: true } });
   await subscribe(owned, 'https://push.test/hidden');
   const push = fakePush();
 
   await deliverNotification(owned, valid({ en: { body: 'Hi' } }), push.service);
 
-  assert.equal('title' in push.sent[0].payload, false);
+  assert.equal(push.sent[0].payload.title, 'Loading Baby');
 });
 
 test('a gone endpoint is forgotten on every Site, a failed one is kept', async () => {
