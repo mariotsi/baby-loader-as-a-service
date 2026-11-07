@@ -192,10 +192,13 @@ loading baby, or an emoji its Owner picks, drawn on the Site's Palette (see
 ### Home page deck
 
 The deck beside the home page's pitch shows pictures of real Public pages, each
-Platform language with its own cards. The cards live in `src/lib/homeDeck.ts`, and `npm run seed` creates a Site for each.
-With `npm run dev` running, `npm run deck` retakes the pictures into
-`public/home-deck/`. A picture keeps the dates of the day it was taken, so a
-change to the Public page or a Due date gone by calls for a new run.
+Platform language with its own cards. The cards live in `src/lib/homeDeck.ts`,
+and `npm run seed` creates a Site for each. With `npm run dev` running,
+`npm run deck` retakes the pictures into `public/website-assets/`, which each
+deploy uploads to R2. Their names carry a hash of the file, recorded in
+`src/lib/homeDeckImages.ts`, because the media domain caches them for a year.
+A picture keeps the dates of the day it was taken, so a change to the Public
+page or a Due date gone by calls for a new run.
 
 ## End-to-end tests
 
