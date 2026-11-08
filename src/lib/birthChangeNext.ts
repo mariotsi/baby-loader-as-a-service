@@ -2,12 +2,12 @@ import { NextResponse } from 'next/server';
 import type { BirthWrite, BirthWriteDeps } from './birthChange.ts';
 import { routeError } from './routeError.ts';
 import { toSiteDTO } from './site.ts';
-import { getStorageProvider } from './storage.ts';
+import { deploymentSiteMedia } from './siteMediaNext.ts';
 import { webPushService } from './webpush.ts';
 
 /** What the Site settings and Birth routes write with: the deployment's push service and media storage. */
 export function birthWriteDeps(): BirthWriteDeps {
-  return { push: webPushService(), storage: getStorageProvider };
+  return { push: webPushService(), media: deploymentSiteMedia };
 }
 
 /**

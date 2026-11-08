@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
-import { existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import { test } from 'node:test';
 import { HOME_DECK_CARDS, homeDeckCards, homeDeckImage } from './homeDeck.ts';
 import { LANGS } from './i18n.ts';
 import { FONTS, PALETTES } from './theme.ts';
+import { isWebsiteAssetName } from './websiteAssets.ts';
 
 const pairing = (card: { theme: { palette: string; font: string } }) => `${card.theme.palette}+${card.theme.font}`;
 /** A card with its language's names and texts taken out. */
@@ -58,9 +60,14 @@ test('no card is past its Due date, which stays a surprise', () => {
   assert.ok(waiting.every((card) => card.dueInDays > 0));
 });
 
-test('every card has its own Slug and picture', () => {
+test('every card has its own Slug, and a picture named by its hash', () => {
   assert.equal(new Set(HOME_DECK_CARDS.map((card) => card.slug)).size, HOME_DECK_CARDS.length);
   for (const card of HOME_DECK_CARDS) {
-    assert.ok(existsSync(`public${homeDeckImage(card)}`), card.slug);
+    const name = homeDeckImage(card);
+    const hash = createHash('sha256')
+      .update(readFileSync(`public/website-assets/${name}`))
+      .digest('hex');
+    assert.equal(name, `${card.slug}.${hash.slice(0, 8)}.webp`);
+    assert.ok(isWebsiteAssetName(name), name);
   }
 });

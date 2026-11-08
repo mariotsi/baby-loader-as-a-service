@@ -87,6 +87,8 @@ const en = {
 
   subscribeOk: 'You are all set.',
   unsubscribeOk: 'Notifications turned off.',
+  notificationOpen: 'Open',
+  notificationDismiss: 'Dismiss',
   errorGeneric: 'Something went wrong.',
   errorUnsubscribe: 'Could not turn off notifications. Please try again.',
   errorUnsupported: 'Your browser does not support push notifications.',
@@ -159,6 +161,8 @@ const it: PublicPageCopy = {
 
   subscribeOk: 'Iscrizione completata.',
   unsubscribeOk: 'Notifiche disattivate.',
+  notificationOpen: 'Apri',
+  notificationDismiss: 'Chiudi',
   errorGeneric: 'Qualcosa è andato storto.',
   errorUnsubscribe: 'Non è stato possibile disattivare le notifiche. Riprova.',
   errorUnsupported: 'Il tuo browser non supporta le notifiche push.',

@@ -1,7 +1,10 @@
+import * as z from 'zod/mini';
+import { type DeliveryId, isNotificationId, type NotificationId } from '../db/ids.ts';
 import { siteAddressPath } from './address.ts';
 import { birthMediaUrl } from './birthMedia.ts';
 import { addressEnv, deploymentEnv } from './env.ts';
-import { fallbackLang, type Lang } from './i18n.ts';
+import type { Lang } from './i18n.ts';
+import { notificationContent, notificationIcon } from './notificationContent.ts';
 import {
   type DeliveryStatus,
   findNotification,
@@ -15,16 +18,15 @@ import {
 } from './notificationLog.ts';
 import type { OwnedSite } from './ownerAccess.ts';
 import type { Site } from './site.ts';
-import { siteIconUrl } from './siteMeta.ts';
-import { defaultNotificationTitle, type ParseResult, type SiteSettingsError } from './siteSettings.ts';
-import { deleteSubscriptionsByEndpoint } from './subscription.ts';
+import { type ParseResult, type SiteSettingsError, toErrors } from './siteSettings.ts';
+import { deleteSubscriptionsByEndpoint, type PushEndpoint } from './subscription.ts';
 
 /**
  * Sends a Notification to every Subscription of one Site: logs it (see
  * notificationLog.ts), builds the payload the service worker (public/sw.js)
- * shows, picks each Subscription's language, sends in batches, records what
- * became of each Delivery, and forgets endpoints the push service reports
- * gone. The push service sits behind a port: web-push in production
+ * shows from each Subscription's content (notificationContent.ts), sends in
+ * batches, records what became of each Delivery, and forgets endpoints the
+ * push service reports gone. The push service sits behind a port: web-push in production
  * (webpush.ts), a recording fake in tests.
  */
 
@@ -36,13 +38,9 @@ export type PushService = {
   send(target: PushTarget, payload: string): Promise<PushOutcome>;
 };
 
-declare const valid: unique symbol;
-
 /** A Notification that passed every rule. Only parseNotification produces one. */
-export type ValidNotification = {
-  readonly messages: NotificationMessages;
-  readonly [valid]: true;
-};
+const validNotificationSchema = z.object({ messages: z.custom<NotificationMessages>() }).brand<'ValidNotification'>();
+export type ValidNotification = Readonly<z.output<typeof validNotificationSchema>>;
 
 export type DeliveryResult = { sent: number; removed: number; total: number };
 
@@ -57,6 +55,15 @@ const BODY_MAX = 1000;
 /** Sends in flight at once: enough for a fast send, few enough to stay inside a function's time and the push service's patience. */
 const BATCH_SIZE = 20;
 const SEND_TIMEOUT_MS = 10_000;
+
+/** One Language's text: a body, and a title that is dropped when blank. */
+const notificationTextSchema = z.pipe(
+  z.strictObject({
+    body: z.string().check(z.trim(), z.minLength(1), z.maxLength(BODY_MAX)),
+    title: z.optional(z.string().check(z.trim(), z.maxLength(TITLE_MAX))),
+  }),
+  z.transform(({ body, title }): NotificationText => (title ? { title, body } : { body }))
+);
 
 /**
  * Parses `{ <lang>: { title?, body } }`, one entry or more among the Site's
@@ -75,51 +82,18 @@ export function parseNotification(messages: unknown, langs: readonly Lang[]): Pa
       errors.push({ path, code: 'invalidOption' });
       continue;
     }
-    const text = parseText(raw, path, errors);
-    if (text) {
-      parsed[lang as Lang] = text;
+    const result = notificationTextSchema.safeParse(raw);
+    if (result.success) {
+      parsed[lang as Lang] = result.data;
+    } else {
+      errors.push(
+        ...toErrors(result.error.issues, raw).map((e) => ({ ...e, path: e.path ? `${path}.${e.path}` : path }))
+      );
     }
   }
-  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: { messages: parsed } as ValidNotification };
-}
-
-function parseText(raw: unknown, path: string, errors: SiteSettingsError[]): NotificationText | null {
-  if (!isRecord(raw)) {
-    errors.push({ path, code: 'invalidType' });
-    return null;
-  }
-  const before = errors.length;
-  for (const key of Object.keys(raw)) {
-    if (key !== 'title' && key !== 'body') {
-      errors.push({ path: `${path}.${key}`, code: 'unknownField' });
-    }
-  }
-  const body = trimmed(raw.body, `${path}.body`, BODY_MAX, errors);
-  if (body === '') {
-    errors.push({ path: `${path}.body`, code: 'required' });
-  }
-  const title = raw.title === undefined ? '' : trimmed(raw.title, `${path}.title`, TITLE_MAX, errors);
-  if (errors.length > before || body === null) {
-    return null;
-  }
-  return title ? { title, body } : { body };
-}
-
-/** The trimmed string, '' when absent, or null after recording why it is not acceptable. */
-function trimmed(value: unknown, path: string, max: number, errors: SiteSettingsError[]): string | null {
-  if (value === undefined) {
-    return '';
-  }
-  if (typeof value !== 'string') {
-    errors.push({ path, code: 'invalidType' });
-    return null;
-  }
-  const text = value.trim();
-  if (text.length > max) {
-    errors.push({ path, code: 'tooLong', params: { max } });
-    return null;
-  }
-  return text;
+  return errors.length > 0
+    ? { ok: false, errors }
+    : { ok: true, value: validNotificationSchema.parse({ messages: parsed }) };
 }
 
 export async function deliverNotification(
@@ -135,9 +109,12 @@ export async function deliverNotification(
 /** Sends what is outstanding on one of the Site's Notifications; null when there is nothing it may finish. */
 export async function finishNotification(
   owned: OwnedSite,
-  id: string,
+  id: unknown,
   push: PushService
 ): Promise<DeliveryResult | null> {
+  if (!isNotificationId(id)) {
+    return null;
+  }
   const notification = await findNotification(owned.site.id, id);
   if (!notification || !deliverySummary(notification, owned.site).finishable) {
     return null;
@@ -177,7 +154,7 @@ export function unfinishedBirth(
 
 async function sendOutstanding(
   site: Site,
-  id: string,
+  id: NotificationId,
   messages: NotificationMessages,
   push: PushService,
   sendTimeoutMs: number
@@ -192,7 +169,7 @@ async function sendOutstanding(
     subscription ? [{ deliveryId, subscription }] : []
   );
 
-  const goneEndpoints = new Set<string>();
+  const goneEndpoints = new Set<PushEndpoint>();
   for (let start = 0; start < reachable.length; start += BATCH_SIZE) {
     const batch = reachable.slice(start, start + BATCH_SIZE);
     const outcomes = await Promise.all(
@@ -200,7 +177,7 @@ async function sendOutstanding(
         withinTime(push.send({ endpoint: s.endpoint, keys: s.keys }, payloadFor(s.lang ?? null)), sendTimeoutMs)
       )
     );
-    const recorded = new Map<DeliveryStatus, number[]>();
+    const recorded = new Map<DeliveryStatus, DeliveryId[]>();
     outcomes.forEach((outcome, i) => {
       recorded.set(outcome, [...(recorded.get(outcome) ?? []), batch[i].deliveryId]);
       if (outcome === 'gone') {
@@ -220,7 +197,7 @@ async function sendOutstanding(
   return { sent, removed, total };
 }
 
-async function recordInBatches(ids: number[]): Promise<void> {
+async function recordInBatches(ids: DeliveryId[]): Promise<void> {
   for (let start = 0; start < ids.length; start += BATCH_SIZE) {
     await recordDeliveries(new Map([['gone', ids.slice(start, start + BATCH_SIZE)]]));
   }
@@ -245,38 +222,28 @@ async function withinTime(send: Promise<PushOutcome>, ms: number): Promise<PushO
  * fallbackLang), else any text sent.
  */
 function payloads(site: Site, messages: NotificationMessages): (lang: Lang | null) => string {
-  const texts = messages;
-  const fallback = texts[fallbackLang(site.languages)] ?? Object.values(texts)[0];
   const built = new Map<Lang | null, string>();
   const address = siteAddressPath(site.slug, addressEnv());
-  const icon = notificationIcon(site, address);
+  const icon = siteNotificationIcon(site, address);
   return (lang) => {
     let payload = built.get(lang);
     if (payload === undefined) {
-      const text = (lang && texts[lang]) || fallback;
-      payload = JSON.stringify({
-        title: text?.title || defaultNotificationTitle(site),
-        body: text?.body,
-        icon,
-        url: address,
-        tag: `site-${site.slug}`,
-      });
+      const { title, body, actions } = notificationContent(site, messages, lang, icon);
+      payload = JSON.stringify({ title, body, icon, url: address, tag: `site-${site.slug}`, actions });
       built.set(lang, payload);
     }
     return payload;
   };
 }
 
-/**
- * The picture beside the text: the birth photo once the baby is born, else the
- * Site icon, which is the loading baby unless the Owner picked an emoji.
- */
-export function notificationIcon(site: Site, address: string): string {
+/** The picture beside a sent Notification's text (see notificationIcon), with the birth photo where this deployment serves it. */
+export function siteNotificationIcon(site: Site, address: string): string {
   const photo = site.birth.details?.photo;
-  if (site.birth.born && photo) {
-    return birthMediaUrl(site.slug, 'photo', photo, deploymentEnv().appEnv);
-  }
-  return siteIconUrl(site, '192', address.replace(/\/$/, ''));
+  return notificationIcon(
+    site,
+    address,
+    photo ? birthMediaUrl(site.slug, 'photo', photo, deploymentEnv().appEnv) : null
+  );
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

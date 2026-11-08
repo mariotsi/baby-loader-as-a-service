@@ -1,21 +1,25 @@
 import { sql } from 'drizzle-orm';
 import { index, integer, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import type { Slug } from '../lib/address.ts';
 import type { DeviceInfo } from '../lib/deviceInfo.ts';
+import type { Email } from '../lib/email.ts';
 import type { GeoLocation } from '../lib/geoip.ts';
 import type { Lang } from '../lib/i18n.ts';
 import type { DeliveryStatus, NotificationKind, NotificationMessages } from '../lib/notificationLog.ts';
 import type { PasswordHash } from '../lib/password.ts';
 import type { SiteSettings } from '../lib/siteSettings.ts';
+import type { PushEndpoint } from '../lib/subscription.ts';
+import type { DeliveryId, NotificationId, SiteId, SubscriptionId, UserId } from './ids.ts';
 
 /**
- * The D1 schema (ADR-0009). Ids are random UUIDs (newId) and
+ * The D1 schema (ADR-0009). Ids are random UUIDs, branded per table (ids.ts), and
  * dates are ISO 8601 UTC text, which sorts in time order. `npm run
  * db:generate` turns a change here into a migration in migrations/.
  */
 
 export const users = sqliteTable('users', {
-  id: text('id').primaryKey(),
-  email: text('email').notNull().unique(),
+  id: text('id').$type<UserId>().primaryKey(),
+  email: text('email').$type<Email>().notNull().unique(),
   passwordHash: text('password_hash').$type<PasswordHash>().notNull(),
   createdAt: text('created_at').notNull(),
 });
@@ -23,9 +27,10 @@ export const users = sqliteTable('users', {
 export const sites = sqliteTable(
   'sites',
   {
-    id: text('id').primaryKey(),
-    slug: text('slug').notNull().unique(),
+    id: text('id').$type<SiteId>().primaryKey(),
+    slug: text('slug').$type<Slug>().notNull().unique(),
     ownerId: text('owner_id')
+      .$type<UserId>()
       .notNull()
       .references(() => users.id),
     /** Every Site setting, saved and replaced as one value (saveSiteSettings). */
@@ -45,11 +50,12 @@ export const sites = sqliteTable(
 export const subscriptions = sqliteTable(
   'subscriptions',
   {
-    id: text('id').primaryKey(),
+    id: text('id').$type<SubscriptionId>().primaryKey(),
     siteId: text('site_id')
+      .$type<SiteId>()
       .notNull()
       .references(() => sites.id),
-    endpoint: text('endpoint').notNull(),
+    endpoint: text('endpoint').$type<PushEndpoint>().notNull(),
     p256dh: text('p256dh').notNull(),
     auth: text('auth').notNull(),
     lang: text('lang').$type<Lang>(),
@@ -68,8 +74,9 @@ export const subscriptions = sqliteTable(
 export const notifications = sqliteTable(
   'notifications',
   {
-    id: text('id').primaryKey(),
+    id: text('id').$type<NotificationId>().primaryKey(),
     siteId: text('site_id')
+      .$type<SiteId>()
       .notNull()
       .references(() => sites.id),
     kind: text('kind').$type<NotificationKind>().notNull(),
@@ -83,12 +90,15 @@ export const notifications = sqliteTable(
 export const notificationDeliveries = sqliteTable(
   'notification_deliveries',
   {
-    id: integer('id').primaryKey({ autoIncrement: true }),
+    id: integer('id').$type<DeliveryId>().primaryKey({ autoIncrement: true }),
     notificationId: text('notification_id')
+      .$type<NotificationId>()
       .notNull()
       .references(() => notifications.id),
     /** Null once the Subscription is gone; the Delivery stays with its Notification. */
-    subscriptionId: text('subscription_id').references(() => subscriptions.id, { onDelete: 'set null' }),
+    subscriptionId: text('subscription_id')
+      .$type<SubscriptionId>()
+      .references(() => subscriptions.id, { onDelete: 'set null' }),
     deviceLabel: text('device_label'),
     status: text('status').$type<DeliveryStatus>().notNull(),
     updatedAt: text('updated_at').notNull(),

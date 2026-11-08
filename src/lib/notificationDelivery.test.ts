@@ -1,9 +1,11 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
-import { insertTestUser, startTestDb } from '../db/testDb.ts';
+import { insertTestUser, startTestDb, testSubscription } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
+import { birthMediaPreviewPath } from './birthMedia.ts';
 import type { DeviceInfo } from './deviceInfo.ts';
 import type { Lang } from './i18n.ts';
+import { notificationContent } from './notificationContent.ts';
 import {
   deliverNotification,
   deliverySummary,
@@ -12,13 +14,19 @@ import {
   type PushService,
   type PushTarget,
   parseNotification,
+  siteNotificationIcon,
   unfinishedBirth,
 } from './notificationDelivery.ts';
 import { listNotifications } from './notificationLog.ts';
 import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
 import { createSite, saveSiteSettings } from './site.ts';
 import { defaultSiteSettings, parseNewSite, parseSiteSettings, type SiteSettingsInput } from './siteSettings.ts';
-import { countSubscriptionsBySite, deleteSubscription, upsertSubscription } from './subscription.ts';
+import {
+  countSubscriptionsBySite,
+  deleteSubscription,
+  pushEndpointSchema,
+  upsertSubscription,
+} from './subscription.ts';
 
 let stopDb: () => Promise<void>;
 let token: string;
@@ -53,8 +61,7 @@ async function ownedSite(slug: string, settings: Partial<SiteSettingsInput> = {}
 async function subscribe(owned: OwnedSite, endpoint: string, lang: Lang | null = null, device?: string) {
   await upsertSubscription({
     siteId: owned.site.id,
-    endpoint,
-    keys: { p256dh: 'p256dh', auth: 'auth' },
+    subscription: testSubscription(endpoint),
     lang,
     deviceInfo: device ? ({ label: device } as DeviceInfo) : null,
     geo: null,
@@ -140,7 +147,7 @@ test("each Subscription gets its language, else the Site's fallback one", async 
   assert.ok(onlyItalian.sent.every((s) => s.payload.body === 'Solo'));
 });
 
-test("the payload opens the Site's Address, with its tag and a default title", async () => {
+test("the payload opens the Site's Address, with its tag, a default title and its buttons' labels", async () => {
   const owned = await ownedSite('payload-site');
   await subscribe(owned, 'https://push.test/payload');
   const push = fakePush();
@@ -153,7 +160,29 @@ test("the payload opens the Site's Address, with its tag and a default title", a
     icon: '/icon-192.png',
     url: '/',
     tag: 'site-payload-site',
+    actions: { open: 'Open', dismiss: 'Dismiss' },
   });
+});
+
+test('the payload is the content the previews show, in the Subscription’s Language', async () => {
+  const owned = await ownedSite('preview-site', {
+    languages: ['it', 'en'],
+    privacy: { showName: false, showSex: true },
+    pageName: { it: 'Casa Rossi' },
+  });
+  await subscribe(owned, 'https://push.test/preview-it', 'it');
+  await subscribe(owned, 'https://push.test/preview-en', 'en');
+  const push = fakePush();
+  const messages = { it: { body: 'Ciao' }, en: { title: 'News', body: 'Hi' } };
+
+  await deliverNotification(owned, valid(messages, ['it', 'en']), push.service);
+
+  const icon = siteNotificationIcon(owned.site, '/');
+  for (const lang of ['it', 'en'] as const) {
+    const { payload } = push.sent.find((s) => s.endpoint === `https://push.test/preview-${lang}`) ?? {};
+    const { title, body, actions } = notificationContent(owned.site, messages, lang, icon);
+    assert.deepEqual(payload, { title, body, icon, url: '/', tag: 'site-preview-site', actions });
+  }
 });
 
 test('the icon is the birth photo once born, else the Site icon', async () => {
@@ -163,7 +192,10 @@ test('the icon is the birth photo once born, else the Site icon', async () => {
   await deliverNotification(emoji, valid({ en: { body: 'Hi' } }), emojiPush.service);
   assert.match(String(emojiPush.sent[0].payload.icon), /^\/site-icon\/192\?v=1f423\./);
 
-  const photo = { key: 'customer-data/o/s/photo', url: 'https://media.test/customer-data/o/s/photo' };
+  const photo = {
+    key: 'customer-data/o/s/0b9f3c1e-2a4d-4c5e-8f60-71829304a5b6',
+    url: 'https://media.test/customer-data/o/s/0b9f3c1e-2a4d-4c5e-8f60-71829304a5b6',
+  };
   const born = await ownedSite('icon-born', {
     icon: '🐣',
     sex: 'female',
@@ -175,17 +207,18 @@ test('the icon is the birth photo once born, else the Site icon', async () => {
   await subscribe(born, 'https://push.test/icon-born');
   const bornPush = fakePush();
   await deliverNotification(born, valid({ en: { body: 'Hi' } }), bornPush.service);
-  assert.equal(bornPush.sent[0].payload.icon, photo.url);
+  // Tests run as development, whose media the page's own origin serves.
+  assert.equal(bornPush.sent[0].payload.icon, birthMediaPreviewPath('icon-born', 'photo', photo.key));
 });
 
-test('no default title while Privacy settings hide the name', async () => {
+test('the Site’s name is the title while Privacy settings hide the baby’s', async () => {
   const owned = await ownedSite('hidden-site', { privacy: { showName: false, showSex: true } });
   await subscribe(owned, 'https://push.test/hidden');
   const push = fakePush();
 
   await deliverNotification(owned, valid({ en: { body: 'Hi' } }), push.service);
 
-  assert.equal('title' in push.sent[0].payload, false);
+  assert.equal(push.sent[0].payload.title, 'Loading Baby');
 });
 
 test('a gone endpoint is forgotten on every Site, a failed one is kept', async () => {
@@ -271,7 +304,7 @@ test('a Delivery stays with its Notification after the Subscription is gone', as
     fakePush({ 'https://push.test/keep/gone': 'gone' }).service
   );
 
-  await deleteSubscription(owned.site.id, 'https://push.test/keep/fine');
+  await deleteSubscription(owned.site.id, pushEndpointSchema.parse('https://push.test/keep/fine'));
 
   const [notification] = await listNotifications(owned.site.id);
   assert.deepEqual(notification.deliveries, [
@@ -289,7 +322,7 @@ test('finishing marks a Delivery gone when its Subscription no longer exists', a
     valid({ en: { body: 'Hi' } }),
     fakePush({ 'https://push.test/lost': 'failed' }).service
   );
-  await deleteSubscription(owned.site.id, 'https://push.test/lost');
+  await deleteSubscription(owned.site.id, pushEndpointSchema.parse('https://push.test/lost'));
   const [{ id }] = await listNotifications(owned.site.id);
   const push = fakePush();
 

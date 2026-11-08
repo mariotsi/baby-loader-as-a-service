@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { freeHold, isHeld, jumpHold } from '@/lib/sectionNavHold';
 import { Icon } from './Icon';
 import styles from './SectionNav.module.css';
 
@@ -28,11 +29,9 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
   const [current, setCurrent] = useState(sections[0]?.id);
   const [more, setMore] = useState({ start: false, end: false });
   const list = useRef<HTMLUListElement>(null);
-  /**
-   * A jump in progress holds the mark: the glide crosses other sections, and the last ones never reach the band. The
-   * first scroll after it ends lets go, as the observer's last report comes after scrollend.
-   */
-  const jump = useRef<'running' | 'ended' | null>(null);
+  /** A jump in progress holds the mark; see `jumpHold`. */
+  const hold = useRef(freeHold);
+  const settling = useRef(0);
   const ids = sections.map((section) => section.id).join(' ');
 
   useEffect(() => {
@@ -40,7 +39,7 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
     const observer = new IntersectionObserver(
       (entries) => {
         const entered = entries.find((entry) => entry.isIntersecting);
-        if (entered && !jump.current) {
+        if (entered && !isHeld(hold.current)) {
           setCurrent(entered.target.id);
         }
       },
@@ -86,23 +85,39 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
   }, [current]);
 
   useEffect(() => {
-    function endJump() {
-      if (jump.current) {
-        jump.current = 'ended';
+    // Without scrollend, a spell with no scroll ends the jump.
+    const hasScrollend = 'onscrollend' in window;
+    let quiet = 0;
+    function onScroll() {
+      hold.current = jumpHold(hold.current, 'scroll');
+      if (!hasScrollend) {
+        window.clearTimeout(quiet);
+        quiet = window.setTimeout(onScrollend, 150);
       }
     }
-    function release() {
-      if (jump.current === 'ended') {
-        jump.current = null;
-      }
+    function onScrollend() {
+      hold.current = jumpHold(hold.current, 'scrollend');
     }
-    window.addEventListener('scrollend', endJump);
-    window.addEventListener('scroll', release, { passive: true });
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('scrollend', onScrollend);
     return () => {
-      window.removeEventListener('scrollend', endJump);
-      window.removeEventListener('scroll', release);
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('scrollend', onScrollend);
+      window.clearTimeout(quiet);
+      cancelAnimationFrame(settling.current);
     };
   }, []);
+
+  function startJump() {
+    hold.current = jumpHold(hold.current, 'click');
+    // A click on a section already in place scrolls nothing: two frames on, a jump that never moved lets go.
+    cancelAnimationFrame(settling.current);
+    settling.current = requestAnimationFrame(() => {
+      settling.current = requestAnimationFrame(() => {
+        hold.current = jumpHold(hold.current, 'settle');
+      });
+    });
+  }
 
   return (
     <nav aria-label={label} className={className}>
@@ -121,7 +136,7 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
                 data-label={section.label}
                 aria-current={section.id === current ? 'location' : undefined}
                 onClick={() => {
-                  jump.current = 'running';
+                  startJump();
                   setCurrent(section.id);
                 }}
               >

@@ -1,22 +1,36 @@
+import { createECDH, randomBytes } from 'node:crypto';
 import { readdir, readFile } from 'node:fs/promises';
 import { drizzle } from 'drizzle-orm/d1';
 import { getPlatformProxy } from 'wrangler';
+import { emailSchema } from '../lib/email.ts';
 import { passwordHashSchema } from '../lib/password.ts';
-import { getDb, newId, setTestDb } from './index.ts';
+import { subscriptionSchema, type ValidSubscription } from '../lib/subscription.ts';
+import { newUserId, type UserId } from './ids.ts';
+import { getDb, setTestDb } from './index.ts';
 import * as schema from './schema.ts';
 
 /** Inserts a User with an unusable password hash and returns its id, for tests that need an Owner. */
-export async function insertTestUser(): Promise<string> {
-  const id = newId();
+export async function insertTestUser(): Promise<UserId> {
+  const id = newUserId();
   await getDb()
     .insert(schema.users)
     .values({
       id,
-      email: `${id}@example.com`,
+      email: emailSchema.parse(`${id}@example.com`),
       passwordHash: passwordHashSchema.parse('test'),
       createdAt: new Date().toISOString(),
     });
   return id;
+}
+
+/** A Subscription with fresh keys a browser could have handed over, for tests that store one. */
+export function testSubscription(endpoint: string): ValidSubscription {
+  const ecdh = createECDH('prime256v1');
+  ecdh.generateKeys();
+  return subscriptionSchema.parse({
+    endpoint,
+    keys: { p256dh: ecdh.getPublicKey().toString('base64url'), auth: randomBytes(16).toString('base64url') },
+  });
 }
 
 const MIGRATIONS_DIR = new URL('../../migrations/', import.meta.url);

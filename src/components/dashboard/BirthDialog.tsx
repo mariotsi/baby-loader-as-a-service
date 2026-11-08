@@ -17,8 +17,8 @@ import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
 import { describeSiteSettingsErrors, inlineErrorText } from '@/lib/errorText';
 import { fallbackLang, type Lang } from '@/lib/i18n';
+import { notificationContent, notificationIcon } from '@/lib/notificationContent';
 import { siteShortName } from '@/lib/siteAppIdentity';
-import { siteIconUrl } from '@/lib/siteMeta';
 import type { BirthDetails, SiteSettings, SiteSettingsError } from '@/lib/siteSettings';
 import { BirthMediaEditor, type MediaDraft, useBirthMediaUrl } from './BirthMediaEditor';
 import { NotificationPreviews } from './NotificationPreviews';
@@ -355,6 +355,7 @@ function BirthPreviews({
   const pageLang = useLang();
   const t = platformCopy[pageLang];
   const { languages } = settings;
+  const icon = notificationIcon(settings, address, photoUrl ?? null);
   return (
     <div className={styles.birthPreviews}>
       {announcing ? (
@@ -365,10 +366,15 @@ function BirthPreviews({
         >
           <NotificationPreviews
             languages={languages}
-            texts={birthNotificationMessages(settings, message)}
+            texts={Object.fromEntries(
+              languages.map((lang) => [
+                lang,
+                notificationContent(settings, birthNotificationMessages(settings, message), lang, icon),
+              ])
+            )}
             siteName={Object.fromEntries(languages.map((lang) => [lang, siteShortName(settings, lang)]))}
             host={address.replace(/^https?:\/\//, '')}
-            icon={photoUrl ?? siteIconUrl(settings, '192', address.replace(/\/$/, ''))}
+            icon={icon}
           />
         </Card>
       ) : null}

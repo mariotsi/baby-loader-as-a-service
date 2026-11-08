@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm';
 import { getDb } from '../db/index.ts';
 import { sites } from '../db/schema.ts';
 import { insertTestUser, startTestDb } from '../db/testDb.ts';
+import { slugSchema } from './address.ts';
 import { issueSessionToken } from './auth.ts';
 import { type AuthenticatedUser, accessOwnedSite, authenticate, type OwnedSite } from './ownerAccess.ts';
 import { createSite, getSiteBySlug, listSitesByOwner, saveSiteSettings } from './site.ts';
@@ -95,7 +96,10 @@ test('saveSiteSettings replaces every Site setting at once', async () => {
 
 test('a Site saved with the Birth video in its Birth details reads it as the Birth video', async () => {
   assert.ok((await createSite(owner, newSite('ada'))).ok);
-  const video = { key: 'customer-data/owner/site/video', url: 'https://media.example.com/video' };
+  const video = {
+    key: 'customer-data/owner/site/1c0a4d2f-3b5e-4d6f-9071-829304a5b6c7',
+    url: 'https://media.example.com/video',
+  };
   const details = { datetime: '2026-10-01T10:00:00.000Z', weightGrams: null, lengthCm: null, message: {} };
   const { birthVideo: _, ...legacy } = {
     ...defaultSiteSettings,
@@ -104,7 +108,7 @@ test('a Site saved with the Birth video in its Birth details reads it as the Bir
   await getDb()
     .update(sites)
     .set({ settings: legacy as unknown as SiteSettings })
-    .where(eq(sites.slug, 'ada'));
+    .where(eq(sites.slug, slugSchema.parse('ada')));
 
   const stored = await getSiteBySlug('ada');
   assert.deepEqual(stored?.birth, { born: true, details });

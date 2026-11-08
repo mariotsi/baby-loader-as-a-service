@@ -1,7 +1,8 @@
 import { addMonths, format, isAfter, isMatch, isValid, parseISO } from 'date-fns';
 import * as z from 'zod/mini';
-import { slugProblem } from './address.ts';
+import { slugSchema } from './address.ts';
 import { LANGS, type Lang } from './i18n.ts';
+import { MAX_MEDIA_BYTES, MEDIA_TYPES, mediaKeySchema } from './siteMedia.ts';
 import { DEFAULT_FONT, DEFAULT_PALETTE, FONTS, PALETTES } from './theme.ts';
 
 /**
@@ -99,11 +100,11 @@ const placeSchema = z.strictObject({
 
 const birthMedia = z.nullable(
   z.strictObject({
-    key: z.string().check(z.minLength(1), z.maxLength(500)),
+    key: mediaKeySchema,
     url: z.url().check(z.refine((url) => url.startsWith('https://'))),
     name: z.optional(z.string().check(z.maxLength(255))),
-    type: z.optional(z.enum(['image/avif', 'image/jpeg', 'image/png', 'image/webp', 'video/mp4', 'video/webm'])),
-    size: z.optional(z.int().check(z.minimum(1), z.maximum(50 * 1024 * 1024))),
+    type: z.optional(z.enum(MEDIA_TYPES)),
+    size: z.optional(z.int().check(z.minimum(1), z.maximum(MAX_MEDIA_BYTES))),
   })
 );
 
@@ -188,15 +189,16 @@ export function missingLanguages(text: Partial<Record<Lang, string>>, languages:
   return languages.filter((language) => !text[language]?.trim());
 }
 
-const newSiteSchema = z.strictObject({
-  slug: z.string().check(
-    z.trim(),
-    z.toLowerCase(),
-    z.refine((slug) => slugProblem(slug) !== 'invalidFormat', { params: { code: 'invalidFormat' } }),
-    z.refine((slug) => slugProblem(slug) !== 'slugReserved', { params: { code: 'slugReserved' } })
-  ),
-  settings: siteSettingsSchema,
-});
+/** Site settings that passed every rule. Only parseSiteSettings and parseNewSite produce one. */
+const validSiteSettingsSchema = siteSettingsSchema.brand<'ValidSiteSettings'>();
+
+/** A Slug and Site settings that passed every rule. Only parseNewSite produces one. */
+const newSiteSchema = z
+  .strictObject({
+    slug: z.pipe(z.string().check(z.trim(), z.toLowerCase()), slugSchema),
+    settings: validSiteSettingsSchema,
+  })
+  .brand<'ValidNewSite'>();
 
 /** What the editor holds and sends: every field is required, except a Milestone's place, absent when it has none. */
 export type SiteSettingsInput = z.input<typeof siteSettingsSchema>;
@@ -210,21 +212,11 @@ export type Place = NonNullable<Milestone['place']>;
 export type PageName = SiteSettings['pageName'];
 export type TextPerLanguage = Milestone['label'];
 
-declare const validSettings: unique symbol;
-declare const validNewSite: unique symbol;
-
-/** Site settings that passed every rule. Only parseSiteSettings and parseNewSite produce one. */
-export type ValidSiteSettings = SiteSettings & { readonly [validSettings]: true };
-
-/** A Slug and Site settings that passed every rule. Only parseNewSite produces one. */
-export type ValidNewSite = {
-  readonly slug: string;
-  readonly settings: ValidSiteSettings;
-  readonly [validNewSite]: true;
-};
+export type ValidSiteSettings = z.output<typeof validSiteSettingsSchema>;
+export type ValidNewSite = Readonly<z.output<typeof newSiteSchema>>;
 
 /** Where onboarding and the editor start from. */
-export const defaultSiteSettings: SiteSettingsInput = {
+export const defaultSiteSettings: SiteSettings = {
   babyName: '',
   sex: 'unknown',
   dueDate: null,
@@ -270,7 +262,8 @@ function rawAt(input: unknown, path: readonly PropertyKey[]): unknown {
   return value;
 }
 
-function toErrors(issues: readonly z.core.$ZodIssue[], input: unknown): SiteSettingsError[] {
+/** Zod's issues as the errors forms show: a path to the field and a code its words come from. */
+export function toErrors(issues: readonly z.core.$ZodIssue[], input: unknown): SiteSettingsError[] {
   return issues.flatMap((issue): SiteSettingsError[] => {
     const path = issue.path.join('.');
     switch (issue.code) {
@@ -328,12 +321,12 @@ function crossFieldErrors(settings: SiteSettings, now: Date): SiteSettingsError[
 }
 
 export function parseSiteSettings(input: unknown, now: Date = new Date()): ParseResult<ValidSiteSettings> {
-  const result = siteSettingsSchema.safeParse(input);
+  const result = validSiteSettingsSchema.safeParse(input);
   if (!result.success) {
     return { ok: false, errors: toErrors(result.error.issues, input) };
   }
   const errors = crossFieldErrors(result.data, now);
-  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: result.data as ValidSiteSettings };
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: result.data };
 }
 
 /**
@@ -367,5 +360,5 @@ export function parseNewSite(input: unknown, now: Date = new Date()): ParseResul
   if (result.data.settings.birth.born) {
     errors.push({ path: 'settings.birth', code: 'invalidOption' });
   }
-  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: result.data as unknown as ValidNewSite };
+  return errors.length > 0 ? { ok: false, errors } : { ok: true, value: result.data };
 }

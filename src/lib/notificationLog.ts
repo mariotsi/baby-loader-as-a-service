@@ -1,5 +1,6 @@
 import { and, desc, eq, inArray, sql } from 'drizzle-orm';
-import { getDb, newId } from '../db/index.ts';
+import { type DeliveryId, type NotificationId, newNotificationId, type SiteId } from '../db/ids.ts';
+import { getDb } from '../db/index.ts';
 import { notificationDeliveries, notifications, subscriptions } from '../db/schema.ts';
 import type { Lang } from './i18n.ts';
 import type { PushSubscriptionRecord } from './subscription.ts';
@@ -24,7 +25,7 @@ export interface LoggedDelivery {
 }
 
 export interface LoggedNotification {
-  id: string;
+  id: NotificationId;
   kind: NotificationKind;
   messages: NotificationMessages;
   /** ISO 8601 UTC. */
@@ -34,17 +35,17 @@ export interface LoggedNotification {
 
 /** A Delivery still to send, with the Subscription it goes to; null once that Subscription is gone. */
 export interface OutstandingDelivery {
-  id: number;
+  id: DeliveryId;
   subscription: PushSubscriptionRecord | null;
 }
 
 /** Stores the Notification and its Deliveries in one batch and returns its id. */
 export async function logNotification(
-  siteId: string,
+  siteId: SiteId,
   kind: NotificationKind,
   messages: NotificationMessages
-): Promise<string> {
-  const id = newId();
+): Promise<NotificationId> {
+  const id = newNotificationId();
   const now = new Date().toISOString();
   const db = getDb();
   await db.batch([
@@ -67,7 +68,7 @@ export async function logNotification(
   return id;
 }
 
-export async function findNotification(siteId: string, id: string): Promise<LoggedNotification | null> {
+export async function findNotification(siteId: SiteId, id: NotificationId): Promise<LoggedNotification | null> {
   const row = await getDb().query.notifications.findFirst({
     where: and(eq(notifications.id, id), eq(notifications.siteId, siteId)),
   });
@@ -79,7 +80,7 @@ export async function findNotification(siteId: string, id: string): Promise<Logg
 }
 
 /** The Site's Notifications, newest first. */
-export async function listNotifications(siteId: string): Promise<LoggedNotification[]> {
+export async function listNotifications(siteId: SiteId): Promise<LoggedNotification[]> {
   const rows = await getDb().query.notifications.findMany({
     where: eq(notifications.siteId, siteId),
     orderBy: desc(notifications.createdAt),
@@ -92,7 +93,7 @@ export async function listNotifications(siteId: string): Promise<LoggedNotificat
   );
 }
 
-function deliveriesOf(notificationId: string): Promise<LoggedDelivery[]> {
+function deliveriesOf(notificationId: NotificationId): Promise<LoggedDelivery[]> {
   return getDb()
     .select({ deviceLabel: notificationDeliveries.deviceLabel, status: notificationDeliveries.status })
     .from(notificationDeliveries)
@@ -101,7 +102,7 @@ function deliveriesOf(notificationId: string): Promise<LoggedDelivery[]> {
 }
 
 /** The Deliveries sending has not finished: those never tried, and those that failed. */
-export async function outstandingDeliveries(notificationId: string): Promise<OutstandingDelivery[]> {
+export async function outstandingDeliveries(notificationId: NotificationId): Promise<OutstandingDelivery[]> {
   const rows = await getDb()
     .select({ id: notificationDeliveries.id, subscription: subscriptions })
     .from(notificationDeliveries)
@@ -123,7 +124,7 @@ export async function outstandingDeliveries(notificationId: string): Promise<Out
 }
 
 /** Records one batch of outcomes at once; `ids` per status stay under D1's bound parameter limit. */
-export async function recordDeliveries(outcomes: Map<DeliveryStatus, number[]>): Promise<void> {
+export async function recordDeliveries(outcomes: Map<DeliveryStatus, DeliveryId[]>): Promise<void> {
   const now = new Date().toISOString();
   const db = getDb();
   await Promise.all(
