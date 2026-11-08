@@ -314,8 +314,10 @@ test('a Notification defaults to the name, hidden by Privacy settings only while
     defaultNotificationTitle({ ...settings({ babyName: 'Emma' }), birth: { born: false, details: null } }),
     'Emma'
   );
-  assert.equal(defaultNotificationTitle({ babyName: 'Emma', birth: born(), privacy: hidden }), 'Emma');
-  assert.equal(defaultNotificationTitle({ babyName: '', birth: born(), privacy: hidden }), undefined);
+  const { photo: _, ...details } = born().details;
+  const birth = { born: true as const, details };
+  assert.equal(defaultNotificationTitle({ babyName: 'Emma', birth, privacy: hidden }), 'Emma');
+  assert.equal(defaultNotificationTitle({ babyName: '', birth, privacy: hidden }), undefined);
 });
 
 test('the Timezone is any zone Intl knows, aliases included', () => {
@@ -328,7 +330,7 @@ test('the Timezone is any zone Intl knows, aliases included', () => {
 
 test('birth media accepts stored HTTPS assets and remains optional for existing Sites', () => {
   const photo = {
-    key: 'customer-data/owner/site/photo',
+    key: 'customer-data/owner/site/0b9f3c1e-2a4d-4c5e-8f60-71829304a5b6',
     url: 'https://media.example.com/photo',
     name: 'hello.png',
     type: 'image/png' as const,
@@ -360,7 +362,10 @@ test('birth media accepts stored HTTPS assets and remains optional for existing 
 });
 
 test('the Birth video can be picked in the Waiting state and is no Birth detail', () => {
-  const birthVideo = { key: 'customer-data/owner/site/video', url: 'https://media.example.com/video' };
+  const birthVideo = {
+    key: 'customer-data/owner/site/1c0a4d2f-3b5e-4d6f-9071-829304a5b6c7',
+    url: 'https://media.example.com/video',
+  };
   assert.equal(parseSiteSettings(settings({ birthVideo }), NOW).ok, true);
   assert.deepEqual(
     errorsOf(settings({ babyName: 'Emma', sex: 'female', birth: born({ video: birthVideo } as object) })),

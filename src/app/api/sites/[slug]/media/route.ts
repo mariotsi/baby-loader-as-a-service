@@ -2,28 +2,24 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
 import { routeError } from '@/lib/routeError';
 import {
-  getStorageProvider,
-  InvalidMediaKeyError,
   MediaCachePurgeError,
-  MediaOwnershipError,
+  MediaNotFoundError,
   MediaTooLargeError,
   UnsupportedMediaTypeError,
-} from '@/lib/storage';
+} from '@/lib/siteMedia';
+import { deploymentSiteMedia } from '@/lib/siteMediaNext';
 
 type RouteContext = { params: Promise<{ slug: string }> };
 
-function storageError(error: unknown): NextResponse {
+function mediaError(error: unknown): NextResponse {
   if (error instanceof UnsupportedMediaTypeError) {
     return routeError(415, { code: 'unsupportedMediaType' });
   }
   if (error instanceof MediaTooLargeError) {
     return routeError(413, { code: 'mediaTooLarge' });
   }
-  if (error instanceof MediaOwnershipError) {
+  if (error instanceof MediaNotFoundError) {
     return routeError(404, { code: 'notFound' });
-  }
-  if (error instanceof InvalidMediaKeyError) {
-    return routeError(400, { code: 'invalidRequest' });
   }
   if (error instanceof MediaCachePurgeError) {
     return routeError(502, { code: 'mediaCachePurgeFailed' });
@@ -46,14 +42,14 @@ export async function POST(req: NextRequest, { params }: RouteContext) {
   }
 
   try {
-    const media = await getStorageProvider().upload({ site: access.owned, file });
+    const media = await deploymentSiteMedia().upload(access.owned, file);
     return NextResponse.json({ media }, { status: 201 });
   } catch (error) {
-    return storageError(error);
+    return mediaError(error);
   }
 }
 
-/** Accepts `{ key }` and deletes media only within the authenticated Owner's Site folder. */
+/** Accepts `{ key }` and deletes an upload of the authenticated Owner's Site that its settings do not use. */
 export async function DELETE(req: NextRequest, { params }: RouteContext) {
   const { slug } = await params;
   const access = await requireOwnedSite(req, slug);
@@ -62,14 +58,10 @@ export async function DELETE(req: NextRequest, { params }: RouteContext) {
   }
 
   const body = (await req.json().catch(() => null)) as { key?: unknown } | null;
-  if (typeof body?.key !== 'string' || !body.key) {
-    return routeError(400, { code: 'invalidRequest' });
-  }
-
   try {
-    await getStorageProvider().delete(access.owned, body.key);
+    await deploymentSiteMedia().remove(access.owned, body?.key);
     return NextResponse.json({ ok: true });
   } catch (error) {
-    return storageError(error);
+    return mediaError(error);
   }
 }

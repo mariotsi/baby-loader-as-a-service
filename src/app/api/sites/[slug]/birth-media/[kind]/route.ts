@@ -1,5 +1,5 @@
-import { getCloudflareContext } from '@opennextjs/cloudflare';
 import { getSiteBySlug } from '@/lib/site';
+import { deploymentSiteMedia } from '@/lib/siteMediaNext';
 
 /** Serves only a Site's own Birth video, and the photo published once it is Born, from the deployment's own bucket. */
 export async function GET(request: Request, { params }: { params: Promise<{ slug: string; kind: string }> }) {
@@ -8,35 +8,9 @@ export async function GET(request: Request, { params }: { params: Promise<{ slug
     return new Response(null, { status: 404 });
   }
   const site = await getSiteBySlug(slug);
-  if (!site) {
-    return new Response(null, { status: 404 });
-  }
   // The editor previews the Birth video before the birth, so it is served in the Waiting state too.
-  const media = kind === 'video' ? site.birthVideo : site.birth.details?.photo;
-  if (
-    !media ||
-    media.key !== new URL(request.url).searchParams.get('key') ||
-    !media.key.startsWith(`customer-data/${site.ownerId}/${site.id}/`)
-  ) {
-    return new Response(null, { status: 404 });
-  }
-  const object = await getCloudflareContext().env.WEBSITE_ASSETS.get(media.key, { range: request.headers });
-  if (!object) {
-    return new Response(null, { status: 404 });
-  }
-  const headers = new Headers();
-  object.writeHttpMetadata(headers);
-  headers.set('ETag', object.httpEtag);
-  headers.set('Cache-Control', 'private, no-store');
-  headers.set('Accept-Ranges', 'bytes');
-  headers.set('X-Content-Type-Options', 'nosniff');
-  if (object.range) {
-    const offset = object.range.offset ?? 0;
-    const length = object.range.length ?? object.size - offset;
-    headers.set('Content-Range', `bytes ${offset}-${offset + length - 1}/${object.size}`);
-    headers.set('Content-Length', String(length));
-    return new Response(object.body, { status: 206, headers });
-  }
-  headers.set('Content-Length', String(object.size));
-  return new Response(object.body, { headers });
+  const response =
+    site &&
+    (await deploymentSiteMedia().read(site, kind, new URL(request.url).searchParams.get('key'), request.headers));
+  return response ?? new Response(null, { status: 404 });
 }

@@ -28,13 +28,9 @@ const envSchema = z.object({
     z.string().check(z.regex(VAPID_PRIVATE_KEY, 'must be a VAPID private key (npm run generate-vapid)'))
   ),
   ROOT_DOMAIN: z.optional(z.string().check(z.regex(HOST, 'must be a host, with a port only for localhost'))),
-  MEDIA_STORAGE_ENDPOINT: z.string().check(z.regex(/^https:\/\//, 'must be an HTTPS URL')),
-  MEDIA_STORAGE_BUCKET: z.string(),
-  MEDIA_STORAGE_ACCESS_KEY_ID: z.string(),
-  MEDIA_STORAGE_SECRET_ACCESS_KEY: z.string(),
   MEDIA_PUBLIC_URL: z.string().check(z.regex(/^https:\/\//, 'must be an HTTPS URL')),
-  MEDIA_CACHE_PURGE_TOKEN: z.string(),
-  MEDIA_CACHE_PURGE_ZONE_ID: z.string().check(z.regex(/^[0-9a-f]{32}$/i, 'must be a Cloudflare zone ID')),
+  MEDIA_CACHE_PURGE_TOKEN: z.optional(z.string()),
+  MEDIA_CACHE_PURGE_ZONE_ID: z.optional(z.string().check(z.regex(/^[0-9a-f]{32}$/i, 'must be a Cloudflare zone ID'))),
   APP_ENV: z.optional(
     z.enum(['production', 'staging', 'preview', 'development'], 'must be production, staging, preview or development')
   ),
@@ -46,9 +42,12 @@ type Env = z.output<typeof envSchema>;
 type RawEnv = Record<string, string | undefined>;
 
 const VAPID_VARS = ['VAPID_EMAIL', 'NEXT_PUBLIC_VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'] as const;
+const PURGE_VARS = ['MEDIA_CACHE_PURGE_TOKEN', 'MEDIA_CACHE_PURGE_ZONE_ID'] as const;
 /**
- * The rule across variables: the VAPID keypair comes whole or not at all. It
- * runs even when a variable already failed, so one start names every problem.
+ * The rules across variables: the VAPID keypair comes whole or not at all,
+ * and a deployment, whose media domain caches every file, purges it with
+ * both cache purge variables. They run even when a variable already failed,
+ * so one start names every problem.
  */
 const fullSchema = envSchema.check(
   z.superRefine(
@@ -57,6 +56,11 @@ const fullSchema = envSchema.check(
       if (missing.length > 0 && missing.length < VAPID_VARS.length) {
         for (const name of missing) {
           ctx.addIssue({ code: 'custom', path: [name], message: 'is not set, while the rest of the VAPID keypair is' });
+        }
+      }
+      if (appEnv(env) !== 'development') {
+        for (const name of PURGE_VARS.filter((variable) => !env[variable])) {
+          ctx.addIssue({ code: 'custom', path: [name], message: 'is not set, while APP_ENV is a deployment' });
         }
       }
     },
@@ -124,26 +128,17 @@ export const deploymentEnv = lazy(
   })
 );
 
-/** Required S3-compatible media storage configuration. */
-export const mediaStorageEnv = lazy(
-  {
-    MEDIA_STORAGE_ENDPOINT: true,
-    MEDIA_STORAGE_BUCKET: true,
-    MEDIA_STORAGE_ACCESS_KEY_ID: true,
-    MEDIA_STORAGE_SECRET_ACCESS_KEY: true,
-    MEDIA_PUBLIC_URL: true,
-    MEDIA_CACHE_PURGE_TOKEN: true,
-    MEDIA_CACHE_PURGE_ZONE_ID: true,
-  },
-  (env) => {
-    return {
-      endpoint: env.MEDIA_STORAGE_ENDPOINT,
-      bucket: env.MEDIA_STORAGE_BUCKET,
-      accessKeyId: env.MEDIA_STORAGE_ACCESS_KEY_ID,
-      secretAccessKey: env.MEDIA_STORAGE_SECRET_ACCESS_KEY,
-      publicUrl: env.MEDIA_PUBLIC_URL.replace(/\/$/, ''),
-      cachePurgeToken: env.MEDIA_CACHE_PURGE_TOKEN,
-      cachePurgeZoneId: env.MEDIA_CACHE_PURGE_ZONE_ID,
-    };
-  }
+/**
+ * The media domain's origin, and how to purge its cache; development has no
+ * cache in front of its local bucket, so it may leave the purge variables out.
+ */
+export const mediaEnv = lazy(
+  { MEDIA_PUBLIC_URL: true, MEDIA_CACHE_PURGE_TOKEN: true, MEDIA_CACHE_PURGE_ZONE_ID: true },
+  (env) => ({
+    publicUrl: env.MEDIA_PUBLIC_URL.replace(/\/$/, ''),
+    purge:
+      env.MEDIA_CACHE_PURGE_TOKEN && env.MEDIA_CACHE_PURGE_ZONE_ID
+        ? { token: env.MEDIA_CACHE_PURGE_TOKEN, zoneId: env.MEDIA_CACHE_PURGE_ZONE_ID }
+        : null,
+  })
 );
