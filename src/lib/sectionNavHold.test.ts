@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { freeHold, isHeld, type JumpEvent, type JumpHold, jumpHold } from './sectionNavHold.ts';
+import { freeHold, isHeld, type JumpEvent, type JumpHold, jumpHold, jumpMoves } from './sectionNavHold.ts';
 
 function run(events: JumpEvent[], from: JumpHold = freeHold): JumpHold {
   return events.reduce(jumpHold, from);
@@ -17,7 +17,7 @@ test('a glide holds the mark through its scrolls and scrollend, and the next scr
   assert.equal(isHeld(jumpHold(landed, 'scroll')), false);
 });
 
-test('a click on a section already in place lets go two frames later', () => {
+test('a click on a section already in place lets go when it settles', () => {
   const clicked = run(['click']);
   assert.equal(isHeld(clicked), true);
   assert.equal(isHeld(jumpHold(clicked, 'settle')), false);
@@ -42,4 +42,18 @@ test('a click during a glide starts a new jump', () => {
 
 test('scrollend without a jump changes nothing', () => {
   assert.equal(run(['scrollend']), freeHold);
+});
+
+test('a jump moves the page unless its section is already in place', () => {
+  assert.equal(jumpMoves({ scrollY: 40, offset: 3000, maxScroll: 5000 }), true);
+  assert.equal(jumpMoves({ scrollY: 400, offset: -300, maxScroll: 5000 }), true);
+  assert.equal(jumpMoves({ scrollY: 400, offset: 0.4, maxScroll: 5000 }), false);
+});
+
+test('a jump past the end of the page moves only as far as the page scrolls', () => {
+  // The last section never reaches the top: at the bottom already, nothing moves.
+  assert.equal(jumpMoves({ scrollY: 5000, offset: 600, maxScroll: 5000 }), false);
+  assert.equal(jumpMoves({ scrollY: 4800, offset: 600, maxScroll: 5000 }), true);
+  // At the top, a section above the fold's edge moves nothing either.
+  assert.equal(jumpMoves({ scrollY: 0, offset: -20, maxScroll: 5000 }), false);
 });
