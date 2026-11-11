@@ -10,6 +10,7 @@ import {
   isoDateTimeSchema,
   type SiteSettings,
   type SiteSettingsError,
+  settingsPath,
 } from '@/lib/siteSettings';
 import { bornPlaceholderUrl } from '@/lib/websiteAssets';
 import { BirthDialog, type SaveOutcome } from './BirthDialog';
@@ -156,9 +157,11 @@ export const Errors: Story = {
   args: {
     initial: { ...waiting, datetime: '', weight: '3400.5' },
     check: (birth: BirthDraft): SiteSettingsError[] => [
-      ...(birth.datetime ? [] : [{ path: 'birth.details.datetime', code: 'required' as const }]),
-      ...(birth.weight.includes('.') ? [{ path: 'birth.details.weightGrams', code: 'invalidType' as const }] : []),
-      { path: 'milestones.0.date', code: 'required' as const },
+      ...(birth.datetime ? [] : [{ path: settingsPath('birth.details.datetime'), code: 'required' as const }]),
+      ...(birth.weight.includes('.')
+        ? [{ path: settingsPath('birth.details.weightGrams'), code: 'invalidType' as const }]
+        : []),
+      { path: settingsPath('milestones.0.date'), code: 'required' as const },
     ],
   },
   play: async ({ canvasElement }) => {

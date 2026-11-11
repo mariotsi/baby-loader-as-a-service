@@ -4,13 +4,14 @@ import { getDb, isUniqueViolation } from '../db/index.ts';
 import { sites } from '../db/schema.ts';
 import { isSlug, type Slug } from './address.ts';
 import type { AuthenticatedUser, OwnedSite } from './ownerAccess.ts';
-import type {
-  BirthDetails,
-  BirthMedia,
-  SiteSettings,
-  SiteSettingsError,
-  ValidNewSite,
-  ValidSiteSettings,
+import {
+  type BirthDetails,
+  type BirthMedia,
+  type SiteSettings,
+  type SiteSettingsError,
+  settingsPath,
+  type ValidNewSite,
+  type ValidSiteSettings,
 } from './siteSettings.ts';
 
 export type { Milestone } from './siteSettings.ts';
@@ -109,7 +110,7 @@ export async function createSite(owner: AuthenticatedUser, newSite: ValidNewSite
     await getDb().insert(sites).values(row);
   } catch (err) {
     if (isUniqueViolation(err, 'sites.slug')) {
-      return { ok: false, errors: [{ path: 'slug', code: 'slugTaken' }] };
+      return { ok: false, errors: [{ path: settingsPath('slug'), code: 'slugTaken' }] };
     }
     throw err;
   }

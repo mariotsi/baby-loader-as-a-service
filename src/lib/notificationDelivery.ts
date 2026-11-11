@@ -18,7 +18,7 @@ import {
 } from './notificationLog.ts';
 import type { OwnedSite } from './ownerAccess.ts';
 import type { Site } from './site.ts';
-import { type ParseResult, type SiteSettingsError, toErrors } from './siteSettings.ts';
+import { type ParseResult, type SiteSettingsError, settingsPath, toErrors } from './siteSettings.ts';
 import { deleteSubscriptionsByEndpoint, type PushEndpoint } from './subscription.ts';
 
 /**
@@ -72,12 +72,12 @@ const notificationTextSchema = z.pipe(
  */
 export function parseNotification(messages: unknown, langs: readonly Lang[]): ParseResult<ValidNotification> {
   if (!isRecord(messages) || Object.keys(messages).length === 0) {
-    return { ok: false, errors: [{ path: 'messages', code: 'required' }] };
+    return { ok: false, errors: [{ path: settingsPath('messages'), code: 'required' }] };
   }
   const errors: SiteSettingsError[] = [];
   const parsed: Partial<Record<Lang, NotificationText>> = {};
   for (const [lang, raw] of Object.entries(messages)) {
-    const path = `messages.${lang}`;
+    const path = settingsPath(`messages.${lang}`);
     if (!langs.includes(lang as Lang)) {
       errors.push({ path, code: 'invalidOption' });
       continue;
@@ -87,7 +87,10 @@ export function parseNotification(messages: unknown, langs: readonly Lang[]): Pa
       parsed[lang as Lang] = result.data;
     } else {
       errors.push(
-        ...toErrors(result.error.issues, raw).map((e) => ({ ...e, path: e.path ? `${path}.${e.path}` : path }))
+        ...toErrors(result.error.issues, raw).map((e) => ({
+          ...e,
+          path: e.path ? settingsPath(`${path}.${e.path}`) : path,
+        }))
       );
     }
   }
