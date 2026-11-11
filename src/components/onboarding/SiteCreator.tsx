@@ -30,45 +30,26 @@ import { uiCopy } from '@/lib/copy/ui';
 import { inlineErrorText, responseErrorText } from '@/lib/errorText';
 import { type Lang, languageName } from '@/lib/i18n';
 import { saveWelcome } from '@/lib/newSiteWelcome';
-import {
-  DEFAULT_SITE_ICON_EMOJI,
-  defaultSiteSettings,
-  type PageName,
-  parseNewSite,
-  parseSiteSettings,
-  type SiteSettings,
-  type SiteSettingsError,
-  type SiteSettingsInput,
-} from '@/lib/siteSettings';
-import { DEFAULT_FONT, DEFAULT_PALETTE, getFont, getPalette } from '@/lib/theme';
+import { lastValidSettings, newSiteDraft, readStoredDraft, type SiteDraft, settingsOfDraft } from '@/lib/siteDraft';
+import { defaultSiteSettings, parseNewSite, type SiteSettings, type SiteSettingsError } from '@/lib/siteSettings';
+import { getFont, getPalette } from '@/lib/theme';
 import styles from './SiteCreator.module.css';
 
 const LAST_STEP = 3;
 const DRAFT_KEY = 'new-site-draft';
 
 /** Everything entered so far, kept in the tab's `sessionStorage` so a reload loses none of it. */
-interface Draft {
-  slug: string;
-  babyName: string;
-  sex: SiteSettingsInput['sex'];
-  dueDate: string;
-  languages: Lang[];
-  palette: string;
-  font: string;
-  pageName: PageName;
-  iconIsEmoji: boolean;
-  iconEmoji: string;
-  showName: boolean;
-  showSex: boolean;
-}
+type Draft = SiteDraft & { slug: string };
 
 /** The fields of The basics that show an error, by name. */
 type BasicsErrors = Partial<Record<'slug' | 'dueDate', string>>;
 
+/** The draft this tab saved, if it still has the shape this page writes; one from an older Platform starts over. */
 function readDraft(): Draft | null {
   try {
-    const saved = sessionStorage.getItem(DRAFT_KEY);
-    return saved ? JSON.parse(saved) : null;
+    const saved = JSON.parse(sessionStorage.getItem(DRAFT_KEY) ?? 'null');
+    const draft = readStoredDraft(saved);
+    return draft && typeof saved.slug === 'string' ? { ...draft, slug: saved.slug } : null;
   } catch {
     return null;
   }
@@ -104,26 +85,11 @@ function slugError(slug: string, t: PlatformCopy['onboarding']): string | undefi
   return undefined;
 }
 
-function toSettings(draft: Draft): SiteSettingsInput {
-  return {
-    ...defaultSiteSettings,
-    babyName: draft.babyName,
-    sex: draft.sex,
-    dueDate: draft.dueDate || null,
-    languages: draft.languages,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    theme: { palette: draft.palette, font: draft.font },
-    privacy: { showName: draft.showName, showSex: draft.showSex },
-    pageName: Object.fromEntries(Object.entries(draft.pageName).filter(([, text]) => text.trim())),
-    icon: draft.iconIsEmoji ? draft.iconEmoji : null,
-  };
-}
-
 /** The errors of The basics: what the browser can check before asking the server about the Slug. */
 function basicsErrors(draft: Draft, lang: Lang): BasicsErrors {
   const t = platformCopy[lang].onboarding;
   const slug = draft.slug.trim();
-  const checked = parseNewSite({ slug, settings: toSettings(draft) });
+  const checked = parseNewSite({ slug, settings: settingsOfDraft(draft) });
   const dueDate = checked.ok ? undefined : checked.errors.find((error) => error.path === 'settings.dueDate');
   return {
     slug: slugError(slug, t) ?? (slug ? undefined : t.slugFormat),
@@ -163,21 +129,10 @@ export function SiteCreator({
   const lang = useLang();
   const { onboarding: t, settings: settingsCopy } = platformCopy[lang];
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<Draft>({
+  const [draft, setDraft] = useState<Draft>(() => ({
+    ...newSiteDraft(lang, Intl.DateTimeFormat().resolvedOptions().timeZone),
     slug: '',
-    babyName: '',
-    sex: 'unknown',
-    dueDate: '',
-    // A new Site starts in the language its Owner reads the Platform in.
-    languages: [lang],
-    palette: DEFAULT_PALETTE,
-    font: DEFAULT_FONT,
-    pageName: {},
-    iconIsEmoji: false,
-    iconEmoji: DEFAULT_SITE_ICON_EMOJI,
-    showName: true,
-    showSex: true,
-  });
+  }));
   const [fieldErrors, setFieldErrors] = useState<BasicsErrors>({});
   /** Counts refused steps, so each one moves the focus to the first field in error. */
   const [refused, setRefused] = useState(0);
@@ -189,13 +144,10 @@ export function SiteCreator({
   const shownStep = useRef(0);
   /** Set once the saved draft is back, so the empty form never overwrites it. */
   const [restored, setRestored] = useState(false);
-  const lastValid = useRef<SiteSettings>(defaultSiteSettings as SiteSettings);
+  const lastValid = useRef<SiteSettings>(defaultSiteSettings);
 
-  const settings = toSettings(draft);
-  const checked = parseSiteSettings(settings);
-  if (checked.ok) {
-    lastValid.current = checked.value;
-  }
+  const settings = settingsOfDraft(draft);
+  lastValid.current = lastValidSettings(settings, lastValid.current);
   const trimmedSlug = draft.slug.trim();
 
   useEffect(() => {

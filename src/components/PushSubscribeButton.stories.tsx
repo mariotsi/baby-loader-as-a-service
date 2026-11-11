@@ -2,11 +2,15 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 import type { Lang } from '@/lib/i18n';
 import { publicPageView } from '@/lib/publicPageView';
-import { defaultSiteSettings } from '@/lib/siteSettings';
+import { defaultSiteSettings, emojiSchema, isoDateTimeSchema } from '@/lib/siteSettings';
 import { Confetti, type ConfettiOrigin } from './Confetti';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { PushSubscribeView } from './PushSubscribeButton';
 import { Stack } from './ui/Stack';
+
+const asInstant = (value: string) => isoDateTimeSchema.parse(value);
+
+const asEmoji = (value: string) => emojiSchema.parse(value);
 
 const desktop = { ios: false, android: false, chrome: true, standalone: false, iosVersion: null };
 const iphone = { ...desktop, ios: true, chrome: false, iosVersion: '18.0' };
@@ -21,7 +25,7 @@ const copy = (lang: 'en' | 'it', born = false) =>
         ? {
             birth: {
               born: true,
-              details: { datetime: '2026-10-26T12:00:00Z', weightGrams: null, lengthCm: null, message: {} },
+              details: { datetime: asInstant('2026-10-26T12:00:00Z'), weightGrams: null, lengthCm: null, message: {} },
             },
           }
         : {}),
@@ -152,7 +156,7 @@ export const IPhoneEmojiApp: Story = {
   args: {
     status: 'ios-home-screen',
     device: { ...iphone, iosVersion: '27.0' },
-    push: publicPageView({ ...defaultSiteSettings, babyName: 'Emma', icon: '🐣' }, 'en').push,
+    push: publicPageView({ ...defaultSiteSettings, babyName: 'Emma', icon: asEmoji('🐣') }, 'en').push,
   },
 };
 /** Keeps the app preview visible when an image cannot load. */

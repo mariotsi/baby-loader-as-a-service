@@ -48,7 +48,7 @@ function isIsoDatetime(value: string): boolean {
 }
 
 /** Any IANA name `Intl` knows, aliases included: browsers report some zones by an older alias (Europe/Kiev). */
-export function isTimeZone(value: string): boolean {
+function isKnownTimeZone(value: string): boolean {
   try {
     new Intl.DateTimeFormat('en', { timeZone: value });
     return value !== '';
@@ -70,8 +70,30 @@ function requiredString(rule: (value: string) => boolean, code: SiteSettingsErro
   );
 }
 
-const calendarDate = requiredString(isCalendarDate, 'invalidDate');
-const isoDatetime = requiredString(isIsoDatetime, 'invalidDate');
+/** A day on the calendar, `yyyy-MM-dd`, with no time or zone: a Due date or a Milestone's date. */
+export const calendarDaySchema = requiredString(isCalendarDate, 'invalidDate').brand<'CalendarDay'>();
+export type CalendarDay = z.output<typeof calendarDaySchema>;
+export function isCalendarDay(value: unknown): value is CalendarDay {
+  return calendarDaySchema.safeParse(value).success;
+}
+
+/** An instant as ISO 8601 with its offset, such as the Birth's time. */
+export const isoDateTimeSchema = requiredString(isIsoDatetime, 'invalidDate').brand<'IsoDateTime'>();
+export type IsoDateTime = z.output<typeof isoDateTimeSchema>;
+export function isIsoDateTime(value: unknown): value is IsoDateTime {
+  return isoDateTimeSchema.safeParse(value).success;
+}
+
+/** An IANA time zone name, which a Site tells its times in. */
+export const timeZoneSchema = z
+  .string()
+  .check(z.refine(isKnownTimeZone, { params: { code: 'invalidOption' } }))
+  .brand<'TimeZone'>();
+export type TimeZone = z.output<typeof timeZoneSchema>;
+export function isTimeZone(value: unknown): value is TimeZone {
+  return timeZoneSchema.safeParse(value).success;
+}
+
 const lang = z.enum(LANGS as readonly Lang[] as [Lang, ...Lang[]]);
 
 /**
@@ -83,13 +105,17 @@ const textPerLanguage = (max: number) => z.partialRecord(lang, z.string().check(
 /** Exactly one emoji, skin tone and joined sequences included. */
 // biome-ignore lint/complexity/useRegexLiterals: TypeScript refuses a literal `v` flag below an ES2024 target.
 const ONE_EMOJI = new RegExp('^\\p{RGI_Emoji}$', 'v');
-const emoji = requiredString((value) => ONE_EMOJI.test(value), 'invalidFormat');
+export const emojiSchema = requiredString((value) => ONE_EMOJI.test(value), 'invalidFormat').brand<'Emoji'>();
+export type Emoji = z.output<typeof emojiSchema>;
+export function isEmoji(value: unknown): value is Emoji {
+  return emojiSchema.safeParse(value).success;
+}
 
 /** What a new Milestone starts with, until the Owner picks its own emoji. */
-export const DEFAULT_MILESTONE_EMOJI = '✨';
+export const DEFAULT_MILESTONE_EMOJI = emojiSchema.parse('✨');
 
 /** What the Site icon starts with when the Owner swaps the loading baby for an emoji. */
-export const DEFAULT_SITE_ICON_EMOJI = '🐣';
+export const DEFAULT_SITE_ICON_EMOJI = emojiSchema.parse('🐣');
 
 /** A Milestone's Place: its street address, the same in every Language, and the point it stands for (see place.ts). */
 const placeSchema = z.strictObject({
@@ -113,7 +139,7 @@ const birthSchema = z.discriminatedUnion('born', [
   z.strictObject({
     born: z.literal(true),
     details: z.strictObject({
-      datetime: isoDatetime,
+      datetime: isoDateTimeSchema,
       weightGrams: z.nullable(z.int().check(z.minimum(300), z.maximum(8000))),
       lengthCm: z.nullable(z.number().check(z.minimum(20), z.maximum(70))),
       // Optional, so only the Languages that have one.
@@ -127,14 +153,14 @@ const siteSettingsSchema = z
   .strictObject({
     babyName: z.string().check(z.trim(), z.maxLength(60)),
     sex: z.enum(['female', 'male', 'unknown']),
-    dueDate: z.nullable(calendarDate),
+    dueDate: z.nullable(calendarDaySchema),
     birth: birthSchema,
     milestones: z
       .array(
         z.strictObject({
-          emoji,
+          emoji: emojiSchema,
           label: textPerLanguage(80),
-          date: calendarDate,
+          date: calendarDaySchema,
           place: z.optional(placeSchema),
           /** The Birth milestone, which announcing the birth adds and going back to the Countdown removes. */
           kind: z.optional(z.literal('birth')),
@@ -146,7 +172,7 @@ const siteSettingsSchema = z
       z.minLength(1),
       z.refine((langs) => new Set(langs).size === langs.length, { params: { code: 'invalidOption' } })
     ),
-    timezone: z.string().check(z.refine(isTimeZone, { params: { code: 'invalidOption' } })),
+    timezone: timeZoneSchema,
     theme: z.strictObject({
       palette: z.enum(PALETTES.map((p) => p.id) as [string, ...string[]]),
       font: z.enum(FONTS.map((f) => f.id) as [string, ...string[]]),
@@ -155,7 +181,7 @@ const siteSettingsSchema = z
     /** The Owner's line in the Public page's header, one per language that has one, kept for a language the Site no longer speaks. */
     pageName: textPerLanguage(60),
     /** The Site icon: one emoji drawn on the Palette's background, or null for the Platform's loading baby. */
-    icon: z.nullable(emoji),
+    icon: z.nullable(emojiSchema),
     /** The Birth video: picked at any time, so the Owner is ready, and played on the Public page once the baby is born. */
     birthVideo: birthMedia,
   })
@@ -223,7 +249,7 @@ export const defaultSiteSettings: SiteSettings = {
   birth: { born: false, details: null },
   milestones: [],
   languages: ['en'],
-  timezone: 'Europe/Rome',
+  timezone: timeZoneSchema.parse('Europe/Rome'),
   theme: { palette: DEFAULT_PALETTE, font: DEFAULT_FONT },
   privacy: { showName: true, showSex: true },
   pageName: {},

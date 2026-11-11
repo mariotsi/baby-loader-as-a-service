@@ -40,6 +40,10 @@ _Avoid_: Tenant, waiting page, account, project
 Everything an Owner configures for a Site: the baby's name and Sex, Due date, Birth details, Milestones, Theme, Privacy settings, Languages, Timezone, Page name and Site icon. The name and the Sex are optional until the birth is announced. The Slug is chosen once, at creation, and is not a Site setting.
 _Avoid_: Tenant settings, configuration, preferences
 
+**Site draft**:
+Site settings as a form holds them while the Owner types: texts left blank, an emoji kept while the loading baby is picked, a Place typed and not yet picked. The editor and onboarding share it, and a save turns it into Site settings.
+_Avoid_: Form state, unsaved settings
+
 **Slug**:
 The short, unique, lowercase name a Site is known by, from which its Address is formed.
 _Avoid_: Subdomain, handle, username, site address

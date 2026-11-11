@@ -20,22 +20,14 @@ import { describeSiteSettingsErrors, inlineErrorText } from '@/lib/errorText';
 import { fallbackLang, type Lang } from '@/lib/i18n';
 import { notificationContent, notificationIcon } from '@/lib/notificationContent';
 import { siteShortName } from '@/lib/siteAppIdentity';
+import type { BirthDraft, MediaDraft } from '@/lib/siteDraft';
 import type { BirthDetails, SiteSettings, SiteSettingsError } from '@/lib/siteSettings';
-import { BirthMediaEditor, type MediaDraft, useBirthMediaUrl } from './BirthMediaEditor';
+import { BirthMediaEditor, useBirthMediaUrl } from './BirthMediaEditor';
 import { NotificationPreviews } from './NotificationPreviews';
 import { PublicPagePreview } from './PublicPagePreview';
 import styles from './SiteEditor.module.css';
 
 /** The Birth as the editor holds it: the fields as typed, and the photo picked but maybe not yet uploaded. */
-export interface BirthDraft {
-  born: boolean;
-  /** A `datetime-local` value, on the wall clock in the Site's Timezone. */
-  datetime: string;
-  weight: string;
-  lengthCm: string;
-  message: BirthDetails['message'];
-  photo: MediaDraft;
-}
 
 /** Why a save did not go through: Site settings errors, from the browser or the server, or a message. `stale` when the Site changed in another tab. */
 export type SaveFailure = { ok: false; errors: SiteSettingsError[]; message: string | null; stale?: boolean };

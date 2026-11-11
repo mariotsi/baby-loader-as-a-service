@@ -11,10 +11,8 @@ import { birthMediaPreviewPath, type MediaUrl, mediaUrlSchema } from '@/lib/birt
 import { birthMediaCopy } from '@/lib/copy/birthMedia';
 import { publicPageCopy } from '@/lib/copy/publicPage';
 import type { Lang } from '@/lib/i18n';
-import type { BirthDetails, BirthMedia } from '@/lib/siteSettings';
+import type { MediaDraft } from '@/lib/siteDraft';
 import styles from './BirthMediaEditor.module.css';
-
-export type MediaDraft = BirthMedia | File | null;
 
 /** The Birth video's section, which the Site settings' menu names. */
 export function birthVideoTitle(lang: Lang) {
@@ -126,14 +124,6 @@ export function BirthMediaEditor({
       ) : null}
     </Card>
   );
-}
-
-export function birthPhoto(details: BirthDetails | null): BirthMedia | null {
-  return details?.photo ?? null;
-}
-
-export function storedDraft(draft: MediaDraft): BirthMedia | null {
-  return draft instanceof File ? null : draft;
 }
 
 function description(only: 'photo' | 'video' | undefined, lang: Lang) {

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   defaultSiteSettings,
+  isoDateTimeSchema,
   parseBirthPreview,
   parseNewSite,
   parseSiteSettings,
@@ -309,7 +310,7 @@ test('the shown name is the baby’s, hidden by Privacy settings only while Wait
   assert.equal(shownBabyName({ babyName: 'Emma', birth: { born: false, details: null }, privacy: hidden }), null);
   assert.equal(shownBabyName({ ...settings({ babyName: 'Emma' }), birth: { born: false, details: null } }), 'Emma');
   const { photo: _, ...details } = born().details;
-  const birth = { born: true as const, details };
+  const birth = { born: true as const, details: { ...details, datetime: isoDateTimeSchema.parse(details.datetime) } };
   assert.equal(shownBabyName({ babyName: 'Emma', birth, privacy: hidden }), 'Emma');
   assert.equal(shownBabyName({ babyName: '', birth, privacy: hidden }), null);
 });

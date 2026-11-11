@@ -1,13 +1,15 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { type NotificationSite, notificationContent, notificationIcon } from './notificationContent.ts';
-import { defaultSiteSettings } from './siteSettings.ts';
+import { defaultSiteSettings, isoDateTimeSchema } from './siteSettings.ts';
+
+const asInstant = (value: string) => isoDateTimeSchema.parse(value);
 
 const site: NotificationSite = { ...defaultSiteSettings, babyName: 'Sofia', languages: ['it', 'en'] };
 const hidden: NotificationSite = { ...site, privacy: { showName: false, showSex: true } };
 const bornBirth = {
   born: true,
-  details: { datetime: '2026-01-15T08:30:00.000Z', weightGrams: null, lengthCm: null, message: {} },
+  details: { datetime: asInstant('2026-01-15T08:30:00.000Z'), weightGrams: null, lengthCm: null, message: {} },
 } as const;
 
 test('a written title wins', () => {
