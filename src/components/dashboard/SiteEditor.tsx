@@ -23,7 +23,7 @@ import { birthDay, instantIn, localIn } from '@/lib/birthAnnouncement';
 import type { MediaUrl } from '@/lib/birthMedia';
 import { errorsCopy } from '@/lib/copy/errors';
 import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
-import { describeSiteSettingsErrors, inlineErrorText, isInlineError, routeErrorText } from '@/lib/errorText';
+import { describeSiteSettingsErrors, errorPlace, inlineErrorText, routeErrorText } from '@/lib/errorText';
 import type { Lang } from '@/lib/i18n';
 import { takeWelcome } from '@/lib/newSiteWelcome';
 import type { DeliveryResult } from '@/lib/notificationDelivery';
@@ -817,7 +817,7 @@ function MilestonesCard({
 
 /** The status message for the errors still showing: a pointer to the fields marked, then every other error in words. */
 function problemsText(errors: SiteSettingsError[], lang: Lang): string | null {
-  const elsewhere = errors.filter((error) => !isInlineError(error.path));
+  const elsewhere = errors.filter((error) => errorPlace(error.path, 'editor') === 'status');
   const parts = [
     errors.length > elsewhere.length ? errorsCopy[lang].checkMarkedFields : null,
     elsewhere.length > 0 ? describeSiteSettingsErrors(elsewhere, lang) : null,

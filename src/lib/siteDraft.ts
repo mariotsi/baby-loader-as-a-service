@@ -11,6 +11,7 @@ import {
   type SiteSettings,
   type SiteSettingsError,
   type SiteSettingsInput,
+  settingsPath,
   type TextPerLanguage,
 } from './siteSettings.ts';
 import { DEFAULT_FONT, DEFAULT_PALETTE } from './theme.ts';
@@ -174,7 +175,7 @@ export function lastValidSettings(
  */
 export function unpickedPlaces(milestones: MilestoneDraft[]): SiteSettingsError[] {
   return milestones.flatMap((m, i): SiteSettingsError[] =>
-    m.placeText.trim() && !m.place ? [{ path: `milestones.${i}.place`, code: 'invalidOption' }] : []
+    m.placeText.trim() && !m.place ? [{ path: settingsPath(`milestones.${i}.place`), code: 'invalidOption' }] : []
   );
 }
 

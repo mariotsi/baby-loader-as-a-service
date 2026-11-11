@@ -27,7 +27,7 @@ import type { MediaUrl } from '@/lib/birthMedia';
 import { errorsCopy } from '@/lib/copy/errors';
 import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
 import { uiCopy } from '@/lib/copy/ui';
-import { inlineErrorText, responseErrorText } from '@/lib/errorText';
+import { inlineErrorText, responseErrorText, settingOf } from '@/lib/errorText';
 import { type Lang, languageName } from '@/lib/i18n';
 import { saveWelcome } from '@/lib/newSiteWelcome';
 import { lastValidSettings, newSiteDraft, readStoredDraft, type SiteDraft, settingsOfDraft } from '@/lib/siteDraft';
@@ -90,7 +90,7 @@ function basicsErrors(draft: Draft, lang: Lang): BasicsErrors {
   const t = platformCopy[lang].onboarding;
   const slug = draft.slug.trim();
   const checked = parseNewSite({ slug, settings: settingsOfDraft(draft) });
-  const dueDate = checked.ok ? undefined : checked.errors.find((error) => error.path === 'settings.dueDate');
+  const dueDate = checked.ok ? undefined : checked.errors.find((error) => settingOf(error.path) === 'dueDate');
   return {
     slug: slugError(slug, t) ?? (slug ? undefined : t.slugFormat),
     dueDate: dueDateError(draft, dueDate, lang),
@@ -101,7 +101,7 @@ function dueDateError(draft: Draft, error: SiteSettingsError | undefined, lang: 
   if (!draft.dueDate) {
     return platformCopy[lang].onboarding.dueDateRequired;
   }
-  return error ? inlineErrorText({ ...error, path: 'dueDate' }, draft.languages, lang) : undefined;
+  return error ? inlineErrorText(error, draft.languages, lang) : undefined;
 }
 
 async function slugIsFree(slug: string): Promise<boolean> {

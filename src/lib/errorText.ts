@@ -32,13 +32,34 @@ export function describeSiteSettingsErrors(errors: SiteSettingsError[], lang: La
   return errors.map((error) => t.sentence(fieldLabel(error.path, lang), problem(error, t))).join(' ');
 }
 
+/** The forms that sort Site settings errors. The Birth dialog asks the name and the Sex too when announcing without them. */
+export type ErrorForm = 'editor' | { birthDialog: { asksIdentity: boolean } };
+
 /**
- * Whether the editor shows the error at `path` next to its field: a
- * Milestone's, or the Birth message's or Page name's in one Language. Every
- * other error goes in the form's status message.
+ * Where `form` shows the error at `path`: under its field, in the form's
+ * status message, or (in the Birth dialog) as a field on the page behind it.
  */
-export function isInlineError(path: string): boolean {
-  return /^(milestones\.\d+|birth\.details\.message|pageName)\./.test(path);
+export type ErrorPlace = 'field' | 'status' | 'elsewhere';
+
+/** Errors a Site's settings form shows under the field: a Milestone's, or a text's in one Language. */
+const EDITOR_FIELD = /^(milestones\.\d+|birth\.details\.message|pageName)\./;
+/** The Birth details the Birth dialog shows under their field. */
+const BIRTH_FIELD = /^birth\.details\.(datetime|weightGrams|lengthCm|message\.[a-z]+)$/;
+
+export function errorPlace(path: string, form: ErrorForm): ErrorPlace {
+  if (form === 'editor') {
+    return EDITOR_FIELD.test(path) ? 'field' : 'status';
+  }
+  const { asksIdentity } = form.birthDialog;
+  if (BIRTH_FIELD.test(path) || (asksIdentity && path === 'babyName')) {
+    return 'field';
+  }
+  return path.startsWith('birth.') || (asksIdentity && path === 'sex') ? 'status' : 'elsewhere';
+}
+
+/** The Site setting an error is about, whether it came from Site settings or a new Site's body (`settings.dueDate`). */
+export function settingOf(path: string): string {
+  return path.replace(/^settings\./, '');
 }
 
 /**
@@ -94,7 +115,7 @@ function milestoneLabel(field: string, lang: Lang): string | null {
 
 function fieldLabel(path: string, lang: Lang): string {
   const t = errorsCopy[lang];
-  const field = path.replace(/^settings\./, '');
+  const field = settingOf(path);
   const notification = /^messages\.[a-z]+\.(title|body)$/.exec(field);
   if (notification) {
     return notification[1] === 'title' ? t.notificationTitle : t.message;

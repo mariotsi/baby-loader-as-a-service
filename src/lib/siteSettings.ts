@@ -24,9 +24,19 @@ export type SiteSettingsErrorCode =
   | 'slugTaken'
   | 'slugReserved';
 
-/** One rejected field. `path` is dot-separated (`birth.details.weightGrams`, `milestones.2.label.it`). */
+/** Where a field sits in Site settings or a request's body, dot-separated: `birth.details.weightGrams`, `milestones.2.label.it`. */
+export const settingsPathSchema = z.string().brand<'SettingsPath'>();
+export type SettingsPath = z.output<typeof settingsPathSchema>;
+export function isSettingsPath(value: unknown): value is SettingsPath {
+  return settingsPathSchema.safeParse(value).success;
+}
+export function settingsPath(path: string): SettingsPath {
+  return settingsPathSchema.parse(path);
+}
+
+/** One rejected field, and why: errorText.ts turns it into words and says where a form shows it. */
 export interface SiteSettingsError {
-  path: string;
+  path: SettingsPath;
   code: SiteSettingsErrorCode;
   params?: { min?: number | string; max?: number | string };
 }
@@ -290,10 +300,10 @@ function rawAt(input: unknown, path: readonly PropertyKey[]): unknown {
 /** Zod's issues as the errors forms show: a path to the field and a code its words come from. */
 export function toErrors(issues: readonly z.core.$ZodIssue[], input: unknown): SiteSettingsError[] {
   return issues.flatMap((issue): SiteSettingsError[] => {
-    const path = issue.path.join('.');
+    const path = settingsPath(issue.path.join('.'));
     switch (issue.code) {
       case 'unrecognized_keys':
-        return issue.keys.map((key) => ({ path: [...issue.path, key].join('.'), code: 'unknownField' }));
+        return issue.keys.map((key) => ({ path: settingsPath([...issue.path, key].join('.')), code: 'unknownField' }));
       case 'invalid_type':
       case 'invalid_union': {
         const raw = rawAt(input, issue.path);
@@ -327,19 +337,19 @@ function crossFieldErrors(settings: SiteSettings, now: Date): SiteSettingsError[
     const min = format(addMonths(now, -DUE_DATE_WINDOW_MONTHS), DAY_FORMAT);
     const max = format(addMonths(now, DUE_DATE_WINDOW_MONTHS), DAY_FORMAT);
     if (settings.dueDate < min || settings.dueDate > max) {
-      errors.push({ path: 'dueDate', code: 'outOfRange', params: { min, max } });
+      errors.push({ path: settingsPath('dueDate'), code: 'outOfRange', params: { min, max } });
     }
   }
   if (settings.birth.born) {
     // Sex is required in the Born state even when Privacy settings hide it.
     if (!settings.babyName) {
-      errors.push({ path: 'babyName', code: 'required' });
+      errors.push({ path: settingsPath('babyName'), code: 'required' });
     }
     if (settings.sex === 'unknown') {
-      errors.push({ path: 'sex', code: 'required' });
+      errors.push({ path: settingsPath('sex'), code: 'required' });
     }
     if (isAfter(parseISO(settings.birth.details.datetime), now)) {
-      errors.push({ path: 'birth.details.datetime', code: 'inFuture' });
+      errors.push({ path: settingsPath('birth.details.datetime'), code: 'inFuture' });
     }
   }
   return errors;
@@ -378,12 +388,15 @@ export function parseNewSite(input: unknown, now: Date = new Date()): ParseResul
   if (!result.success) {
     return { ok: false, errors: toErrors(result.error.issues, input) };
   }
-  const errors = crossFieldErrors(result.data.settings, now).map((e) => ({ ...e, path: `settings.${e.path}` }));
+  const errors = crossFieldErrors(result.data.settings, now).map((e) => ({
+    ...e,
+    path: settingsPath(`settings.${e.path}`),
+  }));
   if (!result.data.settings.dueDate) {
-    errors.push({ path: 'settings.dueDate', code: 'required' });
+    errors.push({ path: settingsPath('settings.dueDate'), code: 'required' });
   }
   if (result.data.settings.birth.born) {
-    errors.push({ path: 'settings.birth', code: 'invalidOption' });
+    errors.push({ path: settingsPath('settings.birth'), code: 'invalidOption' });
   }
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value: result.data };
 }

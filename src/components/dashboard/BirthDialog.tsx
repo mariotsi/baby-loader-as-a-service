@@ -16,7 +16,13 @@ import { birthNotificationMessages } from '@/lib/birthAnnouncement';
 import type { MediaUrl } from '@/lib/birthMedia';
 import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
-import { describeSiteSettingsErrors, inlineErrorText } from '@/lib/errorText';
+import {
+  describeSiteSettingsErrors,
+  type ErrorForm,
+  type ErrorPlace,
+  errorPlace,
+  inlineErrorText,
+} from '@/lib/errorText';
 import { fallbackLang, type Lang } from '@/lib/i18n';
 import { notificationContent, notificationIcon } from '@/lib/notificationContent';
 import { siteShortName } from '@/lib/siteAppIdentity';
@@ -120,10 +126,8 @@ export function BirthDialog({
   }, [failedSaves]);
 
   const errors = failedPaths.length > 0 ? check(draft).filter((error) => failedPaths.includes(error.path)) : [];
-  /** The errors on a field of this dialog, under it or in words; the rest are on the page behind it. */
-  const inDialog = (path: string) =>
-    path.startsWith('birth.') || (asksIdentity && (path === 'babyName' || path === 'sex'));
-  const underField = (path: string) => inlinePath(path) || (asksIdentity && path === 'babyName');
+  /** Where this dialog shows an error: under its field, in words, or on the page behind it. */
+  const form: ErrorForm = { birthDialog: { asksIdentity } };
 
   function inlineError(path: string): string | undefined {
     const error = errors.find((e) => e.path === path);
@@ -178,7 +182,7 @@ export function BirthDialog({
     }
   }
 
-  const status = message || statusText(t, errors, inDialog, underField, pageLang);
+  const status = message || statusText(t, errors, form, pageLang);
 
   return (
     <FullPageDialog
@@ -393,17 +397,17 @@ function submitLabel(t: (typeof platformCopy)[Lang]['settings'], announcing: boo
 function statusText(
   t: (typeof platformCopy)[Lang]['settings'],
   errors: SiteSettingsError[],
-  inDialog: (path: string) => boolean,
-  underField: (path: string) => boolean,
+  form: ErrorForm,
   lang: Lang
 ): string | null {
-  const birthErrors = errors.filter((error) => inDialog(error.path) && !underField(error.path));
-  const elsewhere = errors.filter((error) => !inDialog(error.path));
+  const at = (place: ErrorPlace) => errors.filter((error) => errorPlace(error.path, form) === place);
+  const birthErrors = at('status');
+  const elsewhere = at('elsewhere');
   return (
     [
       birthErrors.length > 0 ? describeSiteSettingsErrors(birthErrors, lang) : null,
       elsewhere.length > 0 ? `${t.fixElsewhere} ${describeSiteSettingsErrors(elsewhere, lang)}` : null,
-      errors.some((error) => underField(error.path)) ? errorsCopy[lang].checkMarkedFields : null,
+      at('field').length > 0 ? errorsCopy[lang].checkMarkedFields : null,
     ]
       .filter(Boolean)
       .join(' ') || null
@@ -419,9 +423,4 @@ function revealedText(t: (typeof platformCopy)[Lang]['settings'], hidden: { name
     return hidden.name ? t.revealsName : t.revealsSex;
   }
   return null;
-}
-
-/** The Birth errors the dialog shows under their field; the status message says the rest in words. */
-function inlinePath(path: string): boolean {
-  return /^birth\.details\.(datetime|weightGrams|lengthCm|message\.[a-z]+)$/.test(path);
 }

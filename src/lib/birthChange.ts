@@ -14,7 +14,13 @@ import {
 import type { OwnedSite } from './ownerAccess.ts';
 import { type Site, saveSiteSettings } from './site.ts';
 import type { SiteMedia } from './siteMedia.ts';
-import { parseSiteSettings, type SiteSettings, type SiteSettingsError, siteSettingsOf } from './siteSettings.ts';
+import {
+  parseSiteSettings,
+  type SiteSettings,
+  type SiteSettingsError,
+  settingsPath,
+  siteSettingsOf,
+} from './siteSettings.ts';
 
 export interface BirthWriteDeps {
   /** Null when push is not configured: announcing still saves, and says the notification failed. */
@@ -59,7 +65,7 @@ export async function saveSettings(owned: OwnedSite, body: unknown, deps: BirthW
     return { ok: false, refused: 'invalidRequest' };
   }
   if ('birth' in body.settings) {
-    return { ok: false, errors: [{ path: 'birth', code: 'unknownField' }] };
+    return { ok: false, errors: [{ path: settingsPath('birth'), code: 'unknownField' }] };
   }
   const { birth } = owned.site;
   const settings = body.settings as Partial<SiteSettings>;
