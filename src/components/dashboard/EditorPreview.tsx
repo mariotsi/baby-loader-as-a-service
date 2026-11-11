@@ -7,8 +7,9 @@ import type { MediaUrl } from '@/lib/birthMedia';
 import { platformCopy } from '@/lib/copy/platform';
 import { fallbackLang } from '@/lib/i18n';
 import { type PreviewState, settingsInState } from '@/lib/previewSettings';
+import type { MediaDraft } from '@/lib/siteDraft';
 import type { SiteSettings } from '@/lib/siteSettings';
-import { type MediaDraft, useBirthMediaUrl } from './BirthMediaEditor';
+import { useBirthMediaUrl } from './BirthMediaEditor';
 import { PublicPagePreview } from './PublicPagePreview';
 import styles from './SiteEditor.module.css';
 

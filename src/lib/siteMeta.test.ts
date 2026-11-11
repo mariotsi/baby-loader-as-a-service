@@ -2,7 +2,11 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { siteShortName, twemojiUrl } from './siteAppIdentity.ts';
 import { secondsUntilMidnight, shareImageDay, shareImageLang, shareText, siteIconUrl } from './siteMeta.ts';
-import { defaultSiteSettings, type SiteSettings } from './siteSettings.ts';
+import { defaultSiteSettings, emojiSchema, isoDateTimeSchema, type SiteSettings } from './siteSettings.ts';
+
+const asInstant = (value: string) => isoDateTimeSchema.parse(value);
+
+const asEmoji = (value: string) => emojiSchema.parse(value);
 
 const NOW = new Date('2026-10-20T10:00:00Z');
 const ADDRESS = 'https://emma.loading.baby';
@@ -23,9 +27,12 @@ test('the loading baby uses the Platform’s own icon files', () => {
 });
 
 test('an emoji icon is generated at the Site’s Address, its URL changing with the emoji and the Palette', () => {
-  assert.equal(siteIconUrl(site({ icon: '🐣' }), 'apple', ADDRESS), `${ADDRESS}/site-icon/apple?v=1f423.blush`);
   assert.equal(
-    siteIconUrl(site({ icon: '❤️', theme: { palette: 'sky', font: 'inter' } }), '192', ADDRESS),
+    siteIconUrl(site({ icon: asEmoji('🐣') }), 'apple', ADDRESS),
+    `${ADDRESS}/site-icon/apple?v=1f423.blush`
+  );
+  assert.equal(
+    siteIconUrl(site({ icon: asEmoji('❤️'), theme: { palette: 'sky', font: 'inter' } }), '192', ADDRESS),
     `${ADDRESS}/site-icon/192?v=2764-fe0f.sky`
   );
 });
@@ -37,7 +44,8 @@ test('the home screen names the Site after its Page name, else the baby where th
   assert.equal(siteShortName(site({ pageName: { it: 'Stefania e Simone' } }), 'en'), 'Emma');
   const hidden = site({ privacy: { showName: false, showSex: true } });
   assert.equal(siteShortName(hidden, 'en'), 'Loading Baby');
-  const born = { born: true as const, details: { datetime: '', weightGrams: null, lengthCm: null, message: {} } };
+  const datetime = asInstant('2026-10-19T08:30:00.000Z');
+  const born = { born: true as const, details: { datetime, weightGrams: null, lengthCm: null, message: {} } };
   assert.equal(siteShortName({ ...hidden, birth: born }, 'en'), 'Emma');
 });
 

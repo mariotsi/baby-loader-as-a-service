@@ -14,7 +14,9 @@ import {
   siteMedia,
   UnsupportedMediaTypeError,
 } from './siteMedia.ts';
-import { type BirthMedia, defaultSiteSettings } from './siteSettings.ts';
+import { type BirthMedia, defaultSiteSettings, isoDateTimeSchema } from './siteSettings.ts';
+
+const asInstant = (value: string) => isoDateTimeSchema.parse(value);
 
 const OWNER_ID = userIdSchema.parse('6f1d2c3b-4a5e-4f60-8172-839405a6b7c8');
 const SITE_ID = siteIdSchema.parse('7a2e3d4c-5b6f-4071-9283-94a516b7c8d9');
@@ -155,7 +157,7 @@ test('a save removes the files it replaced and keeps the ones it still uses', as
   const video = await media.upload(owned(), photo());
   const oldPhoto = await media.upload(owned(), photo());
   const newPhoto = await media.upload(owned(), photo());
-  const details = { datetime: '2026-11-01T10:00:00.000Z', weightGrams: null, lengthCm: null, message: {} };
+  const details = { datetime: asInstant('2026-11-01T10:00:00.000Z'), weightGrams: null, lengthCm: null, message: {} };
   const before = site({
     birthVideo: stored(video.key),
     birth: { born: true, details: { ...details, photo: stored(oldPhoto.key) } },

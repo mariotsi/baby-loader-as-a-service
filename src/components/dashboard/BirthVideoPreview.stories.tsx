@@ -11,9 +11,12 @@ import { mediaUrlSchema } from '@/lib/birthMedia';
 import { NO_BORN_MEDIA, publicPageViews } from '@/lib/publicPageView';
 import type { SiteDTO } from '@/lib/site';
 import { mediaKeySchema } from '@/lib/siteMedia';
-import { defaultSiteSettings } from '@/lib/siteSettings';
+import { calendarDaySchema, defaultSiteSettings, isoDateTimeSchema } from '@/lib/siteSettings';
 import { bornPlaceholderUrl } from '@/lib/websiteAssets';
 import { SiteEditor } from './SiteEditor';
+
+const asDay = (value: string) => calendarDaySchema.parse(value);
+const asInstant = (value: string) => isoDateTimeSchema.parse(value);
 
 /** On the page's own origin, as a Preview serves Birth media. */
 const videoUrl = mediaUrlSchema.parse(new URL('./fixtures/welcome.webm', import.meta.url).pathname);
@@ -34,7 +37,7 @@ const site = {
   birth: {
     born: true,
     details: {
-      datetime: '2026-10-26T08:30:00Z',
+      datetime: asInstant('2026-10-26T08:30:00Z'),
       weightGrams: 3015,
       lengthCm: 46,
       message: { en: 'Welcome to the world, little one. We are so happy you are here.' },
@@ -49,7 +52,7 @@ const site = {
   },
 } satisfies SiteDTO;
 
-const waitingSite: SiteDTO = { ...site, dueDate: '2026-11-20', birth: { born: false, details: null } };
+const waitingSite: SiteDTO = { ...site, dueDate: asDay('2026-11-20'), birth: { born: false, details: null } };
 
 const meta = {
   title: 'Dashboard/Birth video preview',

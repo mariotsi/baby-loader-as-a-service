@@ -2,7 +2,19 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { mediaUrlSchema } from './birthMedia.ts';
 import { NO_BORN_MEDIA, publicPageView, publicPageViews } from './publicPageView.ts';
-import { defaultSiteSettings, type SiteSettings } from './siteSettings.ts';
+import {
+  calendarDaySchema,
+  defaultSiteSettings,
+  emojiSchema,
+  isoDateTimeSchema,
+  type SiteSettings,
+  timeZoneSchema,
+} from './siteSettings.ts';
+
+const asDay = (value: string) => calendarDaySchema.parse(value);
+const asEmoji = (value: string) => emojiSchema.parse(value);
+const asInstant = (value: string) => isoDateTimeSchema.parse(value);
+const asZone = (value: string) => timeZoneSchema.parse(value);
 
 const NOW = new Date('2026-10-20T10:00:00Z');
 
@@ -18,7 +30,12 @@ function site(overrides: Partial<SiteSettings> = {}): SiteSettings {
 
 const BORN: SiteSettings['birth'] = {
   born: true,
-  details: { datetime: '2026-10-19T08:30:00.000Z', weightGrams: 3400, lengthCm: 50, message: { it: 'Ciao', en: 'Hi' } },
+  details: {
+    datetime: asInstant('2026-10-19T08:30:00.000Z'),
+    weightGrams: 3400,
+    lengthCm: 50,
+    message: { it: 'Ciao', en: 'Hi' },
+  },
 };
 
 test('the Waiting state leads with the Countdown', () => {
@@ -36,14 +53,14 @@ test('the Waiting state leads with the Countdown', () => {
 });
 
 test('the Countdown says the day itself, and how late after it', () => {
-  assert.deepEqual(publicPageView(site({ dueDate: '2026-10-20' }), 'en', NOW).waiting, {
+  assert.deepEqual(publicPageView(site({ dueDate: asDay('2026-10-20') }), 'en', NOW).waiting, {
     dueDate: 'Due date: October 20, 2026',
     count: null,
     unit: 'Due today',
     lateNote: null,
     week: { number: 40, label: 'Week 40 of 40' },
   });
-  assert.deepEqual(publicPageView(site({ dueDate: '2026-10-19' }), 'it', NOW).waiting, {
+  assert.deepEqual(publicPageView(site({ dueDate: asDay('2026-10-19') }), 'it', NOW).waiting, {
     dueDate: 'Arrivo previsto: 19 ottobre 2026',
     count: 1,
     unit: 'giorno in ritardo',
@@ -55,7 +72,7 @@ test('the Countdown says the day itself, and how late after it', () => {
 
 test('the week of pregnancy counts back from the Due date as the end of week 40', () => {
   const weekFor = (dueDate: string, lang: 'en' | 'it' = 'en') =>
-    publicPageView(site({ dueDate }), lang, NOW).waiting?.week ?? null;
+    publicPageView(site({ dueDate: asDay(dueDate) }), lang, NOW).waiting?.week ?? null;
   // NOW is 2026-10-20: 42 days before 2026-12-01.
   assert.deepEqual(weekFor('2026-12-01'), { number: 34, label: 'Week 34 of 40' });
   assert.deepEqual(weekFor('2026-12-01', 'it'), { number: 34, label: 'Settimana 34 di 40' });
@@ -68,9 +85,10 @@ test('the week of pregnancy counts back from the Due date as the end of week 40'
 test("the Countdown follows the Site's Timezone", () => {
   // 23:30 on the 20th in New York is already the 21st in Rome.
   const lateEvening = new Date('2026-10-21T03:30:00Z');
-  assert.equal(publicPageView(site({ dueDate: '2026-10-22' }), 'en', lateEvening).waiting?.count, 1);
+  assert.equal(publicPageView(site({ dueDate: asDay('2026-10-22') }), 'en', lateEvening).waiting?.count, 1);
   assert.equal(
-    publicPageView(site({ dueDate: '2026-10-22', timezone: 'America/New_York' }), 'en', lateEvening).waiting?.count,
+    publicPageView(site({ dueDate: asDay('2026-10-22'), timezone: asZone('America/New_York') }), 'en', lateEvening)
+      .waiting?.count,
     2
   );
 });
@@ -132,7 +150,7 @@ test("Birth details are told in the Site's Timezone and language", () => {
   });
   assert.equal(publicPageView(site({ birth: BORN }), 'it', NOW).born?.bornOn, 'Nata il 19 ottobre 2026 alle 10:30');
   assert.equal(
-    publicPageView(site({ birth: BORN, timezone: 'America/New_York' }), 'en', NOW).born?.bornOn,
+    publicPageView(site({ birth: BORN, timezone: asZone('America/New_York') }), 'en', NOW).born?.bornOn,
     'Born on October 19, 2026 at 04:30'
   );
 });
@@ -148,15 +166,15 @@ test('missing Birth details stay out', () => {
 
 test("Milestones come in date order, dated and labelled in the page's language", () => {
   const milestones = [
-    { emoji: '🎀', label: { it: 'Femminuccia!', en: 'It’s a girl!' }, date: '2026-06-10' },
-    { emoji: '🩺', label: { it: 'Prima ecografia', en: 'First scan' }, date: '2026-04-02' },
+    { emoji: asEmoji('🎀'), label: { it: 'Femminuccia!', en: 'It’s a girl!' }, date: asDay('2026-06-10') },
+    { emoji: asEmoji('🩺'), label: { it: 'Prima ecografia', en: 'First scan' }, date: asDay('2026-04-02') },
   ];
   const languages: SiteSettings['languages'] = ['it', 'en'];
   assert.deepEqual(publicPageView(site({ languages, milestones }), 'it', NOW).milestones, {
     title: 'Tappe',
     items: [
-      { emoji: '🩺', date: '2 aprile 2026', label: 'Prima ecografia', place: null },
-      { emoji: '🎀', date: '10 giugno 2026', label: 'Femminuccia!', place: null },
+      { emoji: asEmoji('🩺'), date: '2 aprile 2026', label: 'Prima ecografia', place: null },
+      { emoji: asEmoji('🎀'), date: '10 giugno 2026', label: 'Femminuccia!', place: null },
     ],
   });
   assert.deepEqual(
@@ -168,7 +186,9 @@ test("Milestones come in date order, dated and labelled in the page's language",
 
 test("a Milestone's Place leads to its address on Google Maps, named in the page's language", () => {
   const place = { address: 'Via Roma 12, 20121 Milano, Italia', lat: 45.4642, lon: 9.19 };
-  const milestones = [{ emoji: '🩺', label: { it: 'Ecografia', en: 'Scan' }, date: '2026-04-02', place }];
+  const milestones = [
+    { emoji: asEmoji('🩺'), label: { it: 'Ecografia', en: 'Scan' }, date: asDay('2026-04-02'), place },
+  ];
   const item = publicPageView(site({ languages: ['it', 'en'], milestones }), 'it', NOW).milestones?.items[0];
   assert.deepEqual(item?.place, {
     ...place,
@@ -226,7 +246,7 @@ test("a Site gets one view per Language, in the Platform's order", () => {
 
 test('a view is plain data that survives serialization to a Client Component', () => {
   const view = publicPageView(
-    site({ birth: BORN, milestones: [{ emoji: '🩺', label: { en: 'Scan' }, date: '2026-04-02' }] }),
+    site({ birth: BORN, milestones: [{ emoji: asEmoji('🩺'), label: { en: 'Scan' }, date: asDay('2026-04-02') }] }),
     'en',
     NOW
   );
@@ -244,7 +264,7 @@ test('late weeks remain visible beyond the two-week return track', () => {
   ]) {
     const now = new Date(Date.UTC(2026, 9, 20 + days, 10));
     for (const lang of ['en', 'it'] as const) {
-      const waiting = publicPageView(site({ dueDate: '2026-10-20' }), lang, now).waiting;
+      const waiting = publicPageView(site({ dueDate: asDay('2026-10-20') }), lang, now).waiting;
       assert.equal(waiting?.count, days);
       assert.deepEqual(waiting?.week, { number: week, label: `${lang === 'en' ? 'Week' : 'Settimana'} ${week}` });
       assert.ok(waiting?.lateScene);
