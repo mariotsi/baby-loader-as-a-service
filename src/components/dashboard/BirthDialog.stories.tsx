@@ -5,8 +5,10 @@ import { LangProvider } from '@/components/LangProvider';
 import type { BirthDraft } from '@/lib/siteDraft';
 import {
   calendarDaySchema,
+  centimetresSchema,
   defaultSiteSettings,
   emojiSchema,
+  gramsSchema,
   isoDateTimeSchema,
   type SiteSettings,
   type SiteSettingsError,
@@ -52,8 +54,8 @@ function emmaWith(birth: BirthDraft): SiteSettings | null {
           born: true,
           details: {
             datetime: isoDateTimeSchema.parse(new Date(birth.datetime).toISOString()),
-            weightGrams: birth.weight ? Number(birth.weight) : null,
-            lengthCm: birth.lengthCm ? Number(birth.lengthCm) : null,
+            weightGrams: birth.weight ? gramsSchema.parse(Number(birth.weight)) : null,
+            lengthCm: birth.lengthCm ? centimetresSchema.parse(Number(birth.lengthCm)) : null,
             message: birth.message,
             photo: null,
           },

@@ -3,8 +3,10 @@ import { test } from 'node:test';
 import { settingsInState } from './previewSettings.ts';
 import {
   calendarDaySchema,
+  centimetresSchema,
   defaultSiteSettings,
   emojiSchema,
+  gramsSchema,
   isoDateTimeSchema,
   type SiteSettings,
 } from './siteSettings.ts';
@@ -21,7 +23,12 @@ function site(overrides: Partial<SiteSettings> = {}): SiteSettings {
 
 const BORN: SiteSettings['birth'] = {
   born: true,
-  details: { datetime: asInstant('2026-10-19T08:30:00.000Z'), weightGrams: 3400, lengthCm: 50, message: {} },
+  details: {
+    datetime: asInstant('2026-10-19T08:30:00.000Z'),
+    weightGrams: gramsSchema.parse(3400),
+    lengthCm: centimetresSchema.parse(50),
+    message: {},
+  },
 };
 
 test('a Site already in the state stays as it is', () => {

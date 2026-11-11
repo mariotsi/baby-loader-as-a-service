@@ -11,7 +11,13 @@ import { mediaUrlSchema } from '@/lib/birthMedia';
 import { NO_BORN_MEDIA, publicPageViews } from '@/lib/publicPageView';
 import type { SiteDTO } from '@/lib/site';
 import { mediaKeySchema } from '@/lib/siteMedia';
-import { calendarDaySchema, defaultSiteSettings, isoDateTimeSchema } from '@/lib/siteSettings';
+import {
+  calendarDaySchema,
+  centimetresSchema,
+  defaultSiteSettings,
+  gramsSchema,
+  isoDateTimeSchema,
+} from '@/lib/siteSettings';
 import { bornPlaceholderUrl } from '@/lib/websiteAssets';
 import { SiteEditor } from './SiteEditor';
 
@@ -38,8 +44,8 @@ const site = {
     born: true,
     details: {
       datetime: asInstant('2026-10-26T08:30:00Z'),
-      weightGrams: 3015,
-      lengthCm: 46,
+      weightGrams: gramsSchema.parse(3015),
+      lengthCm: centimetresSchema.parse(46),
       message: { en: 'Welcome to the world, little one. We are so happy you are here.' },
     },
   },
