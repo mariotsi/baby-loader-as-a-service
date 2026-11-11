@@ -7,6 +7,7 @@ import {
   hashPassword,
   PASSWORD_GENERATIONS,
   type PasswordGeneration,
+  type PasswordHash,
   type PasswordPolicy,
   verifyPassword,
 } from './password.ts';
@@ -34,7 +35,7 @@ async function generationOneUser(email: string): Promise<string> {
   return stored;
 }
 
-async function storedHash(email: string): Promise<string> {
+async function storedHash(email: string): Promise<PasswordHash> {
   const user = await getUserByEmail(email);
   assert.ok(user);
   return user.passwordHash;

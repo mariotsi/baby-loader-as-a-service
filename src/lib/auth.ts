@@ -5,9 +5,15 @@ import { getDb, isUniqueViolation } from '../db/index.ts';
 import { users } from '../db/schema.ts';
 import { type Email, emailSchema } from './email.ts';
 import { addressEnv, sessionSecret } from './env.ts';
-import { hashPassword, PASSWORD_GENERATIONS, type PasswordGeneration, verifyPassword } from './password.ts';
+import {
+  hashPassword,
+  PASSWORD_GENERATIONS,
+  type PasswordGeneration,
+  type PasswordHash,
+  verifyPassword,
+} from './password.ts';
 import { rateLimit } from './rateLimit.ts';
-import { readSessionToken, type Session, signSessionToken } from './sessionToken.ts';
+import { readSessionToken, type Session, type SessionToken, signSessionToken } from './sessionToken.ts';
 
 export { hashPassword };
 
@@ -59,7 +65,7 @@ export async function createUser(email: Email, password: string): Promise<User> 
   return user;
 }
 
-export async function updatePasswordHash(userId: UserId, passwordHash: string): Promise<void> {
+export async function updatePasswordHash(userId: UserId, passwordHash: PasswordHash): Promise<void> {
   await getDb().update(users).set({ passwordHash }).where(eq(users.id, userId));
 }
 
@@ -99,7 +105,7 @@ export async function logIn(
 
 // --- Sessions ----------------------------------------------------------------
 
-export function issueSessionToken(userId: string, { passwordChangePending = false } = {}): string {
+export function issueSessionToken(userId: string, { passwordChangePending = false } = {}): SessionToken {
   return signSessionToken({ userId, passwordChangePending }, Date.now() + SESSION_TTL_MS, sessionSecret());
 }
 

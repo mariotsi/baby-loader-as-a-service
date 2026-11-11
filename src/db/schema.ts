@@ -6,6 +6,7 @@ import type { Email } from '../lib/email.ts';
 import type { GeoLocation } from '../lib/geoip.ts';
 import type { Lang } from '../lib/i18n.ts';
 import type { DeliveryStatus, NotificationKind, NotificationMessages } from '../lib/notificationLog.ts';
+import type { PasswordHash } from '../lib/password.ts';
 import type { SiteSettings } from '../lib/siteSettings.ts';
 import type { PushEndpoint } from '../lib/subscription.ts';
 import type { DeliveryId, NotificationId, SiteId, SubscriptionId, UserId } from './ids.ts';
@@ -19,7 +20,7 @@ import type { DeliveryId, NotificationId, SiteId, SubscriptionId, UserId } from 
 export const users = sqliteTable('users', {
   id: text('id').$type<UserId>().primaryKey(),
   email: text('email').$type<Email>().notNull().unique(),
-  passwordHash: text('password_hash').notNull(),
+  passwordHash: text('password_hash').$type<PasswordHash>().notNull(),
   createdAt: text('created_at').notNull(),
 });
 
