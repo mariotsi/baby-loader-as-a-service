@@ -3,8 +3,10 @@ import { expect, waitFor, within } from 'storybook/test';
 import { LangProvider } from '@/components/LangProvider';
 import {
   calendarDaySchema,
+  centimetresSchema,
   defaultSiteSettings,
   emojiSchema,
+  gramsSchema,
   isoDateTimeSchema,
   type SiteSettings,
 } from '@/lib/siteSettings';
@@ -28,8 +30,8 @@ const born: SiteSettings = {
     born: true,
     details: {
       datetime: asInstant('2026-10-26T07:30:00.000Z'),
-      weightGrams: 3015,
-      lengthCm: 46,
+      weightGrams: gramsSchema.parse(3015),
+      lengthCm: centimetresSchema.parse(46),
       message: { en: 'Welcome to the world, little one.', it: 'Benvenuta al mondo, piccola.' },
       photo: null,
     },

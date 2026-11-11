@@ -4,8 +4,10 @@ import { mediaUrlSchema } from './birthMedia.ts';
 import { NO_BORN_MEDIA, publicPageView, publicPageViews } from './publicPageView.ts';
 import {
   calendarDaySchema,
+  centimetresSchema,
   defaultSiteSettings,
   emojiSchema,
+  gramsSchema,
   isoDateTimeSchema,
   type SiteSettings,
   timeZoneSchema,
@@ -32,8 +34,8 @@ const BORN: SiteSettings['birth'] = {
   born: true,
   details: {
     datetime: asInstant('2026-10-19T08:30:00.000Z'),
-    weightGrams: 3400,
-    lengthCm: 50,
+    weightGrams: gramsSchema.parse(3400),
+    lengthCm: centimetresSchema.parse(50),
     message: { it: 'Ciao', en: 'Hi' },
   },
 };

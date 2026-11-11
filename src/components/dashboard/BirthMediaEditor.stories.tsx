@@ -7,7 +7,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Stack } from '@/components/ui/Stack';
 import { NO_BORN_MEDIA, publicPageViews } from '@/lib/publicPageView';
 import type { MediaDraft } from '@/lib/siteDraft';
-import { defaultSiteSettings, isoDateTimeSchema } from '@/lib/siteSettings';
+import { centimetresSchema, defaultSiteSettings, gramsSchema, isoDateTimeSchema } from '@/lib/siteSettings';
 import { BirthMediaEditor, useMediaUrl } from './BirthMediaEditor';
 
 function InteractiveBirthMedia() {
@@ -25,8 +25,8 @@ function InteractiveBirthMedia() {
       born: true as const,
       details: {
         datetime: isoDateTimeSchema.parse('2026-10-26T08:30:00Z'),
-        weightGrams: 3015,
-        lengthCm: 46,
+        weightGrams: gramsSchema.parse(3015),
+        lengthCm: centimetresSchema.parse(46),
         message: { en: 'Welcome to the world, little one. We are so happy you are here.' },
       },
     },

@@ -104,6 +104,14 @@ export function isTimeZone(value: unknown): value is TimeZone {
   return timeZoneSchema.safeParse(value).success;
 }
 
+/** A weight in whole grams, such as the baby's at birth. Its range is the Birth details' rule, not the unit's. */
+export const gramsSchema = z.int().brand<'Grams'>();
+export type Grams = z.output<typeof gramsSchema>;
+
+/** A length in centimetres, such as the baby's at birth. Its range is the Birth details' rule, not the unit's. */
+export const centimetresSchema = z.number().brand<'Centimetres'>();
+export type Centimetres = z.output<typeof centimetresSchema>;
+
 const lang = z.enum(LANGS as readonly Lang[] as [Lang, ...Lang[]]);
 
 /**
@@ -150,8 +158,8 @@ const birthSchema = z.discriminatedUnion('born', [
     born: z.literal(true),
     details: z.strictObject({
       datetime: isoDateTimeSchema,
-      weightGrams: z.nullable(z.int().check(z.minimum(300), z.maximum(8000))),
-      lengthCm: z.nullable(z.number().check(z.minimum(20), z.maximum(70))),
+      weightGrams: z.nullable(gramsSchema.check(z.minimum(300), z.maximum(8000))),
+      lengthCm: z.nullable(centimetresSchema.check(z.minimum(20), z.maximum(70))),
       // Optional, so only the Languages that have one.
       message: textPerLanguage(1000),
       photo: z.optional(birthMedia),

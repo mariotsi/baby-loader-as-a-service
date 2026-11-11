@@ -18,9 +18,11 @@ import {
 } from './siteDraft.ts';
 import {
   calendarDaySchema,
+  centimetresSchema,
   DEFAULT_SITE_ICON_EMOJI,
   defaultSiteSettings,
   emojiSchema,
+  gramsSchema,
   isoDateTimeSchema,
   type Milestone,
   parseSiteSettings,
@@ -55,8 +57,8 @@ const emma: SiteSettings = {
     born: true,
     details: {
       datetime: asInstant('2026-10-25T20:00:00.000Z'),
-      weightGrams: 3400,
-      lengthCm: 50,
+      weightGrams: gramsSchema.parse(3400),
+      lengthCm: centimetresSchema.parse(50),
       message: { en: 'Welcome!' },
       photo: null,
     },
@@ -141,7 +143,7 @@ test('the Birth’s time is typed on the wall clock in the Site’s Timezone', (
     details: {
       datetime: '2026-10-26T08:00:00.000Z',
       weightGrams: null,
-      lengthCm: 50,
+      lengthCm: centimetresSchema.parse(50),
       message: { en: 'Hi' },
       photo: null,
     },
