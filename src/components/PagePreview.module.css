@@ -40,12 +40,6 @@
   overflow-wrap: anywhere;
 }
 
-.sex {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: var(--font-display-weight);
-}
-
 @media (prefers-reduced-motion: no-preference) {
   .preview {
     transition: background-color var(--duration-base);

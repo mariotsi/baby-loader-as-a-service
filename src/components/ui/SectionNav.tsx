@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { freeHold, isHeld, jumpHold } from '@/lib/sectionNavHold';
+import { freeHold, isHeld, jumpHold, jumpMoves } from '@/lib/sectionNavHold';
 import { Icon } from './Icon';
 import styles from './SectionNav.module.css';
 
@@ -104,19 +104,27 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
       window.removeEventListener('scroll', onScroll);
       window.removeEventListener('scrollend', onScrollend);
       window.clearTimeout(quiet);
-      cancelAnimationFrame(settling.current);
+      window.clearTimeout(settling.current);
     };
   }, []);
 
-  function startJump() {
+  function startJump(id: string) {
     hold.current = jumpHold(hold.current, 'click');
-    // A click on a section already in place scrolls nothing: two frames on, a jump that never moved lets go.
-    cancelAnimationFrame(settling.current);
-    settling.current = requestAnimationFrame(() => {
-      settling.current = requestAnimationFrame(() => {
+    // A click on a section already in place scrolls nothing, so the jump lets go at once. A glide can take several
+    // frames to send its first scroll, so a jump that will move waits for it, and a second with none lets go.
+    window.clearTimeout(settling.current);
+    const section = document.getElementById(id);
+    const offset = section
+      ? section.getBoundingClientRect().top - (Number.parseFloat(getComputedStyle(section).scrollMarginTop) || 0)
+      : 0;
+    const maxScroll = document.documentElement.scrollHeight - window.innerHeight;
+    if (jumpMoves({ scrollY: window.scrollY, offset, maxScroll })) {
+      settling.current = window.setTimeout(() => {
         hold.current = jumpHold(hold.current, 'settle');
-      });
-    });
+      }, 1000);
+    } else {
+      hold.current = jumpHold(hold.current, 'settle');
+    }
   }
 
   return (
@@ -136,7 +144,7 @@ export function SectionNav({ label, sections, className }: SectionNavProps) {
                 data-label={section.label}
                 aria-current={section.id === current ? 'location' : undefined}
                 onClick={() => {
-                  startJump();
+                  startJump(section.id);
                   setCurrent(section.id);
                 }}
               >

@@ -12,7 +12,7 @@ import { getSiteBySlug } from '@/lib/site';
 import { siteShortName } from '@/lib/siteAppIdentity';
 import { SITE_PATHS, shareImageDay, shareText, siteIconUrl } from '@/lib/siteMeta';
 import { getFont, googleFontsHref, rootTokenCss, themeStyle } from '@/lib/theme';
-import { websiteAssetUrl } from '@/lib/websiteAssets';
+import { bornPlaceholderUrl } from '@/lib/websiteAssets';
 
 export const dynamic = 'force-dynamic';
 
@@ -72,7 +72,13 @@ export default async function SitePage({ params }: Props) {
     notFound();
   }
 
-  const views = publicPageViews(site);
+  const { appEnv } = deploymentEnv();
+  const photo = site.birth.details?.photo;
+  const views = publicPageViews(site, new Date(), {
+    photo: photo ? birthMediaUrl(site.slug, 'photo', photo, appEnv) : null,
+    video: site.birthVideo ? birthMediaUrl(site.slug, 'video', site.birthVideo, appEnv) : null,
+    placeholder: bornPlaceholderUrl(appEnv),
+  });
 
   return (
     <>
@@ -83,17 +89,6 @@ export default async function SitePage({ params }: Props) {
         initialLang={await requestLang(views.map((view) => view.lang))}
         slug={site.slug}
         vapidPublicKey={vapidEnv()?.publicKey}
-        bornImageUrl={
-          (site.birth.born &&
-            site.birth.details.photo &&
-            birthMediaUrl(site.slug, 'photo', site.birth.details.photo, deploymentEnv().appEnv)) ||
-          websiteAssetUrl('born-placeholder-v1.png', deploymentEnv().appEnv)
-        }
-        birthVideoUrl={
-          site.birth.born && site.birthVideo
-            ? birthMediaUrl(site.slug, 'video', site.birthVideo, deploymentEnv().appEnv)
-            : undefined
-        }
       />
       <KeepCurrent />
     </>

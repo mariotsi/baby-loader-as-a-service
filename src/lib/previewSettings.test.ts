@@ -1,7 +1,17 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import { settingsInState } from './previewSettings.ts';
-import { defaultSiteSettings, type SiteSettings } from './siteSettings.ts';
+import {
+  calendarDaySchema,
+  defaultSiteSettings,
+  emojiSchema,
+  isoDateTimeSchema,
+  type SiteSettings,
+} from './siteSettings.ts';
+
+const asDay = (value: string) => calendarDaySchema.parse(value);
+const asEmoji = (value: string) => emojiSchema.parse(value);
+const asInstant = (value: string) => isoDateTimeSchema.parse(value);
 
 const NOW = new Date('2026-10-20T10:00:00Z');
 
@@ -11,7 +21,7 @@ function site(overrides: Partial<SiteSettings> = {}): SiteSettings {
 
 const BORN: SiteSettings['birth'] = {
   born: true,
-  details: { datetime: '2026-10-19T08:30:00.000Z', weightGrams: 3400, lengthCm: 50, message: {} },
+  details: { datetime: asInstant('2026-10-19T08:30:00.000Z'), weightGrams: 3400, lengthCm: 50, message: {} },
 };
 
 test('a Site already in the state stays as it is', () => {
@@ -39,8 +49,8 @@ test('a Born Site previews Waiting without its Birth details or Birth milestone'
     site({
       birth: BORN,
       milestones: [
-        { emoji: '👶', date: '2026-10-19', label: { en: 'She is born!' }, kind: 'birth' },
-        { emoji: '🏠', date: '2026-10-22', label: { en: 'Coming home' } },
+        { emoji: asEmoji('👶'), date: asDay('2026-10-19'), label: { en: 'She is born!' }, kind: 'birth' },
+        { emoji: asEmoji('🏠'), date: asDay('2026-10-22'), label: { en: 'Coming home' } },
       ],
     }),
     'waiting',

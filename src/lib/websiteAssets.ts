@@ -1,5 +1,5 @@
 import type { AppEnv } from './appEnv.ts';
-import { mediaFromPageOrigin } from './birthMedia.ts';
+import { type MediaUrl, mediaFromPageOrigin, mediaUrlSchema } from './birthMedia.ts';
 
 const MEDIA_ORIGINS: Record<Exclude<AppEnv, 'development'>, string> = {
   production: 'https://media.loading.baby',
@@ -23,4 +23,9 @@ export function websiteAssetUrl(path: string, appEnv: AppEnv): string {
     return `/api/website-assets/${path}`;
   }
   return `${MEDIA_ORIGINS[appEnv]}${assetPath}`;
+}
+
+/** The picture a Born page shows until the Owner adds a birth photo. */
+export function bornPlaceholderUrl(appEnv: AppEnv): MediaUrl {
+  return mediaUrlSchema.parse(websiteAssetUrl('born-placeholder-v1.png', appEnv));
 }

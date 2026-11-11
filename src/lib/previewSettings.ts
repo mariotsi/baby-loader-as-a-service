@@ -1,5 +1,5 @@
 import { withBirth } from './birthAnnouncement.ts';
-import type { SiteSettings } from './siteSettings.ts';
+import { isoDateTimeSchema, type SiteSettings } from './siteSettings.ts';
 
 export type PreviewState = 'waiting' | 'born';
 
@@ -18,7 +18,7 @@ export function settingsInState(settings: SiteSettings, state: PreviewState, now
   return withBirth(settings, {
     babyName: settings.babyName,
     sex: settings.sex,
-    details: { datetime: now.toISOString(), weightGrams: null, lengthCm: null, message: {} },
+    details: { datetime: isoDateTimeSchema.parse(now.toISOString()), weightGrams: null, lengthCm: null, message: {} },
     birthVideo: settings.birthVideo,
   });
 }

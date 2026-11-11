@@ -7,13 +7,20 @@ import { Button } from '@/components/ui/Button';
 import { PageShell } from '@/components/ui/PageShell';
 import { newSiteId, newUserId } from '@/db/ids';
 import { slugSchema } from '@/lib/address';
-import { publicPageViews } from '@/lib/publicPageView';
+import { mediaUrlSchema } from '@/lib/birthMedia';
+import { NO_BORN_MEDIA, publicPageViews } from '@/lib/publicPageView';
 import type { SiteDTO } from '@/lib/site';
 import { mediaKeySchema } from '@/lib/siteMedia';
-import { defaultSiteSettings } from '@/lib/siteSettings';
+import { calendarDaySchema, defaultSiteSettings, isoDateTimeSchema } from '@/lib/siteSettings';
+import { bornPlaceholderUrl } from '@/lib/websiteAssets';
 import { SiteEditor } from './SiteEditor';
 
-const videoUrl = new URL('./fixtures/welcome.webm', import.meta.url).href;
+const asDay = (value: string) => calendarDaySchema.parse(value);
+const asInstant = (value: string) => isoDateTimeSchema.parse(value);
+
+/** On the page's own origin, as a Preview serves Birth media. */
+const videoUrl = mediaUrlSchema.parse(new URL('./fixtures/welcome.webm', import.meta.url).pathname);
+const bornMedia = { ...NO_BORN_MEDIA, video: videoUrl };
 const site = {
   ...defaultSiteSettings,
   id: newSiteId(),
@@ -30,7 +37,7 @@ const site = {
   birth: {
     born: true,
     details: {
-      datetime: '2026-10-26T08:30:00Z',
+      datetime: asInstant('2026-10-26T08:30:00Z'),
       weightGrams: 3015,
       lengthCm: 46,
       message: { en: 'Welcome to the world, little one. We are so happy you are here.' },
@@ -45,7 +52,7 @@ const site = {
   },
 } satisfies SiteDTO;
 
-const waitingSite: SiteDTO = { ...site, dueDate: '2026-11-20', birth: { born: false, details: null } };
+const waitingSite: SiteDTO = { ...site, dueDate: asDay('2026-11-20'), birth: { born: false, details: null } };
 
 const meta = {
   title: 'Dashboard/Birth video preview',
@@ -64,7 +71,7 @@ export const SiteEdit: Story = {
           site={site}
           timeZones={['Europe/Rome', 'Europe/London', 'America/New_York']}
           address="https://emma-preview.loading.baby"
-          bornPlaceholderUrl="/website-assets/born-placeholder-v1.png"
+          bornPlaceholderUrl={bornPlaceholderUrl('development')}
         />
       </PageShell>
     </LangProvider>
@@ -81,7 +88,7 @@ export const SiteEditBeforeBirth: Story = {
           site={waitingSite}
           timeZones={['Europe/Rome', 'Europe/London', 'America/New_York']}
           address="https://emma-preview.loading.baby"
-          bornPlaceholderUrl="/website-assets/born-placeholder-v1.png"
+          bornPlaceholderUrl={bornPlaceholderUrl('development')}
         />
       </PageShell>
     </LangProvider>
@@ -98,11 +105,10 @@ export const SiteEditBeforeBirth: Story = {
 export const BornPublicPage: Story = {
   render: () => (
     <PublicPage
-      views={publicPageViews(site)}
+      views={publicPageViews(site, new Date(), bornMedia)}
       initialLang="en"
       slug={site.slug}
       vapidPublicKey={undefined}
-      birthVideoUrl={videoUrl}
       disableNotifications
     />
   ),
@@ -170,7 +176,7 @@ export const SiteEditItalian: Story = {
           site={italianSite}
           timeZones={['Europe/Rome', 'Europe/London', 'America/New_York']}
           address="https://emma-preview.loading.baby"
-          bornPlaceholderUrl="/website-assets/born-placeholder-v1.png"
+          bornPlaceholderUrl={bornPlaceholderUrl('development')}
         />
       </PageShell>
     </LangProvider>
@@ -182,11 +188,10 @@ export const BornPublicPageItalian: Story = {
   render: () => (
     <LangProvider lang="it">
       <PublicPage
-        views={publicPageViews(italianSite)}
+        views={publicPageViews(italianSite, new Date(), bornMedia)}
         initialLang="it"
         slug="emma-preview-it"
         vapidPublicKey={undefined}
-        birthVideoUrl={videoUrl}
         disableNotifications
       />
     </LangProvider>
@@ -200,11 +205,10 @@ function RepeatVisitPreview() {
       <Button onClick={() => setVisit((count) => count + 1)}>Visit again</Button>
       <PublicPage
         key={visit}
-        views={publicPageViews(site)}
+        views={publicPageViews(site, new Date(), bornMedia)}
         initialLang="en"
         slug="autoplay-check"
         vapidPublicKey={undefined}
-        birthVideoUrl={videoUrl}
         disableNotifications
       />
     </>
@@ -236,11 +240,10 @@ export const FirstAndReturnVisit: Story = {
 export const AudioFirstVisit: Story = {
   render: () => (
     <PublicPage
-      views={publicPageViews(site)}
+      views={publicPageViews(site, new Date(), bornMedia)}
       initialLang="en"
       slug="emma-audio-review"
       vapidPublicKey={undefined}
-      birthVideoUrl={videoUrl}
       disableNotifications
     />
   ),

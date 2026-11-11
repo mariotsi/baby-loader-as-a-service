@@ -14,7 +14,7 @@ import { listNotifications } from '@/lib/notificationLog';
 import { pageOwnedSite } from '@/lib/ownerAccessNext';
 import { toSiteDTO } from '@/lib/site';
 import { FONTS, googleFontsHref } from '@/lib/theme';
-import { websiteAssetUrl } from '@/lib/websiteAssets';
+import { bornPlaceholderUrl } from '@/lib/websiteAssets';
 import styles from '../dashboard.module.css';
 
 export default async function DashboardSitePage({ params }: { params: Promise<{ slug: string }> }) {
@@ -83,7 +83,7 @@ export default async function DashboardSitePage({ params }: { params: Promise<{ 
         site={toSiteDTO(site)}
         timeZones={Intl.supportedValuesOf('timeZone')}
         address={address}
-        bornPlaceholderUrl={websiteAssetUrl('born-placeholder-v1.png', deploymentEnv().appEnv)}
+        bornPlaceholderUrl={bornPlaceholderUrl(deploymentEnv().appEnv)}
       />
     </PageShell>
   );

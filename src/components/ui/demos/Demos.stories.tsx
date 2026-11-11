@@ -2,6 +2,7 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { CredentialsForm } from '@/components/auth/CredentialsForm';
 import { SiteCreator } from '@/components/onboarding/SiteCreator';
 import { addressConfig } from '@/lib/address';
+import { bornPlaceholderUrl } from '@/lib/websiteAssets';
 import { PublicPageDemo } from './PublicPageDemo';
 
 const meta = {
@@ -32,7 +33,7 @@ export const Onboarding: Story = {
   render: () => (
     <SiteCreator
       addressConfig={addressConfig({ ROOT_DOMAIN: 'loading.baby' })}
-      bornPlaceholderUrl="/website-assets/born-placeholder-v1.png"
+      bornPlaceholderUrl={bornPlaceholderUrl('development')}
     />
   ),
 };

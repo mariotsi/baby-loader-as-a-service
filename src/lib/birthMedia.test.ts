@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { birthMediaUrl } from './birthMedia.ts';
+import { birthMediaUrl, isMediaUrl } from './birthMedia.ts';
 import { mediaKeySchema } from './siteMedia.ts';
 
 const KEY = 'customer-data/owner/site/0b9f3c1e-2a4d-4c5e-8f60-71829304a5b6';
@@ -21,4 +21,17 @@ test('Preview and development media use a version-specific path on the page orig
     birthMediaUrl('leo', 'video', media, 'preview'),
     birthMediaUrl('leo', 'video', { ...media, key: mediaKeySchema.parse(OTHER_KEY) }, 'preview')
   );
+});
+
+test('a MediaUrl is an https URL, a path on the page origin or a blob: URL', () => {
+  for (const url of [
+    'https://media.example.com/photo',
+    '/website-assets/born-placeholder-v1.png',
+    'blob:https://x.test/1',
+  ]) {
+    assert.equal(isMediaUrl(url), true, url);
+  }
+  for (const url of ['http://media.example.com/photo', '//evil.test/photo', 'javascript:alert(1)', 'photo.png', '']) {
+    assert.equal(isMediaUrl(url), false, url);
+  }
 });

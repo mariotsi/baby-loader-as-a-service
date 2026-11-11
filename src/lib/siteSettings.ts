@@ -24,9 +24,19 @@ export type SiteSettingsErrorCode =
   | 'slugTaken'
   | 'slugReserved';
 
-/** One rejected field. `path` is dot-separated (`birth.details.weightGrams`, `milestones.2.label.it`). */
+/** Where a field sits in Site settings or a request's body, dot-separated: `birth.details.weightGrams`, `milestones.2.label.it`. */
+export const settingsPathSchema = z.string().brand<'SettingsPath'>();
+export type SettingsPath = z.output<typeof settingsPathSchema>;
+export function isSettingsPath(value: unknown): value is SettingsPath {
+  return settingsPathSchema.safeParse(value).success;
+}
+export function settingsPath(path: string): SettingsPath {
+  return settingsPathSchema.parse(path);
+}
+
+/** One rejected field, and why: errorText.ts turns it into words and says where a form shows it. */
 export interface SiteSettingsError {
-  path: string;
+  path: SettingsPath;
   code: SiteSettingsErrorCode;
   params?: { min?: number | string; max?: number | string };
 }
@@ -48,7 +58,7 @@ function isIsoDatetime(value: string): boolean {
 }
 
 /** Any IANA name `Intl` knows, aliases included: browsers report some zones by an older alias (Europe/Kiev). */
-export function isTimeZone(value: string): boolean {
+function isKnownTimeZone(value: string): boolean {
   try {
     new Intl.DateTimeFormat('en', { timeZone: value });
     return value !== '';
@@ -70,8 +80,30 @@ function requiredString(rule: (value: string) => boolean, code: SiteSettingsErro
   );
 }
 
-const calendarDate = requiredString(isCalendarDate, 'invalidDate');
-const isoDatetime = requiredString(isIsoDatetime, 'invalidDate');
+/** A day on the calendar, `yyyy-MM-dd`, with no time or zone: a Due date or a Milestone's date. */
+export const calendarDaySchema = requiredString(isCalendarDate, 'invalidDate').brand<'CalendarDay'>();
+export type CalendarDay = z.output<typeof calendarDaySchema>;
+export function isCalendarDay(value: unknown): value is CalendarDay {
+  return calendarDaySchema.safeParse(value).success;
+}
+
+/** An instant as ISO 8601 with its offset, such as the Birth's time. */
+export const isoDateTimeSchema = requiredString(isIsoDatetime, 'invalidDate').brand<'IsoDateTime'>();
+export type IsoDateTime = z.output<typeof isoDateTimeSchema>;
+export function isIsoDateTime(value: unknown): value is IsoDateTime {
+  return isoDateTimeSchema.safeParse(value).success;
+}
+
+/** An IANA time zone name, which a Site tells its times in. */
+export const timeZoneSchema = z
+  .string()
+  .check(z.refine(isKnownTimeZone, { params: { code: 'invalidOption' } }))
+  .brand<'TimeZone'>();
+export type TimeZone = z.output<typeof timeZoneSchema>;
+export function isTimeZone(value: unknown): value is TimeZone {
+  return timeZoneSchema.safeParse(value).success;
+}
+
 const lang = z.enum(LANGS as readonly Lang[] as [Lang, ...Lang[]]);
 
 /**
@@ -83,13 +115,17 @@ const textPerLanguage = (max: number) => z.partialRecord(lang, z.string().check(
 /** Exactly one emoji, skin tone and joined sequences included. */
 // biome-ignore lint/complexity/useRegexLiterals: TypeScript refuses a literal `v` flag below an ES2024 target.
 const ONE_EMOJI = new RegExp('^\\p{RGI_Emoji}$', 'v');
-const emoji = requiredString((value) => ONE_EMOJI.test(value), 'invalidFormat');
+export const emojiSchema = requiredString((value) => ONE_EMOJI.test(value), 'invalidFormat').brand<'Emoji'>();
+export type Emoji = z.output<typeof emojiSchema>;
+export function isEmoji(value: unknown): value is Emoji {
+  return emojiSchema.safeParse(value).success;
+}
 
 /** What a new Milestone starts with, until the Owner picks its own emoji. */
-export const DEFAULT_MILESTONE_EMOJI = '✨';
+export const DEFAULT_MILESTONE_EMOJI = emojiSchema.parse('✨');
 
 /** What the Site icon starts with when the Owner swaps the loading baby for an emoji. */
-export const DEFAULT_SITE_ICON_EMOJI = '🐣';
+export const DEFAULT_SITE_ICON_EMOJI = emojiSchema.parse('🐣');
 
 /** A Milestone's Place: its street address, the same in every Language, and the point it stands for (see place.ts). */
 const placeSchema = z.strictObject({
@@ -113,7 +149,7 @@ const birthSchema = z.discriminatedUnion('born', [
   z.strictObject({
     born: z.literal(true),
     details: z.strictObject({
-      datetime: isoDatetime,
+      datetime: isoDateTimeSchema,
       weightGrams: z.nullable(z.int().check(z.minimum(300), z.maximum(8000))),
       lengthCm: z.nullable(z.number().check(z.minimum(20), z.maximum(70))),
       // Optional, so only the Languages that have one.
@@ -127,14 +163,14 @@ const siteSettingsSchema = z
   .strictObject({
     babyName: z.string().check(z.trim(), z.maxLength(60)),
     sex: z.enum(['female', 'male', 'unknown']),
-    dueDate: z.nullable(calendarDate),
+    dueDate: z.nullable(calendarDaySchema),
     birth: birthSchema,
     milestones: z
       .array(
         z.strictObject({
-          emoji,
+          emoji: emojiSchema,
           label: textPerLanguage(80),
-          date: calendarDate,
+          date: calendarDaySchema,
           place: z.optional(placeSchema),
           /** The Birth milestone, which announcing the birth adds and going back to the Countdown removes. */
           kind: z.optional(z.literal('birth')),
@@ -146,7 +182,7 @@ const siteSettingsSchema = z
       z.minLength(1),
       z.refine((langs) => new Set(langs).size === langs.length, { params: { code: 'invalidOption' } })
     ),
-    timezone: z.string().check(z.refine(isTimeZone, { params: { code: 'invalidOption' } })),
+    timezone: timeZoneSchema,
     theme: z.strictObject({
       palette: z.enum(PALETTES.map((p) => p.id) as [string, ...string[]]),
       font: z.enum(FONTS.map((f) => f.id) as [string, ...string[]]),
@@ -155,7 +191,7 @@ const siteSettingsSchema = z
     /** The Owner's line in the Public page's header, one per language that has one, kept for a language the Site no longer speaks. */
     pageName: textPerLanguage(60),
     /** The Site icon: one emoji drawn on the Palette's background, or null for the Platform's loading baby. */
-    icon: z.nullable(emoji),
+    icon: z.nullable(emojiSchema),
     /** The Birth video: picked at any time, so the Owner is ready, and played on the Public page once the baby is born. */
     birthVideo: birthMedia,
   })
@@ -223,7 +259,7 @@ export const defaultSiteSettings: SiteSettings = {
   birth: { born: false, details: null },
   milestones: [],
   languages: ['en'],
-  timezone: 'Europe/Rome',
+  timezone: timeZoneSchema.parse('Europe/Rome'),
   theme: { palette: DEFAULT_PALETTE, font: DEFAULT_FONT },
   privacy: { showName: true, showSex: true },
   pageName: {},
@@ -239,15 +275,14 @@ export function siteSettingsOf(site: SiteSettings): SiteSettings {
 }
 
 /**
- * The title of a Notification sent without one: the baby's name, which
- * Privacy settings hide only in the Waiting state. Undefined leaves the
- * service worker's generic title.
+ * The baby's name wherever the Platform shows it to Visitors (the Public
+ * page's title, a home screen, a Notification without a title), or null when
+ * there is none or the Privacy settings hide it. They hide it only while
+ * Waiting: the Born state announces it.
  */
-export function defaultNotificationTitle(
-  settings: Pick<SiteSettings, 'babyName' | 'birth' | 'privacy'>
-): string | undefined {
+export function shownBabyName(settings: Pick<SiteSettings, 'babyName' | 'birth' | 'privacy'>): string | null {
   const nameShown = settings.birth.born || settings.privacy.showName;
-  return nameShown && settings.babyName ? settings.babyName : undefined;
+  return nameShown && settings.babyName ? settings.babyName : null;
 }
 
 /** The value at `path` in the raw input, to tell a missing field from one of the wrong type. */
@@ -265,10 +300,10 @@ function rawAt(input: unknown, path: readonly PropertyKey[]): unknown {
 /** Zod's issues as the errors forms show: a path to the field and a code its words come from. */
 export function toErrors(issues: readonly z.core.$ZodIssue[], input: unknown): SiteSettingsError[] {
   return issues.flatMap((issue): SiteSettingsError[] => {
-    const path = issue.path.join('.');
+    const path = settingsPath(issue.path.join('.'));
     switch (issue.code) {
       case 'unrecognized_keys':
-        return issue.keys.map((key) => ({ path: [...issue.path, key].join('.'), code: 'unknownField' }));
+        return issue.keys.map((key) => ({ path: settingsPath([...issue.path, key].join('.')), code: 'unknownField' }));
       case 'invalid_type':
       case 'invalid_union': {
         const raw = rawAt(input, issue.path);
@@ -302,19 +337,19 @@ function crossFieldErrors(settings: SiteSettings, now: Date): SiteSettingsError[
     const min = format(addMonths(now, -DUE_DATE_WINDOW_MONTHS), DAY_FORMAT);
     const max = format(addMonths(now, DUE_DATE_WINDOW_MONTHS), DAY_FORMAT);
     if (settings.dueDate < min || settings.dueDate > max) {
-      errors.push({ path: 'dueDate', code: 'outOfRange', params: { min, max } });
+      errors.push({ path: settingsPath('dueDate'), code: 'outOfRange', params: { min, max } });
     }
   }
   if (settings.birth.born) {
     // Sex is required in the Born state even when Privacy settings hide it.
     if (!settings.babyName) {
-      errors.push({ path: 'babyName', code: 'required' });
+      errors.push({ path: settingsPath('babyName'), code: 'required' });
     }
     if (settings.sex === 'unknown') {
-      errors.push({ path: 'sex', code: 'required' });
+      errors.push({ path: settingsPath('sex'), code: 'required' });
     }
     if (isAfter(parseISO(settings.birth.details.datetime), now)) {
-      errors.push({ path: 'birth.details.datetime', code: 'inFuture' });
+      errors.push({ path: settingsPath('birth.details.datetime'), code: 'inFuture' });
     }
   }
   return errors;
@@ -353,12 +388,15 @@ export function parseNewSite(input: unknown, now: Date = new Date()): ParseResul
   if (!result.success) {
     return { ok: false, errors: toErrors(result.error.issues, input) };
   }
-  const errors = crossFieldErrors(result.data.settings, now).map((e) => ({ ...e, path: `settings.${e.path}` }));
+  const errors = crossFieldErrors(result.data.settings, now).map((e) => ({
+    ...e,
+    path: settingsPath(`settings.${e.path}`),
+  }));
   if (!result.data.settings.dueDate) {
-    errors.push({ path: 'settings.dueDate', code: 'required' });
+    errors.push({ path: settingsPath('settings.dueDate'), code: 'required' });
   }
   if (result.data.settings.birth.born) {
-    errors.push({ path: 'settings.birth', code: 'invalidOption' });
+    errors.push({ path: settingsPath('settings.birth'), code: 'invalidOption' });
   }
   return errors.length > 0 ? { ok: false, errors } : { ok: true, value: result.data };
 }

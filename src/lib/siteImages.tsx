@@ -77,7 +77,6 @@ export async function shareImage(settings: SiteSettings, address: string, lang: 
   const lines = [
     view.tagline,
     view.title,
-    view.sex ?? '',
     view.waiting ? `${view.waiting.count ?? ''} ${view.waiting.unit} ${view.waiting.dueDate}` : '',
     view.born?.bornOn ?? '',
     address,

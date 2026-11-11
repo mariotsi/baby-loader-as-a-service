@@ -7,60 +7,33 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { FilePicker, type PickedFile } from '@/components/ui/FilePicker';
 import { Stack } from '@/components/ui/Stack';
-import { birthMediaPreviewPath } from '@/lib/birthMedia';
-import type { BirthDetails, BirthMedia } from '@/lib/siteSettings';
+import { birthMediaPreviewPath, type MediaUrl, mediaUrlSchema } from '@/lib/birthMedia';
+import { birthMediaCopy } from '@/lib/copy/birthMedia';
+import { publicPageCopy } from '@/lib/copy/publicPage';
+import type { Lang } from '@/lib/i18n';
+import type { MediaDraft } from '@/lib/siteDraft';
 import styles from './BirthMediaEditor.module.css';
 
-const mediaCopy = {
-  en: {
-    title: 'Their first hello',
-    photoTitle: 'Their first photo',
-    videoDescription:
-      'A welcome video for the big announcement. Once the baby is born, it plays full screen the first time each visitor opens the page, and they can watch it again from there. Pick it whenever you like: it uploads when you save.',
-    photoDescription: 'A photo for their page, beside the Birth details. It uploads when you save.',
-    photo: 'Birth photo',
-    photoAlt: 'Birth photo preview',
-    removePhoto: 'Remove photo',
-    video: 'Welcome video',
-    savedVideo: 'Saved video',
-    previewVideo: 'Preview the welcome',
-    removeVideo: 'Remove video',
-  },
-  it: {
-    title: 'Il primo ciao',
-    photoTitle: 'La sua prima foto',
-    videoDescription:
-      'Un video di benvenuto per il grande annuncio. Quando il bambino è nato, parte a schermo intero la prima volta che ogni visitatore apre la pagina, e da lì si può rivedere. Sceglilo quando vuoi: viene caricato quando salvi.',
-    photoDescription: 'Una foto per la pagina, accanto ai dettagli della nascita. Viene caricata quando salvi.',
-    photo: 'Foto della nascita',
-    photoAlt: 'Anteprima della foto della nascita',
-    removePhoto: 'Rimuovi la foto',
-    video: 'Video del benvenuto',
-    savedVideo: 'Video salvato',
-    previewVideo: 'Anteprima del benvenuto',
-    removeVideo: 'Rimuovi il video',
-  },
-};
-
-export type MediaDraft = BirthMedia | File | null;
-
 /** The Birth video's section, which the Site settings' menu names. */
-export function birthVideoTitle(lang: 'en' | 'it') {
-  return mediaCopy[lang].title;
+export function birthVideoTitle(lang: Lang) {
+  return birthMediaCopy[lang].title;
 }
 
-export function useMediaUrl(media: MediaDraft): string | undefined {
-  const [local, setLocal] = useState<string>();
+export function useMediaUrl(media: MediaDraft): MediaUrl | undefined {
+  const [local, setLocal] = useState<MediaUrl>();
   useEffect(() => {
     if (!(media instanceof File)) {
       setLocal(undefined);
       return;
     }
     const url = URL.createObjectURL(media);
-    setLocal(url);
+    setLocal(mediaUrlSchema.parse(url));
     return () => URL.revokeObjectURL(url);
   }, [media]);
-  return media instanceof File ? local : media?.url;
+  if (media instanceof File) {
+    return local;
+  }
+  return media ? mediaUrlSchema.parse(media.url) : undefined;
 }
 
 /** Where the page shows `media`: a picked file from the browser, a saved one from storage, or from the page's own origin on Previews (see mediaFromPageOrigin). */
@@ -88,7 +61,7 @@ export function BirthMediaEditor({
   onVideo?: (value: MediaDraft) => void;
 }) {
   const lang = useLang();
-  const t = mediaCopy[lang];
+  const t = birthMediaCopy[lang];
   const [preview, setPreview] = useState(false);
   const previewPhoto = previewMedia(photo, previewSlug, 'photo');
   const previewVideo = previewMedia(video, previewSlug, 'video');
@@ -146,26 +119,18 @@ export function BirthMediaEditor({
           ) : null}
         </>
       ) : null}
-      {preview && videoUrl ? <BirthReveal url={videoUrl} lang={lang} onClose={() => setPreview(false)} /> : null}
+      {preview && videoUrl ? (
+        <BirthReveal url={videoUrl} t={publicPageCopy[lang].reveal} onClose={() => setPreview(false)} />
+      ) : null}
     </Card>
   );
 }
 
-export function birthPhoto(details: BirthDetails | null): BirthMedia | null {
-  return details?.photo ?? null;
-}
-
-export function storedDraft(draft: MediaDraft): BirthMedia | null {
-  return draft instanceof File ? null : draft;
-}
-
-function description(only: 'photo' | 'video' | undefined, lang: 'en' | 'it') {
+function description(only: 'photo' | 'video' | undefined, lang: Lang) {
   if (only) {
-    return mediaCopy[lang][only === 'photo' ? 'photoDescription' : 'videoDescription'];
+    return birthMediaCopy[lang][only === 'photo' ? 'photoDescription' : 'videoDescription'];
   }
-  return lang === 'it'
-    ? 'Una foto per la pagina e un video per il grande annuncio. I file vengono caricati quando salvi.'
-    : 'A photo for their page and a video for the big announcement. Files upload when you save.';
+  return birthMediaCopy[lang].bothDescription;
 }
 
 function pickerValue(media: MediaDraft, name: string, type: string): PickedFile | null {

@@ -3,12 +3,12 @@ import { useState } from 'react';
 import { expect, within } from 'storybook/test';
 import type { Lang } from '@/lib/i18n';
 import { publicPageView } from '@/lib/publicPageView';
-import { defaultSiteSettings } from '@/lib/siteSettings';
+import { calendarDaySchema, defaultSiteSettings } from '@/lib/siteSettings';
 import { Countdown } from './Countdown';
 import { LanguageSwitcher } from './LanguageSwitcher';
 import { Stack } from './ui/Stack';
 
-const dueDate = '2026-10-20';
+const dueDate = calendarDaySchema.parse('2026-10-20');
 function waiting(days: number, lang: 'en' | 'it' = 'en') {
   const view = publicPageView({ ...defaultSiteSettings, dueDate }, lang, new Date(Date.UTC(2026, 9, 20 + days, 10)));
   if (!view.waiting) {

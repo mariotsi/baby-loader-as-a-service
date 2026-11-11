@@ -2,8 +2,20 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { LangProvider } from '@/components/LangProvider';
-import { defaultSiteSettings, type SiteSettings, type SiteSettingsError } from '@/lib/siteSettings';
-import { BirthDialog, type BirthDraft, type SaveOutcome } from './BirthDialog';
+import type { BirthDraft } from '@/lib/siteDraft';
+import {
+  calendarDaySchema,
+  defaultSiteSettings,
+  emojiSchema,
+  isoDateTimeSchema,
+  type SiteSettings,
+  type SiteSettingsError,
+  settingsPath,
+} from '@/lib/siteSettings';
+import { bornPlaceholderUrl } from '@/lib/websiteAssets';
+import { BirthDialog, type SaveOutcome } from './BirthDialog';
+
+const asDay = (value: string) => calendarDaySchema.parse(value);
 
 const waiting: BirthDraft = {
   born: false,
@@ -31,7 +43,7 @@ function emmaWith(birth: BirthDraft): SiteSettings | null {
     ...defaultSiteSettings,
     babyName: 'Emma',
     sex: 'female',
-    dueDate: '2026-11-02',
+    dueDate: asDay('2026-11-02'),
     languages: ['en', 'it'],
     pageName: { en: 'Stefania & Simone', it: 'Stefania e Simone' },
     privacy: { showName: true, showSex: true },
@@ -39,7 +51,7 @@ function emmaWith(birth: BirthDraft): SiteSettings | null {
       ? {
           born: true,
           details: {
-            datetime: new Date(birth.datetime).toISOString(),
+            datetime: isoDateTimeSchema.parse(new Date(birth.datetime).toISOString()),
             weightGrams: birth.weight ? Number(birth.weight) : null,
             lengthCm: birth.lengthCm ? Number(birth.lengthCm) : null,
             message: birth.message,
@@ -50,9 +62,9 @@ function emmaWith(birth: BirthDraft): SiteSettings | null {
     milestones: birth.born
       ? [
           {
-            date: birth.datetime.slice(0, 10),
+            date: asDay(birth.datetime.slice(0, 10)),
             label: { en: 'She is born!', it: 'È nata!' },
-            emoji: '👶',
+            emoji: emojiSchema.parse('👶'),
             kind: 'birth',
           },
         ]
@@ -79,7 +91,7 @@ const meta = {
     address: 'https://emma.loading.baby',
     video: null,
     onVideo: () => {},
-    bornPlaceholderUrl: '/website-assets/born-placeholder-v1.png',
+    bornPlaceholderUrl: bornPlaceholderUrl('development'),
     onSave: fn(async (_birth: BirthDraft): Promise<SaveOutcome> => ({ ok: true })),
     onClose: () => {},
   },
@@ -145,9 +157,11 @@ export const Errors: Story = {
   args: {
     initial: { ...waiting, datetime: '', weight: '3400.5' },
     check: (birth: BirthDraft): SiteSettingsError[] => [
-      ...(birth.datetime ? [] : [{ path: 'birth.details.datetime', code: 'required' as const }]),
-      ...(birth.weight.includes('.') ? [{ path: 'birth.details.weightGrams', code: 'invalidType' as const }] : []),
-      { path: 'milestones.0.date', code: 'required' as const },
+      ...(birth.datetime ? [] : [{ path: settingsPath('birth.details.datetime'), code: 'required' as const }]),
+      ...(birth.weight.includes('.')
+        ? [{ path: settingsPath('birth.details.weightGrams'), code: 'invalidType' as const }]
+        : []),
+      { path: settingsPath('milestones.0.date'), code: 'required' as const },
     ],
   },
   play: async ({ canvasElement }) => {

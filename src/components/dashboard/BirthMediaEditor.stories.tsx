@@ -5,9 +5,10 @@ import { PublicPage } from '@/components/PublicPage';
 import { Card } from '@/components/ui/Card';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Stack } from '@/components/ui/Stack';
-import { publicPageViews } from '@/lib/publicPageView';
-import { defaultSiteSettings } from '@/lib/siteSettings';
-import { BirthMediaEditor, type MediaDraft, useMediaUrl } from './BirthMediaEditor';
+import { NO_BORN_MEDIA, publicPageViews } from '@/lib/publicPageView';
+import type { MediaDraft } from '@/lib/siteDraft';
+import { defaultSiteSettings, isoDateTimeSchema } from '@/lib/siteSettings';
+import { BirthMediaEditor, useMediaUrl } from './BirthMediaEditor';
 
 function InteractiveBirthMedia() {
   const [photo, setPhoto] = useState<MediaDraft>(null);
@@ -23,7 +24,7 @@ function InteractiveBirthMedia() {
     birth: {
       born: true as const,
       details: {
-        datetime: '2026-10-26T08:30:00Z',
+        datetime: isoDateTimeSchema.parse('2026-10-26T08:30:00Z'),
         weightGrams: 3015,
         lengthCm: 46,
         message: { en: 'Welcome to the world, little one. We are so happy you are here.' },
@@ -50,12 +51,14 @@ function InteractiveBirthMedia() {
         <BirthMediaEditor photo={photo} video={video} onPhoto={setPhoto} onVideo={setVideo} />
       ) : (
         <PublicPage
-          views={publicPageViews(settings)}
+          views={publicPageViews(settings, new Date(), {
+            photo: photoUrl ?? null,
+            video: videoUrl ?? null,
+            placeholder: NO_BORN_MEDIA.placeholder,
+          })}
           initialLang="en"
           slug="emma-preview"
           vapidPublicKey={undefined}
-          bornImageUrl={photoUrl}
-          birthVideoUrl={videoUrl}
           disableNotifications
           disableVideoAutoplay
         />

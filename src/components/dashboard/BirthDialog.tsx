@@ -13,28 +13,27 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Textarea } from '@/components/ui/Textarea';
 import { birthNotificationMessages } from '@/lib/birthAnnouncement';
+import type { MediaUrl } from '@/lib/birthMedia';
 import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
-import { describeSiteSettingsErrors, inlineErrorText } from '@/lib/errorText';
+import {
+  describeSiteSettingsErrors,
+  type ErrorForm,
+  type ErrorPlace,
+  errorPlace,
+  inlineErrorText,
+} from '@/lib/errorText';
 import { fallbackLang, type Lang } from '@/lib/i18n';
 import { notificationContent, notificationIcon } from '@/lib/notificationContent';
 import { siteShortName } from '@/lib/siteAppIdentity';
+import type { BirthDraft, MediaDraft } from '@/lib/siteDraft';
 import type { BirthDetails, SiteSettings, SiteSettingsError } from '@/lib/siteSettings';
-import { BirthMediaEditor, type MediaDraft, useBirthMediaUrl } from './BirthMediaEditor';
+import { BirthMediaEditor, useBirthMediaUrl } from './BirthMediaEditor';
 import { NotificationPreviews } from './NotificationPreviews';
 import { PublicPagePreview } from './PublicPagePreview';
 import styles from './SiteEditor.module.css';
 
 /** The Birth as the editor holds it: the fields as typed, and the photo picked but maybe not yet uploaded. */
-export interface BirthDraft {
-  born: boolean;
-  /** A `datetime-local` value, on the wall clock in the Site's Timezone. */
-  datetime: string;
-  weight: string;
-  lengthCm: string;
-  message: BirthDetails['message'];
-  photo: MediaDraft;
-}
 
 /** Why a save did not go through: Site settings errors, from the browser or the server, or a message. `stale` when the Site changed in another tab. */
 export type SaveFailure = { ok: false; errors: SiteSettingsError[]; message: string | null; stale?: boolean };
@@ -67,7 +66,7 @@ interface BirthDialogProps {
   video: MediaDraft;
   onVideo: (video: MediaDraft) => void;
   /** What the page shows in place of a birth photo. */
-  bornPlaceholderUrl: string;
+  bornPlaceholderUrl: MediaUrl;
   /** Saves this Birth with the name, the Sex and the Birth video; the page's other changes stay unsaved. */
   onSave: (birth: BirthDraft) => Promise<SaveOutcome>;
   onClose: () => void;
@@ -127,10 +126,8 @@ export function BirthDialog({
   }, [failedSaves]);
 
   const errors = failedPaths.length > 0 ? check(draft).filter((error) => failedPaths.includes(error.path)) : [];
-  /** The errors on a field of this dialog, under it or in words; the rest are on the page behind it. */
-  const inDialog = (path: string) =>
-    path.startsWith('birth.') || (asksIdentity && (path === 'babyName' || path === 'sex'));
-  const underField = (path: string) => inlinePath(path) || (asksIdentity && path === 'babyName');
+  /** Where this dialog shows an error: under its field, in words, or on the page behind it. */
+  const form: ErrorForm = { birthDialog: { asksIdentity } };
 
   function inlineError(path: string): string | undefined {
     const error = errors.find((e) => e.path === path);
@@ -185,7 +182,7 @@ export function BirthDialog({
     }
   }
 
-  const status = message || statusText(t, errors, inDialog, underField, pageLang);
+  const status = message || statusText(t, errors, form, pageLang);
 
   return (
     <FullPageDialog
@@ -333,9 +330,9 @@ interface BirthPreviewsProps {
   message: BirthDetails['message'];
   slug: string;
   address: string;
-  photoUrl: string | undefined;
-  videoUrl: string | undefined;
-  bornPlaceholderUrl: string;
+  photoUrl: MediaUrl | undefined;
+  videoUrl: MediaUrl | undefined;
+  bornPlaceholderUrl: MediaUrl;
 }
 
 /**
@@ -383,8 +380,7 @@ function BirthPreviews({
         slug={slug}
         lang={languages.includes(pageLang) ? pageLang : fallbackLang(languages)}
         caption={t.settings.previewPage}
-        bornImageUrl={photoUrl ?? bornPlaceholderUrl}
-        birthVideoUrl={videoUrl}
+        media={{ photo: photoUrl ?? null, video: videoUrl ?? null, placeholder: bornPlaceholderUrl }}
       />
     </div>
   );
@@ -401,17 +397,17 @@ function submitLabel(t: (typeof platformCopy)[Lang]['settings'], announcing: boo
 function statusText(
   t: (typeof platformCopy)[Lang]['settings'],
   errors: SiteSettingsError[],
-  inDialog: (path: string) => boolean,
-  underField: (path: string) => boolean,
+  form: ErrorForm,
   lang: Lang
 ): string | null {
-  const birthErrors = errors.filter((error) => inDialog(error.path) && !underField(error.path));
-  const elsewhere = errors.filter((error) => !inDialog(error.path));
+  const at = (place: ErrorPlace) => errors.filter((error) => errorPlace(error.path, form) === place);
+  const birthErrors = at('status');
+  const elsewhere = at('elsewhere');
   return (
     [
       birthErrors.length > 0 ? describeSiteSettingsErrors(birthErrors, lang) : null,
       elsewhere.length > 0 ? `${t.fixElsewhere} ${describeSiteSettingsErrors(elsewhere, lang)}` : null,
-      errors.some((error) => underField(error.path)) ? errorsCopy[lang].checkMarkedFields : null,
+      at('field').length > 0 ? errorsCopy[lang].checkMarkedFields : null,
     ]
       .filter(Boolean)
       .join(' ') || null
@@ -427,9 +423,4 @@ function revealedText(t: (typeof platformCopy)[Lang]['settings'], hidden: { name
     return hidden.name ? t.revealsName : t.revealsSex;
   }
   return null;
-}
-
-/** The Birth errors the dialog shows under their field; the status message says the rest in words. */
-function inlinePath(path: string): boolean {
-  return /^birth\.details\.(datetime|weightGrams|lengthCm|message\.[a-z]+)$/.test(path);
 }

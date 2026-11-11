@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { describeSiteSettingsErrors, inlineErrorText, responseErrorText, routeErrorText } from './errorText.ts';
+import {
+  describeSiteSettingsErrors,
+  errorPlace,
+  inlineErrorText,
+  responseErrorText,
+  routeErrorText,
+  settingOf,
+} from './errorText.ts';
+import { settingsPath } from './siteSettings.ts';
 
 test('a route error code reads in the page’s language', () => {
   assert.equal(routeErrorText({ code: 'wrongCredentials' }, 'en'), 'Invalid email or password.');
@@ -31,9 +39,9 @@ test('a response body reads as its Site settings errors, else its route error', 
 
 test('Site settings errors name their field and problem in each language', () => {
   const errors = [
-    { path: 'birth.details.weightGrams', code: 'invalidType' as const },
-    { path: 'milestones.1.label.it', code: 'required' as const },
-    { path: 'birth.details.lengthCm', code: 'outOfRange' as const, params: { min: 20, max: 70 } },
+    { path: settingsPath('birth.details.weightGrams'), code: 'invalidType' as const },
+    { path: settingsPath('milestones.1.label.it'), code: 'required' as const },
+    { path: settingsPath('birth.details.lengthCm'), code: 'outOfRange' as const, params: { min: 20, max: 70 } },
   ];
   assert.equal(
     describeSiteSettingsErrors(errors, 'en'),
@@ -46,8 +54,37 @@ test('Site settings errors name their field and problem in each language', () =>
 });
 
 test('an inline error names the Language only when the Site speaks more than one', () => {
-  const missing = { path: 'milestones.0.label.it', code: 'required' as const };
+  const missing = { path: settingsPath('milestones.0.label.it'), code: 'required' as const };
   assert.equal(inlineErrorText(missing, ['it', 'en'], 'en'), 'Write this Milestone in Italian.');
   assert.equal(inlineErrorText(missing, ['it', 'en'], 'it'), 'Scrivi questa tappa in italiano.');
   assert.equal(inlineErrorText(missing, ['it'], 'it'), 'Dai un nome a questa tappa.');
+});
+
+test('the editor shows a Milestone’s errors and a text’s in one Language under the field, the rest in words', () => {
+  for (const path of ['milestones.2.date', 'milestones.0.label.it', 'milestones.1.place', 'pageName.en']) {
+    assert.equal(errorPlace(settingsPath(path), 'editor'), 'field', path);
+  }
+  for (const path of ['dueDate', 'babyName', 'milestones', 'languages.0', 'timezone']) {
+    assert.equal(errorPlace(settingsPath(path), 'editor'), 'status', path);
+  }
+});
+
+test('the Birth dialog shows its own errors and points to the rest of the page', () => {
+  const dialog = { birthDialog: { asksIdentity: false } };
+  for (const path of ['birth.details.datetime', 'birth.details.weightGrams', 'birth.details.message.it']) {
+    assert.equal(errorPlace(settingsPath(path), dialog), 'field', path);
+  }
+  assert.equal(errorPlace(settingsPath('birth.details.photo'), dialog), 'status');
+  assert.equal(errorPlace(settingsPath('babyName'), dialog), 'elsewhere');
+  assert.equal(errorPlace(settingsPath('sex'), dialog), 'elsewhere');
+  assert.equal(errorPlace(settingsPath('milestones.0.date'), dialog), 'elsewhere');
+
+  const asking = { birthDialog: { asksIdentity: true } };
+  assert.equal(errorPlace(settingsPath('babyName'), asking), 'field');
+  assert.equal(errorPlace(settingsPath('sex'), asking), 'status');
+});
+
+test('a new Site’s errors name the Site setting they are about', () => {
+  assert.equal(settingOf(settingsPath('settings.dueDate')), 'dueDate');
+  assert.equal(settingOf(settingsPath('slug')), 'slug');
 });

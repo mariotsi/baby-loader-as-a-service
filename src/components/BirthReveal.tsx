@@ -2,10 +2,12 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/Button';
-import type { Lang } from '@/lib/i18n';
+import type { MediaUrl } from '@/lib/birthMedia';
+import type { PublicPageCopy } from '@/lib/copy/publicPage';
 import styles from './BirthReveal.module.css';
 
-export function BirthReveal({ url, lang, onClose }: { url: string; lang: Lang; onClose: () => void }) {
+/** The Birth video full screen, with sound where the browser allows it; it closes when the video ends or stalls. */
+export function BirthReveal({ url, t, onClose }: { url: MediaUrl; t: PublicPageCopy['reveal']; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
   const video = useRef<HTMLVideoElement>(null);
   const [needsSound, setNeedsSound] = useState(false);
@@ -51,12 +53,7 @@ export function BirthReveal({ url, lang, onClose }: { url: string; lang: Lang; o
   }, [onClose]);
 
   return (
-    <dialog
-      ref={dialog}
-      className={styles.dialog}
-      aria-label={lang === 'it' ? 'Il nostro benvenuto' : 'Welcome to the world'}
-      onCancel={onClose}
-    >
+    <dialog ref={dialog} className={styles.dialog} aria-label={t.label} onCancel={onClose}>
       {/* biome-ignore lint/a11y/useMediaCaption: Owner videos are personal recordings without a caption track. */}
       <video
         ref={video}
@@ -71,7 +68,7 @@ export function BirthReveal({ url, lang, onClose }: { url: string; lang: Lang; o
       />
       <div className={styles.close}>
         <Button variant="ghost" onClick={onClose}>
-          {lang === 'it' ? 'Chiudi il video' : 'Close video'}
+          {t.close}
         </Button>
       </div>
       {needsSound ? (
@@ -84,7 +81,7 @@ export function BirthReveal({ url, lang, onClose }: { url: string; lang: Lang; o
               }
             }}
           >
-            {lang === 'it' ? 'Attiva audio' : 'Turn on sound'}
+            {t.turnOnSound}
           </Button>
         </div>
       ) : null}
