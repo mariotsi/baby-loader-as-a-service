@@ -136,13 +136,6 @@
   color: var(--color-text);
 }
 
-.sex {
-  margin: 0;
-  font-family: var(--font-display);
-  font-weight: var(--font-display-weight);
-  font-size: var(--text-xl);
-}
-
 .lead {
   margin: 0;
   font-size: var(--text-lg);

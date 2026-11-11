@@ -20,6 +20,7 @@ import { Select } from '@/components/ui/Select';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { birthDay, instantIn, localIn, settledBirthMilestones, withBirth } from '@/lib/birthAnnouncement';
+import type { MediaUrl } from '@/lib/birthMedia';
 import { errorsCopy } from '@/lib/copy/errors';
 import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
 import { describeSiteSettingsErrors, inlineErrorText, isInlineError, routeErrorText } from '@/lib/errorText';
@@ -100,7 +101,7 @@ export function SiteEditor({
   address: string;
   mediaPreviewSlug?: string;
   /** What the Public page shows in place of a birth photo, which depends on the deployment. */
-  bornPlaceholderUrl: string;
+  bornPlaceholderUrl: MediaUrl;
 }) {
   const router = useRouter();
   const pageLang = useLang();

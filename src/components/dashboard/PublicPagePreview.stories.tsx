@@ -36,7 +36,6 @@ const meta = {
     slug: 'demo-emma',
     lang: 'en',
     caption: 'Your page on a phone',
-    bornImageUrl: '/website-assets/born-placeholder-v1.png',
   },
   decorators: [
     (Story) => (

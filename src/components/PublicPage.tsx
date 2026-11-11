@@ -37,8 +37,6 @@ export function PublicPage({
   initialLang,
   slug,
   vapidPublicKey,
-  bornImageUrl = '/website-assets/born-placeholder-v1.png',
-  birthVideoUrl,
   disableNotifications = false,
   disableVideoAutoplay = false,
   preview = false,
@@ -47,8 +45,6 @@ export function PublicPage({
   initialLang: Lang;
   slug: string;
   vapidPublicKey: string | undefined;
-  bornImageUrl?: string;
-  birthVideoUrl?: string;
   disableNotifications?: boolean;
   disableVideoAutoplay?: boolean;
   preview?: boolean;
@@ -88,7 +84,6 @@ export function PublicPage({
             <h1 className={styles.title}>
               <span className={styles.titleLead}>{view.titleLead}</span> {view.titleName}
             </h1>
-            {view.sex ? <p className={styles.sex}>{view.sex}</p> : null}
             {view.waiting ? <p className={styles.lead}>{view.waiting.dueDate}</p> : null}
             <div className={styles.cta}>
               <PublicPageActions
@@ -104,11 +99,9 @@ export function PublicPage({
         </div>
         <div className={styles.aside}>
           {view.waiting ? <Countdown waiting={view.waiting} /> : null}
-          {view.born ? <Born born={view.born} imageUrl={bornImageUrl} /> : null}
+          {view.born ? <Born born={view.born} /> : null}
           {view.milestones ? <Milestones milestones={view.milestones} /> : null}
-          {view.born ? (
-            <BirthVideo url={birthVideoUrl} lang={view.lang} slug={slug} disableAutoplay={noAutoplay} />
-          ) : null}
+          {view.born?.video ? <BirthVideo video={view.born.video} slug={slug} disableAutoplay={noAutoplay} /> : null}
           <div ref={setPillSlot} className={styles.pillSlot} />
         </div>
       </Main>
@@ -181,7 +174,7 @@ function PublicPageActions({
           slug={slug}
           lang={view.lang}
           vapidPublicKey={vapidPublicKey}
-          t={view.push}
+          push={view.push}
           pillSlot={pillSlot}
           subscribedContent={<ShareButton view={view} />}
         />
@@ -200,7 +193,7 @@ function ShareButton({ view }: { view: PublicPageView }) {
         await navigator.share({ title: view.title, url });
       } else {
         await navigator.clipboard.writeText(url);
-        setShareMessage('Link copied');
+        setShareMessage(view.linkCopied);
       }
     } catch {
       setShareMessage('');
@@ -219,11 +212,11 @@ function ShareButton({ view }: { view: PublicPageView }) {
   );
 }
 
-function Born({ born, imageUrl }: { born: NonNullable<PublicPageView['born']>; imageUrl: string }) {
+function Born({ born }: { born: NonNullable<PublicPageView['born']> }) {
   return (
     <>
       {/* biome-ignore lint/performance/noImgElement: R2 serves the pre-sized website asset directly. */}
-      <img className={styles.bornImage} src={imageUrl} alt="" width={750} height={900} />
+      <img className={styles.bornImage} src={born.photoUrl} alt="" width={750} height={900} />
       <p className={styles.lead}>{born.bornOn}</p>
       <div className={styles.age}>
         <span className={styles.ageNumber}>{born.age}</span>
@@ -274,19 +267,18 @@ function Milestones({ milestones }: { milestones: NonNullable<PublicPageView['mi
 }
 
 function BirthVideo({
-  url,
-  lang,
+  video,
   slug,
   disableAutoplay,
 }: {
-  url?: string;
-  lang: Lang;
+  video: NonNullable<NonNullable<PublicPageView['born']>['video']>;
   slug: string;
   disableAutoplay: boolean;
 }) {
+  const { url } = video;
   const [revealOpen, setRevealOpen] = useState(false);
   useEffect(() => {
-    if (!url || disableAutoplay) {
+    if (disableAutoplay) {
       return;
     }
     const key = `birth-reveal:${slug}:${url}`;
@@ -301,15 +293,10 @@ function BirthVideo({
     setRevealOpen(true);
   }, [url, disableAutoplay, slug]);
 
-  if (!url) {
-    return null;
-  }
   return (
     <>
-      <Button onClick={() => setRevealOpen(true)}>
-        {lang === 'it' ? 'Riguarda il benvenuto' : 'Replay the welcome'}
-      </Button>
-      {revealOpen ? <BirthReveal url={url} lang={lang} onClose={() => setRevealOpen(false)} /> : null}
+      <Button onClick={() => setRevealOpen(true)}>{video.replay}</Button>
+      {revealOpen ? <BirthReveal url={url} t={video.reveal} onClose={() => setRevealOpen(false)} /> : null}
     </>
   );
 }

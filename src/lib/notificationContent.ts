@@ -3,7 +3,7 @@ import { fallbackLang, type Lang } from './i18n.ts';
 import type { NotificationMessages } from './notificationLog.ts';
 import { siteShortName } from './siteAppIdentity.ts';
 import { siteIconUrl } from './siteMeta.ts';
-import { defaultNotificationTitle, type SiteSettings } from './siteSettings.ts';
+import { type SiteSettings, shownBabyName } from './siteSettings.ts';
 
 /**
  * What one Subscription's device shows for a Notification: the text in its
@@ -44,7 +44,7 @@ export function notificationContent(
   const copy = publicPageCopy[shown];
   return {
     lang: shown,
-    title: text?.title || defaultNotificationTitle(site) || siteShortName(site, shown),
+    title: text?.title || shownBabyName(site) || siteShortName(site, shown),
     body: text?.body ?? '',
     icon,
     actions: { open: copy.notificationOpen, dismiss: copy.notificationDismiss },

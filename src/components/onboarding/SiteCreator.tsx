@@ -23,6 +23,7 @@ import { StatusMessage } from '@/components/ui/StatusMessage';
 import { StepProgress } from '@/components/ui/StepProgress';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { type AddressConfig, siteAddress, slugProblem } from '@/lib/address';
+import type { MediaUrl } from '@/lib/birthMedia';
 import { errorsCopy } from '@/lib/copy/errors';
 import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
 import { uiCopy } from '@/lib/copy/ui';
@@ -156,7 +157,7 @@ export function SiteCreator({
 }: {
   addressConfig: AddressConfig;
   /** What the Public page shows in place of a birth photo, which depends on the deployment. */
-  bornPlaceholderUrl: string;
+  bornPlaceholderUrl: MediaUrl;
 }) {
   const router = useRouter();
   const lang = useLang();

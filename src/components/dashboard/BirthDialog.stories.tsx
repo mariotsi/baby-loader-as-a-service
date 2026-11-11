@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { LangProvider } from '@/components/LangProvider';
 import { defaultSiteSettings, type SiteSettings, type SiteSettingsError } from '@/lib/siteSettings';
+import { bornPlaceholderUrl } from '@/lib/websiteAssets';
 import { BirthDialog, type BirthDraft, type SaveOutcome } from './BirthDialog';
 
 const waiting: BirthDraft = {
@@ -79,7 +80,7 @@ const meta = {
     address: 'https://emma.loading.baby',
     video: null,
     onVideo: () => {},
-    bornPlaceholderUrl: '/website-assets/born-placeholder-v1.png',
+    bornPlaceholderUrl: bornPlaceholderUrl('development'),
     onSave: fn(async (_birth: BirthDraft): Promise<SaveOutcome> => ({ ok: true })),
     onClose: () => {},
   },

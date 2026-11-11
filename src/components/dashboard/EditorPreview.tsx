@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useLang } from '@/components/LangProvider';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
+import type { MediaUrl } from '@/lib/birthMedia';
 import { platformCopy } from '@/lib/copy/platform';
 import { fallbackLang } from '@/lib/i18n';
 import { type PreviewState, settingsInState } from '@/lib/previewSettings';
@@ -18,7 +19,7 @@ interface EditorPreviewProps {
   photo?: MediaDraft;
   video?: MediaDraft;
   mediaPreviewSlug?: string;
-  bornPlaceholderUrl: string;
+  bornPlaceholderUrl: MediaUrl;
   /** Below 48rem the preview shows only while the PhoneStrip has it open; from 48rem it always shows. */
   open: boolean;
   id: string;
@@ -64,8 +65,7 @@ export function EditorPreview({
         slug={slug}
         lang={settings.languages.includes(pageLang) ? pageLang : fallbackLang(settings.languages)}
         caption={t.previewPage}
-        bornImageUrl={photoUrl ?? bornPlaceholderUrl}
-        birthVideoUrl={videoUrl}
+        media={{ photo: photoUrl ?? null, video: videoUrl ?? null, placeholder: bornPlaceholderUrl }}
         compact
       />
     </aside>

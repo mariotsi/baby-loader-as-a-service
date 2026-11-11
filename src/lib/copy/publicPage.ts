@@ -62,11 +62,17 @@ const en = {
   bornOn: (formattedDatetime: string, _sex: Sex) => `Born on ${formattedDatetime}`,
   ageLabel: (n: number) => plural('en', n, { one: 'day of life', other: 'days of life' }),
   share: 'Share this page',
+  /** Said where the browser cannot share, after copying the page's link instead. */
+  linkCopied: 'Link copied',
   weightLabel: 'Weight',
   lengthLabel: 'Length',
-
-  sexFemale: 'It’s a girl',
-  sexMale: 'It’s a boy',
+  replayWelcome: 'Replay the welcome',
+  /** The Birth video, full screen. */
+  reveal: {
+    label: 'Welcome to the world',
+    close: 'Close video',
+    turnOnSound: 'Turn on sound',
+  },
 
   checking: 'Checking notification status...',
   subscribedBorn: 'Notifications active on this device',
@@ -141,11 +147,15 @@ const it: PublicPageCopy = {
   bornOn: bornOnIt,
   ageLabel: (n: number) => plural('it', n, { one: 'giorno di vita', other: 'giorni di vita' }),
   share: 'Condividi questa pagina',
+  linkCopied: 'Link copiato',
   weightLabel: 'Peso',
   lengthLabel: 'Lunghezza',
-
-  sexFemale: 'È una femmina',
-  sexMale: 'È un maschio',
+  replayWelcome: 'Riguarda il benvenuto',
+  reveal: {
+    label: 'Il nostro benvenuto',
+    close: 'Chiudi il video',
+    turnOnSound: 'Attiva audio',
+  },
 
   checking: 'Controllo stato notifiche...',
   subscribedBorn: 'Notifiche attive su questo dispositivo',

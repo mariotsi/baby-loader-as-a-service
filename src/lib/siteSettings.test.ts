@@ -1,12 +1,12 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
-  defaultNotificationTitle,
   defaultSiteSettings,
   parseBirthPreview,
   parseNewSite,
   parseSiteSettings,
   type SiteSettingsInput,
+  shownBabyName,
 } from './siteSettings.ts';
 
 const NOW = new Date('2026-10-20T12:00:00Z');
@@ -304,20 +304,14 @@ test('a new Site starts Waiting', () => {
   assert.deepEqual(result.ok ? [] : result.errors, [{ path: 'settings.birth', code: 'invalidOption' }]);
 });
 
-test('a Notification defaults to the name, hidden by Privacy settings only while Waiting', () => {
+test('the shown name is the baby’s, hidden by Privacy settings only while Waiting', () => {
   const hidden = { showName: false, showSex: false };
-  assert.equal(
-    defaultNotificationTitle({ babyName: 'Emma', birth: { born: false, details: null }, privacy: hidden }),
-    undefined
-  );
-  assert.equal(
-    defaultNotificationTitle({ ...settings({ babyName: 'Emma' }), birth: { born: false, details: null } }),
-    'Emma'
-  );
+  assert.equal(shownBabyName({ babyName: 'Emma', birth: { born: false, details: null }, privacy: hidden }), null);
+  assert.equal(shownBabyName({ ...settings({ babyName: 'Emma' }), birth: { born: false, details: null } }), 'Emma');
   const { photo: _, ...details } = born().details;
   const birth = { born: true as const, details };
-  assert.equal(defaultNotificationTitle({ babyName: 'Emma', birth, privacy: hidden }), 'Emma');
-  assert.equal(defaultNotificationTitle({ babyName: '', birth, privacy: hidden }), undefined);
+  assert.equal(shownBabyName({ babyName: 'Emma', birth, privacy: hidden }), 'Emma');
+  assert.equal(shownBabyName({ babyName: '', birth, privacy: hidden }), null);
 });
 
 test('the Timezone is any zone Intl knows, aliases included', () => {
