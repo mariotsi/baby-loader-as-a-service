@@ -1,13 +1,14 @@
 import { TZDate } from '@date-fns/tz';
 import { differenceInCalendarDays, format, parseISO } from 'date-fns';
 import { enUS, it as itLocale } from 'date-fns/locale';
+import { type MediaUrl, mediaUrlSchema } from './birthMedia.ts';
 import { commonCopy } from './copy/common.ts';
 import { type PublicPageCopy, publicPageCopy } from './copy/publicPage.ts';
 import { countdownDays } from './countdown.ts';
 import { inPlatformOrder, type Lang } from './i18n.ts';
 import { googleMapsUrl } from './place.ts';
 import { siteShortName, twemojiUrl } from './siteAppIdentity.ts';
-import type { BirthDetails, SiteSettings } from './siteSettings.ts';
+import { type BirthDetails, type SiteSettings, shownBabyName } from './siteSettings.ts';
 
 /**
  * What a Site's Public page shows, decided from its Site settings, a language
@@ -16,48 +17,23 @@ import type { BirthDetails, SiteSettings } from './siteSettings.ts';
  * Client Components as is.
  */
 
-/** The push button's copy, already picked for the Site's state. */
-export type PushButtonCopy = {
-  checking: string;
-  subscribed: string;
-  subscribe: string;
-  subscribing: string;
-  unsubscribe: string;
-  unsubscribeLink: string;
-  unsubscribeTitle: string;
-  unsubscribeDescription: string;
-  keepNotifications: string;
-  subscribeOk: string;
-  unsubscribeOk: string;
-  errorGeneric: string;
-  errorUnsubscribe: string;
-  errorUnsupported: string;
-  errorDenied: string;
-  notificationsHelpTitle: string;
-  iosHomeScreen: string;
-  iosStepsClassic: string;
-  iosSteps26: string;
-  iosStepsGeneric: string;
-  iosOpenApp: string;
-  appName: string;
-  appIcon: string;
-  iosOpenSafari: string;
-  iosShare: string;
-  iosMenu26: string;
-  iosMenu27: string;
-  iosAddHome: string;
-  iosEnableApp: string;
-  iosAdd: string;
+/**
+ * Where the Born state's pictures are served from. The caller resolves them,
+ * since the server and the editor serve them differently (see birthMediaUrl
+ * and useBirthMediaUrl); the view decides whether the page shows them.
+ */
+export type BornMedia = {
+  photo: MediaUrl | null;
+  video: MediaUrl | null;
+  /** Shown in place of a missing photo. */
+  placeholder: MediaUrl;
+};
 
-  androidUnsupported: string;
-
-  iosHomeScreenLink: string;
-  iosVersion: string;
-  iosDenied: string;
-  iosSettingsLink: string;
-  androidUseChrome: string;
-  androidDenied: string;
-  androidSettingsLink: string;
+/** For views that never draw the Born state's media, like the share image. */
+export const NO_BORN_MEDIA: BornMedia = {
+  photo: null,
+  video: null,
+  placeholder: mediaUrlSchema.parse('/website-assets/born-placeholder-v1.png'),
 };
 
 export type MilestoneItem = {
@@ -84,8 +60,6 @@ export type PublicPageView = {
   title: string;
   titleLead: string;
   titleName: string;
-  /** "It's a girl", or null when hidden or unknown. */
-  sex: string | null;
   /** Null in the Born state and when there is no Due date. */
   waiting: {
     dueDate: string;
@@ -103,12 +77,24 @@ export type PublicPageView = {
     ageLabel: string;
     stats: { label: string; value: string }[];
     message: string | null;
+    /** The birth photo, else the placeholder. */
+    photoUrl: MediaUrl;
+    /** Null when the Site has no Birth video. */
+    video: { url: MediaUrl; replay: string; reveal: PublicPageCopy['reveal'] } | null;
   } | null;
   milestones: { title: string; items: MilestoneItem[] } | null;
   /** Names the Language switcher in this view's language. */
   languageLabel: string;
   share: string;
-  push: PushButtonCopy;
+  linkCopied: string;
+  /** The push button's words that depend on the Site; the rest are the same on every Site (see publicPageCopy). */
+  push: {
+    subscribe: string;
+    subscribed: string;
+    /** What a home screen writes under the Site icon. */
+    appName: string;
+    appIcon: string;
+  };
 };
 
 const LOCALES = { en: enUS, it: itLocale };
@@ -117,11 +103,20 @@ const DATE_FORMAT: Record<Lang, string> = { en: 'MMMM d, yyyy', it: 'd MMMM yyyy
 const AT: Record<Lang, string> = { en: 'at', it: 'alle' };
 
 /** One view per Language the Site speaks, in the Platform's order, as the Language switcher lists them. */
-export function publicPageViews(settings: SiteSettings, now: Date = new Date()): PublicPageView[] {
-  return inPlatformOrder(settings.languages).map((lang) => publicPageView(settings, lang, now));
+export function publicPageViews(
+  settings: SiteSettings,
+  now: Date = new Date(),
+  media: BornMedia = NO_BORN_MEDIA
+): PublicPageView[] {
+  return inPlatformOrder(settings.languages).map((lang) => publicPageView(settings, lang, now, media));
 }
 
-export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = new Date()): PublicPageView {
+export function publicPageView(
+  settings: SiteSettings,
+  lang: Lang,
+  now: Date = new Date(),
+  media: BornMedia = NO_BORN_MEDIA
+): PublicPageView {
   const t = publicPageCopy[lang];
   const { birth } = settings;
   return {
@@ -129,12 +124,14 @@ export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = n
     pageName: settings.pageName[lang]?.trim() || null,
     ...headline(settings, t),
     waiting: !birth.born && settings.dueDate ? waitingView(settings.dueDate, settings.timezone, lang, now) : null,
-    born: birth.born ? bornView(birth.details, settings.timezone, settings.sex, lang, now) : null,
+    born: birth.born ? bornView(birth.details, settings.timezone, settings.sex, lang, now, media) : null,
     milestones: milestonesView(settings.milestones, lang),
     languageLabel: commonCopy[lang].languageLabel,
     share: t.share,
+    linkCopied: t.linkCopied,
     push: {
-      ...pushButtonCopy(t, birth.born, settings.privacy.showSex ? settings.sex : 'unknown'),
+      subscribe: birth.born ? t.subscribeBorn : t.subscribeWaiting(settings.privacy.showSex ? settings.sex : 'unknown'),
+      subscribed: birth.born ? t.subscribedBorn : t.subscribedWaiting,
       appName: siteShortName(settings, lang),
       appIcon: settings.icon ? twemojiUrl(settings.icon) : '/icon-192.png',
     },
@@ -145,17 +142,15 @@ export function publicPageView(settings: SiteSettings, lang: Lang, now: Date = n
 function headline(
   settings: SiteSettings,
   t: PublicPageCopy
-): Pick<PublicPageView, 'tagline' | 'title' | 'titleLead' | 'titleName' | 'sex'> {
+): Pick<PublicPageView, 'tagline' | 'title' | 'titleLead' | 'titleName'> {
   const born = settings.birth.born;
-  const name = (born || settings.privacy.showName) && settings.babyName ? settings.babyName : null;
   const titleLead = born ? t.bornTitle(settings.sex) : t.waitingTitle;
-  const titleName = born ? settings.babyName || t.littleOne(settings.sex) : (name ?? t.someone);
+  const titleName = shownBabyName(settings) ?? (born ? t.littleOne(settings.sex) : t.someone);
   return {
     tagline: born ? t.bornTagline(settings.sex) : t.waitingTagline,
     title: [titleLead, titleName].filter(Boolean).join(' '),
     titleLead,
     titleName,
-    sex: null,
   };
 }
 
@@ -164,7 +159,8 @@ function bornView(
   timezone: string,
   sex: SiteSettings['sex'],
   lang: Lang,
-  now: Date
+  now: Date,
+  media: BornMedia
 ): NonNullable<PublicPageView['born']> {
   const t = publicPageCopy[lang];
   const bornAt = format(new TZDate(new Date(details.datetime), timezone), `${DATE_FORMAT[lang]} '${AT[lang]}' HH:mm`, {
@@ -181,6 +177,8 @@ function bornView(
       details.lengthCm ? { label: t.lengthLabel, value: `${details.lengthCm} cm` } : null,
     ].filter((stat): stat is { label: string; value: string } => stat !== null),
     message: details.message[lang]?.trim() || null,
+    photoUrl: media.photo ?? media.placeholder,
+    video: media.video ? { url: media.video, replay: t.replayWelcome, reveal: t.reveal } : null,
   };
 }
 
@@ -235,49 +233,4 @@ function pregnancyWeek(daysToDue: number): number | null {
 /** A calendar day such as a Due date: no time, so no Timezone. */
 function formatDay(day: string, lang: Lang): string {
   return format(parseISO(day), DATE_FORMAT[lang], { locale: LOCALES[lang] });
-}
-
-function pushButtonCopy(t: PublicPageCopy, born: boolean, sex: SiteSettings['sex']): PushButtonCopy {
-  return {
-    notificationsHelpTitle: t.notificationsHelpTitle,
-    checking: t.checking,
-    subscribed: born ? t.subscribedBorn : t.subscribedWaiting,
-    subscribe: born ? t.subscribeBorn : t.subscribeWaiting(sex),
-    subscribing: t.subscribing,
-    unsubscribe: t.unsubscribe,
-    unsubscribeLink: t.unsubscribeLink,
-    unsubscribeTitle: t.unsubscribeTitle,
-    unsubscribeDescription: t.unsubscribeDescription,
-    keepNotifications: t.keepNotifications,
-    subscribeOk: t.subscribeOk,
-    unsubscribeOk: t.unsubscribeOk,
-    errorGeneric: t.errorGeneric,
-    errorUnsubscribe: t.errorUnsubscribe,
-    errorUnsupported: t.errorUnsupported,
-    errorDenied: t.errorDenied,
-    iosHomeScreen: t.iosHomeScreen,
-    iosStepsClassic: t.iosStepsClassic,
-    iosSteps26: t.iosSteps26,
-    iosStepsGeneric: t.iosStepsGeneric,
-    iosOpenApp: t.iosOpenApp,
-    appName: 'Loading Baby',
-    appIcon: '/icon-192.png',
-    iosOpenSafari: t.iosOpenSafari,
-    iosShare: t.iosShare,
-    iosMenu26: t.iosMenu26,
-    iosMenu27: t.iosMenu27,
-    iosAddHome: t.iosAddHome,
-    iosEnableApp: t.iosEnableApp,
-    iosAdd: t.iosAdd,
-
-    androidUnsupported: t.androidUnsupported,
-
-    iosHomeScreenLink: t.iosHomeScreenLink,
-    iosVersion: t.iosVersion,
-    iosDenied: t.iosDenied,
-    iosSettingsLink: t.iosSettingsLink,
-    androidUseChrome: t.androidUseChrome,
-    androidDenied: t.androidDenied,
-    androidSettingsLink: t.androidSettingsLink,
-  };
 }

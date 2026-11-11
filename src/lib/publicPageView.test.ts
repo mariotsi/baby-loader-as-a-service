@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { publicPageView, publicPageViews } from './publicPageView.ts';
+import { mediaUrlSchema } from './birthMedia.ts';
+import { NO_BORN_MEDIA, publicPageView, publicPageViews } from './publicPageView.ts';
 import { defaultSiteSettings, type SiteSettings } from './siteSettings.ts';
 
 const NOW = new Date('2026-10-20T10:00:00Z');
@@ -24,7 +25,6 @@ test('the Waiting state leads with the Countdown', () => {
   const view = publicPageView(site(), 'en', NOW);
   assert.equal(view.tagline, 'Expecting');
   assert.equal(view.title, 'We are waiting for Emma');
-  assert.equal(view.sex, null);
   assert.deepEqual(view.waiting, {
     dueDate: 'Due date: November 1, 2026',
     count: 12,
@@ -80,11 +80,16 @@ test('no Due date, no Countdown', () => {
 });
 
 test('Privacy settings hide the name and Sex while Waiting', () => {
-  const view = publicPageView(site({ privacy: { showName: false, showSex: false } }), 'it', NOW);
-  assert.equal(view.title, 'Stiamo aspettando qualcuno');
-  assert.equal(view.sex, null);
+  const hidden = publicPageView(site({ privacy: { showName: false, showSex: false } }), 'en', NOW);
+  assert.equal(hidden.title, 'We are waiting for someone');
+  assert.equal(hidden.push.subscribe, 'Notify me when they arrive');
+  assert.equal(hidden.push.appName, 'Loading Baby');
+  const shown = publicPageView(site(), 'en', NOW);
+  assert.equal(shown.title, 'We are waiting for Emma');
+  assert.equal(shown.push.subscribe, 'Notify me when she arrives');
+  assert.equal(shown.push.appName, 'Emma');
   assert.equal(publicPageView(site({ babyName: '' }), 'en', NOW).title, 'We are waiting for someone');
-  assert.equal(publicPageView(site({ sex: 'unknown' }), 'en', NOW).sex, null);
+  assert.equal(publicPageView(site({ sex: 'unknown' }), 'en', NOW).push.subscribe, 'Notify me when they arrive');
 });
 
 test('the Born state announces the name and Sex whatever the Privacy settings', () => {
@@ -92,7 +97,7 @@ test('the Born state announces the name and Sex whatever the Privacy settings', 
   assert.equal(view.tagline, 'It’s a girl!');
   assert.equal(view.title, 'Welcome Emma');
   assert.equal(publicPageView(site({ birth: BORN }), 'it', NOW).tagline, 'È nata!');
-  assert.equal(view.sex, null);
+  assert.equal(view.push.appName, 'Emma');
   assert.equal(view.waiting, null);
 });
 
@@ -122,6 +127,8 @@ test("Birth details are told in the Site's Timezone and language", () => {
       { label: 'Length', value: '50 cm' },
     ],
     message: 'Hi',
+    photoUrl: NO_BORN_MEDIA.placeholder,
+    video: null,
   });
   assert.equal(publicPageView(site({ birth: BORN }), 'it', NOW).born?.bornOn, 'Nata il 19 ottobre 2026 alle 10:30');
   assert.equal(
@@ -173,6 +180,30 @@ test("a Milestone's Place leads to its address on Google Maps, named in the page
 test("the push button copy follows the Site's state", () => {
   assert.equal(publicPageView(site(), 'en', NOW).push.subscribe, 'Notify me when she arrives');
   assert.equal(publicPageView(site({ birth: BORN }), 'en', NOW).push.subscribe, 'Get the next updates');
+});
+
+test('the Born state shows the birth photo, else the placeholder, and the Birth video with its words', () => {
+  const media = {
+    photo: mediaUrlSchema.parse('https://media.test/photo'),
+    video: mediaUrlSchema.parse('https://media.test/video'),
+    placeholder: mediaUrlSchema.parse('/placeholder.png'),
+  };
+  const born = publicPageView(site({ birth: BORN }), 'it', NOW, media).born;
+  assert.equal(born?.photoUrl, 'https://media.test/photo');
+  assert.deepEqual(born?.video, {
+    url: 'https://media.test/video',
+    replay: 'Riguarda il benvenuto',
+    reveal: { label: 'Il nostro benvenuto', close: 'Chiudi il video', turnOnSound: 'Attiva audio' },
+  });
+  const bare = publicPageView(site({ birth: BORN }), 'en', NOW, { ...media, photo: null, video: null }).born;
+  assert.equal(bare?.photoUrl, '/placeholder.png');
+  assert.equal(bare?.video, null);
+  assert.equal(publicPageView(site(), 'en', NOW, media).born, null, 'Waiting shows neither');
+});
+
+test('the page speaks its own language when sharing', () => {
+  assert.equal(publicPageView(site(), 'it', NOW).linkCopied, 'Link copiato');
+  assert.equal(publicPageView(site(), 'en', NOW).linkCopied, 'Link copied');
 });
 
 test("a Site gets one view per Language, in the Platform's order", () => {

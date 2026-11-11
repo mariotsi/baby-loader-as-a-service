@@ -116,7 +116,6 @@ export function ShareCard({ view, address, icon, px, color, font }: ShareCardPro
               </span>
             ))}
           </div>
-          {view.sex ? <div style={{ ...display, fontSize: px(34) }}>{view.sex}</div> : null}
           {view.waiting ? (
             <div style={{ display: 'flex', flexDirection: 'column', marginTop: px(16) }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: px(20) }}>

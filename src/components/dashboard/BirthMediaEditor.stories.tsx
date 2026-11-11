@@ -5,7 +5,7 @@ import { PublicPage } from '@/components/PublicPage';
 import { Card } from '@/components/ui/Card';
 import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { Stack } from '@/components/ui/Stack';
-import { publicPageViews } from '@/lib/publicPageView';
+import { NO_BORN_MEDIA, publicPageViews } from '@/lib/publicPageView';
 import { defaultSiteSettings } from '@/lib/siteSettings';
 import { BirthMediaEditor, type MediaDraft, useMediaUrl } from './BirthMediaEditor';
 
@@ -50,12 +50,14 @@ function InteractiveBirthMedia() {
         <BirthMediaEditor photo={photo} video={video} onPhoto={setPhoto} onVideo={setVideo} />
       ) : (
         <PublicPage
-          views={publicPageViews(settings)}
+          views={publicPageViews(settings, new Date(), {
+            photo: photoUrl ?? null,
+            video: videoUrl ?? null,
+            placeholder: NO_BORN_MEDIA.placeholder,
+          })}
           initialLang="en"
           slug="emma-preview"
           vapidPublicKey={undefined}
-          bornImageUrl={photoUrl}
-          birthVideoUrl={videoUrl}
           disableNotifications
           disableVideoAutoplay
         />

@@ -1,5 +1,5 @@
 import type { Lang } from './i18n.ts';
-import type { SiteSettings } from './siteSettings.ts';
+import { type SiteSettings, shownBabyName } from './siteSettings.ts';
 
 /** What a home screen writes under the Site icon: the Page name in `lang`, else the baby's name where the page shows it. */
 export function siteShortName(settings: Pick<SiteSettings, 'babyName' | 'birth' | 'privacy' | 'pageName'>, lang: Lang) {
@@ -7,8 +7,7 @@ export function siteShortName(settings: Pick<SiteSettings, 'babyName' | 'birth' 
   if (pageName) {
     return pageName;
   }
-  const nameShown = settings.birth.born || settings.privacy.showName;
-  return nameShown && settings.babyName ? settings.babyName : 'Loading Baby';
+  return shownBabyName(settings) ?? 'Loading Baby';
 }
 
 /** The newest Emoji version `twemojiUrl` has images for. */

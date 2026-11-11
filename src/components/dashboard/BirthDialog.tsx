@@ -13,6 +13,7 @@ import { SegmentedControl } from '@/components/ui/SegmentedControl';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { Textarea } from '@/components/ui/Textarea';
 import { birthNotificationMessages } from '@/lib/birthAnnouncement';
+import type { MediaUrl } from '@/lib/birthMedia';
 import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
 import { describeSiteSettingsErrors, inlineErrorText } from '@/lib/errorText';
@@ -67,7 +68,7 @@ interface BirthDialogProps {
   video: MediaDraft;
   onVideo: (video: MediaDraft) => void;
   /** What the page shows in place of a birth photo. */
-  bornPlaceholderUrl: string;
+  bornPlaceholderUrl: MediaUrl;
   /** Saves this Birth with the name, the Sex and the Birth video; the page's other changes stay unsaved. */
   onSave: (birth: BirthDraft) => Promise<SaveOutcome>;
   onClose: () => void;
@@ -333,9 +334,9 @@ interface BirthPreviewsProps {
   message: BirthDetails['message'];
   slug: string;
   address: string;
-  photoUrl: string | undefined;
-  videoUrl: string | undefined;
-  bornPlaceholderUrl: string;
+  photoUrl: MediaUrl | undefined;
+  videoUrl: MediaUrl | undefined;
+  bornPlaceholderUrl: MediaUrl;
 }
 
 /**
@@ -383,8 +384,7 @@ function BirthPreviews({
         slug={slug}
         lang={languages.includes(pageLang) ? pageLang : fallbackLang(languages)}
         caption={t.settings.previewPage}
-        bornImageUrl={photoUrl ?? bornPlaceholderUrl}
-        birthVideoUrl={videoUrl}
+        media={{ photo: photoUrl ?? null, video: videoUrl ?? null, placeholder: bornPlaceholderUrl }}
       />
     </div>
   );

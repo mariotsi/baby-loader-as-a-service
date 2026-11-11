@@ -36,14 +36,19 @@ const meta = {
   args: {
     status: 'unsubscribed',
     device: desktop,
-    t: copy('en'),
+    lang: 'en',
+    push: copy('en'),
     onSubscribe: () => {},
     onUnsubscribe: () => {},
     onConfirmOpenChange: () => {},
   },
   render: function Interactive(args, { parameters, viewMode }) {
     const [lang, setLang] = useState<Lang>(parameters.language ?? 'en');
-    const translated = { ...copy(lang, parameters.born ?? false), appName: args.t.appName, appIcon: args.t.appIcon };
+    const translated = {
+      ...copy(lang, parameters.born ?? false),
+      appName: args.push.appName,
+      appIcon: args.push.appIcon,
+    };
     const [status, setStatus] = useState(args.status);
     const [open, setOpen] = useState(viewMode === 'story' && (args.confirmOpen ?? false));
     const [confettiShot, setConfettiShot] = useState<{ origin: ConfettiOrigin } | null>(null);
@@ -59,7 +64,8 @@ const meta = {
         </Stack>
         <PushSubscribeView
           {...args}
-          t={translated}
+          lang={lang}
+          push={translated}
           status={status}
           confirmOpen={open}
           onSubscribe={(origin) => {
@@ -146,7 +152,7 @@ export const IPhoneEmojiApp: Story = {
   args: {
     status: 'ios-home-screen',
     device: { ...iphone, iosVersion: '27.0' },
-    t: publicPageView({ ...defaultSiteSettings, babyName: 'Emma', icon: '🐣' }, 'en').push,
+    push: publicPageView({ ...defaultSiteSettings, babyName: 'Emma', icon: '🐣' }, 'en').push,
   },
 };
 /** Keeps the app preview visible when an image cannot load. */
@@ -154,6 +160,6 @@ export const IPhoneMissingAppIcon: Story = {
   args: {
     status: 'ios-home-screen',
     device: { ...iphone, iosVersion: '27.0' },
-    t: { ...copy('en'), appIcon: '/missing-app-icon.png' },
+    push: { ...copy('en'), appIcon: '/missing-app-icon.png' },
   },
 };

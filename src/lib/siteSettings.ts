@@ -239,15 +239,14 @@ export function siteSettingsOf(site: SiteSettings): SiteSettings {
 }
 
 /**
- * The title of a Notification sent without one: the baby's name, which
- * Privacy settings hide only in the Waiting state. Undefined leaves the
- * service worker's generic title.
+ * The baby's name wherever the Platform shows it to Visitors (the Public
+ * page's title, a home screen, a Notification without a title), or null when
+ * there is none or the Privacy settings hide it. They hide it only while
+ * Waiting: the Born state announces it.
  */
-export function defaultNotificationTitle(
-  settings: Pick<SiteSettings, 'babyName' | 'birth' | 'privacy'>
-): string | undefined {
+export function shownBabyName(settings: Pick<SiteSettings, 'babyName' | 'birth' | 'privacy'>): string | null {
   const nameShown = settings.birth.born || settings.privacy.showName;
-  return nameShown && settings.babyName ? settings.babyName : undefined;
+  return nameShown && settings.babyName ? settings.babyName : null;
 }
 
 /** The value at `path` in the raw input, to tell a missing field from one of the wrong type. */

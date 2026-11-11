@@ -1,7 +1,7 @@
 import { type CSSProperties, useId } from 'react';
 import { PublicPage } from '@/components/PublicPage';
 import type { Lang } from '@/lib/i18n';
-import { publicPageViews } from '@/lib/publicPageView';
+import { type BornMedia, publicPageViews } from '@/lib/publicPageView';
 import type { SiteSettings } from '@/lib/siteSettings';
 import { themeStyle } from '@/lib/theme';
 import styles from './PublicPagePreview.module.css';
@@ -13,8 +13,8 @@ interface PublicPagePreviewProps {
   /** The Language the page opens in. */
   lang: Lang;
   caption: string;
-  bornImageUrl?: string;
-  birthVideoUrl?: string;
+  /** Where the Born state's photo and video are served; the page shows them only once Born. */
+  media?: BornMedia;
   /** Below 48rem the frame fills its parent's height, for a preview that takes the whole screen. */
   compact?: boolean;
 }
@@ -24,15 +24,7 @@ interface PublicPagePreviewProps {
  * own Theme, as a Visitor on a phone would see it. It scrolls inside its
  * frame, and only its Language switcher can be pressed.
  */
-export function PublicPagePreview({
-  settings,
-  slug,
-  lang,
-  caption,
-  bornImageUrl,
-  birthVideoUrl,
-  compact = false,
-}: PublicPagePreviewProps) {
+export function PublicPagePreview({ settings, slug, lang, caption, media, compact = false }: PublicPagePreviewProps) {
   const captionId = useId();
   return (
     <figure className={compact ? `${styles.figure} ${styles.compactFigure}` : styles.figure}>
@@ -44,12 +36,10 @@ export function PublicPagePreview({
         tabIndex={0}
       >
         <PublicPage
-          views={publicPageViews(settings)}
+          views={publicPageViews(settings, new Date(), media)}
           initialLang={lang}
           slug={slug}
           vapidPublicKey={undefined}
-          bornImageUrl={bornImageUrl}
-          birthVideoUrl={birthVideoUrl}
           preview
         />
       </section>

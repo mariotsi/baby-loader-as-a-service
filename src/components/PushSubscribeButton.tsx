@@ -8,9 +8,10 @@ import { ExternalLink } from '@/components/ui/ExternalLink';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { StatusPill } from '@/components/ui/StatusPill';
+import { type PublicPageCopy, publicPageCopy } from '@/lib/copy/publicPage';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import type { Lang } from '@/lib/i18n';
-import type { PushButtonCopy } from '@/lib/publicPageView';
+import type { PublicPageView } from '@/lib/publicPageView';
 import { decodeVapidKey } from '@/lib/vapid';
 import { Confetti, type ConfettiOrigin, confettiOrigin } from './Confetti';
 import styles from './PushSubscribeButton.module.css';
@@ -20,11 +21,15 @@ interface Props {
   /** The Public page's current language, stored with the Subscription. */
   lang: Lang;
   vapidPublicKey: string | undefined;
-  t: PushButtonCopy;
+  /** The words that depend on the Site, from its view; the rest come from the Public page's copy in `lang`. */
+  push: PublicPageView['push'];
   /** Where the "notifications on" pill goes, away from the call to action. */
   pillSlot?: HTMLElement | null;
   subscribedContent?: ReactNode;
 }
+
+/** The button's words in one language. */
+type PushCopy = PublicPageCopy & PublicPageView['push'];
 
 type Feedback = 'subscribeOk' | 'unsubscribeOk' | 'errorGeneric' | 'errorUnsubscribe';
 
@@ -60,7 +65,7 @@ function deviceContext(): DeviceContext {
   };
 }
 
-function statusNotice(status: Status, device: DeviceContext | null, t: PushButtonCopy): string {
+function statusNotice(status: Status, device: DeviceContext | null, t: PushCopy): string {
   if (status === 'checking') {
     return t.checking;
   }
@@ -85,7 +90,7 @@ function statusNotice(status: Status, device: DeviceContext | null, t: PushButto
   return t.errorUnsupported;
 }
 
-function statusHelpLink(status: Status, device: DeviceContext | null, t: PushButtonCopy): HelpLink | null {
+function statusHelpLink(status: Status, device: DeviceContext | null, t: PushCopy): HelpLink | null {
   if (status === 'ios-home-screen') {
     return { href: APPLE_HOME_SCREEN_GUIDE, label: t.iosHomeScreenLink };
   }
@@ -98,7 +103,7 @@ function statusHelpLink(status: Status, device: DeviceContext | null, t: PushBut
   return null;
 }
 
-function StatusNotice({ status, device, t }: { status: Status; device: DeviceContext | null; t: PushButtonCopy }) {
+function StatusNotice({ status, device, t }: { status: Status; device: DeviceContext | null; t: PushCopy }) {
   const link = statusHelpLink(status, device, t);
   return (
     <div className={styles.push}>
@@ -160,7 +165,7 @@ function Instruction({ text }: { text: string }) {
   );
 }
 
-function IPhoneInstructions({ device, t }: { device: DeviceContext | null; t: PushButtonCopy }) {
+function IPhoneInstructions({ device, t }: { device: DeviceContext | null; t: PushCopy }) {
   const major = Number(device?.iosVersion?.split('.')[0]);
   const known = (major >= 16 && major <= 18) || major === 26 || major === 27;
   let share = t.iosShare;
@@ -268,7 +273,7 @@ async function detectStatus(device: DeviceContext, slug: string): Promise<Status
   }
 }
 
-export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot, subscribedContent }: Props) {
+export function PushSubscribeButton({ slug, lang, vapidPublicKey, push, pillSlot, subscribedContent }: Props) {
   const [status, setStatus] = useState<Status>('checking');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -356,7 +361,8 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, t, pillSlot, s
       <PushSubscribeView
         status={status}
         device={device}
-        t={t}
+        lang={lang}
+        push={push}
         busy={busy}
         feedback={feedback}
         confirmOpen={confirmOpen}
@@ -376,7 +382,8 @@ export function PushSubscribeView({
   subscribedContent,
   status,
   device,
-  t,
+  lang,
+  push,
   busy = false,
   feedback = null,
   confirmOpen = false,
@@ -387,7 +394,8 @@ export function PushSubscribeView({
 }: {
   status: Status;
   device: DeviceContext | null;
-  t: PushButtonCopy;
+  lang: Lang;
+  push: PublicPageView['push'];
   busy?: boolean;
   feedback?: Feedback | null;
   confirmOpen?: boolean;
@@ -399,6 +407,7 @@ export function PushSubscribeView({
   onUnsubscribe: () => void;
   onConfirmOpenChange: (open: boolean) => void;
 }) {
+  const t: PushCopy = { ...publicPageCopy[lang], ...push };
   if (status === 'checking' || status === 'unsupported' || status === 'denied' || status === 'ios-home-screen') {
     return <StatusNotice status={status} device={device} t={t} />;
   }

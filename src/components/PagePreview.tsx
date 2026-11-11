@@ -14,7 +14,6 @@ export function PagePreview({ view, theme }: { view: PublicPageView; theme: { pa
     <div className={styles.preview} style={themeStyle(theme) as CSSProperties}>
       <p className={styles.tagline}>{view.tagline}</p>
       <p className={styles.title}>{view.title}</p>
-      {view.sex ? <p className={styles.sex}>{view.sex}</p> : null}
       {view.waiting ? (
         <div className={styles.countdown}>
           <Countdown waiting={view.waiting} size="sm" />
