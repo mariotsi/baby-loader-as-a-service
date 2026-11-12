@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { logActivity } from '@/lib/activityLog';
 import { clientIp } from '@/lib/auth';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
 import { lookupGeo } from '@/lib/geoip';
@@ -16,6 +17,7 @@ import {
 
 export async function POST(req: NextRequest) {
   if (!rateLimit(`subscribe:${clientIp(req)}`, 20, 60_000)) {
+    logActivity('subscription.add', { ok: false, reason: 'rateLimited' });
     return routeError(429, { code: 'rateLimited' });
   }
 
@@ -24,11 +26,13 @@ export async function POST(req: NextRequest) {
   const subscription = subscriptionSchema.safeParse(body?.subscription);
 
   if (!slug || !subscription.success) {
+    logActivity('subscription.add', { ok: false, reason: 'invalidRequest', slug });
     return routeError(400, { code: 'invalidRequest' });
   }
 
   const site = await getSiteBySlug(slug);
   if (!site) {
+    logActivity('subscription.add', { ok: false, reason: 'unknownSite', slug });
     return routeError(404, { code: 'unknownSite' });
   }
 
@@ -44,6 +48,7 @@ export async function POST(req: NextRequest) {
     deviceInfo,
     geo,
   });
+  logActivity('subscription.add', { ok: true, slug, lang });
 
   return NextResponse.json({ ok: true });
 }
@@ -63,6 +68,7 @@ export async function DELETE(req: NextRequest) {
   }
 
   await deleteSubscription(site.id, endpoint);
+  logActivity('subscription.remove', { ok: true, slug });
   return NextResponse.json({ ok: true });
 }
 

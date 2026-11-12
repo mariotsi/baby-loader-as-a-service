@@ -12,7 +12,13 @@
   "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
   "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
   "services": [{ "binding": "WORKER_SELF_REFERENCE", "service": "loading-baby" }],
-  "observability": { "enabled": true },
+  // Workers Logs keeps every request and every Activity log line (README,
+  // "Activity log"): no sampling, since a Site's one Birth must not be the
+  // request left out.
+  "observability": {
+    "enabled": true,
+    "logs": { "enabled": true, "invocation_logs": true, "head_sampling_rate": 1 }
+  },
   "vars": { "APP_ENV": "production", "ROOT_DOMAIN": "loading.baby" },
   "r2_buckets": [{ "binding": "WEBSITE_ASSETS", "bucket_name": "loading-baby-media" }],
   "d1_databases": [

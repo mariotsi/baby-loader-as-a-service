@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { deliveryActivity, logActivity } from '@/lib/activityLog';
 import { finishNotification } from '@/lib/notificationDelivery';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
 import { routeError } from '@/lib/routeError';
@@ -12,10 +13,17 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ slu
   if ('error' in access) {
     return access.error;
   }
+  const who = { slug, userId: access.owned.owner.id };
   const push = webPushService();
   if (!push) {
+    logActivity('notification.finish', { ...who, ok: false, reason: 'pushNotConfigured' });
     return routeError(500, { code: 'pushNotConfigured' });
   }
   const result = await surviveDisconnect(finishNotification(access.owned, id, push));
-  return result ? NextResponse.json(result) : routeError(404, { code: 'notFound' });
+  if (!result) {
+    logActivity('notification.finish', { ...who, ok: false, reason: 'notFound' });
+    return routeError(404, { code: 'notFound' });
+  }
+  logActivity('notification.finish', deliveryActivity(access.owned, result));
+  return NextResponse.json(result);
 }

@@ -1,4 +1,5 @@
 import type { NextRequest } from 'next/server';
+import { logActivity, siteWriteActivity } from '@/lib/activityLog';
 import { clearBirth, setBirth } from '@/lib/birthChange';
 import { birthWriteDeps, birthWriteResponse } from '@/lib/birthChangeNext';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
@@ -16,7 +17,9 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
     return access.error;
   }
   const body = await req.json().catch(() => null);
-  return birthWriteResponse(await surviveDisconnect(setBirth(access.owned, body, birthWriteDeps())));
+  const result = await surviveDisconnect(setBirth(access.owned, body, birthWriteDeps()));
+  logActivity('site.setBirth', siteWriteActivity(access.owned, result));
+  return birthWriteResponse(result);
 }
 
 /** Goes back to the Countdown, from `{ updatedAt }`. */
@@ -27,5 +30,7 @@ export async function DELETE(req: NextRequest, { params }: { params: Promise<{ s
     return access.error;
   }
   const body = await req.json().catch(() => null);
-  return birthWriteResponse(await clearBirth(access.owned, body, birthWriteDeps()));
+  const result = await clearBirth(access.owned, body, birthWriteDeps());
+  logActivity('site.clearBirth', siteWriteActivity(access.owned, result));
+  return birthWriteResponse(result);
 }
