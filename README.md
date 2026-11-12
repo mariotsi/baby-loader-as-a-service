@@ -257,6 +257,36 @@ in Cloudflare D1 and media in Cloudflare R2 (ADR-0009). Production, staging,
 and Previews run on Cloudflare Workers. Custom domains per Site are meant
 for Cloudflare for SaaS custom hostnames ([#16](https://github.com/mariotsi/baby-loader-as-a-service/issues/16)).
 
+### Activity log
+
+What people do on the Platform is in Workers Logs, under each Worker's
+**Observability** tab in the Cloudflare dashboard. Two kinds of line land
+there, both for every request (`head_sampling_rate` is 1):
+- **Invocation logs**, written by Cloudflare: the method, URL, status and
+  duration of each request, and any exception it threw. A visit to a Public
+  page is one of these.
+- **Activity log lines**, written by `logActivity` (`src/lib/activityLog.ts`):
+  one for each action that changes something, with `event`, `ok`, and where
+  they apply `slug`, `userId` and `reason`. A refused action is a warning.
+
+| `event`                                                 | Written when                                  | Besides `ok`, `slug`, `userId`                                                                                                                                                                                 |
+| ------------------------------------------------------- | --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `user.signup`, `user.login`, `user.passwordChange`      | someone signs up, logs in or sets a password  | `reason` when refused                                                                                                                                                                                          |
+| `site.create`                                           | an Owner creates a Site                       | `errors` when invalid                                                                                                                                                                                          |
+| `site.saveSettings`, `site.setBirth`, `site.clearBirth` | an Owner saves a Site                         | `changed` (the settings that differ, by name), `changes` (each one's value `from` and `to`; for Milestones the ones `added` and `removed`), `announced`, `notification` (`sent`, `failed`, `none`), `delivery` |
+| `notification.send`, `notification.finish`              | an Owner sends a Notification or finishes one | `delivery`: `sent`, `removed`, `total`                                                                                                                                                                         |
+| `subscription.add`, `subscription.remove`               | a Visitor subscribes or unsubscribes          | `lang`                                                                                                                                                                                                         |
+| `media.upload`, `media.remove`                          | an Owner uploads or deletes a photo or video  | `key`, `type`, `bytes`                                                                                                                                                                                         |
+
+To follow one Site, filter on `slug`; to find what went wrong, on `ok` being
+false. A write to a Site's settings carries the values it changed, the baby's
+name and the Birth among them. No line carries an email, a password, a push
+endpoint, or the text of a Notification.
+
+Workers Logs keeps a line for 3 days on the Workers Free plan and 7 on Workers
+Paid, and neither can be extended. What must outlive that is in the database:
+the Notification log (ADR-0010) keeps every Notification and each delivery.
+
 ## Environments
 
 Two Workers keep production apart from everything else: `loading-baby`

@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { logActivity, siteWriteActivity } from '@/lib/activityLog';
 import { saveSettings } from '@/lib/birthChange';
 import { birthWriteDeps, birthWriteResponse } from '@/lib/birthChangeNext';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
@@ -21,5 +22,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ slug
     return access.error;
   }
   const body = await req.json().catch(() => null);
-  return birthWriteResponse(await saveSettings(access.owned, body, birthWriteDeps()));
+  const result = await saveSettings(access.owned, body, birthWriteDeps());
+  logActivity('site.saveSettings', siteWriteActivity(access.owned, result));
+  return birthWriteResponse(result);
 }

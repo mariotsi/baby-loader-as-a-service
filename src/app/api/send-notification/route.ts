@@ -1,4 +1,5 @@
 import { type NextRequest, NextResponse } from 'next/server';
+import { deliveryActivity, errorList, logActivity } from '@/lib/activityLog';
 import { deliverNotification, parseNotification } from '@/lib/notificationDelivery';
 import { requireOwnedSite } from '@/lib/ownerAccessNext';
 import { routeError } from '@/lib/routeError';
@@ -25,13 +26,18 @@ export async function POST(req: NextRequest) {
     return access.error;
   }
 
+  const who = { slug, userId: access.owned.owner.id };
   const push = webPushService();
   if (!push) {
+    logActivity('notification.send', { ...who, ok: false, reason: 'pushNotConfigured' });
     return routeError(500, { code: 'pushNotConfigured' });
   }
   const parsed = parseNotification(body?.messages, access.owned.site.languages);
   if (!parsed.ok) {
+    logActivity('notification.send', { ...who, ok: false, reason: 'invalid', errors: errorList(parsed.errors) });
     return NextResponse.json({ errors: parsed.errors }, { status: 400 });
   }
-  return NextResponse.json(await surviveDisconnect(deliverNotification(access.owned, parsed.value, push)));
+  const delivery = await surviveDisconnect(deliverNotification(access.owned, parsed.value, push));
+  logActivity('notification.send', deliveryActivity(access.owned, delivery));
+  return NextResponse.json(delivery);
 }
