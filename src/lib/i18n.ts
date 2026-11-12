@@ -1,6 +1,6 @@
 /**
  * Language negotiation, shared by the layout and the page. Pure and free of any
- * Next import so it can be unit tested with the plain node runner.
+ * Next import, so its unit tests run in Node with nothing mocked.
  */
 
 export type Lang = 'it' | 'en';

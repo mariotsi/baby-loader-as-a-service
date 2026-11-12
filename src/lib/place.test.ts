@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { expect, test } from 'vitest';
 import { addressLine, type PhotonFeature, placeFromPhoton } from './place.ts';
 
 test('a Place takes the address line and the point of the same result, GeoJSON order turned round', () => {
@@ -14,7 +13,7 @@ test('a Place takes the address line and the point of the same result, GeoJSON o
       country: 'Italia',
     },
   };
-  assert.deepEqual(placeFromPhoton(feature), {
+  expect(placeFromPhoton(feature)).toStrictEqual({
     address: 'Via Roma 12, 20121 Milano, Italia',
     lat: 45.5106,
     lon: 9.1926,
@@ -22,7 +21,7 @@ test('a Place takes the address line and the point of the same result, GeoJSON o
 });
 
 test("a POI's name leads its street address", () => {
-  assert.equal(
+  expect(
     addressLine({
       type: 'house',
       name: 'Ospedale Niguarda',
@@ -31,32 +30,29 @@ test("a POI's name leads its street address", () => {
       postcode: '20162',
       city: 'Milano',
       country: 'Italia',
-    }),
-    "Ospedale Niguarda, Piazza dell'Ospedale Maggiore 3, 20162 Milano, Italia"
-  );
+    })
+  ).toBe("Ospedale Niguarda, Piazza dell'Ospedale Maggiore 3, 20162 Milano, Italia");
 });
 
 test("a street's own result leads with its name", () => {
-  assert.equal(
-    addressLine({ type: 'street', name: 'Via Roma', postcode: '20121', city: 'Milano', country: 'Italia' }),
+  expect(addressLine({ type: 'street', name: 'Via Roma', postcode: '20121', city: 'Milano', country: 'Italia' })).toBe(
     'Via Roma, 20121 Milano, Italia'
   );
 });
 
 test("a town's name stands in for the city, and a country's is said once", () => {
-  assert.equal(addressLine({ type: 'city', name: 'Roma', postcode: '00118', country: 'Italia' }), '00118 Roma, Italia');
-  assert.equal(addressLine({ type: 'country', name: 'Italia', country: 'Italia' }), 'Italia');
+  expect(addressLine({ type: 'city', name: 'Roma', postcode: '00118', country: 'Italia' })).toBe('00118 Roma, Italia');
+  expect(addressLine({ type: 'country', name: 'Italia', country: 'Italia' })).toBe('Italia');
 });
 
 test('a name that repeats the street or the city is dropped, whatever its case', () => {
-  assert.equal(
-    addressLine({ type: 'house', name: 'via roma', street: 'Via Roma', housenumber: '1', city: 'Milano' }),
+  expect(addressLine({ type: 'house', name: 'via roma', street: 'Via Roma', housenumber: '1', city: 'Milano' })).toBe(
     'Via Roma 1, Milano'
   );
-  assert.equal(addressLine({ type: 'district', name: 'Milano', city: 'Milano', country: 'Italia' }), 'Milano, Italia');
+  expect(addressLine({ type: 'district', name: 'Milano', city: 'Milano', country: 'Italia' })).toBe('Milano, Italia');
 });
 
 test('parts Photon leaves out, or sends empty, leave no gap', () => {
-  assert.equal(addressLine({ type: 'house', street: 'Via Roma', city: 'Milano' }), 'Via Roma, Milano');
-  assert.equal(addressLine({ type: 'house', name: '', housenumber: '7', postcode: '20121' }), '7, 20121');
+  expect(addressLine({ type: 'house', street: 'Via Roma', city: 'Milano' })).toBe('Via Roma, Milano');
+  expect(addressLine({ type: 'house', name: '', housenumber: '7', postcode: '20121' })).toBe('7, 20121');
 });

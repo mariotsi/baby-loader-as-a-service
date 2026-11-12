@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { expect, test } from 'vitest';
 import { settingsInState } from './previewSettings.ts';
 import {
   calendarDaySchema,
@@ -34,21 +33,21 @@ const BORN: SiteSettings['birth'] = {
 test('a Site already in the state stays as it is', () => {
   const waiting = site();
   const born = site({ birth: BORN });
-  assert.equal(settingsInState(waiting, 'waiting', NOW), waiting);
-  assert.equal(settingsInState(born, 'born', NOW), born);
+  expect(settingsInState(waiting, 'waiting', NOW)).toBe(waiting);
+  expect(settingsInState(born, 'born', NOW)).toBe(born);
 });
 
 test('a Waiting Site previews Born with today, no numbers, and the Birth milestone', () => {
   const previewed = settingsInState(site({ sex: 'female', privacy: { showName: false, showSex: false } }), 'born', NOW);
-  assert.deepEqual(previewed.birth, {
+  expect(previewed.birth).toStrictEqual({
     born: true,
     details: { datetime: NOW.toISOString(), weightGrams: null, lengthCm: null, message: {} },
   });
-  assert.deepEqual(previewed.milestones, [
+  expect(previewed.milestones).toStrictEqual([
     { emoji: '👶', label: { en: 'She is born!' }, date: '2026-10-20', kind: 'birth' },
   ]);
   // The Born state shows the name and the Sex whatever the Privacy settings say, and announcing leaves them be.
-  assert.deepEqual(previewed.privacy, { showName: false, showSex: false });
+  expect(previewed.privacy).toStrictEqual({ showName: false, showSex: false });
 });
 
 test('a Born Site previews Waiting without its Birth details or Birth milestone', () => {
@@ -63,9 +62,6 @@ test('a Born Site previews Waiting without its Birth details or Birth milestone'
     'waiting',
     NOW
   );
-  assert.deepEqual(previewed.birth, { born: false, details: null });
-  assert.deepEqual(
-    previewed.milestones.map((milestone) => milestone.label.en),
-    ['Coming home']
-  );
+  expect(previewed.birth).toStrictEqual({ born: false, details: null });
+  expect(previewed.milestones.map((milestone) => milestone.label.en)).toStrictEqual(['Coming home']);
 });

@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { expect, test } from 'vitest';
 import { birthMediaUrl, isMediaUrl } from './birthMedia.ts';
 import { mediaKeySchema } from './siteMedia.ts';
 
@@ -9,16 +8,14 @@ const OTHER_KEY = 'customer-data/owner/site/1c0a4d2f-3b5e-4d6f-9071-829304a5b6c7
 test('Preview and development media use a version-specific path on the page origin', () => {
   const media = { key: mediaKeySchema.parse(KEY), url: 'https://media.example.com/video' };
   for (const env of ['preview', 'development'] as const) {
-    assert.equal(
-      birthMediaUrl('leo', 'video', media, env),
+    expect(birthMediaUrl('leo', 'video', media, env)).toBe(
       `/api/sites/leo/birth-media/video?key=${encodeURIComponent(KEY)}`
     );
   }
   for (const env of ['production', 'staging'] as const) {
-    assert.equal(birthMediaUrl('leo', 'video', media, env), media.url);
+    expect(birthMediaUrl('leo', 'video', media, env)).toBe(media.url);
   }
-  assert.notEqual(
-    birthMediaUrl('leo', 'video', media, 'preview'),
+  expect(birthMediaUrl('leo', 'video', media, 'preview')).not.toBe(
     birthMediaUrl('leo', 'video', { ...media, key: mediaKeySchema.parse(OTHER_KEY) }, 'preview')
   );
 });
@@ -29,9 +26,9 @@ test('a MediaUrl is an https URL, a path on the page origin or a blob: URL', () 
     '/website-assets/born-placeholder-v1.png',
     'blob:https://x.test/1',
   ]) {
-    assert.equal(isMediaUrl(url), true, url);
+    expect(isMediaUrl(url), url).toBe(true);
   }
   for (const url of ['http://media.example.com/photo', '//evil.test/photo', 'javascript:alert(1)', 'photo.png', '']) {
-    assert.equal(isMediaUrl(url), false, url);
+    expect(isMediaUrl(url), url).toBe(false);
   }
 });

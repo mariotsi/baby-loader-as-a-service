@@ -1,10 +1,9 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { expect, test } from 'vitest';
 import { emailSchema, isEmail } from './email.ts';
 
 test('an email address is stored trimmed and lowercased', () => {
-  assert.equal(emailSchema.parse('  Ada@Example.COM '), 'ada@example.com');
-  assert.equal(isEmail('ada@example.com'), true);
+  expect(emailSchema.parse('  Ada@Example.COM ')).toBe('ada@example.com');
+  expect(isEmail('ada@example.com')).toBe(true);
 });
 
 test('anything not shaped like name@host.tld is no email address', () => {
@@ -18,6 +17,6 @@ test('anything not shaped like name@host.tld is no email address', () => {
     'a da@example.com',
     'ada@@example.com',
   ]) {
-    assert.equal(isEmail(value), false, String(value));
+    expect(isEmail(value), String(value)).toBe(false);
   }
 });

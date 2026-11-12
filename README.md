@@ -152,6 +152,31 @@ npm run build-storybook    # a static Storybook in storybook-static/
 `npm test` also checks every Palette against WCAG AA on each color pairing
 the components render, and CI runs both checks on every pull request.
 
+## Tests
+
+[Vitest](https://vitest.dev) runs every test below the browser, in three
+projects (`vitest.config.ts`,
+[ADR 0011](docs/adr/0011-one-test-runner-vitest.md)):
+
+| Project      | Files                                       | Runs in                              |
+| ------------ | ------------------------------------------- | ------------------------------------ |
+| `unit`       | `src/**/*.test.ts`, `scripts/**/*.test.mjs` | Node, some on an in-memory D1        |
+| `components` | `src/**/*.test.tsx`                         | jsdom, with React Testing Library    |
+| `storybook`  | every story                                 | Chromium, with axe run on each story |
+
+```bash
+npm test                   # unit and components
+npx vitest                 # the same, rerun on every change
+npm run test:storybook     # storybook, which needs Playwright's Chromium
+```
+
+A test sits beside what it tests and imports `test` and `expect` from
+`vitest`. One that crosses the persistence seam starts its own in-memory D1
+with `startTestDb` (`src/db/testDb.ts`) in `beforeAll` and stops it in
+`afterAll`. One for a component or a hook is a `.test.tsx` that uses `render`
+or `renderHook` from `@testing-library/react`, like
+`src/components/dashboard/useLeaveGuard.test.tsx`.
+
 ## Brand
 
 The Platform is **Loading Baby**, at `loading.baby`, with the tagline "For
@@ -347,7 +372,7 @@ as a deployment of that environment, with its address.
 ### From pull request to production
 
 1. A pull request targets `staging`. `.github/workflows/ci.yml` runs type
-   checking, Biome's lint and format check, unit tests and the Worker build
+   checking, Biome's lint and format check, the unit and component tests and the Worker build
    (job `ci`), and `deploy-preview.yml` deploys the branch's Preview and runs the E2E
    suite on it (job `e2e`). Both are required before it merges.
 2. Merging deploys `staging`: `deploy-staging.yml` applies the new D1 migrations to

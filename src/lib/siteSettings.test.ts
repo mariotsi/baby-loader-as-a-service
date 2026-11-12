@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { assert, expect, test } from 'vitest';
 import {
   defaultSiteSettings,
   isoDateTimeSchema,
@@ -25,137 +24,133 @@ function born(details: Partial<Extract<SiteSettingsInput['birth'], { born: true 
 
 function errorsOf(input: unknown) {
   const result = parseSiteSettings(input, NOW);
-  assert.equal(result.ok, false, 'expected the parse to fail');
+  expect(result.ok, 'expected the parse to fail').toBe(false);
   return result.ok ? [] : result.errors;
 }
 
 test('the default Site settings are valid', () => {
-  assert.equal(parseSiteSettings(defaultSiteSettings, NOW).ok, true);
+  expect(parseSiteSettings(defaultSiteSettings, NOW).ok).toBe(true);
 });
 
 test('a Born Site with name, Sex and Birth details is valid', () => {
   const result = parseSiteSettings(settings({ babyName: 'Emma', sex: 'female', birth: born() }), NOW);
-  assert.equal(result.ok, true);
+  expect(result.ok).toBe(true);
 });
 
 test('the name is trimmed and capped at 60 characters', () => {
   const result = parseSiteSettings(settings({ babyName: '  Emma  ' }), NOW);
-  assert.ok(result.ok);
-  assert.equal(result.value.babyName, 'Emma');
-  assert.deepEqual(errorsOf(settings({ babyName: 'x'.repeat(61) })), [
+  assert(result.ok);
+  expect(result.value.babyName).toBe('Emma');
+  expect(errorsOf(settings({ babyName: 'x'.repeat(61) }))).toStrictEqual([
     { path: 'babyName', code: 'tooLong', params: { max: 60 } },
   ]);
 });
 
 test('a missing field is required, a wrongly typed one is invalidType', () => {
   const { milestones, ...withoutMilestones } = settings();
-  assert.deepEqual(milestones, []);
-  assert.deepEqual(errorsOf(withoutMilestones), [{ path: 'milestones', code: 'required' }]);
-  assert.deepEqual(errorsOf(settings({ privacy: { showName: 'false' as unknown as boolean, showSex: true } })), [
+  expect(milestones).toStrictEqual([]);
+  expect(errorsOf(withoutMilestones)).toStrictEqual([{ path: 'milestones', code: 'required' }]);
+  expect(errorsOf(settings({ privacy: { showName: 'false' as unknown as boolean, showSex: true } }))).toStrictEqual([
     { path: 'privacy.showName', code: 'invalidType' },
   ]);
 });
 
 test('a field the schema does not know is rejected', () => {
-  assert.deepEqual(errorsOf({ ...settings(), extra: 1 }), [{ path: 'extra', code: 'unknownField' }]);
+  expect(errorsOf({ ...settings(), extra: 1 })).toStrictEqual([{ path: 'extra', code: 'unknownField' }]);
 });
 
 test('Palette, Font, Languages and Sex accept only known options', () => {
-  assert.deepEqual(errorsOf(settings({ theme: { palette: 'nope', font: 'comic-sans' } })), [
+  expect(errorsOf(settings({ theme: { palette: 'nope', font: 'comic-sans' } }))).toStrictEqual([
     { path: 'theme.palette', code: 'invalidOption' },
     { path: 'theme.font', code: 'invalidOption' },
   ]);
-  assert.deepEqual(errorsOf(settings({ languages: ['en', 'fr' as 'en'] })), [
+  expect(errorsOf(settings({ languages: ['en', 'fr' as 'en'] }))).toStrictEqual([
     { path: 'languages.1', code: 'invalidOption' },
   ]);
-  assert.deepEqual(errorsOf(settings({ sex: 'other' as 'male' })), [{ path: 'sex', code: 'invalidOption' }]);
+  expect(errorsOf(settings({ sex: 'other' as 'male' }))).toStrictEqual([{ path: 'sex', code: 'invalidOption' }]);
 });
 
 test('a Site speaks at least one Language, each once', () => {
-  assert.deepEqual(errorsOf(settings({ languages: [] })), [{ path: 'languages', code: 'required' }]);
-  assert.deepEqual(errorsOf(settings({ languages: ['it', 'en', 'it'] })), [
+  expect(errorsOf(settings({ languages: [] }))).toStrictEqual([{ path: 'languages', code: 'required' }]);
+  expect(errorsOf(settings({ languages: ['it', 'en', 'it'] }))).toStrictEqual([
     { path: 'languages', code: 'invalidOption' },
   ]);
   const result = parseSiteSettings(settings({ languages: ['en', 'it'] }), NOW);
-  assert.deepEqual(result.ok && result.value.languages, ['en', 'it']);
+  expect(result.ok && result.value.languages).toStrictEqual(['en', 'it']);
 });
 
 test('a Birth message exists only for a supported language', () => {
   const named = { babyName: 'Emma', sex: 'female' as const };
-  assert.deepEqual(
-    errorsOf(settings({ ...named, birth: born({ message: { fr: 'salut' } as unknown as { it: string } }) })),
-    [{ path: 'birth.details.message.fr', code: 'unknownField' }]
-  );
+  expect(
+    errorsOf(settings({ ...named, birth: born({ message: { fr: 'salut' } as unknown as { it: string } }) }))
+  ).toStrictEqual([{ path: 'birth.details.message.fr', code: 'unknownField' }]);
 });
 
 test('the Due date is a real calendar day within 10 months of today', () => {
-  assert.equal(parseSiteSettings(settings({ dueDate: '2027-08-20' }), NOW).ok, true);
-  assert.deepEqual(errorsOf(settings({ dueDate: '2027-02-30' })), [{ path: 'dueDate', code: 'invalidDate' }]);
-  assert.deepEqual(errorsOf(settings({ dueDate: '2027-08-21' })), [
+  expect(parseSiteSettings(settings({ dueDate: '2027-08-20' }), NOW).ok).toBe(true);
+  expect(errorsOf(settings({ dueDate: '2027-02-30' }))).toStrictEqual([{ path: 'dueDate', code: 'invalidDate' }]);
+  expect(errorsOf(settings({ dueDate: '2027-08-21' }))).toStrictEqual([
     { path: 'dueDate', code: 'outOfRange', params: { min: '2025-12-20', max: '2027-08-20' } },
   ]);
-  assert.deepEqual(errorsOf(settings({ dueDate: '2025-12-19' }))[0].code, 'outOfRange');
+  expect(errorsOf(settings({ dueDate: '2025-12-19' }))[0].code).toStrictEqual('outOfRange');
 });
 
 test('the Born state requires a name and a known Sex, even when Privacy settings hide them', () => {
   const errors = errorsOf(settings({ privacy: { showName: false, showSex: false }, birth: born() }));
-  assert.deepEqual(errors, [
+  expect(errors).toStrictEqual([
     { path: 'babyName', code: 'required' },
     { path: 'sex', code: 'required' },
   ]);
 });
 
 test('the Birth dialog previews a Born Site with no name or Sex, and nothing else that is invalid', () => {
-  assert.equal(parseBirthPreview(settings({ birth: born() }), NOW)?.babyName, '');
-  assert.equal(parseBirthPreview(settings({ birth: born({ datetime: '2026-10-20T12:00:01.000Z' }) }), NOW), null);
-  assert.equal(parseBirthPreview(settings({ birth: born({ datetime: '' }) }), NOW), null);
+  expect(parseBirthPreview(settings({ birth: born() }), NOW)?.babyName).toBe('');
+  expect(parseBirthPreview(settings({ birth: born({ datetime: '2026-10-20T12:00:01.000Z' }) }), NOW)).toBe(null);
+  expect(parseBirthPreview(settings({ birth: born({ datetime: '' }) }), NOW)).toBe(null);
 });
 
 test('Birth details exist only in the Born state', () => {
-  assert.deepEqual(errorsOf(settings({ birth: { born: false, details: born().details } as never })), [
+  expect(errorsOf(settings({ birth: { born: false, details: born().details } as never }))).toStrictEqual([
     { path: 'birth.details', code: 'invalidType' },
   ]);
-  assert.deepEqual(
-    errorsOf(settings({ babyName: 'Emma', sex: 'male', birth: { born: true, details: null } as never })),
-    [{ path: 'birth.details', code: 'required' }]
-  );
+  expect(
+    errorsOf(settings({ babyName: 'Emma', sex: 'male', birth: { born: true, details: null } as never }))
+  ).toStrictEqual([{ path: 'birth.details', code: 'required' }]);
 });
 
 test('the birth date and time is a real instant, never after now', () => {
   const named = { babyName: 'Emma', sex: 'female' as const };
-  assert.deepEqual(errorsOf(settings({ ...named, birth: born({ datetime: 'yesterday' }) })), [
+  expect(errorsOf(settings({ ...named, birth: born({ datetime: 'yesterday' }) }))).toStrictEqual([
     { path: 'birth.details.datetime', code: 'invalidDate' },
   ]);
-  assert.deepEqual(errorsOf(settings({ ...named, birth: born({ datetime: '' }) })), [
+  expect(errorsOf(settings({ ...named, birth: born({ datetime: '' }) }))).toStrictEqual([
     { path: 'birth.details.datetime', code: 'required' },
   ]);
-  assert.deepEqual(errorsOf(settings({ ...named, birth: born({ datetime: '2026-10-20T12:00:01.000Z' }) })), [
+  expect(errorsOf(settings({ ...named, birth: born({ datetime: '2026-10-20T12:00:01.000Z' }) }))).toStrictEqual([
     { path: 'birth.details.datetime', code: 'inFuture' },
   ]);
-  assert.equal(parseSiteSettings(settings({ ...named, birth: born({ datetime: NOW.toISOString() }) }), NOW).ok, true);
+  expect(parseSiteSettings(settings({ ...named, birth: born({ datetime: NOW.toISOString() }) }), NOW).ok).toBe(true);
 });
 
 test('weight and length stay within their ranges, weight in whole grams', () => {
   const named = { babyName: 'Emma', sex: 'female' as const };
-  assert.deepEqual(errorsOf(settings({ ...named, birth: born({ weightGrams: 8001, lengthCm: 19 }) })), [
+  expect(errorsOf(settings({ ...named, birth: born({ weightGrams: 8001, lengthCm: 19 }) }))).toStrictEqual([
     { path: 'birth.details.weightGrams', code: 'outOfRange', params: { max: 8000 } },
     { path: 'birth.details.lengthCm', code: 'outOfRange', params: { min: 20 } },
   ]);
-  assert.deepEqual(
-    errorsOf(settings({ ...named, birth: born({ weightGrams: 3400.5 }) }))[0].path,
+  expect(errorsOf(settings({ ...named, birth: born({ weightGrams: 3400.5 }) }))[0].path).toStrictEqual(
     'birth.details.weightGrams'
   );
-  assert.equal(
-    parseSiteSettings(settings({ ...named, birth: born({ weightGrams: null, lengthCm: null }) }), NOW).ok,
+  expect(parseSiteSettings(settings({ ...named, birth: born({ weightGrams: null, lengthCm: null }) }), NOW).ok).toBe(
     true
   );
 });
 
 test('the Birth message is capped per language', () => {
   const named = { babyName: 'Emma', sex: 'female' as const };
-  assert.deepEqual(errorsOf(settings({ ...named, birth: born({ message: { it: 'ciao', en: 'x'.repeat(1001) } }) })), [
-    { path: 'birth.details.message.en', code: 'tooLong', params: { max: 1000 } },
-  ]);
+  expect(
+    errorsOf(settings({ ...named, birth: born({ message: { it: 'ciao', en: 'x'.repeat(1001) } }) }))
+  ).toStrictEqual([{ path: 'birth.details.message.en', code: 'tooLong', params: { max: 1000 } }]);
 });
 
 test('the Page name is trimmed, capped at 60 characters per language and kept for any supported one', () => {
@@ -163,26 +158,26 @@ test('the Page name is trimmed, capped at 60 characters per language and kept fo
     settings({ languages: ['en'], pageName: { en: '  Stefania & Simone ', it: 'S e S' } }),
     NOW
   );
-  assert.ok(result.ok);
-  assert.deepEqual(result.value.pageName, { en: 'Stefania & Simone', it: 'S e S' });
-  assert.deepEqual(errorsOf(settings({ pageName: { en: 'x'.repeat(61) } })), [
+  assert(result.ok);
+  expect(result.value.pageName).toStrictEqual({ en: 'Stefania & Simone', it: 'S e S' });
+  expect(errorsOf(settings({ pageName: { en: 'x'.repeat(61) } }))).toStrictEqual([
     { path: 'pageName.en', code: 'tooLong', params: { max: 60 } },
   ]);
-  assert.deepEqual(errorsOf(settings({ pageName: { fr: 'Stéphanie' } as unknown as { en: string } })), [
+  expect(errorsOf(settings({ pageName: { fr: 'Stéphanie' } as unknown as { en: string } }))).toStrictEqual([
     { path: 'pageName.fr', code: 'unknownField' },
   ]);
 });
 
 test('Milestones need an emoji, a label and a real date, at most 50 of them', () => {
-  assert.deepEqual(errorsOf(settings({ milestones: [{ emoji: '✨', label: { en: '  ' }, date: '2026-13-01' }] })), [
+  expect(errorsOf(settings({ milestones: [{ emoji: '✨', label: { en: '  ' }, date: '2026-13-01' }] }))).toStrictEqual([
     { path: 'milestones.0.date', code: 'invalidDate' },
     { path: 'milestones.0.label.en', code: 'required' },
   ]);
-  assert.deepEqual(errorsOf(settings({ milestones: [{ emoji: '✨', label: { en: 'Scan' }, date: '' }] })), [
+  expect(errorsOf(settings({ milestones: [{ emoji: '✨', label: { en: 'Scan' }, date: '' }] }))).toStrictEqual([
     { path: 'milestones.0.date', code: 'required' },
   ]);
   const many = Array.from({ length: 51 }, () => ({ emoji: '✨', label: { en: 'Scan' }, date: '2026-05-01' }));
-  assert.deepEqual(errorsOf(settings({ milestones: many })), [
+  expect(errorsOf(settings({ milestones: many }))).toStrictEqual([
     { path: 'milestones', code: 'tooLong', params: { max: 50 } },
   ]);
 });
@@ -190,40 +185,39 @@ test('Milestones need an emoji, a label and a real date, at most 50 of them', ()
 test("a Milestone's emoji is exactly one emoji, joined sequences and skin tones included", () => {
   const withEmoji = (emoji: string) => settings({ milestones: [{ emoji, label: { en: 'Scan' }, date: '2026-05-01' }] });
   for (const emoji of ['🍼', '👶🏽', '👨‍👩‍👧', '🇮🇹', '❤️']) {
-    assert.equal(parseSiteSettings(withEmoji(emoji), NOW).ok, true, emoji);
+    expect(parseSiteSettings(withEmoji(emoji), NOW).ok, emoji).toBe(true);
   }
-  assert.deepEqual(errorsOf(withEmoji('')), [{ path: 'milestones.0.emoji', code: 'required' }]);
+  expect(errorsOf(withEmoji(''))).toStrictEqual([{ path: 'milestones.0.emoji', code: 'required' }]);
   for (const emoji of ['a', '🍼🍼', ' 🍼']) {
-    assert.deepEqual(errorsOf(withEmoji(emoji)), [{ path: 'milestones.0.emoji', code: 'invalidFormat' }], emoji);
+    expect(errorsOf(withEmoji(emoji)), emoji).toStrictEqual([{ path: 'milestones.0.emoji', code: 'invalidFormat' }]);
   }
 });
 
 test('the Site icon is the loading baby, or exactly one emoji', () => {
-  assert.equal(parseSiteSettings(settings({ icon: null }), NOW).ok, true);
-  assert.equal(parseSiteSettings(settings({ icon: '🐣' }), NOW).ok, true);
-  assert.deepEqual(errorsOf(settings({ icon: '' })), [{ path: 'icon', code: 'required' }]);
-  assert.deepEqual(errorsOf(settings({ icon: '🐣🐣' })), [{ path: 'icon', code: 'invalidFormat' }]);
+  expect(parseSiteSettings(settings({ icon: null }), NOW).ok).toBe(true);
+  expect(parseSiteSettings(settings({ icon: '🐣' }), NOW).ok).toBe(true);
+  expect(errorsOf(settings({ icon: '' }))).toStrictEqual([{ path: 'icon', code: 'required' }]);
+  expect(errorsOf(settings({ icon: '🐣🐣' }))).toStrictEqual([{ path: 'icon', code: 'invalidFormat' }]);
   const { icon: _, ...withoutIcon } = settings();
-  assert.deepEqual(errorsOf(withoutIcon), [{ path: 'icon', code: 'required' }]);
+  expect(errorsOf(withoutIcon)).toStrictEqual([{ path: 'icon', code: 'required' }]);
 });
 
 test("a Milestone's label is needed in every Language of the Site, and kept in one it no longer speaks", () => {
   const scan = (label: Record<string, string>) => ({ emoji: '✨', label, date: '2026-05-01' });
-  assert.deepEqual(
-    errorsOf(settings({ languages: ['it', 'en'], milestones: [scan({ en: 'Scan' }), scan({ it: '' })] })),
-    [
-      { path: 'milestones.0.label.it', code: 'required' },
-      { path: 'milestones.1.label.it', code: 'required' },
-      { path: 'milestones.1.label.en', code: 'required' },
-    ]
-  );
+  expect(
+    errorsOf(settings({ languages: ['it', 'en'], milestones: [scan({ en: 'Scan' }), scan({ it: '' })] }))
+  ).toStrictEqual([
+    { path: 'milestones.0.label.it', code: 'required' },
+    { path: 'milestones.1.label.it', code: 'required' },
+    { path: 'milestones.1.label.en', code: 'required' },
+  ]);
   const kept = parseSiteSettings(
     settings({ languages: ['en'], milestones: [scan({ en: ' Scan ', it: 'Ecografia' })] }),
     NOW
   );
-  assert.ok(kept.ok);
-  assert.deepEqual(kept.value.milestones[0].label, { en: 'Scan', it: 'Ecografia' });
-  assert.deepEqual(errorsOf(settings({ languages: ['it', 'en'], milestones: [scan({ en: 'x'.repeat(81) })] })), [
+  assert(kept.ok);
+  expect(kept.value.milestones[0].label).toStrictEqual({ en: 'Scan', it: 'Ecografia' });
+  expect(errorsOf(settings({ languages: ['it', 'en'], milestones: [scan({ en: 'x'.repeat(81) })] }))).toStrictEqual([
     { path: 'milestones.0.label.en', code: 'tooLong', params: { max: 80 } },
     { path: 'milestones.0.label.it', code: 'required' },
   ]);
@@ -233,51 +227,54 @@ test("a Milestone's Place is optional, and needs an address and a point on Earth
   const withPlace = (place: unknown) =>
     settings({ milestones: [{ emoji: '✨', label: { en: 'Scan' }, date: '2026-05-01', place } as never] });
   const kept = parseSiteSettings(withPlace({ address: ' Via Roma 12, Milano ', lat: 45.46, lon: 9.19 }), NOW);
-  assert.ok(kept.ok);
-  assert.deepEqual(kept.value.milestones[0].place, { address: 'Via Roma 12, Milano', lat: 45.46, lon: 9.19 });
-  assert.equal(parseSiteSettings(withPlace(undefined), NOW).ok, true);
+  assert(kept.ok);
+  expect(kept.value.milestones[0].place).toStrictEqual({ address: 'Via Roma 12, Milano', lat: 45.46, lon: 9.19 });
+  expect(parseSiteSettings(withPlace(undefined), NOW).ok).toBe(true);
 
-  assert.deepEqual(errorsOf(withPlace({ address: '  ', lat: 91, lon: -181 })), [
+  expect(errorsOf(withPlace({ address: '  ', lat: 91, lon: -181 }))).toStrictEqual([
     { path: 'milestones.0.place.address', code: 'required' },
     { path: 'milestones.0.place.lat', code: 'outOfRange', params: { max: 90 } },
     { path: 'milestones.0.place.lon', code: 'outOfRange', params: { min: -180 } },
   ]);
-  assert.deepEqual(errorsOf(withPlace({ address: 'x'.repeat(201), lat: 0, lon: 0 })), [
+  expect(errorsOf(withPlace({ address: 'x'.repeat(201), lat: 0, lon: 0 }))).toStrictEqual([
     { path: 'milestones.0.place.address', code: 'tooLong', params: { max: 200 } },
   ]);
-  assert.deepEqual(errorsOf(withPlace({ address: 'Milano' })), [
+  expect(errorsOf(withPlace({ address: 'Milano' }))).toStrictEqual([
     { path: 'milestones.0.place.lat', code: 'required' },
     { path: 'milestones.0.place.lon', code: 'required' },
   ]);
-  assert.deepEqual(errorsOf(withPlace({ address: 'Milano', lat: 45.46, lon: 9.19, label: 'Home' })), [
+  expect(errorsOf(withPlace({ address: 'Milano', lat: 45.46, lon: 9.19, label: 'Home' }))).toStrictEqual([
     { path: 'milestones.0.place.label', code: 'unknownField' },
   ]);
-  assert.deepEqual(errorsOf(withPlace(null)), [{ path: 'milestones.0.place', code: 'required' }]);
+  expect(errorsOf(withPlace(null))).toStrictEqual([{ path: 'milestones.0.place', code: 'required' }]);
 });
 
 test('a missing label is reported beside the other errors of the same save', () => {
-  assert.deepEqual(
-    errorsOf(settings({ babyName: 'x'.repeat(61), milestones: [{ emoji: '✨', label: {}, date: '' }] })),
-    [
-      { path: 'babyName', code: 'tooLong', params: { max: 60 } },
-      { path: 'milestones.0.date', code: 'required' },
-      { path: 'milestones.0.label.en', code: 'required' },
-    ]
-  );
+  expect(
+    errorsOf(settings({ babyName: 'x'.repeat(61), milestones: [{ emoji: '✨', label: {}, date: '' }] }))
+  ).toStrictEqual([
+    { path: 'babyName', code: 'tooLong', params: { max: 60 } },
+    { path: 'milestones.0.date', code: 'required' },
+    { path: 'milestones.0.label.en', code: 'required' },
+  ]);
 });
 
 test('a new Site lowercases its Slug and rejects bad or Reserved ones', () => {
   const ok = parseNewSite({ slug: '  Emma-Rose ', settings: settings({ dueDate: '2026-11-01' }) }, NOW);
-  assert.ok(ok.ok);
-  assert.equal(ok.value.slug, 'emma-rose');
+  assert(ok.ok);
+  expect(ok.value.slug).toBe('emma-rose');
 
   const errors = (input: unknown) => {
     const result = parseNewSite(input, NOW);
     return result.ok ? [] : result.errors;
   };
-  assert.deepEqual(errors({ slug: '-bad', settings: defaultSiteSettings }), [{ path: 'slug', code: 'invalidFormat' }]);
-  assert.deepEqual(errors({ slug: 'admin', settings: defaultSiteSettings }), [{ path: 'slug', code: 'slugReserved' }]);
-  assert.deepEqual(errors({ slug: 'emma', settings: { ...defaultSiteSettings, dueDate: '2030-01-01' } })[0], {
+  expect(errors({ slug: '-bad', settings: defaultSiteSettings })).toStrictEqual([
+    { path: 'slug', code: 'invalidFormat' },
+  ]);
+  expect(errors({ slug: 'admin', settings: defaultSiteSettings })).toStrictEqual([
+    { path: 'slug', code: 'slugReserved' },
+  ]);
+  expect(errors({ slug: 'emma', settings: { ...defaultSiteSettings, dueDate: '2030-01-01' } })[0]).toStrictEqual({
     path: 'settings.dueDate',
     code: 'outOfRange',
     params: { min: '2025-12-20', max: '2027-08-20' },
@@ -286,7 +283,7 @@ test('a new Site lowercases its Slug and rejects bad or Reserved ones', () => {
 
 test('a new Site needs a Due date', () => {
   const result = parseNewSite({ slug: 'emma', settings: settings() }, NOW);
-  assert.deepEqual(result.ok ? [] : result.errors, [{ path: 'settings.dueDate', code: 'required' }]);
+  expect(result.ok ? [] : result.errors).toStrictEqual([{ path: 'settings.dueDate', code: 'required' }]);
 });
 
 test('a new Site starts Waiting', () => {
@@ -301,29 +298,29 @@ test('a new Site starts Waiting', () => {
     },
   };
   const result = parseNewSite({ slug: 'emma', settings: bornSite }, NOW);
-  assert.equal(result.ok, false);
-  assert.deepEqual(result.ok ? [] : result.errors, [{ path: 'settings.birth', code: 'invalidOption' }]);
+  expect(result.ok).toBe(false);
+  expect(result.ok ? [] : result.errors).toStrictEqual([{ path: 'settings.birth', code: 'invalidOption' }]);
 });
 
 test('the shown name is the baby’s, hidden by Privacy settings only while Waiting', () => {
   const hidden = { showName: false, showSex: false };
-  assert.equal(shownBabyName({ babyName: 'Emma', birth: { born: false, details: null }, privacy: hidden }), null);
-  assert.equal(shownBabyName({ ...settings({ babyName: 'Emma' }), birth: { born: false, details: null } }), 'Emma');
+  expect(shownBabyName({ babyName: 'Emma', birth: { born: false, details: null }, privacy: hidden })).toBe(null);
+  expect(shownBabyName({ ...settings({ babyName: 'Emma' }), birth: { born: false, details: null } })).toBe('Emma');
   const { photo: _, ...details } = born().details;
   const birth = {
     born: true as const,
     details: { ...details, datetime: isoDateTimeSchema.parse(details.datetime), weightGrams: null, lengthCm: null },
   };
-  assert.equal(shownBabyName({ babyName: 'Emma', birth, privacy: hidden }), 'Emma');
-  assert.equal(shownBabyName({ babyName: '', birth, privacy: hidden }), null);
+  expect(shownBabyName({ babyName: 'Emma', birth, privacy: hidden })).toBe('Emma');
+  expect(shownBabyName({ babyName: '', birth, privacy: hidden })).toBe(null);
 });
 
 test('the Timezone is any zone Intl knows, aliases included', () => {
   for (const timezone of ['Europe/Rome', 'America/New_York', 'Europe/Kiev', 'UTC']) {
-    assert.equal(parseSiteSettings(settings({ timezone }), NOW).ok, true, timezone);
+    expect(parseSiteSettings(settings({ timezone }), NOW).ok, timezone).toBe(true);
   }
-  assert.deepEqual(errorsOf(settings({ timezone: 'Mars/Olympus' })), [{ path: 'timezone', code: 'invalidOption' }]);
-  assert.deepEqual(errorsOf(settings({ timezone: '' })), [{ path: 'timezone', code: 'invalidOption' }]);
+  expect(errorsOf(settings({ timezone: 'Mars/Olympus' }))).toStrictEqual([{ path: 'timezone', code: 'invalidOption' }]);
+  expect(errorsOf(settings({ timezone: '' }))).toStrictEqual([{ path: 'timezone', code: 'invalidOption' }]);
 });
 
 test('birth media accepts stored HTTPS assets and remains optional for existing Sites', () => {
@@ -334,19 +331,17 @@ test('birth media accepts stored HTTPS assets and remains optional for existing 
     type: 'image/png' as const,
     size: 2048,
   };
-  assert.equal(
-    parseSiteSettings(settings({ babyName: 'Emma', sex: 'female', birth: born({ photo }), birthVideo: null }), NOW).ok,
-    true
-  );
-  assert.equal(parseSiteSettings(settings({ babyName: 'Emma', sex: 'female', birth: born() }), NOW).ok, true);
-  assert.equal(
+  expect(
+    parseSiteSettings(settings({ babyName: 'Emma', sex: 'female', birth: born({ photo }), birthVideo: null }), NOW).ok
+  ).toBe(true);
+  expect(parseSiteSettings(settings({ babyName: 'Emma', sex: 'female', birth: born() }), NOW).ok).toBe(true);
+  expect(
     parseSiteSettings(
       settings({ babyName: 'Emma', sex: 'female', birth: born({ photo: { ...photo, url: 'javascript:alert(1)' } }) }),
       NOW
-    ).ok,
-    false
-  );
-  assert.equal(
+    ).ok
+  ).toBe(false);
+  expect(
     parseSiteSettings(
       settings({
         babyName: 'Emma',
@@ -354,9 +349,8 @@ test('birth media accepts stored HTTPS assets and remains optional for existing 
         birth: born({ photo: { ...photo, url: 'http://media.example.com/photo' } }),
       }),
       NOW
-    ).ok,
-    false
-  );
+    ).ok
+  ).toBe(false);
 });
 
 test('the Birth video can be picked in the Waiting state and is no Birth detail', () => {
@@ -364,12 +358,11 @@ test('the Birth video can be picked in the Waiting state and is no Birth detail'
     key: 'customer-data/owner/site/1c0a4d2f-3b5e-4d6f-9071-829304a5b6c7',
     url: 'https://media.example.com/video',
   };
-  assert.equal(parseSiteSettings(settings({ birthVideo }), NOW).ok, true);
-  assert.deepEqual(
-    errorsOf(settings({ babyName: 'Emma', sex: 'female', birth: born({ video: birthVideo } as object) })),
-    [{ path: 'birth.details.video', code: 'unknownField' }]
-  );
-  assert.deepEqual(errorsOf(settings({ birthVideo: { ...birthVideo, url: 'http://media.example.com/video' } })), [
+  expect(parseSiteSettings(settings({ birthVideo }), NOW).ok).toBe(true);
+  expect(
+    errorsOf(settings({ babyName: 'Emma', sex: 'female', birth: born({ video: birthVideo } as object) }))
+  ).toStrictEqual([{ path: 'birth.details.video', code: 'unknownField' }]);
+  expect(errorsOf(settings({ birthVideo: { ...birthVideo, url: 'http://media.example.com/video' } }))).toStrictEqual([
     { path: 'birthVideo.url', code: 'invalidType' },
   ]);
 });

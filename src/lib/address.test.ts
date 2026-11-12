@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { expect, test } from 'vitest';
 import {
   type AddressConfig,
   addressConfig,
@@ -22,15 +21,15 @@ function requestFor(address: string): [string, string] {
 }
 
 test('addressConfig picks the mode and protocol from the root domain', () => {
-  assert.deepEqual(PRODUCTION, { rootDomain: 'loading.baby', mode: 'subdomain', protocol: 'https' });
-  assert.deepEqual(LOCAL, { rootDomain: 'localhost:3100', mode: 'subdomain', protocol: 'http' });
-  assert.deepEqual(PREVIEW, {
+  expect(PRODUCTION).toStrictEqual({ rootDomain: 'loading.baby', mode: 'subdomain', protocol: 'https' });
+  expect(LOCAL).toStrictEqual({ rootDomain: 'localhost:3100', mode: 'subdomain', protocol: 'http' });
+  expect(PREVIEW).toStrictEqual({
     rootDomain: 'feat-x-loading-baby-staging.example.workers.dev',
     mode: 'path',
     protocol: 'https',
   });
-  assert.deepEqual(addressConfig({}), { rootDomain: 'localhost', mode: 'subdomain', protocol: 'http' });
-  assert.equal(addressConfig({ ROOT_DOMAIN: 'Loading.Baby' }).rootDomain, 'loading.baby');
+  expect(addressConfig({})).toStrictEqual({ rootDomain: 'localhost', mode: 'subdomain', protocol: 'http' });
+  expect(addressConfig({ ROOT_DOMAIN: 'Loading.Baby' }).rootDomain).toBe('loading.baby');
 });
 
 for (const [name, config] of [
@@ -41,32 +40,32 @@ for (const [name, config] of [
   test(`every Address resolves back to its Site (${name})`, () => {
     for (const slug of SLUGS) {
       const resolution = resolveRequest(...requestFor(siteAddress(slug, config)), config);
-      assert.equal(resolution.kind, 'site', `${slug} at ${siteAddress(slug, config)}`);
-      assert.equal(resolution.kind === 'site' && resolution.slug, slug);
+      expect(resolution.kind, `${slug} at ${siteAddress(slug, config)}`).toBe('site');
+      expect(resolution.kind === 'site' && resolution.slug).toBe(slug);
     }
   });
 }
 
 test('Addresses are subdomains, or paths on a preview', () => {
-  assert.equal(siteAddress('emma', PRODUCTION), 'https://emma.loading.baby');
-  assert.equal(siteAddress('emma', LOCAL), 'http://emma.localhost:3100');
-  assert.equal(siteAddress('emma', PREVIEW), 'https://feat-x-loading-baby-staging.example.workers.dev/sites/emma');
-  assert.equal(siteAddressPath('emma', PRODUCTION), '/');
-  assert.equal(siteAddressPath('emma', PREVIEW), '/sites/emma');
+  expect(siteAddress('emma', PRODUCTION)).toBe('https://emma.loading.baby');
+  expect(siteAddress('emma', LOCAL)).toBe('http://emma.localhost:3100');
+  expect(siteAddress('emma', PREVIEW)).toBe('https://feat-x-loading-baby-staging.example.workers.dev/sites/emma');
+  expect(siteAddressPath('emma', PRODUCTION)).toBe('/');
+  expect(siteAddressPath('emma', PREVIEW)).toBe('/sites/emma');
 });
 
 test('a Site on its subdomain is served by the /sites route, keeping the rest of the path', () => {
-  assert.deepEqual(resolveRequest('emma.loading.baby', '/', PRODUCTION), {
+  expect(resolveRequest('emma.loading.baby', '/', PRODUCTION)).toStrictEqual({
     kind: 'site',
     slug: 'emma',
     internalPath: '/sites/emma',
   });
-  assert.deepEqual(resolveRequest('Emma.Loading.Baby', '/icon.png', PRODUCTION), {
+  expect(resolveRequest('Emma.Loading.Baby', '/icon.png', PRODUCTION)).toStrictEqual({
     kind: 'site',
     slug: 'emma',
     internalPath: '/sites/emma/icon.png',
   });
-  assert.deepEqual(resolveRequest('emma.localhost:3100', '/', LOCAL), {
+  expect(resolveRequest('emma.localhost:3100', '/', LOCAL)).toStrictEqual({
     kind: 'site',
     slug: 'emma',
     internalPath: '/sites/emma',
@@ -74,35 +73,35 @@ test('a Site on its subdomain is served by the /sites route, keeping the rest of
 });
 
 test("a /sites path away from the Site's subdomain redirects to its Address", () => {
-  assert.deepEqual(resolveRequest('loading.baby', '/sites/emma', PRODUCTION), {
+  expect(resolveRequest('loading.baby', '/sites/emma', PRODUCTION)).toStrictEqual({
     kind: 'redirect',
     location: 'https://emma.loading.baby/',
   });
-  assert.deepEqual(resolveRequest('loading-baby.example.workers.dev', '/sites/emma/icon.png', PRODUCTION), {
+  expect(resolveRequest('loading-baby.example.workers.dev', '/sites/emma/icon.png', PRODUCTION)).toStrictEqual({
     kind: 'redirect',
     location: 'https://emma.loading.baby/icon.png',
   });
-  assert.deepEqual(resolveRequest('localhost:3100', '/sites/emma', LOCAL), {
+  expect(resolveRequest('localhost:3100', '/sites/emma', LOCAL)).toStrictEqual({
     kind: 'redirect',
     location: 'http://emma.localhost:3100/',
   });
   // Not a Slug: left to the route, which answers 404.
-  assert.deepEqual(resolveRequest('loading.baby', '/sites/Not_A_Slug', PRODUCTION), { kind: 'platform' });
+  expect(resolveRequest('loading.baby', '/sites/Not_A_Slug', PRODUCTION)).toStrictEqual({ kind: 'platform' });
 });
 
 test('the root domain, www and localhost serve the Platform', () => {
   for (const host of ['loading.baby', 'www.loading.baby', 'localhost:3000', 'loading.baby:443']) {
-    assert.deepEqual(resolveRequest(host, '/dashboard', PRODUCTION), { kind: 'platform' }, host);
+    expect(resolveRequest(host, '/dashboard', PRODUCTION), host).toStrictEqual({ kind: 'platform' });
   }
-  assert.deepEqual(resolveRequest('a.b.loading.baby', '/', PRODUCTION), { kind: 'platform' });
+  expect(resolveRequest('a.b.loading.baby', '/', PRODUCTION)).toStrictEqual({ kind: 'platform' });
 });
 
 test('any other host is a candidate Custom domain', () => {
-  assert.deepEqual(resolveRequest('Baby.Example.com', '/', PRODUCTION), {
+  expect(resolveRequest('Baby.Example.com', '/', PRODUCTION)).toStrictEqual({
     kind: 'customDomain',
     host: 'baby.example.com',
   });
-  assert.deepEqual(resolveRequest('loading.baby.evil.com', '/', PRODUCTION), {
+  expect(resolveRequest('loading.baby.evil.com', '/', PRODUCTION)).toStrictEqual({
     kind: 'customDomain',
     host: 'loading.baby.evil.com',
   });
@@ -110,33 +109,33 @@ test('any other host is a candidate Custom domain', () => {
 
 test('on a preview, Sites are paths and everything else is the Platform', () => {
   const host = 'feat-x-loading-baby-staging.example.workers.dev';
-  assert.deepEqual(resolveRequest(host, '/sites/emma', PREVIEW), {
+  expect(resolveRequest(host, '/sites/emma', PREVIEW)).toStrictEqual({
     kind: 'site',
     slug: 'emma',
     internalPath: '/sites/emma',
   });
-  assert.deepEqual(resolveRequest(host, '/dashboard', PREVIEW), { kind: 'platform' });
-  assert.deepEqual(resolveRequest('abc123-loading-baby-staging.example.workers.dev', '/', PREVIEW), {
+  expect(resolveRequest(host, '/dashboard', PREVIEW)).toStrictEqual({ kind: 'platform' });
+  expect(resolveRequest('abc123-loading-baby-staging.example.workers.dev', '/', PREVIEW)).toStrictEqual({
     kind: 'platform',
   });
 });
 
 test('slugProblem rejects what a subdomain cannot carry and what the Platform keeps', () => {
-  assert.equal(slugProblem('emma'), null);
-  assert.equal(slugProblem('ab'), 'invalidFormat');
-  assert.equal(slugProblem('-emma'), 'invalidFormat');
-  assert.equal(slugProblem('emma-'), 'invalidFormat');
-  assert.equal(slugProblem('Emma'), 'invalidFormat');
-  assert.equal(slugProblem('x'.repeat(33)), 'invalidFormat');
-  assert.equal(slugProblem('www'), 'slugReserved');
-  assert.equal(slugProblem('staging'), 'slugReserved');
-  assert.equal(slugProblem('admin'), 'slugReserved');
-  assert.equal(slugProblem('dashboard'), 'slugReserved');
+  expect(slugProblem('emma')).toBe(null);
+  expect(slugProblem('ab')).toBe('invalidFormat');
+  expect(slugProblem('-emma')).toBe('invalidFormat');
+  expect(slugProblem('emma-')).toBe('invalidFormat');
+  expect(slugProblem('Emma')).toBe('invalidFormat');
+  expect(slugProblem('x'.repeat(33))).toBe('invalidFormat');
+  expect(slugProblem('www')).toBe('slugReserved');
+  expect(slugProblem('staging')).toBe('slugReserved');
+  expect(slugProblem('admin')).toBe('slugReserved');
+  expect(slugProblem('dashboard')).toBe('slugReserved');
 });
 
 test('isSlug takes what slugProblem accepts and nothing else', () => {
-  assert.equal(isSlug('emma'), true);
+  expect(isSlug('emma')).toBe(true);
   for (const value of [undefined, 42, 'ab', '-emma', 'Emma', 'www', 'dashboard']) {
-    assert.equal(isSlug(value), false, String(value));
+    expect(isSlug(value), String(value)).toBe(false);
   }
 });
