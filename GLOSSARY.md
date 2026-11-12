@@ -44,6 +44,10 @@ _Avoid_: Tenant settings, configuration, preferences
 Site settings as a form holds them while the Owner types: texts left blank, an emoji kept while the loading baby is picked, a Place typed and not yet picked. The editor and onboarding share it, and a save turns it into Site settings.
 _Avoid_: Form state, unsaved settings
 
+**Site editing**:
+A Site draft open in the editor together with the Site as last saved: what is unsaved, what stops a save, what each of the two saves sends (the Site settings, and the Birth from its dialog), and how both move when the server answers. One per open editor; the new Site's form has a Site draft and no Site editing.
+_Avoid_: Editor state, editing session, form state
+
 **Slug**:
 The short, unique, lowercase name a Site is known by, from which its Address is formed.
 _Avoid_: Subdomain, handle, username, site address

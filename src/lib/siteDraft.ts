@@ -1,11 +1,10 @@
 import * as z from 'zod/mini';
-import { instantIn, localIn, settledBirthMilestones, withBirth } from './birthAnnouncement.ts';
+import { settledBirthMilestones } from './birthAnnouncement.ts';
 import { LANGS, type Lang } from './i18n.ts';
 import {
   type BirthDetails,
   type BirthMedia,
   DEFAULT_SITE_ICON_EMOJI,
-  type Milestone,
   type PageName,
   parseSiteSettings,
   type SiteSettings,
@@ -19,8 +18,9 @@ import { DEFAULT_FONT, DEFAULT_PALETTE } from './theme.ts';
 /**
  * A Site's settings as its forms hold them while the Owner types: the
  * editor's and the new Site's. Free of browser and server imports, so the
- * mapping both forms share runs in `npm test`. The forms keep their markup and
- * how they save; this module says what a draft sends and whether it changed.
+ * mapping both forms share runs in the `unit` tests. This module says what a
+ * draft sends and what stops it; the editor's saves are Site editing's
+ * (siteEditing.ts), and the new Site's form runs its own.
  */
 
 /** A Birth media field: the file saved, a file picked and not yet uploaded, or none. */
@@ -142,23 +142,6 @@ export function settingsOfDraft(draft: SiteDraft, { birth, birthVideo }: DraftBi
   };
 }
 
-/**
- * Whether two drafts would save the same: the Site settings they send, the
- * Place texts not picked yet, and the Birth video picked and not yet uploaded.
- */
-export function sameDraft(a: SiteDraft, aBirth: DraftBirth, b: SiteDraft, bBirth: DraftBirth): boolean {
-  return draftKey(a, aBirth) === draftKey(b, bBirth);
-}
-
-function draftKey(draft: SiteDraft, birth: DraftBirth): string {
-  const video = birth.birthVideo;
-  return JSON.stringify([
-    settingsOfDraft(draft, birth),
-    draft.milestones.map((m) => m.placeText),
-    video instanceof File ? [video.name, video.size, video.lastModified] : null,
-  ]);
-}
-
 /** The Site settings `input` stands for when it passes every rule, else `previous`: what previews draw while a field is half filled. */
 export function lastValidSettings(
   input: SiteSettingsInput,
@@ -187,84 +170,6 @@ export function draftProblems(
 ): SiteSettingsError[] {
   const checked = parseSiteSettings(settingsOfDraft(draft, birth), now);
   return [...(checked.ok ? [] : checked.errors), ...unpickedPlaces(draft.milestones)];
-}
-
-/** A saved Site's Birth as the Birth dialog starts: its time on the wall clock in the Site's Timezone. */
-export function birthDraftOf(site: Pick<SiteSettings, 'birth' | 'timezone'>): BirthDraft {
-  const details = site.birth.details;
-  return {
-    born: site.birth.born,
-    datetime: details ? localIn(details.datetime, site.timezone) : '',
-    weight: details?.weightGrams?.toString() ?? '',
-    lengthCm: details?.lengthCm?.toString() ?? '',
-    message: details?.message ?? {},
-    photo: details?.photo ?? null,
-  };
-}
-
-/** The Birth as Site settings hold it, from the fields as typed: the time is the wall clock in `timezone`. */
-export function birthSettings(b: BirthDraft, timezone: string): SiteSettingsInput['birth'] {
-  if (!b.born) {
-    return { born: false, details: null };
-  }
-  return {
-    born: true,
-    details: {
-      datetime: instantIn(b.datetime, timezone),
-      weightGrams: b.weight ? Number(b.weight) : null,
-      lengthCm: b.lengthCm ? Number(b.lengthCm) : null,
-      message: writtenTexts(b.message),
-      photo: storedMedia(b.photo),
-    },
-  };
-}
-
-/**
- * The Site as saving `b` from the Birth dialog would leave it: as last saved
- * (`saved`), with `b`, and the name, the Sex and the Birth video as the form
- * holds them. The time is read in the saved Timezone, which is what the Birth
- * route reads it in.
- */
-export function birthWrite(
-  saved: SiteSettings,
-  b: BirthDraft,
-  form: Pick<SiteDraft, 'babyName' | 'sex'> & { birthVideo: MediaDraft }
-): SiteSettings {
-  if (!b.born) {
-    return withBirth(saved, null);
-  }
-  // As typed, so not yet checked: callers read the result through parseSiteSettings or parseBirthPreview.
-  const { details } = birthSettings(b, saved.timezone) as unknown as { details: BirthDetails };
-  return withBirth(saved, {
-    babyName: form.babyName,
-    sex: form.sex,
-    details,
-    birthVideo: storedMedia(form.birthVideo),
-  });
-}
-
-/**
- * A form's Milestones once the Birth is saved: the Birth milestone on the
- * day the server saved, with the Owner's unsaved label and emoji. One the
- * Owner removed and has not saved yet (`removedHere`) stays removed.
- */
-export function withSavedBirthMilestone(
-  drafts: MilestoneDraft[],
-  saved: Milestone[],
-  removedHere: boolean
-): MilestoneDraft[] {
-  const savedOne = saved.find((m) => m.kind === 'birth');
-  if (!savedOne) {
-    return drafts.filter((m) => m.kind !== 'birth');
-  }
-  if (hasBirthMilestone(drafts)) {
-    return drafts.map((m) => (m.kind === 'birth' ? { ...m, date: savedOne.date } : m));
-  }
-  return removedHere ? drafts : [...drafts, { ...savedOne, placeText: savedOne.place?.address ?? '' }];
-}
-
-export function hasBirthMilestone(milestones: readonly { kind?: 'birth' }[]): boolean {
-  return milestones.some((m) => m.kind === 'birth');
 }
 
 /**

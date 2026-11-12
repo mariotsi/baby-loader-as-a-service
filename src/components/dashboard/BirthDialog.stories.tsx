@@ -2,101 +2,102 @@ import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { LangProvider } from '@/components/LangProvider';
-import type { BirthDraft } from '@/lib/siteDraft';
+import { siteIdSchema, userIdSchema } from '@/db/ids';
+import { slugSchema } from '@/lib/address';
+import type { Site } from '@/lib/site';
+import { createSiteEditing } from '@/lib/siteEditing';
+import { memorySiteEditingPort } from '@/lib/siteEditingPort';
 import {
+  type CalendarDay,
   calendarDaySchema,
   centimetresSchema,
   defaultSiteSettings,
   emojiSchema,
   gramsSchema,
   isoDateTimeSchema,
-  type SiteSettings,
-  type SiteSettingsError,
-  settingsPath,
 } from '@/lib/siteSettings';
 import { bornPlaceholderUrl } from '@/lib/websiteAssets';
-import { BirthDialog, type SaveOutcome } from './BirthDialog';
+import { BirthDialog } from './BirthDialog';
 
-const asDay = (value: string) => calendarDaySchema.parse(value);
-
-const waiting: BirthDraft = {
-  born: false,
-  datetime: '2026-10-26T08:30',
-  weight: '',
-  lengthCm: '',
-  message: {},
-  photo: null,
-};
-const born: BirthDraft = {
-  born: true,
-  datetime: '2026-10-26T08:30',
-  weight: '3015',
-  lengthCm: '46',
-  message: { en: 'Welcome to the world, little one.', it: 'Benvenuta al mondo, piccola.' },
-  photo: null,
+/** Emma's Site, Waiting. It has no Due date, so no story depends on the day it runs. */
+const waiting: Site = {
+  ...defaultSiteSettings,
+  id: siteIdSchema.parse('7a2e3d4c-5b6f-4071-9283-94a516b7c8d9'),
+  ownerId: userIdSchema.parse('6f1d2c3b-4a5e-4f60-8172-839405a6b7c8'),
+  slug: slugSchema.parse('demo-emma'),
+  createdAt: '2026-10-01T00:00:00.000Z',
+  updatedAt: '2026-10-01T00:00:00.000Z',
+  customDomain: null,
+  customDomainVerified: false,
+  babyName: 'Emma',
+  sex: 'female',
+  languages: ['en', 'it'],
+  pageName: { en: 'Stefania & Simone', it: 'Stefania e Simone' },
+  privacy: { showName: true, showSex: true },
 };
 
-/** Emma's page as saving would store it with `birth`: what the previews draw. */
-function emmaWith(birth: BirthDraft): SiteSettings | null {
-  if (birth.born && !birth.datetime) {
-    return null;
-  }
-  return {
-    ...defaultSiteSettings,
-    babyName: 'Emma',
-    sex: 'female',
-    dueDate: asDay('2026-11-02'),
-    languages: ['en', 'it'],
-    pageName: { en: 'Stefania & Simone', it: 'Stefania e Simone' },
-    privacy: { showName: true, showSex: true },
-    birth: birth.born
-      ? {
-          born: true,
-          details: {
-            datetime: isoDateTimeSchema.parse(new Date(birth.datetime).toISOString()),
-            weightGrams: birth.weight ? gramsSchema.parse(Number(birth.weight)) : null,
-            lengthCm: birth.lengthCm ? centimetresSchema.parse(Number(birth.lengthCm)) : null,
-            message: birth.message,
-            photo: null,
-          },
-        }
-      : { born: false, details: null },
-    milestones: birth.born
-      ? [
-          {
-            date: asDay(birth.datetime.slice(0, 10)),
-            label: { en: 'She is born!', it: 'È nata!' },
-            emoji: emojiSchema.parse('👶'),
-            kind: 'birth',
-          },
-        ]
-      : [],
-  };
+/** The same Site once the birth is announced. */
+const born: Site = {
+  ...waiting,
+  birth: {
+    born: true,
+    details: {
+      datetime: isoDateTimeSchema.parse('2026-10-26T07:30:00.000Z'),
+      weightGrams: gramsSchema.parse(3015),
+      lengthCm: centimetresSchema.parse(46),
+      message: { en: 'Welcome to the world, little one.', it: 'Benvenuta al mondo, piccola.' },
+      photo: null,
+    },
+  },
+  milestones: [
+    {
+      date: calendarDaySchema.parse('2026-10-26'),
+      label: { en: 'She is born!', it: 'È nata!' },
+      emoji: emojiSchema.parse('👶'),
+      kind: 'birth',
+    },
+  ],
+};
+
+interface ExampleProps {
+  /** The Site as saved when the dialog opens. */
+  site: Site;
+  /** Whether the Site changed in another tab since this one read it. */
+  changedElsewhere?: boolean;
+  /** Called when the dialog sets the Birth. */
+  onSetBirth: () => void;
+}
+
+/** The Birth dialog on a Site editing that saves in memory. */
+function Example({ site, changedElsewhere = false, onSetBirth }: ExampleProps) {
+  const [editing] = useState(() => {
+    const port = memorySiteEditingPort(site);
+    if (changedElsewhere) {
+      port.changeElsewhere();
+    }
+    return createSiteEditing(site, {
+      ...port,
+      setBirth(body) {
+        onSetBirth();
+        return port.setBirth(body);
+      },
+    });
+  });
+  return (
+    <BirthDialog
+      editing={editing}
+      address="https://emma.loading.baby"
+      bornPlaceholderUrl={bornPlaceholderUrl('development')}
+      onClose={() => {}}
+    />
+  );
 }
 
 const meta = {
   title: 'Dashboard/Birth dialog',
-  component: BirthDialog,
+  component: Example,
   parameters: { layout: 'fullscreen' },
-  args: {
-    initial: waiting,
-    babyName: 'Emma',
-    sex: 'female',
-    languages: ['en', 'it'],
-    timezone: 'Europe/Rome',
-    onBabyName: () => {},
-    onSex: () => {},
-    hidden: { name: false, sex: false },
-    check: (_birth: BirthDraft): SiteSettingsError[] => [],
-    settingsWith: emmaWith,
-    slug: 'demo-emma',
-    address: 'https://emma.loading.baby',
-    video: null,
-    onVideo: () => {},
-    bornPlaceholderUrl: bornPlaceholderUrl('development'),
-    onSave: fn(async (_birth: BirthDraft): Promise<SaveOutcome> => ({ ok: true })),
-    onClose: () => {},
-  },
+  args: { site: waiting, onSetBirth: fn() },
   decorators: [
     (Story) => (
       <LangProvider lang="en">
@@ -104,7 +105,7 @@ const meta = {
       </LangProvider>
     ),
   ],
-} satisfies Meta<typeof BirthDialog>;
+} satisfies Meta<typeof Example>;
 export default meta;
 type Story = StoryObj<typeof meta>;
 
@@ -125,9 +126,9 @@ export const AnnounceAsksFirst: Story = {
     await userEvent.click(dialog.getByRole('button', { name: 'Announce the birth' }));
     const confirm = within(await body.findByRole('dialog', { name: 'Announce the birth now?' }));
     await expect(confirm.getByRole('button', { name: 'Keep editing' })).toHaveFocus();
-    await expect(args.onSave).not.toHaveBeenCalled();
+    await expect(args.onSetBirth).not.toHaveBeenCalled();
     await userEvent.click(confirm.getByRole('button', { name: 'Announce the birth' }));
-    await waitFor(() => expect(args.onSave).toHaveBeenCalledOnce());
+    await waitFor(() => expect(args.onSetBirth).toHaveBeenCalledOnce());
   },
 };
 
@@ -136,12 +137,7 @@ export const AnnounceAsksFirst: Story = {
  * Privacy settings: the dialog asks for them first and says announcing shows them.
  */
 export const AnnounceWithoutNameOrSex: Story = {
-  args: { babyName: '', sex: 'unknown', hidden: { name: true, sex: true } },
-  render: function Example(args) {
-    const [babyName, setBabyName] = useState(args.babyName);
-    const [sex, setSex] = useState(args.sex);
-    return <BirthDialog {...args} babyName={babyName} sex={sex} onBabyName={setBabyName} onSex={setSex} />;
-  },
+  args: { site: { ...waiting, babyName: '', sex: 'unknown', privacy: { showName: false, showSex: false } } },
   play: async ({ canvasElement }) => {
     const dialog = within(within(canvasElement.ownerDocument.body).getByRole('dialog'));
     await waitFor(() => expect(dialog.getByText(/Announcing shows both to everyone/)).toBeVisible());
@@ -152,22 +148,23 @@ export const AnnounceWithoutNameOrSex: Story = {
 };
 
 /** Changing what was announced, with the way back to the Countdown. */
-export const Edit: Story = { args: { initial: born } };
+export const Edit: Story = { args: { site: born } };
 
-/** A Birth the Site settings refuse: the fields say why, and something wrong elsewhere on the page is named too. */
+/**
+ * A Birth the Site settings refuse: the fields say why, and something wrong
+ * elsewhere on the page, here a Milestone saved without its date, is named too.
+ */
 export const Errors: Story = {
   args: {
-    initial: { ...waiting, datetime: '', weight: '3400.5' },
-    check: (birth: BirthDraft): SiteSettingsError[] => [
-      ...(birth.datetime ? [] : [{ path: settingsPath('birth.details.datetime'), code: 'required' as const }]),
-      ...(birth.weight.includes('.')
-        ? [{ path: settingsPath('birth.details.weightGrams'), code: 'invalidType' as const }]
-        : []),
-      { path: settingsPath('milestones.0.date'), code: 'required' as const },
-    ],
+    site: {
+      ...waiting,
+      milestones: [{ emoji: emojiSchema.parse('🩺'), label: { en: 'First scan' }, date: '' as CalendarDay }],
+    },
   },
   play: async ({ canvasElement }) => {
     const dialog = within(within(canvasElement.ownerDocument.body).getByRole('dialog'));
+    await userEvent.clear(dialog.getByLabelText('Birth date & time'));
+    await userEvent.type(dialog.getByLabelText(/Weight/), '3400.5');
     await userEvent.click(dialog.getByRole('button', { name: 'Announce the birth' }));
     await expect(dialog.getByLabelText('Birth date & time')).toHaveFocus();
     await waitFor(() => expect(dialog.getByText(/Something else on this page needs fixing first/)).toBeVisible());
@@ -176,18 +173,7 @@ export const Errors: Story = {
 
 /** A save from a tab that missed a change made elsewhere: the dialog says so and offers to reload. */
 export const StaleTab: Story = {
-  args: {
-    initial: born,
-    onSave: fn(
-      async (_birth: BirthDraft): Promise<SaveOutcome> => ({
-        ok: false,
-        errors: [],
-        message:
-          'This page changed in another tab or on another device since you opened it. Reload to see it: what you changed here is lost.',
-        stale: true,
-      })
-    ),
-  },
+  args: { site: born, changedElsewhere: true },
   play: async ({ canvasElement }) => {
     const dialog = within(within(canvasElement.ownerDocument.body).getByRole('dialog'));
     await userEvent.click(dialog.getByRole('button', { name: 'Save changes' }));
