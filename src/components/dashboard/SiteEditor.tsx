@@ -323,10 +323,10 @@ export function SiteEditor({
       }
       const body = new FormData();
       body.set('file', media);
-      const response = await fetch(`/api/sites/${site.slug}/media`, { method: 'POST', body });
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(routeErrorText(data.error, pageLang));
+      const response = await fetch(`/api/sites/${site.slug}/media`, { method: 'POST', body }).catch(() => null);
+      const data = await response?.json().catch(() => null);
+      if (!response?.ok || !data?.media) {
+        throw new Error(routeErrorText(data?.error, pageLang));
       }
       return { ...data.media, name: media.name, type: media.type, size: media.size };
     }
