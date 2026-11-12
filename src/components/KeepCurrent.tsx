@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { isStandalone } from './isStandalone';
 
 /** How often a Public page saved to the home screen reloads while in view. */
 const RELOAD_INTERVAL_MS = 5 * 60_000;
@@ -16,10 +17,7 @@ const RELOAD_INTERVAL_MS = 5 * 60_000;
  */
 export function KeepCurrent() {
   useEffect(() => {
-    const standalone =
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (navigator as Navigator & { standalone?: boolean }).standalone === true;
-    if (!standalone) {
+    if (!isStandalone()) {
       return;
     }
     function reload() {

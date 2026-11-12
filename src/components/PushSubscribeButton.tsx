@@ -8,12 +8,21 @@ import { ExternalLink } from '@/components/ui/ExternalLink';
 import { Icon, type IconName } from '@/components/ui/Icon';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { StatusPill } from '@/components/ui/StatusPill';
-import { type PublicPageCopy, publicPageCopy } from '@/lib/copy/publicPage';
-import { buildDeviceInfo } from '@/lib/deviceInfo';
+import { type PublicPageCopy, publicPageCopy, type StepIcon, type StepText } from '@/lib/copy/publicPage';
 import type { Lang } from '@/lib/i18n';
+import {
+  homeScreenSteps,
+  type NotificationStatus,
+  type SupportDevice,
+  supportDevice,
+  supportGuide,
+  supportNotice,
+  supportOf,
+} from '@/lib/notificationSupport';
 import type { PublicPageView } from '@/lib/publicPageView';
 import { decodeVapidKey } from '@/lib/vapid';
 import { Confetti, type ConfettiOrigin, confettiOrigin } from './Confetti';
+import { isStandalone } from './isStandalone';
 import styles from './PushSubscribeButton.module.css';
 
 interface Props {
@@ -36,75 +45,19 @@ type Feedback = 'subscribeOk' | 'unsubscribeOk' | 'errorGeneric' | 'errorUnsubsc
 /** How long "You are all set" stays where the button was, before only the pill remains. */
 const SUBSCRIBE_OK_MS = 6000;
 
-type Status = 'checking' | 'unsupported' | 'denied' | 'ios-home-screen' | 'subscribed' | 'unsubscribed';
-type DeviceContext = {
-  ios: boolean;
-  android: boolean;
-  chrome: boolean;
-  standalone: boolean;
-  iosVersion: string | null;
-};
-type HelpLink = { href: string; label: string };
+type Status = NotificationStatus;
 
-const CHROME_GUIDE = 'https://support.google.com/chrome/answer/3220216?co=GENIE.Platform%3DAndroid&hl=en';
-const APPLE_HOME_SCREEN_GUIDE = 'https://support.apple.com/guide/iphone/open-as-web-app-iphea86e5236/ios';
-const APPLE_NOTIFICATION_GUIDE = 'https://support.apple.com/guide/iphone/change-notification-settings-iph7c3d96bab/ios';
-
-function deviceContext(): DeviceContext {
-  const info = buildDeviceInfo(navigator.userAgent, {});
-  const ios = !!info.os.name && /ios|ipados/i.test(info.os.name);
-  const android = !!info.os.name && /android/i.test(info.os.name);
-  return {
-    ios,
-    android,
-    chrome: !!info.browser.name && /chrome/i.test(info.browser.name),
-    standalone:
-      window.matchMedia('(display-mode: standalone)').matches ||
-      (navigator as Navigator & { standalone?: boolean }).standalone === true,
-    iosVersion: ios ? info.os.version : null,
-  };
-}
-
-function statusNotice(status: Status, device: DeviceContext | null, t: PushCopy): string {
-  if (status === 'checking') {
-    return t.checking;
-  }
-  if (status === 'ios-home-screen') {
-    return t.iosHomeScreen;
-  }
-  if (status === 'denied') {
-    if (device?.ios) {
-      return t.iosDenied;
-    }
-    if (device?.android && device.chrome) {
-      return t.androidDenied;
-    }
-    return t.errorDenied;
-  }
-  if (device?.ios) {
-    return t.iosVersion;
-  }
-  if (device?.android && !device.chrome) {
-    return t.androidUnsupported;
-  }
-  return t.errorUnsupported;
-}
-
-function statusHelpLink(status: Status, device: DeviceContext | null, t: PushCopy): HelpLink | null {
-  if (status === 'ios-home-screen') {
-    return { href: APPLE_HOME_SCREEN_GUIDE, label: t.iosHomeScreenLink };
-  }
-  if (status === 'denied' && device?.ios) {
-    return { href: APPLE_NOTIFICATION_GUIDE, label: t.iosSettingsLink };
-  }
-  if (status === 'denied' && device?.android && device.chrome) {
-    return { href: CHROME_GUIDE, label: t.androidSettingsLink };
-  }
-  return null;
-}
-
-function StatusNotice({ status, device, t }: { status: Status; device: DeviceContext | null; t: PushCopy }) {
-  const link = statusHelpLink(status, device, t);
+/** The words of a status that stops the device from subscribing, with the guide that helps there. */
+function StatusNotice({
+  status,
+  device,
+  t,
+}: {
+  status: Exclude<Status, 'subscribed' | 'unsubscribed'>;
+  device: SupportDevice | null;
+  t: PushCopy;
+}) {
+  const guide = supportGuide(status, device);
   return (
     <div className={styles.push}>
       <StatusMessage tone="info" fullWidth title={t.notificationsHelpTitle}>
@@ -112,11 +65,11 @@ function StatusNotice({ status, device, t }: { status: Status; device: DeviceCon
           {status === 'ios-home-screen' ? (
             <IPhoneInstructions device={device} t={t} />
           ) : (
-            statusNotice(status, device, t)
+            t[supportNotice(status, device)]
           )}
-          {link ? (
+          {guide ? (
             <span className={styles.instructionBody}>
-              <ExternalLink href={link.href}>{link.label}</ExternalLink>
+              <ExternalLink href={guide.href}>{t[guide.label]}</ExternalLink>
             </span>
           ) : null}
           {status === 'ios-home-screen' ? (
@@ -130,80 +83,45 @@ function StatusNotice({ status, device, t }: { status: Status; device: DeviceCon
   );
 }
 
-const INSTRUCTION_ICONS: Record<string, IconName> = {
-  Share: 'share-ios',
-  Condividi: 'share-ios',
-  More: 'more-ios',
-  Altro: 'more-ios',
-  'Page Menu': 'page-menu',
-  'Menu pagina': 'page-menu',
-  'Add to Home Screen': 'home-add',
-  'Aggiungi alla schermata Home': 'home-add',
+const STEP_ICONS: Record<StepIcon, IconName> = {
+  share: 'share-ios',
+  more: 'more-ios',
+  pageMenu: 'page-menu',
+  addToHome: 'home-add',
 };
 
-function Instruction({ text }: { text: string }) {
-  let offset = 0;
-  return (
-    <>
-      {text
-        .split(
-          /(Add to Home Screen|Aggiungi alla schermata Home|Open as Web App|Apri come app web|Page Menu|Menu pagina|Share|Condividi|More|Altro|Add|Aggiungi|Safari)/g
-        )
-        .map((part) => {
-          const position = offset;
-          offset += part.length;
-          const icon = INSTRUCTION_ICONS[part];
-          return icon || ['Open as Web App', 'Apri come app web', 'Add', 'Aggiungi', 'Safari'].includes(part) ? (
-            <span className={styles.instructionAction} key={`${position}-${part}`}>
-              <em>{part}</em> {icon ? <Icon name={icon} /> : null}
-            </span>
-          ) : (
-            part
-          );
-        })}
-    </>
+/** One step in words, with each control it names set apart and followed by the icon the iPhone shows beside it. */
+function Instruction({ text }: { text: StepText }) {
+  return text.map((part, i) =>
+    typeof part === 'string' ? (
+      part
+    ) : (
+      // biome-ignore lint/suspicious/noArrayIndexKey: a step's parts never change order.
+      <span className={styles.instructionAction} key={i}>
+        <em>{part.name}</em> {part.icon ? <Icon name={STEP_ICONS[part.icon]} /> : null}
+      </span>
+    )
   );
 }
 
-function IPhoneInstructions({ device, t }: { device: DeviceContext | null; t: PushCopy }) {
-  const major = Number(device?.iosVersion?.split('.')[0]);
-  const known = (major >= 16 && major <= 18) || major === 26 || major === 27;
-  let share = t.iosShare;
-  if (major === 26) {
-    share = t.iosMenu26;
-  } else if (major === 27) {
-    share = t.iosMenu27;
-  }
+function IPhoneInstructions({ device, t }: { device: SupportDevice | null; t: PushCopy }) {
+  const { numbered, steps } = homeScreenSteps(device);
   return (
     <>
-      {known ? (
+      {numbered ? (
         <ol className={styles.steps}>
-          <li>
-            <Instruction text={t.iosOpenSafari} />
-          </li>
-          <li>
-            <Instruction text={share} />
-          </li>
-          <li>
-            <Instruction text={t.iosAddHome} />
-          </li>
-          {major >= 26 ? (
-            <li>
-              <Instruction text={t.iosEnableApp} />
+          {steps.map((entry) => (
+            <li key={entry}>
+              <Instruction text={t[entry]} />
             </li>
-          ) : null}
-          <li>
-            <Instruction text={t.iosAdd} />
-          </li>
-          <li>{t.iosOpenApp}</li>
+          ))}
         </ol>
       ) : (
-        <>
-          <span className={styles.instructionBody}>
-            <Instruction text={t.iosStepsGeneric} />
+        steps.map((entry) => (
+          <span className={styles.instructionBody} key={entry}>
+            <Instruction text={t[entry]} />
           </span>
-          <span className={styles.instructionBody}>{t.iosOpenApp}</span>
-        </>
+        ))
       )}
       <span className={styles.appPreview}>
         {/* biome-ignore lint/performance/noImgElement: the preview uses the Site's fixed icon or Twemoji. */}
@@ -239,22 +157,12 @@ function clientDeviceHints() {
   };
 }
 
-/** Where this browser stands with push notifications, before the Visitor does anything. */
-async function detectStatus(device: DeviceContext, slug: string): Promise<Status> {
-  if (device.ios && device.iosVersion) {
-    const [major = 0, minor = 0] = device.iosVersion.split('.').map(Number);
-    if (major < 16 || (major === 16 && minor < 4)) {
-      return 'unsupported';
-    }
-  }
-  if (device.ios && !device.standalone) {
-    return 'ios-home-screen';
-  }
-  if (!('serviceWorker' in navigator && 'PushManager' in window)) {
-    return 'unsupported';
-  }
-  if (Notification.permission === 'denied') {
-    return 'denied';
+/** Where this browser stands with Notifications, before the Visitor does anything. */
+async function detectStatus(device: SupportDevice, slug: string): Promise<Status> {
+  const pushApis = 'serviceWorker' in navigator && 'PushManager' in window;
+  const support = supportOf(device, { pushApis, permission: pushApis ? Notification.permission : null });
+  if (support !== 'supported') {
+    return support;
   }
   try {
     const reg = await navigator.serviceWorker.register('/sw.js');
@@ -278,12 +186,12 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, push, pillSlot
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
-  const [device, setDevice] = useState<DeviceContext | null>(null);
+  const [device, setDevice] = useState<SupportDevice | null>(null);
   const [confettiShot, setConfettiShot] = useState<{ origin: ConfettiOrigin } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
-    const detectedDevice = deviceContext();
+    const detectedDevice = supportDevice(navigator.userAgent, isStandalone());
     setDevice(detectedDevice);
     void detectStatus(detectedDevice, slug).then((detected) => !cancelled && setStatus(detected));
     return () => {
@@ -393,7 +301,7 @@ export function PushSubscribeView({
   onConfirmOpenChange,
 }: {
   status: Status;
-  device: DeviceContext | null;
+  device: SupportDevice | null;
   lang: Lang;
   push: PublicPageView['push'];
   busy?: boolean;

@@ -32,6 +32,26 @@ function bornOnIt(formattedDatetime: string, sex: Sex): string {
   return `${sex === 'female' ? 'Nata' : 'Nato'} il ${formattedDatetime}`;
 }
 
+/** The icon an iPhone shows beside a control that a step names. */
+export type StepIcon = 'share' | 'more' | 'pageMenu' | 'addToHome';
+
+/** Words a step quotes from the iPhone's screen, such as a button's name, with the icon shown beside them there, if any. */
+export interface NamedControl {
+  name: string;
+  icon?: StepIcon;
+}
+
+/** One step of an instruction: its words in order, with the controls it names marked. */
+export type StepText = readonly (string | NamedControl)[];
+
+function step(...parts: (string | NamedControl)[]): StepText {
+  return parts;
+}
+
+function named(name: string, icon?: StepIcon): NamedControl {
+  return icon ? { name, icon } : { name };
+}
+
 /**
  * The copy of a Site's Public page, in every language in `Lang`. English sets
  * the shape; every other language must match it, so a missing entry is a type
@@ -101,25 +121,49 @@ const en = {
   errorDenied: 'Notifications are blocked in your browser settings.',
   notificationsHelpTitle: 'How to enable notifications',
   iosHomeScreen: 'On iPhone, web notifications work only after you add this page to your Home Screen as a web app.',
-  iosStepsClassic: 'In Safari, tap Share, choose Add to Home Screen, then tap Add.',
-  iosSteps26:
-    'In Safari, tap More (…), then Share. With the Top or Bottom tab layout, tap Share directly. Choose Add to Home Screen, enable Open as Web App, then tap Add.',
-  iosStepsGeneric:
-    'Open this page in Safari and use its Share menu to add it to your Home Screen. If Open as Web App appears, enable it. The Apple guide below shows the steps for your version.',
-  iosOpenApp: 'Go to your Home Screen and open the new app shown below. Turn notifications on from there',
-  iosOpenSafari: 'Open this page in Safari',
-  iosShare: 'Tap Share',
-  iosMenu26: 'Tap More, then Share. With the Top or Bottom tab layout, tap Share directly',
-  iosMenu27: 'Tap Page Menu, then Share. With the Top or Bottom tab layout, tap Share directly',
-  iosAddHome: 'Scroll down and choose Add to Home Screen',
-  iosEnableApp: 'Turn on Open as Web App',
-  iosAdd: 'Tap Add',
+  /**
+   * The steps that add the page to an iPhone's Home Screen. Each marks the
+   * words the Visitor looks for on the iPhone, with the icon they carry there:
+   * every language marks the same icons in the same order.
+   */
+  iosStepsGeneric: step(
+    'Open this page in ',
+    named('Safari'),
+    ' and use its ',
+    named('Share', 'share'),
+    ' menu to add it to your Home Screen. If ',
+    named('Open as Web App'),
+    ' appears, enable it. The Apple guide below shows the steps for your version.'
+  ),
+  iosOpenApp: step('Go to your Home Screen and open the new app shown below. Turn notifications on from there'),
+  iosOpenSafari: step('Open this page in ', named('Safari')),
+  iosShare: step('Tap ', named('Share', 'share')),
+  iosMenu26: step(
+    'Tap ',
+    named('More', 'more'),
+    ', then ',
+    named('Share', 'share'),
+    '. With the Top or Bottom tab layout, tap ',
+    named('Share', 'share'),
+    ' directly'
+  ),
+  iosMenu27: step(
+    'Tap ',
+    named('Page Menu', 'pageMenu'),
+    ', then ',
+    named('Share', 'share'),
+    '. With the Top or Bottom tab layout, tap ',
+    named('Share', 'share'),
+    ' directly'
+  ),
+  iosAddHome: step('Scroll down and choose ', named('Add to Home Screen', 'addToHome')),
+  iosEnableApp: step('Turn on ', named('Open as Web App')),
+  iosAdd: step('Tap ', named('Add')),
   androidUnsupported: 'This browser does not support push notifications. Open this page in Chrome to turn them on.',
   iosHomeScreenLink: 'See how to add this page to your Home Screen',
   iosVersion: 'Your browser does not support push notifications. Web notifications need iOS 16.4 or later.',
   iosDenied: 'Notifications are blocked for this web app. Check its notification settings in iPhone Settings.',
   iosSettingsLink: 'Open Apple’s notification guide',
-  androidUseChrome: 'For the best notification support on Android, open this page in Chrome.',
   androidDenied: 'Notifications are blocked for this page in Chrome. Allow them in the site settings.',
   androidSettingsLink: 'Open Chrome’s notification guide',
 };
@@ -180,27 +224,43 @@ const it: PublicPageCopy = {
   notificationsHelpTitle: 'Come attivare le notifiche',
   iosHomeScreen:
     'Su iPhone, le notifiche web funzionano solo dopo aver aggiunto questa pagina alla schermata Home come app web.',
-  iosStepsClassic: 'In Safari, tocca Condividi, scegli Aggiungi alla schermata Home e tocca Aggiungi.',
-  iosSteps26:
-    'In Safari, tocca Altro (…), poi Condividi. Con il layout dei pannelli in alto o in basso, tocca direttamente Condividi. Scegli Aggiungi alla schermata Home, attiva Apri come app web e tocca Aggiungi.',
-  iosStepsGeneric:
-    'Apri questa pagina in Safari e usa il menu Condividi per aggiungerla alla schermata Home. Se compare Apri come app web, attivalo. La guida Apple qui sotto mostra i passaggi per la tua versione.',
-  iosOpenApp: 'Vai alla schermata Home e apri la nuova app mostrata qui sotto. Attiva le notifiche da lì',
-  iosOpenSafari: 'Apri questa pagina in Safari',
-  iosShare: 'Tocca Condividi',
-  iosMenu26: 'Tocca Altro, poi Condividi. Con il layout dei pannelli in alto o in basso, tocca direttamente Condividi',
-  iosMenu27:
-    'Tocca Menu pagina, poi Condividi. Con il layout dei pannelli in alto o in basso, tocca direttamente Condividi',
-  iosAddHome: 'Scorri verso il basso e scegli Aggiungi alla schermata Home',
-  iosEnableApp: 'Attiva Apri come app web',
-  iosAdd: 'Tocca Aggiungi',
+  iosStepsGeneric: step(
+    'Apri questa pagina in ',
+    named('Safari'),
+    ' e usa il menu ',
+    named('Condividi', 'share'),
+    ' per aggiungerla alla schermata Home. Se compare ',
+    named('Apri come app web'),
+    ', attivalo. La guida Apple qui sotto mostra i passaggi per la tua versione.'
+  ),
+  iosOpenApp: step('Vai alla schermata Home e apri la nuova app mostrata qui sotto. Attiva le notifiche da lì'),
+  iosOpenSafari: step('Apri questa pagina in ', named('Safari')),
+  iosShare: step('Tocca ', named('Condividi', 'share')),
+  iosMenu26: step(
+    'Tocca ',
+    named('Altro', 'more'),
+    ', poi ',
+    named('Condividi', 'share'),
+    '. Con il layout dei pannelli in alto o in basso, tocca direttamente ',
+    named('Condividi', 'share')
+  ),
+  iosMenu27: step(
+    'Tocca ',
+    named('Menu pagina', 'pageMenu'),
+    ', poi ',
+    named('Condividi', 'share'),
+    '. Con il layout dei pannelli in alto o in basso, tocca direttamente ',
+    named('Condividi', 'share')
+  ),
+  iosAddHome: step('Scorri verso il basso e scegli ', named('Aggiungi alla schermata Home', 'addToHome')),
+  iosEnableApp: step('Attiva ', named('Apri come app web')),
+  iosAdd: step('Tocca ', named('Aggiungi')),
   androidUnsupported: 'Questo browser non supporta le notifiche push. Apri questa pagina in Chrome per attivarle.',
   iosHomeScreenLink: 'Scopri come aggiungere questa pagina alla schermata Home',
   iosVersion: 'Il tuo browser non supporta le notifiche push. Le notifiche web richiedono iOS 16.4 o successivo.',
   iosDenied:
     'Le notifiche sono bloccate per questa web app. Controlla le impostazioni delle notifiche in Impostazioni.',
   iosSettingsLink: 'Apri la guida Apple alle notifiche',
-  androidUseChrome: 'Per usare al meglio le notifiche su Android, apri questa pagina in Chrome.',
   androidDenied: 'Le notifiche sono bloccate per questa pagina in Chrome. Attivale nelle impostazioni del sito.',
   androidSettingsLink: 'Apri la guida Chrome alle notifiche',
 };
