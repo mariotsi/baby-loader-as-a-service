@@ -1,19 +1,13 @@
 import { expect, test } from 'vitest';
 import {
-  type BirthDraft,
-  birthDraftOf,
-  birthSettings,
-  birthWrite,
   draftOfSite,
   draftProblems,
   lastValidSettings,
   newSiteDraft,
   readStoredDraft,
   type SiteDraft,
-  sameDraft,
   settingsOfDraft,
   unpickedPlaces,
-  withSavedBirthMilestone,
 } from './siteDraft.ts';
 import {
   calendarDaySchema,
@@ -66,7 +60,7 @@ const emma: SiteSettings = {
 };
 
 function birthOf(site: SiteSettings) {
-  return { birth: birthSettings(birthDraftOf(site), site.timezone), birthVideo: site.birthVideo };
+  return { birth: site.birth, birthVideo: site.birthVideo };
 }
 
 test('a saved Site comes back out of its draft as it was saved, but for blank texts', () => {
@@ -123,68 +117,6 @@ test('the Birth milestone stands on the day of birth in the Site’s Timezone, a
     '2026-10-25'
   );
   expect(settingsOfDraft(draft).milestones.map((m) => m.kind)).toStrictEqual([undefined]);
-});
-
-test('the Birth’s time is typed on the wall clock in the Site’s Timezone', () => {
-  const draft = birthDraftOf(emma);
-  expect(draft.datetime).toBe('2026-10-26T09:00');
-  expect([draft.weight, draft.lengthCm]).toStrictEqual(['3400', '50']);
-  const settings = birthSettings({ ...draft, weight: '', message: { en: 'Hi', it: ' ' } }, 'Europe/Rome');
-  expect(settings).toStrictEqual({
-    born: true,
-    details: {
-      datetime: '2026-10-26T08:00:00.000Z',
-      weightGrams: null,
-      lengthCm: centimetresSchema.parse(50),
-      message: { en: 'Hi' },
-      photo: null,
-    },
-  });
-  expect(birthSettings({ ...draft, born: false }, 'Europe/Rome')).toStrictEqual({ born: false, details: null });
-});
-
-test('saving the Birth from its dialog keeps the saved Site, with the name and Sex as typed', () => {
-  const waiting: SiteSettings = { ...emma, birth: { born: false, details: null }, milestones: [scan] };
-  const born: BirthDraft = { ...birthDraftOf(emma) };
-  const after = birthWrite(waiting, born, { babyName: 'Sofia', sex: 'female', birthVideo: null });
-  expect(after.babyName).toBe('Sofia');
-  expect(after.birth.born).toBe(true);
-  expect(after.milestones.map((m) => [m.kind, m.date])).toStrictEqual([
-    [undefined, '2026-08-01'],
-    ['birth', '2026-10-26'],
-  ]);
-  const undone = birthWrite(emma, { ...born, born: false }, { babyName: 'Emma', sex: 'female', birthVideo: null });
-  expect(undone.birth).toStrictEqual({ born: false, details: null });
-  expect(undone.milestones).toStrictEqual([scan]);
-});
-
-test('the Birth milestone follows the saved day, and one removed here stays removed', () => {
-  const drafts = draftOfSite(emma).milestones;
-  const savedOne = { ...birthMilestone, date: asDay('2026-10-24') };
-  expect(withSavedBirthMilestone(drafts, [scan, savedOne], false)[1].date).toBe('2026-10-24');
-  const withoutIt = drafts.filter((m) => m.kind !== 'birth');
-  expect(withSavedBirthMilestone(withoutIt, [scan, savedOne], true).length).toBe(1);
-  expect(withSavedBirthMilestone(withoutIt, [scan, savedOne], false).length).toBe(2);
-  expect(withSavedBirthMilestone(drafts, [scan], false).length).toBe(1);
-});
-
-test('a draft is unsaved once it would save something else', () => {
-  const draft = draftOfSite(emma);
-  const birth = birthOf(emma);
-  expect(sameDraft(draft, birth, draftOfSite(emma), birth)).toBe(true);
-  expect(sameDraft({ ...draft, babyName: 'Sofia' }, birth, draft, birth)).toBe(false);
-  // The emoji kept while the loading baby is picked is not saved, so changing it changes nothing.
-  const off = { ...draft, iconIsEmoji: false };
-  expect(sameDraft({ ...off, iconEmoji: '🐣' }, birth, off, birth)).toBe(true);
-  // Blank texts are not saved either.
-  expect(sameDraft({ ...draft, pageName: { en: 'The Rossis', it: ' ' } }, birth, draft, birth)).toBe(true);
-  // A Place typed and not picked is unsaved, though it sends nothing yet.
-  const typed = { ...draft, milestones: draft.milestones.map((m, i) => (i === 0 ? { ...m, placeText: 'Via' } : m)) };
-  expect(sameDraft(typed, birth, draft, birth)).toBe(false);
-  // A video picked and not uploaded is unsaved.
-  const file = new File(['x'], 'hello.mp4', { type: 'video/mp4', lastModified: 1 });
-  expect(sameDraft(draft, { ...birth, birthVideo: file }, draft, birth)).toBe(false);
-  expect(sameDraft(draft, { ...birth, birthVideo: file }, draft, { ...birth, birthVideo: file })).toBe(true);
 });
 
 test('previews keep the last valid settings while a field is half filled', () => {

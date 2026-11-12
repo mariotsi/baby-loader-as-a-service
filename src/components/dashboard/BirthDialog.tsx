@@ -1,6 +1,7 @@
 'use client';
 
 import { type SubmitEvent, useEffect, useRef, useState } from 'react';
+import { useStore } from 'zustand';
 import { useLang } from '@/components/LangProvider';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
@@ -22,88 +23,50 @@ import {
   type ErrorPlace,
   errorPlace,
   inlineErrorText,
+  routeErrorText,
 } from '@/lib/errorText';
 import { fallbackLang, type Lang } from '@/lib/i18n';
 import { notificationContent, notificationIcon } from '@/lib/notificationContent';
 import { siteShortName } from '@/lib/siteAppIdentity';
-import type { BirthDraft, MediaDraft } from '@/lib/siteDraft';
+import type { BirthDraft } from '@/lib/siteDraft';
+import { birthPreview, birthProblems, birthToEdit, type SiteEditing, stillFailing } from '@/lib/siteEditing';
 import type { BirthDetails, SiteSettings, SiteSettingsError } from '@/lib/siteSettings';
 import { BirthMediaEditor, useBirthMediaUrl } from './BirthMediaEditor';
 import { NotificationPreviews } from './NotificationPreviews';
 import { PublicPagePreview } from './PublicPagePreview';
 import styles from './SiteEditor.module.css';
 
-/** The Birth as the editor holds it: the fields as typed, and the photo picked but maybe not yet uploaded. */
-
-/** Why a save did not go through: Site settings errors, from the browser or the server, or a message. `stale` when the Site changed in another tab. */
-export type SaveFailure = { ok: false; errors: SiteSettingsError[]; message: string | null; stale?: boolean };
-
-/** How a save went. */
-export type SaveOutcome = { ok: true } | SaveFailure;
-
 interface BirthDialogProps {
-  /** The Birth as it was saved; announcing starts from it with the date and time filled in. */
-  initial: BirthDraft;
-  /** The page's own name and sex: the dialog asks for them before announcing when either is missing. */
-  babyName: string;
-  sex: SiteSettings['sex'];
-  onBabyName: (name: string) => void;
-  onSex: (sex: SiteSettings['sex']) => void;
-  /** What the Privacy settings hide until now, which announcing shows to everyone. */
-  hidden: { name: boolean; sex: boolean };
-  languages: Lang[];
-  /** The Site's saved Timezone, which the birth's time is on. */
-  timezone: string;
+  /** The Site editing of the page around the dialog: the dialog saves the Birth through it. */
+  editing: SiteEditing;
   previewSlug?: string;
-  /** Everything that would stop saving this Birth. */
-  check: (birth: BirthDraft) => SiteSettingsError[];
-  /** The Site settings the previews draw with this Birth, name and Sex given or not, or null while a field is half filled. */
-  settingsWith: (birth: BirthDraft) => SiteSettings | null;
-  slug: string;
   /** The Site's Address, where the notification comes from. */
   address: string;
-  /** The Birth video, the same draft the page around the dialog edits. */
-  video: MediaDraft;
-  onVideo: (video: MediaDraft) => void;
   /** What the page shows in place of a birth photo. */
   bornPlaceholderUrl: MediaUrl;
-  /** Saves this Birth with the name, the Sex and the Birth video; the page's other changes stay unsaved. */
-  onSave: (birth: BirthDraft) => Promise<SaveOutcome>;
   onClose: () => void;
 }
 
 /**
  * The Birth details on a page of their own: announcing the birth, or changing
- * what was announced. Nothing changes until the Owner saves, and saving saves
- * the Birth with the name, the Sex and the Birth video, which the page around
- * the dialog shows too.
+ * what was announced. The Birth as typed is the dialog's own: nothing changes
+ * until the Owner saves, and closing discards it. Saving saves the Birth with
+ * the name, the Sex and the Birth video, which are the page's and show on it
+ * too.
  */
-export function BirthDialog({
-  initial,
-  babyName,
-  sex,
-  onBabyName,
-  onSex,
-  hidden,
-  languages,
-  timezone,
-  previewSlug,
-  check,
-  settingsWith,
-  slug,
-  address,
-  video,
-  onVideo,
-  bornPlaceholderUrl,
-  onSave,
-  onClose,
-}: BirthDialogProps) {
+export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl, onClose }: BirthDialogProps) {
+  const state = useStore(editing);
+  const { babyName, sex, languages } = state.draft;
+  const { slug, timezone } = state.stored;
+  const video = state.video;
+  /** The Birth the dialog opened on: as saved, or with now as its date and time when announcing. */
+  const [initial] = useState(() => birthToEdit(state));
   const pageLang = useLang();
   const t = platformCopy[pageLang].settings;
   const announcing = !initial.born;
   /** Asked once, when the dialog opens, so the fields stay while the Owner fills them in. */
   const [asksIdentity] = useState(announcing && (!babyName.trim() || sex === 'unknown'));
-  const revealed = announcing ? revealedText(t, hidden) : null;
+  const revealed = announcing ? revealedText(t, { name: !state.draft.showName, sex: !state.draft.showSex }) : null;
   const [draft, setDraft] = useState<BirthDraft>(() => ({ ...initial, born: true }));
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -115,7 +78,7 @@ export function BirthDialog({
   const contentRef = useRef<HTMLDivElement>(null);
   /** The previews keep the last Site settings that were whole while a field is half filled. */
   const lastSettings = useRef<SiteSettings | null>(null);
-  lastSettings.current = settingsWith(draft) ?? lastSettings.current;
+  lastSettings.current = birthPreview(state, draft) ?? lastSettings.current;
   const photoUrl = useBirthMediaUrl(draft.photo, previewSlug, 'photo');
   const videoUrl = useBirthMediaUrl(video, previewSlug, 'video');
 
@@ -125,7 +88,7 @@ export function BirthDialog({
     }
   }, [failedSaves]);
 
-  const errors = failedPaths.length > 0 ? check(draft).filter((error) => failedPaths.includes(error.path)) : [];
+  const errors = stillFailing(birthProblems(state, draft), failedPaths);
   /** Where this dialog shows an error: under its field, in words, or on the page behind it. */
   const form: ErrorForm = { birthDialog: { asksIdentity } };
 
@@ -140,7 +103,7 @@ export function BirthDialog({
 
   /** Marks what stops saving `birth`, and says whether anything does. */
   function blocked(birth: BirthDraft): boolean {
-    const found = check(birth);
+    const found = birthProblems(state, birth);
     if (found.length > 0) {
       setFailedPaths(found.map((error) => error.path));
       setFailedSaves((count) => count + 1);
@@ -156,19 +119,23 @@ export function BirthDialog({
       return;
     }
     setSaving(true);
-    const outcome = await onSave(birth);
+    const outcome = await state.saveBirth(birth);
     if (outcome.ok) {
+      onClose();
       return;
     }
     setSaving(false);
     setConfirmingUndo(false);
     setConfirmingAnnounce(false);
-    setMessage(outcome.message);
-    setStale(outcome.stale === true);
-    if (outcome.errors.length > 0) {
-      setFailedPaths(outcome.errors.map((error) => error.path));
-      setFailedSaves((count) => count + 1);
+    setStale('refused' in outcome && outcome.stale);
+    if ('errors' in outcome) {
+      if (outcome.errors.length > 0) {
+        setFailedPaths(outcome.errors.map((error) => error.path));
+        setFailedSaves((count) => count + 1);
+      }
+      return;
     }
+    setMessage(routeErrorText(outcome.refused, pageLang));
   }
 
   // Announcing sends the notification at once, so it asks first: a slip of the finger cannot announce.
@@ -215,7 +182,11 @@ export function BirthDialog({
           {asksIdentity ? (
             <Card title={t.identityCard} description={t.identityCardDescription} headingLevel={3}>
               <Field label={t.name} error={inlineError('babyName')}>
-                <Input value={babyName} onChange={(e) => onBabyName(e.target.value)} autoComplete="off" />
+                <Input
+                  value={babyName}
+                  onChange={(e) => state.change({ babyName: e.target.value })}
+                  autoComplete="off"
+                />
               </Field>
               <SegmentedControl
                 legend={t.sex}
@@ -224,7 +195,7 @@ export function BirthDialog({
                   { value: 'male', label: t.sexMale },
                 ]}
                 value={sex}
-                onChange={onSex}
+                onChange={(picked) => state.change({ sex: picked })}
               />
             </Card>
           ) : null}
@@ -278,7 +249,13 @@ export function BirthDialog({
             photo={draft.photo}
             onPhoto={(photo) => update({ photo })}
           />
-          <BirthMediaEditor only="video" headingLevel={3} previewSlug={previewSlug} video={video} onVideo={onVideo} />
+          <BirthMediaEditor
+            only="video"
+            headingLevel={3}
+            previewSlug={previewSlug}
+            video={video}
+            onVideo={state.pickVideo}
+          />
           {announcing ? null : (
             <div>
               <Button variant="ghost" icon="trash" onClick={() => setConfirmingUndo(true)}>
