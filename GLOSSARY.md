@@ -177,3 +177,7 @@ _Avoid_: Receipt, send, recipient
 **Birth notification**:
 The Notification announcing the birth; what a Subscriber opts in to during the Waiting state. Announcing again after going back to the Countdown sends it again.
 _Avoid_: Birth alert, arrival push
+
+**Notification support**:
+Where a Visitor's device stands on Notifications: it can subscribe, it is an iPhone that must first add the Public page to its Home Screen, the Visitor blocked Notifications on it, or it cannot receive them at all. With it goes what the Public page tells the Visitor there: why, the steps for their device, and a guide.
+_Avoid_: Push support, compatibility, browser check
