@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
+import { afterAll, assert, beforeAll, expect, test } from 'vitest';
 import { startTestDb } from '../db/testDb.ts';
 import { createUser, getUserByEmail, logIn, updatePasswordHash } from './auth.ts';
 import { emailSchema } from './email.ts';
@@ -15,10 +14,10 @@ import {
 const PASSWORD = 'Correct horse 9!';
 
 let stopDb: () => Promise<void>;
-before(async () => {
+beforeAll(async () => {
   stopDb = await startTestDb();
 });
-after(() => stopDb());
+afterAll(() => stopDb());
 
 const generationOne = PASSWORD_GENERATIONS.find((g) => g.id === 1) as PasswordGeneration;
 
@@ -37,7 +36,7 @@ async function generationOneUser(email: string): Promise<string> {
 
 async function storedHash(email: string): Promise<PasswordHash> {
   const user = await getUserByEmail(email);
-  assert.ok(user);
+  assert(user);
   return user.passwordHash;
 }
 
@@ -45,46 +44,46 @@ test('a current hash logs in as it is', async () => {
   await createUser(emailSchema.parse('current@example.test'), PASSWORD);
   const stored = await storedHash('current@example.test');
   const result = await logIn('current@example.test', PASSWORD);
-  assert.ok(result.ok);
-  assert.equal(result.passwordChangePending, false);
-  assert.equal(await storedHash('current@example.test'), stored);
+  assert(result.ok);
+  expect(result.passwordChangePending).toBe(false);
+  expect(await storedHash('current@example.test')).toBe(stored);
 });
 
 test('a wrong password or an unknown email is wrongCredentials', async () => {
   await createUser(emailSchema.parse('wrong@example.test'), PASSWORD);
-  assert.deepEqual(await logIn('wrong@example.test', 'Wrong horse 9!'), { ok: false, code: 'wrongCredentials' });
-  assert.deepEqual(await logIn('nobody@example.test', PASSWORD), { ok: false, code: 'wrongCredentials' });
+  expect(await logIn('wrong@example.test', 'Wrong horse 9!')).toStrictEqual({ ok: false, code: 'wrongCredentials' });
+  expect(await logIn('nobody@example.test', PASSWORD)).toStrictEqual({ ok: false, code: 'wrongCredentials' });
 });
 
 test('a generation 1 hash logs in and is replaced with a generation 2 hash', async () => {
   await generationOneUser('rehash@example.test');
   const result = await logIn('rehash@example.test', PASSWORD);
-  assert.ok(result.ok);
-  assert.equal(result.passwordChangePending, false);
+  assert(result.ok);
+  expect(result.passwordChangePending).toBe(false);
   const upgraded = await storedHash('rehash@example.test');
-  assert.match(upgraded, /^v2\$scrypt\$16384\$8\$5\$/);
-  assert.equal(await verifyPassword(PASSWORD, upgraded), 'valid');
-  assert.ok((await logIn('rehash@example.test', PASSWORD)).ok, 'the upgraded password logs in again');
+  expect(upgraded).toMatch(/^v2\$scrypt\$16384\$8\$5\$/);
+  expect(await verifyPassword(PASSWORD, upgraded)).toBe('valid');
+  expect((await logIn('rehash@example.test', PASSWORD)).ok, 'the upgraded password logs in again').toBeTruthy();
 });
 
 test('a hash whose generation has policy change logs in with a password change pending, hash untouched', async () => {
   const stored = await generationOneUser('change@example.test');
   const result = await logIn('change@example.test', PASSWORD, withGenerationOne('change'));
-  assert.ok(result.ok);
-  assert.equal(result.passwordChangePending, true);
-  assert.equal(await storedHash('change@example.test'), stored);
+  assert(result.ok);
+  expect(result.passwordChangePending).toBe(true);
+  expect(await storedHash('change@example.test')).toBe(stored);
 });
 
 test('the right password for a retired hash is refused with passwordResetRequired, a wrong one with wrongCredentials', async () => {
   const stored = await generationOneUser('retired@example.test');
   const retired = withGenerationOne('retired');
-  assert.deepEqual(await logIn('retired@example.test', PASSWORD, retired), {
+  expect(await logIn('retired@example.test', PASSWORD, retired)).toStrictEqual({
     ok: false,
     code: 'passwordResetRequired',
   });
-  assert.deepEqual(await logIn('retired@example.test', 'Wrong horse 9!', retired), {
+  expect(await logIn('retired@example.test', 'Wrong horse 9!', retired)).toStrictEqual({
     ok: false,
     code: 'wrongCredentials',
   });
-  assert.equal(await storedHash('retired@example.test'), stored);
+  expect(await storedHash('retired@example.test')).toBe(stored);
 });

@@ -1,6 +1,5 @@
-import assert from 'node:assert/strict';
 import { createECDH, randomBytes } from 'node:crypto';
-import { test } from 'node:test';
+import { expect, test } from 'vitest';
 import { ENDPOINT_MAX, isPushEndpoint, isValidSubscription, subscriptionSchema } from './subscription.ts';
 
 function browserKeys() {
@@ -14,8 +13,8 @@ const ENDPOINT = 'https://fcm.googleapis.com/fcm/send/abc123';
 test('a Subscription is what a browser hands over, reduced to its endpoint and keys', () => {
   const keys = browserKeys();
   const input = { endpoint: ENDPOINT, expirationTime: null, keys };
-  assert.equal(isValidSubscription(input), true);
-  assert.deepEqual(subscriptionSchema.parse(input), { endpoint: ENDPOINT, keys });
+  expect(isValidSubscription(input)).toBe(true);
+  expect(subscriptionSchema.parse(input)).toStrictEqual({ endpoint: ENDPOINT, keys });
 });
 
 test('a Subscription needs an endpoint and both keys', () => {
@@ -26,12 +25,12 @@ test('a Subscription needs an endpoint and both keys', () => {
     { endpoint: ENDPOINT },
     { endpoint: ENDPOINT, keys: { p256dh: browserKeys().p256dh } },
   ]) {
-    assert.equal(isValidSubscription(input), false, JSON.stringify(input));
+    expect(isValidSubscription(input), JSON.stringify(input)).toBe(false);
   }
 });
 
 test('a push endpoint is https on a named host, without credentials', () => {
-  assert.equal(isPushEndpoint(ENDPOINT), true);
+  expect(isPushEndpoint(ENDPOINT)).toBe(true);
   for (const endpoint of [
     '',
     42,
@@ -47,8 +46,8 @@ test('a push endpoint is https on a named host, without credentials', () => {
     'not a url',
     `https://push.example/${'a'.repeat(ENDPOINT_MAX)}`,
   ]) {
-    assert.equal(isPushEndpoint(endpoint), false, String(endpoint));
-    assert.equal(isValidSubscription({ endpoint, keys: browserKeys() }), false, String(endpoint));
+    expect(isPushEndpoint(endpoint), String(endpoint)).toBe(false);
+    expect(isValidSubscription({ endpoint, keys: browserKeys() }), String(endpoint)).toBe(false);
   }
 });
 
@@ -60,6 +59,6 @@ test('a Subscription’s keys are ones web-push could encrypt for', () => {
     { p256dh, auth: randomBytes(8).toString('base64url') },
     { p256dh, auth: 42 },
   ]) {
-    assert.equal(isValidSubscription({ endpoint: ENDPOINT, keys }), false, JSON.stringify(keys));
+    expect(isValidSubscription({ endpoint: ENDPOINT, keys }), JSON.stringify(keys)).toBe(false);
   }
 });

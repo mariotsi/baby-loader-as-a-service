@@ -32,7 +32,8 @@ Components never know which theme they are in: they read the tokens, and whoever
 ## The promises
 
 1. **Accessible by design.** Every Palette passes WCAG 2.2 AA on every pairing the components render, checked in CI
-   (`theme.test.ts`). Every story passes axe in a real browser (`npm run test:storybook`). Controls are native HTML
+   (`theme.test.ts`). Every story passes axe in a real browser (`npm run test:storybook`), and a component's behaviour is tested in
+   jsdom (`npm test`). Controls are native HTML
    elements, reachable and usable with a keyboard, with a visible focus ring.
 2. **Mobile first.** Every component starts from a 320px screen and grows into larger ones, never the other way round.
 3. **Joyful, gently.** Bouncy presses, a pop when something is picked, circles drifting at different depths. All of it

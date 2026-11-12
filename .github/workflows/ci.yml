@@ -1,9 +1,10 @@
 name: CI
 
 # Checks every pull request into staging: that the workflows' Playwright images match @playwright/test, types, lint and
-# formatting (Biome), unit tests (src/**/*.test.ts, some on an in-memory D1),
+# formatting (Biome), the unit tests (src/**/*.test.ts and scripts/**/*.test.mjs,
+# some on an in-memory D1) and the component tests (src/**/*.test.tsx, in jsdom),
 # the Cloudflare Worker build, and every Storybook story rendered in
-# Chromium with no axe violation. The Playwright suite runs on the pull request's
+# Chromium with no axe violation. Vitest runs all three kinds of test. The Playwright suite runs on the pull request's
 # Preview (deploy-preview.yml).
 
 on:
@@ -33,7 +34,8 @@ jobs:
       - run: npm run typecheck
       - name: Lint and format check
         run: npx biome ci
-      - run: npm test
+      - name: Unit and component tests (Vitest, the unit and components projects)
+        run: npm test
       - name: Build the Cloudflare Worker
         run: npm run cf:build
 
@@ -57,4 +59,5 @@ jobs:
           path: ~/.npm
           key: npm-playwright-${{ hashFiles('package-lock.json') }}
       - run: npm ci
-      - run: npm run test:storybook
+      - name: Storybook tests (Vitest, the storybook project)
+        run: npm run test:storybook

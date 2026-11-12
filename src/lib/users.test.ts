@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
+import { afterAll, assert, beforeAll, expect, test } from 'vitest';
 import { insertTestUser, startTestDb, testSubscription } from '../db/testDb.ts';
 import { createUser, EmailTakenError, getUserByEmail, getUserById } from './auth.ts';
 import { emailSchema } from './email.ts';
@@ -10,31 +9,33 @@ import { countSubscriptionsBySite, listSubscriptionsBySite, upsertSubscription }
 
 let stopDb: () => Promise<void>;
 
-before(async () => {
+beforeAll(async () => {
   stopDb = await startTestDb();
 });
 
-after(() => stopDb());
+afterAll(() => stopDb());
 
 test('an email has one account, whatever its case', async () => {
   const user = await createUser(emailSchema.parse('Ada@Example.com '), 'Correct-horse-1');
-  assert.match(user.id, /^[0-9a-f-]{36}$/);
-  assert.equal((await getUserByEmail('ada@example.com'))?.id, user.id);
-  assert.equal((await getUserById(user.id))?.email, 'ada@example.com');
-  await assert.rejects(createUser(emailSchema.parse('ADA@example.com'), 'Another-horse-2'), EmailTakenError);
+  expect(user.id).toMatch(/^[0-9a-f-]{36}$/);
+  expect((await getUserByEmail('ada@example.com'))?.id).toBe(user.id);
+  expect((await getUserById(user.id))?.email).toBe('ada@example.com');
+  await expect(createUser(emailSchema.parse('ADA@example.com'), 'Another-horse-2')).rejects.toBeInstanceOf(
+    EmailTakenError
+  );
 });
 
 test('an id of the wrong shape matches no User', async () => {
-  assert.equal(await getUserById('not-an-id'), null);
+  expect(await getUserById('not-an-id')).toBe(null);
 });
 
 test('a device subscribed twice to one Site is one Subscription, refreshed', async () => {
   const owner = { id: await insertTestUser() } as AuthenticatedUser;
   const dueDate = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const parsed = parseNewSite({ slug: 'ivy', settings: { ...defaultSiteSettings, dueDate } });
-  assert.ok(parsed.ok);
+  assert(parsed.ok);
   const created = await createSite(owner, parsed.value);
-  assert.ok(created.ok);
+  assert(created.ok);
   const subscription = {
     siteId: created.site.id,
     subscription: testSubscription('https://push.example/ivy'),
@@ -47,8 +48,8 @@ test('a device subscribed twice to one Site is one Subscription, refreshed', asy
   const refreshed = testSubscription('https://push.example/ivy');
   await upsertSubscription({ ...subscription, subscription: refreshed, lang: 'it' });
 
-  assert.equal(await countSubscriptionsBySite(created.site.id), 1);
+  expect(await countSubscriptionsBySite(created.site.id)).toBe(1);
   const [stored] = await listSubscriptionsBySite(created.site.id);
-  assert.deepEqual(stored.keys, refreshed.keys);
-  assert.equal(stored.lang, 'it');
+  expect(stored.keys).toStrictEqual(refreshed.keys);
+  expect(stored.lang).toBe('it');
 });

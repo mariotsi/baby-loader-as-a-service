@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { expect, test } from 'vitest';
 import {
   BIRTH_MILESTONE_EMOJI,
   birthDay,
@@ -21,7 +20,7 @@ const change = { languages: ['it', 'en'] as const, sex: 'female' as const };
 
 test('announcing adds the Birth milestone on the day of birth, in every Language', () => {
   const next = syncBirthMilestone([scan], { ...change, wasBorn: false, born: true, date: asDay('2026-10-26') }, same);
-  assert.deepEqual(next, [
+  expect(next).toStrictEqual([
     scan,
     { emoji: BIRTH_MILESTONE_EMOJI, label: { it: 'È nata!', en: 'She is born!' }, date: '2026-10-26', kind: 'birth' },
   ]);
@@ -34,8 +33,8 @@ test('announcing again replaces the Birth milestone left from before', () => {
     { ...change, wasBorn: false, born: true, date: asDay('2026-10-26') },
     same
   );
-  assert.equal(next.filter((m) => m.kind === 'birth').length, 1);
-  assert.equal(next.find((m) => m.kind === 'birth')?.date, '2026-10-26');
+  expect(next.filter((m) => m.kind === 'birth').length).toBe(1);
+  expect(next.find((m) => m.kind === 'birth')?.date).toBe('2026-10-26');
 });
 
 test('going back to the Countdown removes only the Birth milestone', () => {
@@ -45,10 +44,9 @@ test('going back to the Countdown removes only the Birth milestone', () => {
     date: asDay('2026-10-26'),
     kind: 'birth',
   };
-  assert.deepEqual(
-    syncBirthMilestone([scan, birth], { ...change, wasBorn: true, born: false, date: asDay('2026-10-26') }, same),
-    [scan]
-  );
+  expect(
+    syncBirthMilestone([scan, birth], { ...change, wasBorn: true, born: false, date: asDay('2026-10-26') }, same)
+  ).toStrictEqual([scan]);
 });
 
 test('a new day of birth moves the Birth milestone and keeps what the Owner wrote', () => {
@@ -63,19 +61,19 @@ test('a new day of birth moves the Birth milestone and keeps what the Owner wrot
     { ...change, wasBorn: true, born: true, date: asDay('2026-10-25') },
     same
   );
-  assert.deepEqual(moved, { ...birth, date: '2026-10-25' });
+  expect(moved).toStrictEqual({ ...birth, date: '2026-10-25' });
 });
 
 test('the preview of the birth notification reads well before the name is given', () => {
   const messages = birthNotificationMessages({ babyName: '', sex: 'female', languages: ['it', 'en'] }, {});
-  assert.equal(messages.it?.title, 'È nata!');
-  assert.equal(messages.en?.title, 'The baby is born!');
+  expect(messages.it?.title).toBe('È nata!');
+  expect(messages.en?.title).toBe('The baby is born!');
 });
 
 test('the day of birth is the one in the Site’s Timezone', () => {
-  assert.equal(birthDay('2026-10-25T20:00:00.000Z', 'Pacific/Auckland'), '2026-10-26');
-  assert.equal(birthDay('2026-10-25T20:00:00.000Z', 'America/Los_Angeles'), '2026-10-25');
-  assert.equal(birthDay('', 'Europe/Rome'), null);
+  expect(birthDay('2026-10-25T20:00:00.000Z', 'Pacific/Auckland')).toBe('2026-10-26');
+  expect(birthDay('2026-10-25T20:00:00.000Z', 'America/Los_Angeles')).toBe('2026-10-25');
+  expect(birthDay('', 'Europe/Rome')).toBe(null);
 });
 
 test('Site settings saved apart from the Birth keep the Birth milestone on the day of birth, and none while Waiting', () => {
@@ -89,18 +87,18 @@ test('Site settings saved apart from the Birth keep the Birth milestone on the d
     born: true as const,
     details: { datetime: '2026-10-25T20:00:00.000Z', weightGrams: null, lengthCm: null, message: {} },
   };
-  assert.deepEqual(settledBirthMilestones([scan, birth], born, 'Pacific/Auckland'), [
+  expect(settledBirthMilestones([scan, birth], born, 'Pacific/Auckland')).toStrictEqual([
     scan,
     { ...birth, date: '2026-10-26' },
   ]);
-  assert.deepEqual(settledBirthMilestones([scan], born, 'Pacific/Auckland'), [scan]);
-  assert.deepEqual(settledBirthMilestones([scan, birth], { born: false, details: null }, 'Europe/Rome'), [scan]);
+  expect(settledBirthMilestones([scan], born, 'Pacific/Auckland')).toStrictEqual([scan]);
+  expect(settledBirthMilestones([scan, birth], { born: false, details: null }, 'Europe/Rome')).toStrictEqual([scan]);
 });
 
 test('the birth time field means the wall clock in the Site’s Timezone', () => {
-  assert.equal(instantIn('2026-10-26T09:00', 'Pacific/Auckland'), '2026-10-25T20:00:00.000Z');
-  assert.equal(instantIn('2026-10-25T21:00', 'Europe/Rome'), '2026-10-25T20:00:00.000Z');
-  assert.equal(localIn('2026-10-25T20:00:00.000Z', 'Pacific/Auckland'), '2026-10-26T09:00');
-  assert.equal(instantIn('', 'Europe/Rome'), '');
-  assert.equal(instantIn('2026-10-2', 'Europe/Rome'), '');
+  expect(instantIn('2026-10-26T09:00', 'Pacific/Auckland')).toBe('2026-10-25T20:00:00.000Z');
+  expect(instantIn('2026-10-25T21:00', 'Europe/Rome')).toBe('2026-10-25T20:00:00.000Z');
+  expect(localIn('2026-10-25T20:00:00.000Z', 'Pacific/Auckland')).toBe('2026-10-26T09:00');
+  expect(instantIn('', 'Europe/Rome')).toBe('');
+  expect(instantIn('2026-10-2', 'Europe/Rome')).toBe('');
 });

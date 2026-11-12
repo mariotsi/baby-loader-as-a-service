@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
+import { afterAll, assert, beforeAll, expect, test } from 'vitest';
 import { insertTestUser, startTestDb, testSubscription } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import { type BirthWriteDeps, clearBirth, saveSettings, setBirth } from './birthChange.ts';
@@ -25,12 +24,12 @@ const BIRTH_AT = '2026-10-25T20:00:00.000Z';
 let stopDb: () => Promise<void>;
 let token: string;
 
-before(async () => {
+beforeAll(async () => {
   stopDb = await startTestDb();
   token = issueSessionToken(await insertTestUser());
 });
 
-after(() => stopDb());
+afterAll(() => stopDb());
 
 async function waitingSite(slug: string, settings: Partial<SiteSettingsInput> = {}): Promise<OwnedSite> {
   const parsed = parseNewSite(
@@ -49,14 +48,14 @@ async function waitingSite(slug: string, settings: Partial<SiteSettingsInput> = 
     },
     NOW
   );
-  assert.ok(parsed.ok, JSON.stringify(parsed));
-  assert.ok((await createSite(authenticate(token) as AuthenticatedUser, parsed.value)).ok);
+  assert(parsed.ok, JSON.stringify(parsed));
+  assert((await createSite(authenticate(token) as AuthenticatedUser, parsed.value)).ok);
   return reload(slug);
 }
 
 async function reload(slug: string): Promise<OwnedSite> {
   const access = await accessOwnedSite(token, slug);
-  assert.ok(typeof access === 'object');
+  assert(typeof access === 'object');
   return access;
 }
 
@@ -114,7 +113,7 @@ function birthBody(site: Site, overrides: Record<string, unknown> = {}) {
 }
 
 function okSite(result: Awaited<ReturnType<typeof setBirth>>): Site {
-  assert.ok(result.ok, JSON.stringify(result));
+  assert(result.ok, JSON.stringify(result));
   return result.site;
 }
 
@@ -136,23 +135,20 @@ test('announcing saves the Birth, adds the Birth milestone on its day in the Sit
   const result = await setBirth(owned, birthBody(owned.site), deps({ push: push.service }));
 
   const site = okSite(result);
-  assert.equal(site.birth.born, true);
-  assert.deepEqual(
-    site.milestones.filter((m) => m.kind === 'birth').map((m) => m.date),
-    ['2026-10-26']
-  );
-  assert.ok(result.ok);
-  assert.deepEqual(result.notification, { sent: 1, removed: 0, total: 1 });
-  assert.equal(push.sent.length, 1);
-  assert.equal(push.sent[0].body, 'Welcome, Emma!');
+  expect(site.birth.born).toBe(true);
+  expect(site.milestones.filter((m) => m.kind === 'birth').map((m) => m.date)).toStrictEqual(['2026-10-26']);
+  assert(result.ok);
+  expect(result.notification).toStrictEqual({ sent: 1, removed: 0, total: 1 });
+  expect(push.sent.length).toBe(1);
+  expect(push.sent[0].body).toBe('Welcome, Emma!');
   const [logged] = await listNotifications(owned.site.id);
-  assert.equal(logged.kind, 'birth');
+  expect(logged.kind).toBe('birth');
 });
 
 test('announcing leaves the Privacy settings as the Owner chose them', async () => {
   const owned = await waitingSite('birth-privacy');
   const site = okSite(await setBirth(owned, birthBody(owned.site), deps()));
-  assert.deepEqual(site.privacy, { showName: false, showSex: false });
+  expect(site.privacy).toStrictEqual({ showName: false, showSex: false });
 });
 
 test('changing the Birth once Born sends nothing and moves the Birth milestone, keeping its label', async () => {
@@ -166,7 +162,7 @@ test('changing the Birth once Born sends nothing and moves the Birth milestone, 
   };
   const { birth: _, ...settings } = relabelled;
   const saved = await saveSettings(await reload('birth-edit'), { updatedAt: announced.updatedAt, settings }, deps());
-  assert.ok(saved.ok, JSON.stringify(saved));
+  assert(saved.ok, JSON.stringify(saved));
   const push = fakePush();
 
   const result = await setBirth(
@@ -178,13 +174,12 @@ test('changing the Birth once Born sends nothing and moves the Birth milestone, 
   );
 
   const site = okSite(result);
-  assert.ok(result.ok);
-  assert.equal(result.notification, null);
-  assert.equal(push.sent.length, 0);
-  assert.deepEqual(
-    site.milestones.filter((m) => m.kind === 'birth'),
-    [{ emoji: '👶', label: { it: 'Eccola', en: 'Here' }, date: '2026-10-24', kind: 'birth' }]
-  );
+  assert(result.ok);
+  expect(result.notification).toBe(null);
+  expect(push.sent.length).toBe(0);
+  expect(site.milestones.filter((m) => m.kind === 'birth')).toStrictEqual([
+    { emoji: '👶', label: { it: 'Eccola', en: 'Here' }, date: '2026-10-24', kind: 'birth' },
+  ]);
 });
 
 test('going back to the Countdown drops the Birth details, the Birth milestone and the photo, and keeps the Birth video', async () => {
@@ -210,14 +205,11 @@ test('going back to the Countdown drops the Birth details, the Birth milestone a
   );
 
   const site = okSite(result);
-  assert.deepEqual(site.birth, { born: false, details: null });
-  assert.equal(
-    site.milestones.some((m) => m.kind === 'birth'),
-    false
-  );
-  assert.deepEqual(site.privacy, { showName: false, showSex: false });
-  assert.deepEqual(site.birthVideo, video);
-  assert.deepEqual(deleted, [photo.key]);
+  expect(site.birth).toStrictEqual({ born: false, details: null });
+  expect(site.milestones.some((m) => m.kind === 'birth')).toBe(false);
+  expect(site.privacy).toStrictEqual({ showName: false, showSex: false });
+  expect(site.birthVideo).toStrictEqual(video);
+  expect(deleted).toStrictEqual([photo.key]);
 });
 
 test('announcing again after going back sends the Birth notification again', async () => {
@@ -230,11 +222,8 @@ test('announcing again after going back sends the Birth notification again', asy
   const result = await setBirth(await reload('birth-again'), birthBody(back), deps({ push: push.service }));
 
   okSite(result);
-  assert.equal(push.sent.length, 1);
-  assert.deepEqual(
-    (await listNotifications(owned.site.id)).map((n) => n.kind),
-    ['birth', 'birth']
-  );
+  expect(push.sent.length).toBe(1);
+  expect((await listNotifications(owned.site.id)).map((n) => n.kind)).toStrictEqual(['birth', 'birth']);
 });
 
 test('a write from a tab that missed the last save is refused, and nothing changes or goes out', async () => {
@@ -243,17 +232,20 @@ test('a write from a tab that missed the last save is refused, and nothing chang
   const push = fakePush();
   const stale = { ...birthBody(owned.site), updatedAt: '2026-01-01T00:00:00.000Z' };
 
-  assert.deepEqual(await setBirth(owned, stale, deps({ push: push.service })), { ok: false, refused: 'stale' });
-  assert.deepEqual(await clearBirth(owned, { updatedAt: stale.updatedAt }, deps()), { ok: false, refused: 'stale' });
+  expect(await setBirth(owned, stale, deps({ push: push.service }))).toStrictEqual({ ok: false, refused: 'stale' });
+  expect(await clearBirth(owned, { updatedAt: stale.updatedAt }, deps())).toStrictEqual({
+    ok: false,
+    refused: 'stale',
+  });
   const { birth: _, ...settings } = siteSettingsOf(owned.site);
-  assert.deepEqual(await saveSettings(owned, { updatedAt: stale.updatedAt, settings }, deps()), {
+  expect(await saveSettings(owned, { updatedAt: stale.updatedAt, settings }, deps())).toStrictEqual({
     ok: false,
     refused: 'stale',
   });
 
-  assert.equal((await reload('birth-stale')).site.birth.born, false);
-  assert.equal(push.sent.length, 0);
-  assert.deepEqual(await listNotifications(owned.site.id), []);
+  expect((await reload('birth-stale')).site.birth.born).toBe(false);
+  expect(push.sent.length).toBe(0);
+  expect(await listNotifications(owned.site.id)).toStrictEqual([]);
 });
 
 test('an invalid Birth names its fields as Site settings do, and nothing is saved', async () => {
@@ -266,11 +258,10 @@ test('an invalid Birth names its fields as Site settings do, and nothing is save
     }),
     deps()
   );
-  assert.ok('errors' in result);
-  assert.deepEqual(
-    result.errors.map((e) => e.path).sort((a, b) => a.localeCompare(b)),
-    ['birth.details.weightGrams']
-  );
+  assert('errors' in result);
+  expect(result.errors.map((e) => e.path).sort((a, b) => a.localeCompare(b))).toStrictEqual([
+    'birth.details.weightGrams',
+  ]);
   const later = await setBirth(
     owned,
     birthBody(owned.site, {
@@ -279,21 +270,21 @@ test('an invalid Birth names its fields as Site settings do, and nothing is save
     }),
     deps()
   );
-  assert.ok('errors' in later);
-  assert.deepEqual(
-    later.errors.map((e) => e.path).sort((a, b) => a.localeCompare(b)),
-    ['babyName', 'birth.details.datetime']
-  );
-  assert.equal((await reload('birth-invalid')).site.birth.born, false);
+  assert('errors' in later);
+  expect(later.errors.map((e) => e.path).sort((a, b) => a.localeCompare(b))).toStrictEqual([
+    'babyName',
+    'birth.details.datetime',
+  ]);
+  expect((await reload('birth-invalid')).site.birth.born).toBe(false);
 });
 
 test('the Birth endpoint takes only the Birth’s own fields', async () => {
   const owned = await waitingSite('birth-fields');
-  assert.deepEqual(await setBirth(owned, { ...birthBody(owned.site), privacy: { showName: true } }, deps()), {
+  expect(await setBirth(owned, { ...birthBody(owned.site), privacy: { showName: true } }, deps())).toStrictEqual({
     ok: false,
     refused: 'invalidRequest',
   });
-  assert.deepEqual(await setBirth(owned, { ...birthBody(owned.site), updatedAt: undefined }, deps()), {
+  expect(await setBirth(owned, { ...birthBody(owned.site), updatedAt: undefined }, deps())).toStrictEqual({
     ok: false,
     refused: 'invalidRequest',
   });
@@ -306,7 +297,7 @@ test('media outside the Site’s own folder is refused', async () => {
     key: `customer-data/someone/else/${crypto.randomUUID()}` as MediaKey,
   };
   foreign.url = `https://media.test/${foreign.key}`;
-  assert.deepEqual(await setBirth(owned, birthBody(owned.site, { birthVideo: foreign }), deps()), {
+  expect(await setBirth(owned, birthBody(owned.site, { birthVideo: foreign }), deps())).toStrictEqual({
     ok: false,
     refused: 'invalidRequest',
   });
@@ -316,8 +307,8 @@ test('announcing with push not configured still saves, and says the notification
   const owned = await waitingSite('birth-no-push');
   const result = await setBirth(owned, birthBody(owned.site), deps({ push: null }));
   okSite(result);
-  assert.ok(result.ok);
-  assert.equal(result.notification, 'failed');
+  assert(result.ok);
+  expect(result.notification).toBe('failed');
 });
 
 test('saving the Site settings keeps the stored Birth and refuses one sent with them', async () => {
@@ -330,16 +321,16 @@ test('saving the Site settings keeps the stored Birth and refuses one sent with 
     { updatedAt: announced.updatedAt, settings: { ...settings, birth: { born: false, details: null } } },
     deps()
   );
-  assert.deepEqual(refused, { ok: false, errors: [{ path: 'birth', code: 'unknownField' }] });
+  expect(refused).toStrictEqual({ ok: false, errors: [{ path: 'birth', code: 'unknownField' }] });
 
   const saved = await saveSettings(
     await reload('settings-birth'),
     { updatedAt: announced.updatedAt, settings: { ...settings, babyName: 'Emma Rose' } },
     deps()
   );
-  assert.ok(saved.ok, JSON.stringify(saved));
-  assert.equal(saved.site.babyName, 'Emma Rose');
-  assert.deepEqual(saved.site.birth, birth);
+  assert(saved.ok, JSON.stringify(saved));
+  expect(saved.site.babyName).toBe('Emma Rose');
+  expect(saved.site.birth).toStrictEqual(birth);
 });
 
 test('the Birth milestone’s date follows the Birth whatever the Site settings send, and a removed one stays removed', async () => {
@@ -353,20 +344,17 @@ test('the Birth milestone’s date follows the Birth whatever the Site settings 
     { updatedAt: announced.updatedAt, settings: { ...settings, milestones: moved, timezone: 'Europe/Rome' } },
     deps()
   );
-  assert.ok(kept.ok, JSON.stringify(kept));
+  assert(kept.ok, JSON.stringify(kept));
   // 20:00 UTC is 21:00 in Rome, still the 25th.
-  assert.deepEqual(
-    kept.site.milestones.filter((m) => m.kind === 'birth').map((m) => m.date),
-    ['2026-10-25']
-  );
+  expect(kept.site.milestones.filter((m) => m.kind === 'birth').map((m) => m.date)).toStrictEqual(['2026-10-25']);
 
   const removed = await saveSettings(
     await reload('settings-milestone'),
     { updatedAt: kept.site.updatedAt, settings: { ...settings, milestones: [] } },
     deps()
   );
-  assert.ok(removed.ok, JSON.stringify(removed));
-  assert.deepEqual(removed.site.milestones, []);
+  assert(removed.ok, JSON.stringify(removed));
+  expect(removed.site.milestones).toStrictEqual([]);
 });
 
 test('the media a save replaces leaves storage, and a failed removal does not fail the save', async () => {
@@ -379,7 +367,7 @@ test('the media a save replaces leaves storage, and a failed removal does not fa
     { updatedAt: owned.site.updatedAt, settings: { ...settings, birthVideo: first } },
     deps()
   );
-  assert.ok(withFirst.ok, JSON.stringify(withFirst));
+  assert(withFirst.ok, JSON.stringify(withFirst));
   const { media: recording, deleted } = fakeMedia();
 
   const withSecond = await saveSettings(
@@ -387,8 +375,8 @@ test('the media a save replaces leaves storage, and a failed removal does not fa
     { updatedAt: withFirst.site.updatedAt, settings: { ...settings, birthVideo: second } },
     deps({ media: () => recording })
   );
-  assert.ok(withSecond.ok, JSON.stringify(withSecond));
-  assert.deepEqual(deleted, [first.key]);
+  assert(withSecond.ok, JSON.stringify(withSecond));
+  expect(deleted).toStrictEqual([first.key]);
 
   const failing = fakeMedia(true);
   const cleared = await saveSettings(
@@ -396,6 +384,6 @@ test('the media a save replaces leaves storage, and a failed removal does not fa
     { updatedAt: withSecond.site.updatedAt, settings: { ...settings, birthVideo: null } },
     deps({ media: () => failing.media })
   );
-  assert.ok(cleared.ok, JSON.stringify(cleared));
-  assert.equal(cleared.site.birthVideo, null);
+  assert(cleared.ok, JSON.stringify(cleared));
+  expect(cleared.site.birthVideo).toBe(null);
 });

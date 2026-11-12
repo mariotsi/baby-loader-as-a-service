@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { expect, test } from 'vitest';
 import { buildDeviceInfo, type DeviceInfo } from './deviceInfo.ts';
 
 const UA = {
@@ -31,7 +30,7 @@ function device(info: DeviceInfo) {
 }
 
 test('Safari 26 on iPhone: the frozen 18.6 becomes an estimate from Safari, the model a guess from the screen', () => {
-  assert.deepEqual(device(buildDeviceInfo(UA.iphoneSafari26, IPHONE_16)), {
+  expect(device(buildDeviceInfo(UA.iphoneSafari26, IPHONE_16))).toStrictEqual({
     os: { name: 'iOS', version: '26' },
     browser: { name: 'Mobile Safari', version: '26.0' },
     deviceType: 'mobile',
@@ -45,32 +44,31 @@ test('Safari 26 on iPhone: the frozen 18.6 becomes an estimate from Safari, the 
 
 test('Safari before 26 on iPhone reports the real iOS version; landscape screens guess the same model', () => {
   const info = buildDeviceInfo(UA.iphoneSafari17, { screenWidth: 852, screenHeight: 393, pixelRatio: 3 });
-  assert.deepEqual(info.os, { name: 'iOS', version: '17.4' });
-  assert.equal(info.osVersionFrozen, false);
-  assert.equal(info.modelGuess, 'iPhone 14 Pro/15/15 Pro/16/16 Pro');
+  expect(info.os).toStrictEqual({ name: 'iOS', version: '17.4' });
+  expect(info.osVersionFrozen).toBe(false);
+  expect(info.modelGuess).toBe('iPhone 14 Pro/15/15 Pro/16/16 Pro');
 });
 
 test('Chrome on iPhone is not frozen: only Safari hides the iOS version', () => {
   const info = buildDeviceInfo(UA.iphoneChrome, IPHONE_16);
-  assert.deepEqual(info.os, { name: 'iOS', version: '18.6' });
-  assert.equal(info.osVersionFrozen, false);
-  assert.equal(info.label, 'iPhone 14 Pro/15/15 Pro/16/16 Pro · iOS 18.6 · Chrome 141.0.0.0');
+  expect(info.os).toStrictEqual({ name: 'iOS', version: '18.6' });
+  expect(info.osVersionFrozen).toBe(false);
+  expect(info.label).toBe('iPhone 14 Pro/15/15 Pro/16/16 Pro · iOS 18.6 · Chrome 141.0.0.0');
 });
 
 test('macOS 10.15 is a placeholder for every browser; only Safari 26+ gives an estimate', () => {
-  assert.equal(
-    buildDeviceInfo(UA.macSafari17, {}).label,
+  expect(buildDeviceInfo(UA.macSafari17, {}).label).toBe(
     'Apple Macintosh · Mac OS (version hidden by Apple) · Safari 17.4'
   );
-  assert.equal(buildDeviceInfo(UA.macSafari26, {}).label, 'Apple Macintosh · Mac OS 26+ (estimated) · Safari 26.0');
+  expect(buildDeviceInfo(UA.macSafari26, {}).label).toBe('Apple Macintosh · Mac OS 26+ (estimated) · Safari 26.0');
   const chrome = buildDeviceInfo(UA.macChrome, {});
-  assert.deepEqual(chrome.os, { name: 'Mac OS', version: null });
-  assert.equal(chrome.osVersionFrozen, true);
-  assert.equal(chrome.label, 'Apple Macintosh · Mac OS (version hidden by Apple) · Chrome 151.0.0.0');
+  expect(chrome.os).toStrictEqual({ name: 'Mac OS', version: null });
+  expect(chrome.osVersionFrozen).toBe(true);
+  expect(chrome.label).toBe('Apple Macintosh · Mac OS (version hidden by Apple) · Chrome 151.0.0.0');
 });
 
 test('Android UA Reduction: the "K" model and frozen "10" are dropped', () => {
-  assert.deepEqual(device(buildDeviceInfo(UA.androidReduced, {})), {
+  expect(device(buildDeviceInfo(UA.androidReduced, {}))).toStrictEqual({
     os: { name: 'Android', version: null },
     browser: { name: 'Chrome', version: '151.0.0.0' },
     deviceType: 'mobile',
@@ -84,26 +82,26 @@ test('Android UA Reduction: the "K" model and frozen "10" are dropped', () => {
 
 test('Android Client Hints restore the real model and OS version; an empty model is no model', () => {
   const hinted = buildDeviceInfo(UA.androidReduced, { chModel: 'Pixel 9', chPlatformVersion: '15.0.0' });
-  assert.equal(hinted.model, 'Pixel 9');
-  assert.equal(hinted.os.version, '15.0.0');
-  assert.equal(hinted.label, 'Pixel 9 · Android 15.0.0 · Chrome 151.0.0.0');
-  assert.equal(buildDeviceInfo(UA.androidReduced, { chModel: '' }).model, null);
+  expect(hinted.model).toBe('Pixel 9');
+  expect(hinted.os.version).toBe('15.0.0');
+  expect(hinted.label).toBe('Pixel 9 · Android 15.0.0 · Chrome 151.0.0.0');
+  expect(buildDeviceInfo(UA.androidReduced, { chModel: '' }).model).toBe(null);
 });
 
 test('an unreduced Android UA keeps its vendor, model and version', () => {
-  assert.equal(buildDeviceInfo(UA.androidReal, {}).label, 'Samsung SM-S911B · Android 13 · Chrome 116.0.0.0');
+  expect(buildDeviceInfo(UA.androidReal, {}).label).toBe('Samsung SM-S911B · Android 13 · Chrome 116.0.0.0');
 });
 
 test('desktop browsers without a model are labelled by OS and browser', () => {
-  assert.equal(buildDeviceInfo(UA.windowsFirefox, null).label, 'Windows 10 · Firefox 140.0');
+  expect(buildDeviceInfo(UA.windowsFirefox, null).label).toBe('Windows 10 · Firefox 140.0');
 });
 
 test('no User-Agent and hints that are not an object give an unknown desktop device', () => {
   const info = buildDeviceInfo(null, 'not an object');
-  assert.equal(info.deviceType, 'desktop');
-  assert.equal(info.label, 'Unknown device');
-  assert.equal(info.ua, null);
-  assert.equal(info.screen, null);
+  expect(info.deviceType).toBe('desktop');
+  expect(info.label).toBe('Unknown device');
+  expect(info.ua).toBe(null);
+  expect(info.screen).toBe(null);
 });
 
 test('volunteered hints are clamped, clipped or dropped', () => {
@@ -120,15 +118,15 @@ test('volunteered hints are clamped, clipped or dropped', () => {
     connectionType: 42,
     platform: 'MacIntel',
   });
-  assert.deepEqual(info.screen, { width: 20000, height: 0, pixelRatio: 2.35 });
-  assert.equal(info.viewport, null);
-  assert.equal(info.timezone?.length, 60);
-  assert.equal(info.colorScheme, null);
-  assert.equal(info.hardwareConcurrency, 128);
-  assert.equal(info.deviceMemory, 8);
-  assert.equal(info.touchPoints, 6);
-  assert.equal(info.connectionType, null);
-  assert.equal(info.platform, 'MacIntel');
-  assert.equal(info.engine, 'Gecko');
-  assert.equal(buildDeviceInfo('x'.repeat(600), {}).ua?.length, 512);
+  expect(info.screen).toStrictEqual({ width: 20000, height: 0, pixelRatio: 2.35 });
+  expect(info.viewport).toBe(null);
+  expect(info.timezone?.length).toBe(60);
+  expect(info.colorScheme).toBe(null);
+  expect(info.hardwareConcurrency).toBe(128);
+  expect(info.deviceMemory).toBe(8);
+  expect(info.touchPoints).toBe(6);
+  expect(info.connectionType).toBe(null);
+  expect(info.platform).toBe('MacIntel');
+  expect(info.engine).toBe('Gecko');
+  expect(buildDeviceInfo('x'.repeat(600), {}).ua?.length).toBe(512);
 });

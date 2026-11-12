@@ -60,12 +60,42 @@ A component joins `src/components/ui` only when it follows every rule here. Revi
 17. **Sentence case, warm and short.** Labels name the thing, buttons start with a verb, errors say how to fix them.
     No "please", no exclamation marks in system copy.
 
+## Testing behaviour
+
+A story shows a state and axe checks it. What a component or a hook does when someone uses it, such as holding a
+click, moving focus or calling back with a value, gets a test beside it: `Name.test.tsx`, run by `npm test` in jsdom
+with [React Testing Library](https://testing-library.com/docs/react-testing-library/intro).
+
+```tsx
+import { render, screen } from '@testing-library/react';
+import { expect, test, vi } from 'vitest';
+import { Button } from './Button';
+
+test('a disabled Button does not answer a click', () => {
+  const onClick = vi.fn();
+  render(
+    <Button disabled onClick={onClick}>
+      Save
+    </Button>
+  );
+
+  screen.getByRole('button', { name: 'Save' }).click();
+
+  expect(onClick).not.toHaveBeenCalled();
+});
+```
+
+Find elements the way a person does, by role and name. Reach for `renderHook` to test a hook on its own, as
+`src/components/dashboard/useLeaveGuard.test.tsx` does, and for `vi.mock` to replace `next/navigation`. A component
+that reads the language renders in English unless a `LangProvider` around it says otherwise.
+`npx vitest --project=components` reruns the tests on every change.
+
 ## Before review
 
 Run all four and look at the component in the Playground, in every Palette, at phone and desktop widths:
 
 ```sh
-npm run test             # every Palette meets WCAG AA on every pairing
+npm run test             # unit and component tests; every Palette meets WCAG AA on every pairing
 npm run test:storybook   # every story renders with no axe violation
 npm run lint
 npm run typecheck

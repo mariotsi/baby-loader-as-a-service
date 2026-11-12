@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { assert, expect, test } from 'vitest';
 import { siteIdSchema, userIdSchema } from '../db/ids.ts';
 import { slugSchema } from './address.ts';
 import { type CachePurge, memoryMediaStore, noCachePurge } from './mediaStore.ts';
@@ -72,34 +71,36 @@ const byText = (a: string, b: string) => a.localeCompare(b);
 const photo = () => new Blob([new Uint8Array(1000)], { type: 'image/jpeg' });
 
 function stored(key: string): BirthMedia {
-  assert.ok(isMediaKey(key));
+  assert(isMediaKey(key));
   return { key, url: `https://media.test/${key}` };
 }
 
 test('an upload lands in its Site’s folder under a random key, at the media domain', async () => {
   const { media, keys } = setup();
   const { key, url } = await media.upload(owned(), photo());
-  assert.match(key, new RegExp(`^customer-data/${OWNER_ID}/${SITE_ID}/[0-9a-f-]{36}$`));
-  assert.equal(url, `https://media.test/${key}`);
-  assert.deepEqual(keys(), [key]);
-  assert.notEqual((await media.upload(owned(), photo())).key, key);
+  expect(key).toMatch(new RegExp(`^customer-data/${OWNER_ID}/${SITE_ID}/[0-9a-f-]{36}$`));
+  expect(url).toBe(`https://media.test/${key}`);
+  expect(keys()).toStrictEqual([key]);
+  expect((await media.upload(owned(), photo())).key).not.toBe(key);
 });
 
 test('only accepted types within their size limit are stored', async () => {
   const { media, keys } = setup();
-  await assert.rejects(media.upload(owned(), new Blob(['x'], { type: 'text/html' })), UnsupportedMediaTypeError);
-  await assert.rejects(media.upload(owned(), new Blob([], { type: 'image/png' })), MediaTooLargeError);
+  await expect(media.upload(owned(), new Blob(['x'], { type: 'text/html' }))).rejects.toBeInstanceOf(
+    UnsupportedMediaTypeError
+  );
+  await expect(media.upload(owned(), new Blob([], { type: 'image/png' }))).rejects.toBeInstanceOf(MediaTooLargeError);
   const tooBig = new Blob([new Uint8Array(5 * 1024 * 1024 + 1)], { type: 'image/png' });
-  await assert.rejects(media.upload(owned(), tooBig), MediaTooLargeError);
-  assert.deepEqual(keys(), []);
+  await expect(media.upload(owned(), tooBig)).rejects.toBeInstanceOf(MediaTooLargeError);
+  expect(keys()).toStrictEqual([]);
 });
 
 test('a Site owns only its own keys, at their own URL', async () => {
   const { media } = setup();
   const { key, url } = await media.upload(owned(), photo());
-  assert.equal(media.owns(site(), stored(key)), true);
-  assert.equal(media.owns(site(), { ...stored(key), url: `${url}?x` }), false);
-  assert.equal(media.owns(site({ id: OTHER_SITE_ID }), stored(key)), false);
+  expect(media.owns(site(), stored(key))).toBe(true);
+  expect(media.owns(site(), { ...stored(key), url: `${url}?x` })).toBe(false);
+  expect(media.owns(site({ id: OTHER_SITE_ID }), stored(key))).toBe(false);
 });
 
 test('an Owner removes an unused upload of their Site, never one in use or another Site’s', async () => {
@@ -108,21 +109,21 @@ test('an Owner removes an unused upload of their Site, never one in use or anoth
   const inUse = await media.upload(owned(), photo());
   const withVideo = site({ birthVideo: stored(inUse.key) });
 
-  await assert.rejects(media.remove(owned(withVideo), inUse.key), MediaNotFoundError);
-  await assert.rejects(media.remove(owned(site({ id: OTHER_SITE_ID })), unused.key), MediaNotFoundError);
-  await assert.rejects(media.remove(owned(), '../secrets'), MediaNotFoundError);
-  await assert.rejects(media.remove(owned(), undefined), MediaNotFoundError);
+  await expect(media.remove(owned(withVideo), inUse.key)).rejects.toBeInstanceOf(MediaNotFoundError);
+  await expect(media.remove(owned(site({ id: OTHER_SITE_ID })), unused.key)).rejects.toBeInstanceOf(MediaNotFoundError);
+  await expect(media.remove(owned(), '../secrets')).rejects.toBeInstanceOf(MediaNotFoundError);
+  await expect(media.remove(owned(), undefined)).rejects.toBeInstanceOf(MediaNotFoundError);
 
   await media.remove(owned(withVideo), unused.key);
-  assert.deepEqual(keys(), [inUse.key]);
-  assert.deepEqual(purged, [unused.url]);
+  expect(keys()).toStrictEqual([inUse.key]);
+  expect(purged).toStrictEqual([unused.url]);
 });
 
 test('a failed purge says the file is gone but may still be served', async () => {
   const { media, keys } = setup(() => Promise.reject(new Error('API down')));
   const { key } = await media.upload(owned(), photo());
-  await assert.rejects(media.remove(owned(), key), MediaCachePurgeError);
-  assert.deepEqual(keys(), []);
+  await expect(media.remove(owned(), key)).rejects.toBeInstanceOf(MediaCachePurgeError);
+  expect(keys()).toStrictEqual([]);
 });
 
 test('an upload sweeps the Site’s files nothing uses once they are a day old', async () => {
@@ -135,12 +136,12 @@ test('an upload sweeps the Site’s files nothing uses once they are a day old',
 
   later(ORPHAN_AGE_MS - 1000);
   const fresh = await media.upload(owned(current), photo());
-  assert.equal(keys().length, 4, 'nothing is a day old yet');
+  expect(keys().length, 'nothing is a day old yet').toBe(4);
 
   later(2000);
   const latest = await media.upload(owned(current), photo());
-  assert.deepEqual(keys().sort(byText), [kept.key, othersFile.key, fresh.key, latest.key].sort(byText));
-  assert.ok(!keys().includes(abandoned.key));
+  expect(keys().sort(byText)).toStrictEqual([kept.key, othersFile.key, fresh.key, latest.key].sort(byText));
+  expect(!keys().includes(abandoned.key)).toBeTruthy();
 });
 
 test('a sweep that cannot delete still stores the upload, and logs', async () => {
@@ -148,8 +149,8 @@ test('a sweep that cannot delete still stores the upload, and logs', async () =>
   const abandoned = await media.upload(owned(), photo());
   later(ORPHAN_AGE_MS + 1);
   const next = await media.upload(owned(), photo());
-  assert.deepEqual(keys(), [next.key], 'the file left storage before its purge failed');
-  assert.deepEqual(logged, [`Could not remove Site media ${abandoned.key}`]);
+  expect(keys(), 'the file left storage before its purge failed').toStrictEqual([next.key]);
+  expect(logged).toStrictEqual([`Could not remove Site media ${abandoned.key}`]);
 });
 
 test('a save removes the files it replaced and keeps the ones it still uses', async () => {
@@ -167,7 +168,7 @@ test('a save removes the files it replaced and keeps the ones it still uses', as
     birth: { born: true, details: { ...details, photo: stored(newPhoto.key) } },
   });
   await media.removeReplaced(before, after);
-  assert.deepEqual(keys().sort(byText), [video.key, newPhoto.key].sort(byText));
+  expect(keys().sort(byText)).toStrictEqual([video.key, newPhoto.key].sort(byText));
 });
 
 test('the page’s origin serves only the file the Site points at now, by range too', async () => {
@@ -178,23 +179,22 @@ test('the page’s origin serves only the file the Site points at now, by range 
   const current = site({ birthVideo: stored(key) });
 
   const whole = await media.read(current, 'video', key, new Headers());
-  assert.equal(whole?.status, 200);
-  assert.equal(whole?.headers.get('content-type'), 'video/mp4');
-  assert.equal(whole?.headers.get('cache-control'), 'private, no-store');
-  assert.equal((await whole?.arrayBuffer())?.byteLength, 100);
+  expect(whole?.status).toBe(200);
+  expect(whole?.headers.get('content-type')).toBe('video/mp4');
+  expect(whole?.headers.get('cache-control')).toBe('private, no-store');
+  expect((await whole?.arrayBuffer())?.byteLength).toBe(100);
 
   const part = await media.read(current, 'video', key, new Headers({ range: 'bytes=10-19' }));
-  assert.equal(part?.status, 206);
-  assert.equal(part?.headers.get('content-range'), 'bytes 10-19/100');
-  assert.deepEqual(
-    [...new Uint8Array((await part?.arrayBuffer()) ?? new ArrayBuffer(0))],
-    [10, 11, 12, 13, 14, 15, 16, 17, 18, 19]
-  );
+  expect(part?.status).toBe(206);
+  expect(part?.headers.get('content-range')).toBe('bytes 10-19/100');
+  expect([...new Uint8Array((await part?.arrayBuffer()) ?? new ArrayBuffer(0))]).toStrictEqual([
+    10, 11, 12, 13, 14, 15, 16, 17, 18, 19,
+  ]);
 
   const tail = await media.read(current, 'video', key, new Headers({ range: 'bytes=-5' }));
-  assert.equal(tail?.headers.get('content-range'), 'bytes 95-99/100');
+  expect(tail?.headers.get('content-range')).toBe('bytes 95-99/100');
 
-  assert.equal(await media.read(current, 'video', replaced.key, new Headers()), null);
-  assert.equal(await media.read(current, 'photo', key, new Headers()), null);
-  assert.equal(await media.read(current, 'video', null, new Headers()), null);
+  expect(await media.read(current, 'video', replaced.key, new Headers())).toBe(null);
+  expect(await media.read(current, 'photo', key, new Headers())).toBe(null);
+  expect(await media.read(current, 'video', null, new Headers())).toBe(null);
 });

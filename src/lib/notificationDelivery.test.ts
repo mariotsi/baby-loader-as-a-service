@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
+import { afterAll, assert, beforeAll, expect, test } from 'vitest';
 import { insertTestUser, startTestDb, testSubscription } from '../db/testDb.ts';
 import { issueSessionToken } from './auth.ts';
 import { birthMediaPreviewPath } from './birthMedia.ts';
@@ -31,30 +30,30 @@ import {
 let stopDb: () => Promise<void>;
 let token: string;
 
-before(async () => {
+beforeAll(async () => {
   stopDb = await startTestDb();
   token = issueSessionToken(await insertTestUser());
 });
 
-after(() => stopDb());
+afterAll(() => stopDb());
 
 async function ownedSite(slug: string, settings: Partial<SiteSettingsInput> = {}): Promise<OwnedSite> {
   const full = { ...defaultSiteSettings, babyName: 'Emma', ...settings };
   // A Site is created Waiting and announced afterwards.
   const dueDate = full.dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
   const parsed = parseNewSite({ slug, settings: { ...full, dueDate, birth: defaultSiteSettings.birth } });
-  assert.ok(parsed.ok, JSON.stringify(parsed));
-  assert.ok((await createSite(authenticate(token) as AuthenticatedUser, parsed.value)).ok);
+  assert(parsed.ok, JSON.stringify(parsed));
+  assert((await createSite(authenticate(token) as AuthenticatedUser, parsed.value)).ok);
   const access = await accessOwnedSite(token, slug);
-  assert.ok(typeof access === 'object');
+  assert(typeof access === 'object');
   if (!full.birth.born) {
     return access;
   }
   const announced = parseSiteSettings(full);
-  assert.ok(announced.ok, JSON.stringify(announced));
+  assert(announced.ok, JSON.stringify(announced));
   await saveSiteSettings(access, announced.value);
   const updated = await accessOwnedSite(token, slug);
-  assert.ok(typeof updated === 'object');
+  assert(typeof updated === 'object');
   return updated;
 }
 
@@ -88,36 +87,36 @@ function fakePush(outcomes: Record<string, PushOutcome> = {}, delayMs = 0) {
 
 function valid(messages: unknown, langs: Lang[] = ['en']) {
   const parsed = parseNotification(messages, langs);
-  assert.ok(parsed.ok, JSON.stringify(parsed));
+  assert(parsed.ok, JSON.stringify(parsed));
   return parsed.value;
 }
 
 test("parseNotification needs a body per language sent, among the Site's languages", () => {
-  assert.deepEqual(parseNotification(undefined, ['en']), {
+  expect(parseNotification(undefined, ['en'])).toStrictEqual({
     ok: false,
     errors: [{ path: 'messages', code: 'required' }],
   });
-  assert.deepEqual(parseNotification({}, ['en']), { ok: false, errors: [{ path: 'messages', code: 'required' }] });
-  assert.deepEqual(parseNotification({ en: { title: 'Hi', body: '  ' } }, ['en']), {
+  expect(parseNotification({}, ['en'])).toStrictEqual({ ok: false, errors: [{ path: 'messages', code: 'required' }] });
+  expect(parseNotification({ en: { title: 'Hi', body: '  ' } }, ['en'])).toStrictEqual({
     ok: false,
     errors: [{ path: 'messages.en.body', code: 'required' }],
   });
-  assert.deepEqual(parseNotification({ it: { body: 'Ciao' } }, ['en']), {
+  expect(parseNotification({ it: { body: 'Ciao' } }, ['en'])).toStrictEqual({
     ok: false,
     errors: [{ path: 'messages.it', code: 'invalidOption' }],
   });
-  assert.deepEqual(parseNotification({ en: { body: 'Hi', url: 'https://evil.example' } }, ['en']), {
+  expect(parseNotification({ en: { body: 'Hi', url: 'https://evil.example' } }, ['en'])).toStrictEqual({
     ok: false,
     errors: [{ path: 'messages.en.url', code: 'unknownField' }],
   });
-  assert.deepEqual(parseNotification({ en: { title: 'x'.repeat(101), body: 'x'.repeat(1001) } }, ['en']), {
+  expect(parseNotification({ en: { title: 'x'.repeat(101), body: 'x'.repeat(1001) } }, ['en'])).toStrictEqual({
     ok: false,
     errors: [
       { path: 'messages.en.body', code: 'tooLong', params: { max: 1000 } },
       { path: 'messages.en.title', code: 'tooLong', params: { max: 100 } },
     ],
   });
-  assert.deepEqual(valid({ en: { title: '  ', body: ' Any day now ' } }).messages, { en: { body: 'Any day now' } });
+  expect(valid({ en: { title: '  ', body: ' Any day now ' } }).messages).toStrictEqual({ en: { body: 'Any day now' } });
 });
 
 test("each Subscription gets its language, else the Site's fallback one", async () => {
@@ -133,9 +132,9 @@ test("each Subscription gets its language, else the Site's fallback one", async 
     push.service
   );
 
-  assert.deepEqual(result, { sent: 3, removed: 0, total: 3 });
+  expect(result).toStrictEqual({ sent: 3, removed: 0, total: 3 });
   const bodies = Object.fromEntries(push.sent.map((s) => [s.endpoint, s.payload.body]));
-  assert.deepEqual(bodies, {
+  expect(bodies).toStrictEqual({
     'https://push.test/it': 'Ciao',
     'https://push.test/en': 'Hi',
     'https://push.test/old': 'Hi',
@@ -144,7 +143,7 @@ test("each Subscription gets its language, else the Site's fallback one", async 
   // Only one language written: everyone gets it.
   const onlyItalian = fakePush();
   await deliverNotification(owned, valid({ it: { body: 'Solo' } }, ['it', 'en']), onlyItalian.service);
-  assert.ok(onlyItalian.sent.every((s) => s.payload.body === 'Solo'));
+  expect(onlyItalian.sent.every((s) => s.payload.body === 'Solo')).toBeTruthy();
 });
 
 test("the payload opens the Site's Address, with its tag, a default title and its buttons' labels", async () => {
@@ -154,7 +153,7 @@ test("the payload opens the Site's Address, with its tag, a default title and it
 
   await deliverNotification(owned, valid({ en: { body: 'Hi' } }), push.service);
 
-  assert.deepEqual(push.sent[0].payload, {
+  expect(push.sent[0].payload).toStrictEqual({
     title: 'Emma',
     body: 'Hi',
     icon: '/icon-192.png',
@@ -181,7 +180,7 @@ test('the payload is the content the previews show, in the Subscription’s Lang
   for (const lang of ['it', 'en'] as const) {
     const { payload } = push.sent.find((s) => s.endpoint === `https://push.test/preview-${lang}`) ?? {};
     const { title, body, actions } = notificationContent(owned.site, messages, lang, icon);
-    assert.deepEqual(payload, { title, body, icon, url: '/', tag: 'site-preview-site', actions });
+    expect(payload).toStrictEqual({ title, body, icon, url: '/', tag: 'site-preview-site', actions });
   }
 });
 
@@ -190,7 +189,7 @@ test('the icon is the birth photo once born, else the Site icon', async () => {
   await subscribe(emoji, 'https://push.test/icon-emoji');
   const emojiPush = fakePush();
   await deliverNotification(emoji, valid({ en: { body: 'Hi' } }), emojiPush.service);
-  assert.match(String(emojiPush.sent[0].payload.icon), /^\/site-icon\/192\?v=1f423\./);
+  expect(String(emojiPush.sent[0].payload.icon)).toMatch(/^\/site-icon\/192\?v=1f423\./);
 
   const photo = {
     key: 'customer-data/o/s/0b9f3c1e-2a4d-4c5e-8f60-71829304a5b6',
@@ -208,7 +207,7 @@ test('the icon is the birth photo once born, else the Site icon', async () => {
   const bornPush = fakePush();
   await deliverNotification(born, valid({ en: { body: 'Hi' } }), bornPush.service);
   // Tests run as development, whose media the page's own origin serves.
-  assert.equal(bornPush.sent[0].payload.icon, birthMediaPreviewPath('icon-born', 'photo', photo.key));
+  expect(bornPush.sent[0].payload.icon).toBe(birthMediaPreviewPath('icon-born', 'photo', photo.key));
 });
 
 test('the Site’s name is the title while Privacy settings hide the baby’s', async () => {
@@ -218,7 +217,7 @@ test('the Site’s name is the title while Privacy settings hide the baby’s', 
 
   await deliverNotification(owned, valid({ en: { body: 'Hi' } }), push.service);
 
-  assert.equal(push.sent[0].payload.title, 'Loading Baby');
+  expect(push.sent[0].payload.title).toBe('Loading Baby');
 });
 
 test('a gone endpoint is forgotten on every Site, a failed one is kept', async () => {
@@ -232,9 +231,9 @@ test('a gone endpoint is forgotten on every Site, a failed one is kept', async (
 
   const result = await deliverNotification(site, valid({ en: { body: 'Hi' } }), push.service);
 
-  assert.deepEqual(result, { sent: 1, removed: 1, total: 3 });
-  assert.equal(await countSubscriptionsBySite(site.site.id), 2);
-  assert.equal(await countSubscriptionsBySite(other.site.id), 0);
+  expect(result).toStrictEqual({ sent: 1, removed: 1, total: 3 });
+  expect(await countSubscriptionsBySite(site.site.id)).toBe(2);
+  expect(await countSubscriptionsBySite(other.site.id)).toBe(0);
 });
 
 test('sends at most 20 at a time', async () => {
@@ -246,8 +245,8 @@ test('sends at most 20 at a time', async () => {
 
   const result = await deliverNotification(owned, valid({ en: { body: 'Hi' } }), push.service);
 
-  assert.deepEqual(result, { sent: 45, removed: 0, total: 45 });
-  assert.equal(push.maxInFlight(), 20);
+  expect(result).toStrictEqual({ sent: 45, removed: 0, total: 45 });
+  expect(push.maxInFlight()).toBe(20);
 });
 
 test('a sent Notification is logged with a Delivery per Subscription', async () => {
@@ -259,13 +258,13 @@ test('a sent Notification is logged with a Delivery per Subscription', async () 
   await deliverNotification(owned, valid({ en: { title: 'News', body: 'Hi' } }), push.service);
 
   const [notification] = await listNotifications(owned.site.id);
-  assert.equal(notification.kind, 'general');
-  assert.deepEqual(notification.messages, { en: { title: 'News', body: 'Hi' } });
-  assert.deepEqual(notification.deliveries, [
+  expect(notification.kind).toBe('general');
+  expect(notification.messages).toStrictEqual({ en: { title: 'News', body: 'Hi' } });
+  expect(notification.deliveries).toStrictEqual([
     { deviceLabel: 'iPhone, Safari', status: 'delivered' },
     { deviceLabel: null, status: 'failed' },
   ]);
-  assert.deepEqual(deliverySummary(notification, owned.site), { sent: 1, removed: 0, total: 2, finishable: true });
+  expect(deliverySummary(notification, owned.site)).toStrictEqual({ sent: 1, removed: 0, total: 2, finishable: true });
 });
 
 test('finishing sends only what is outstanding, with the stored text', async () => {
@@ -284,14 +283,11 @@ test('finishing sends only what is outstanding, with the stored text', async () 
 
   const result = await finishNotification(owned, id, push.service);
 
-  assert.deepEqual(result, { sent: 2, removed: 0, total: 2 });
-  assert.deepEqual(
-    push.sent.map((s) => [s.endpoint, s.payload.body]),
-    [['https://push.test/finish/failed', 'Hi']]
-  );
+  expect(result).toStrictEqual({ sent: 2, removed: 0, total: 2 });
+  expect(push.sent.map((s) => [s.endpoint, s.payload.body])).toStrictEqual([['https://push.test/finish/failed', 'Hi']]);
   const [finished] = await listNotifications(owned.site.id);
-  assert.equal(deliverySummary(finished, owned.site).finishable, false);
-  assert.equal(await finishNotification(owned, id, push.service), null);
+  expect(deliverySummary(finished, owned.site).finishable).toBe(false);
+  expect(await finishNotification(owned, id, push.service)).toBe(null);
 });
 
 test('a Delivery stays with its Notification after the Subscription is gone', async () => {
@@ -307,11 +303,11 @@ test('a Delivery stays with its Notification after the Subscription is gone', as
   await deleteSubscription(owned.site.id, pushEndpointSchema.parse('https://push.test/keep/fine'));
 
   const [notification] = await listNotifications(owned.site.id);
-  assert.deepEqual(notification.deliveries, [
+  expect(notification.deliveries).toStrictEqual([
     { deviceLabel: 'Pixel, Chrome', status: 'gone' },
     { deviceLabel: 'iPhone, Safari', status: 'delivered' },
   ]);
-  assert.deepEqual(deliverySummary(notification, owned.site), { sent: 1, removed: 1, total: 2, finishable: false });
+  expect(deliverySummary(notification, owned.site)).toStrictEqual({ sent: 1, removed: 1, total: 2, finishable: false });
 });
 
 test('finishing marks a Delivery gone when its Subscription no longer exists', async () => {
@@ -326,8 +322,8 @@ test('finishing marks a Delivery gone when its Subscription no longer exists', a
   const [{ id }] = await listNotifications(owned.site.id);
   const push = fakePush();
 
-  assert.deepEqual(await finishNotification(owned, id, push.service), { sent: 0, removed: 1, total: 1 });
-  assert.equal(push.sent.length, 0);
+  expect(await finishNotification(owned, id, push.service)).toStrictEqual({ sent: 0, removed: 1, total: 1 });
+  expect(push.sent.length).toBe(0);
 });
 
 test('a send that stops leaves its Deliveries to finish', async () => {
@@ -343,11 +339,16 @@ test('a send that stops leaves its Deliveries to finish', async () => {
     },
   };
 
-  await assert.rejects(deliverNotification(owned, valid({ en: { body: 'Hi' } }), stopping));
+  await expect(deliverNotification(owned, valid({ en: { body: 'Hi' } }), stopping)).rejects.toThrow();
 
   const [notification] = await listNotifications(owned.site.id);
-  assert.deepEqual(deliverySummary(notification, owned.site), { sent: 20, removed: 0, total: 25, finishable: true });
-  assert.deepEqual(await finishNotification(owned, notification.id, fakePush().service), {
+  expect(deliverySummary(notification, owned.site)).toStrictEqual({
+    sent: 20,
+    removed: 0,
+    total: 25,
+    finishable: true,
+  });
+  expect(await finishNotification(owned, notification.id, fakePush().service)).toStrictEqual({
     sent: 25,
     removed: 0,
     total: 25,
@@ -364,7 +365,7 @@ test('a push endpoint that never answers fails without holding up the rest', asy
 
   const result = await deliverNotification(owned, valid({ en: { body: 'Hi' } }), hanging, { sendTimeoutMs: 10 });
 
-  assert.deepEqual(result, { sent: 1, removed: 0, total: 2 });
+  expect(result).toStrictEqual({ sent: 1, removed: 0, total: 2 });
 });
 
 test("a Birth notification can't be finished while the Site is Waiting", async () => {
@@ -380,10 +381,10 @@ test("a Birth notification can't be finished while the Site is Waiting", async (
   );
   const [notification] = await listNotifications(owned.site.id);
 
-  assert.equal(notification.kind, 'birth');
-  assert.equal(deliverySummary(notification, owned.site).finishable, false);
-  assert.equal(await finishNotification(owned, notification.id, fakePush().service), null);
-  assert.deepEqual(unfinishedBirth([notification], owned.site), null);
+  expect(notification.kind).toBe('birth');
+  expect(deliverySummary(notification, owned.site).finishable).toBe(false);
+  expect(await finishNotification(owned, notification.id, fakePush().service)).toBe(null);
+  expect(unfinishedBirth([notification], owned.site)).toStrictEqual(null);
 });
 
 test('an unfinished Birth notification is found once the Site is Born', async () => {
@@ -405,7 +406,7 @@ test('an unfinished Birth notification is found once the Site is Born', async ()
   );
   const logged = await listNotifications(owned.site.id);
 
-  assert.equal(unfinishedBirth(logged, owned.site)?.id, logged[0].id);
+  expect(unfinishedBirth(logged, owned.site)?.id).toBe(logged[0].id);
 });
 
 test("another Site's Notification can't be finished", async () => {
@@ -419,5 +420,5 @@ test("another Site's Notification can't be finished", async () => {
   );
   const [{ id }] = await listNotifications(other.site.id);
 
-  assert.equal(await finishNotification(owned, id, fakePush().service), null);
+  expect(await finishNotification(owned, id, fakePush().service)).toBe(null);
 });

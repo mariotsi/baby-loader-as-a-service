@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
+import { afterAll, assert, beforeAll, expect, test } from 'vitest';
 import { insertTestUser, startTestDb } from '../db/testDb.ts';
 import { type ActivityWriter, errorList, logActivity, siteWriteActivity } from './activityLog.ts';
 import { issueSessionToken } from './auth.ts';
@@ -21,27 +20,27 @@ let stopDb: () => Promise<void>;
 let token: string;
 let userId: string;
 
-before(async () => {
+beforeAll(async () => {
   stopDb = await startTestDb();
   userId = await insertTestUser();
   token = issueSessionToken(userId);
 });
 
-after(() => stopDb());
+afterAll(() => stopDb());
 
 async function waitingSite(slug: string): Promise<OwnedSite> {
   const parsed = parseNewSite(
     { slug, settings: { ...defaultSiteSettings, babyName: 'Emma', sex: 'female', dueDate: '2026-11-20' } },
     NOW
   );
-  assert.ok(parsed.ok, JSON.stringify(parsed));
-  assert.ok((await createSite(authenticate(token) as AuthenticatedUser, parsed.value)).ok);
+  assert(parsed.ok, JSON.stringify(parsed));
+  assert((await createSite(authenticate(token) as AuthenticatedUser, parsed.value)).ok);
   return reload(slug);
 }
 
 async function reload(slug: string): Promise<OwnedSite> {
   const access = await accessOwnedSite(token, slug);
-  assert.ok(typeof access === 'object');
+  assert(typeof access === 'object');
   return access;
 }
 
@@ -58,14 +57,14 @@ test('an action that went through is one log line, and a refused one is a warnin
   const { lines, writer } = recorder();
   logActivity('user.login', { ok: true, userId: 'u1' }, writer);
   logActivity('user.login', { ok: false, reason: 'wrongCredentials' }, writer);
-  assert.deepEqual(lines, [
+  expect(lines).toStrictEqual([
     { level: 'log', line: { event: 'user.login', ok: true, userId: 'u1' } },
     { level: 'warn', line: { event: 'user.login', ok: false, reason: 'wrongCredentials' } },
   ]);
 });
 
 test('Site settings errors are listed by path and code', () => {
-  assert.deepEqual(errorList([{ path: settingsPath('babyName'), code: 'tooLong', params: { max: 40 } }]), [
+  expect(errorList([{ path: settingsPath('babyName'), code: 'tooLong', params: { max: 40 } }])).toStrictEqual([
     'babyName:tooLong',
   ]);
 });
@@ -74,8 +73,8 @@ test('a save names the settings it changed, and none when it changed nothing', a
   const owned = await waitingSite('activity-save');
   const { birth: _birth, ...settings } = siteSettingsOf(owned.site);
   const same = await saveSettings(owned, { updatedAt: owned.site.updatedAt, settings }, DEPS);
-  assert.ok(same.ok, JSON.stringify(same));
-  assert.deepEqual(siteWriteActivity(owned, same), {
+  expect(same.ok, JSON.stringify(same)).toBeTruthy();
+  expect(siteWriteActivity(owned, same)).toStrictEqual({
     slug: 'activity-save',
     userId,
     ok: true,
@@ -92,10 +91,10 @@ test('a save names the settings it changed, and none when it changed nothing', a
     { updatedAt: reloaded.site.updatedAt, settings: { ...settings, babyName: 'Sofia' } },
     DEPS
   );
-  assert.ok(renamed.ok, JSON.stringify(renamed));
+  expect(renamed.ok, JSON.stringify(renamed)).toBeTruthy();
   const activity = siteWriteActivity(reloaded, renamed);
-  assert.deepEqual(activity.changed, ['babyName']);
-  assert.deepEqual(activity.changes, { babyName: { from: 'Emma', to: 'Sofia' } });
+  expect(activity.changed).toStrictEqual(['babyName']);
+  expect(activity.changes).toStrictEqual({ babyName: { from: 'Emma', to: 'Sofia' } });
 });
 
 test('a save lists the Milestones it added and removed, and an edited one as both', async () => {
@@ -108,8 +107,8 @@ test('a save lists the Milestones it added and removed, and an edited one as bot
     { updatedAt: owned.site.updatedAt, settings: { ...settings, milestones: [scan, shower] } },
     DEPS
   );
-  assert.ok(first.ok, JSON.stringify(first));
-  assert.deepEqual(siteWriteActivity(owned, first).changes, {
+  assert(first.ok, JSON.stringify(first));
+  expect(siteWriteActivity(owned, first).changes).toStrictEqual({
     milestones: { added: first.site.milestones, removed: [] },
   });
 
@@ -119,8 +118,8 @@ test('a save lists the Milestones it added and removed, and an edited one as bot
     { updatedAt: reloaded.site.updatedAt, settings: { ...settings, milestones: [scan, { ...shower, emoji: '🎉' }] } },
     DEPS
   );
-  assert.ok(second.ok, JSON.stringify(second));
-  assert.deepEqual(siteWriteActivity(reloaded, second).changes, {
+  assert(second.ok, JSON.stringify(second));
+  expect(siteWriteActivity(reloaded, second).changes).toStrictEqual({
     milestones: { added: [second.site.milestones[1]], removed: [reloaded.site.milestones[1]] },
   });
 });
@@ -138,12 +137,12 @@ test('announcing says so, with how the Birth notification went', async () => {
     },
     DEPS
   );
-  assert.ok(result.ok, JSON.stringify(result));
+  assert(result.ok, JSON.stringify(result));
   const activity = siteWriteActivity(owned, result);
-  assert.equal(activity.announced, true);
-  assert.equal(activity.notification, 'sent');
-  assert.deepEqual(activity.delivery, { sent: 0, removed: 0, total: 0 });
-  assert.deepEqual((activity.changes as Record<string, unknown>).birth, {
+  expect(activity.announced).toBe(true);
+  expect(activity.notification).toBe('sent');
+  expect(activity.delivery).toStrictEqual({ sent: 0, removed: 0, total: 0 });
+  expect((activity.changes as Record<string, unknown>).birth).toStrictEqual({
     from: owned.site.birth,
     to: result.site.birth,
   });
@@ -153,7 +152,7 @@ test('a refused write gives its reason, and an invalid one its errors', async ()
   const owned = await waitingSite('activity-refused');
   const { birth: _birth, ...settings } = siteSettingsOf(owned.site);
   const stale = await saveSettings(owned, { updatedAt: 'earlier', settings }, DEPS);
-  assert.deepEqual(siteWriteActivity(owned, stale), {
+  expect(siteWriteActivity(owned, stale)).toStrictEqual({
     slug: 'activity-refused',
     userId,
     ok: false,
@@ -166,6 +165,6 @@ test('a refused write gives its reason, and an invalid one its errors', async ()
     DEPS
   );
   const activity = siteWriteActivity(owned, invalid);
-  assert.equal(activity.reason, 'invalid');
-  assert.deepEqual(activity.errors, ['babyName:invalidType']);
+  expect(activity.reason).toBe('invalid');
+  expect(activity.errors).toStrictEqual(['babyName:invalidType']);
 });

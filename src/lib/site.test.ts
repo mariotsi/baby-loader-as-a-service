@@ -1,6 +1,5 @@
-import assert from 'node:assert/strict';
-import { after, before, test } from 'node:test';
 import { eq } from 'drizzle-orm';
+import { afterAll, assert, beforeAll, expect, test } from 'vitest';
 import { getDb } from '../db/index.ts';
 import { sites } from '../db/schema.ts';
 import { insertTestUser, startTestDb } from '../db/testDb.ts';
@@ -20,13 +19,13 @@ let stopDb: () => Promise<void>;
 let token: string;
 let owner: AuthenticatedUser;
 
-before(async () => {
+beforeAll(async () => {
   stopDb = await startTestDb();
   token = issueSessionToken(await insertTestUser());
   owner = authenticate(token) as AuthenticatedUser;
 });
 
-after(() => stopDb());
+afterAll(() => stopDb());
 
 function newSite(slug: string, settings: SiteSettingsInput = defaultSiteSettings) {
   const parsed = parseNewSite({
@@ -36,32 +35,29 @@ function newSite(slug: string, settings: SiteSettingsInput = defaultSiteSettings
       dueDate: settings.dueDate ?? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10),
     },
   });
-  assert.ok(parsed.ok, JSON.stringify(parsed));
+  assert(parsed.ok, JSON.stringify(parsed));
   return parsed.value;
 }
 
 async function owned(slug: string): Promise<OwnedSite> {
   const access = await accessOwnedSite(token, slug);
-  assert.ok(typeof access === 'object');
+  assert(typeof access === 'object');
   return access;
 }
 
 test('createSite stores the Site settings under the Owner', async () => {
   const created = await createSite(owner, newSite('noah', { ...defaultSiteSettings, babyName: 'Noah' }));
-  assert.ok(created.ok);
+  expect(created.ok).toBeTruthy();
   const stored = await getSiteBySlug('noah');
-  assert.equal(stored?.babyName, 'Noah');
-  assert.deepEqual(stored?.birth, { born: false, details: null });
-  assert.equal(stored?.ownerId, owner.id);
-  assert.deepEqual(
-    (await listSitesByOwner(owner)).map((site) => site.slug),
-    ['noah']
-  );
+  expect(stored?.babyName).toBe('Noah');
+  expect(stored?.birth).toStrictEqual({ born: false, details: null });
+  expect(stored?.ownerId).toBe(owner.id);
+  expect((await listSitesByOwner(owner)).map((site) => site.slug)).toStrictEqual(['noah']);
 });
 
 test('a taken Slug is a slugTaken error from the unique index', async () => {
-  assert.ok((await createSite(owner, newSite('mia'))).ok);
-  assert.deepEqual(await createSite(owner, newSite('mia')), {
+  expect((await createSite(owner, newSite('mia'))).ok).toBeTruthy();
+  expect(await createSite(owner, newSite('mia'))).toStrictEqual({
     ok: false,
     errors: [{ path: 'slug', code: 'slugTaken' }],
   });
@@ -73,8 +69,8 @@ test('saveSiteSettings replaces every Site setting at once', async () => {
     babyName: 'Leo',
     milestones: [{ emoji: '🩺', label: { en: 'First scan' }, date: '2026-05-01' }],
   });
-  assert.ok(withMilestone.ok);
-  assert.ok((await createSite(owner, newSite('leo'))).ok);
+  assert(withMilestone.ok);
+  assert((await createSite(owner, newSite('leo'))).ok);
   await saveSiteSettings(await owned('leo'), withMilestone.value);
 
   const bornNoMilestones = parseSiteSettings({
@@ -86,16 +82,16 @@ test('saveSiteSettings replaces every Site setting at once', async () => {
       details: { datetime: '2026-10-01T10:00:00.000Z', weightGrams: 3300, lengthCm: 51, message: { en: 'Hi' } },
     },
   });
-  assert.ok(bornNoMilestones.ok);
+  assert(bornNoMilestones.ok);
   const saved = await saveSiteSettings(await owned('leo'), bornNoMilestones.value);
 
-  assert.deepEqual(saved?.milestones, []);
-  assert.equal(saved?.birth.born, true);
-  assert.equal(saved?.slug, 'leo');
+  expect(saved?.milestones).toStrictEqual([]);
+  expect(saved?.birth.born).toBe(true);
+  expect(saved?.slug).toBe('leo');
 });
 
 test('a Site saved with the Birth video in its Birth details reads it as the Birth video', async () => {
-  assert.ok((await createSite(owner, newSite('ada'))).ok);
+  expect((await createSite(owner, newSite('ada'))).ok).toBeTruthy();
   const video = {
     key: 'customer-data/owner/site/1c0a4d2f-3b5e-4d6f-9071-829304a5b6c7',
     url: 'https://media.example.com/video',
@@ -111,7 +107,7 @@ test('a Site saved with the Birth video in its Birth details reads it as the Bir
     .where(eq(sites.slug, slugSchema.parse('ada')));
 
   const stored = await getSiteBySlug('ada');
-  assert.deepEqual(stored?.birth, { born: true, details });
-  assert.deepEqual(stored?.birthVideo, video);
-  assert.equal((await getSiteBySlug('noah'))?.birthVideo, null);
+  expect(stored?.birth).toStrictEqual({ born: true, details });
+  expect(stored?.birthVideo).toStrictEqual(video);
+  expect((await getSiteBySlug('noah'))?.birthVideo).toBe(null);
 });

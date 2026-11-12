@@ -1,4 +1,4 @@
-// The bindings unit tests run against (testDb.ts): one in-memory D1, nothing else.
+// The bindings a unit test file gets from startTestDb (testDb.ts): one in-memory D1, nothing else.
 {
   "name": "loading-baby-test",
   "compatibility_date": "2026-10-20",

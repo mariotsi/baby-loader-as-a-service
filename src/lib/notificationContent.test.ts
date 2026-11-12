@@ -1,5 +1,4 @@
-import assert from 'node:assert/strict';
-import { test } from 'node:test';
+import { expect, test } from 'vitest';
 import { type NotificationSite, notificationContent, notificationIcon } from './notificationContent.ts';
 import { defaultSiteSettings, isoDateTimeSchema } from './siteSettings.ts';
 
@@ -13,25 +12,25 @@ const bornBirth = {
 } as const;
 
 test('a written title wins', () => {
-  assert.equal(notificationContent(hidden, { it: { title: 'Novità', body: 'Ciao' } }, 'it', '/i').title, 'Novità');
+  expect(notificationContent(hidden, { it: { title: 'Novità', body: 'Ciao' } }, 'it', '/i').title).toBe('Novità');
 });
 
 test('without a title, the baby’s name where Privacy settings show it', () => {
-  assert.equal(notificationContent(site, { it: { body: 'Ciao' } }, 'it', '/i').title, 'Sofia');
+  expect(notificationContent(site, { it: { body: 'Ciao' } }, 'it', '/i').title).toBe('Sofia');
   const born = { ...hidden, birth: bornBirth };
-  assert.equal(notificationContent(born, { it: { body: 'Ciao' } }, 'it', '/i').title, 'Sofia');
+  expect(notificationContent(born, { it: { body: 'Ciao' } }, 'it', '/i').title).toBe('Sofia');
 });
 
 test('without a title and with the name hidden, the Site’s name in the text’s Language', () => {
   const named = { ...hidden, pageName: { it: 'Casa Rossi', en: 'The Rossis' } };
-  assert.equal(notificationContent(named, { it: { body: 'Ciao' } }, 'it', '/i').title, 'Casa Rossi');
-  assert.equal(notificationContent(named, { en: { body: 'Hi' } }, 'en', '/i').title, 'The Rossis');
-  assert.equal(notificationContent(hidden, { it: { body: 'Ciao' } }, 'it', '/i').title, 'Loading Baby');
+  expect(notificationContent(named, { it: { body: 'Ciao' } }, 'it', '/i').title).toBe('Casa Rossi');
+  expect(notificationContent(named, { en: { body: 'Hi' } }, 'en', '/i').title).toBe('The Rossis');
+  expect(notificationContent(hidden, { it: { body: 'Ciao' } }, 'it', '/i').title).toBe('Loading Baby');
 });
 
 test('the text and the buttons follow the Subscription’s Language, else the Site’s fallback one', () => {
   const messages = { it: { body: 'Ciao' }, en: { body: 'Hi' } };
-  assert.deepEqual(notificationContent(site, messages, 'it', '/i'), {
+  expect(notificationContent(site, messages, 'it', '/i')).toStrictEqual({
     lang: 'it',
     title: 'Sofia',
     body: 'Ciao',
@@ -39,16 +38,16 @@ test('the text and the buttons follow the Subscription’s Language, else the Si
     actions: { open: 'Apri', dismiss: 'Chiudi' },
   });
   const old = notificationContent(site, messages, null, '/i');
-  assert.equal(old.lang, 'en');
-  assert.deepEqual(old.actions, { open: 'Open', dismiss: 'Dismiss' });
+  expect(old.lang).toBe('en');
+  expect(old.actions).toStrictEqual({ open: 'Open', dismiss: 'Dismiss' });
   const onlyItalian = notificationContent(site, { it: { body: 'Ciao' } }, 'en', '/i');
-  assert.equal(onlyItalian.lang, 'it');
-  assert.equal(onlyItalian.body, 'Ciao');
+  expect(onlyItalian.lang).toBe('it');
+  expect(onlyItalian.body).toBe('Ciao');
 });
 
 test('the icon is the birth photo once born, else the Site icon', () => {
-  assert.equal(notificationIcon(site, 'https://sofia.test/', 'https://media.test/photo'), '/icon-192.png');
+  expect(notificationIcon(site, 'https://sofia.test/', 'https://media.test/photo')).toBe('/icon-192.png');
   const born = { ...site, birth: bornBirth };
-  assert.equal(notificationIcon(born, 'https://sofia.test/', 'https://media.test/photo'), 'https://media.test/photo');
-  assert.equal(notificationIcon(born, 'https://sofia.test/', null), '/icon-192.png');
+  expect(notificationIcon(born, 'https://sofia.test/', 'https://media.test/photo')).toBe('https://media.test/photo');
+  expect(notificationIcon(born, 'https://sofia.test/', null)).toBe('/icon-192.png');
 });
