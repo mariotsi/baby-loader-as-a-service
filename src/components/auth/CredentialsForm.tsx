@@ -1,8 +1,10 @@
 'use client';
 
+import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { type SubmitEvent, useRef, useState, useTransition } from 'react';
+import { useState, useTransition } from 'react';
+import { FormProvider, useForm } from 'react-hook-form';
 import { useLang } from '@/components/LangProvider';
 import { LoginBaby, type LoginBabyState } from '@/components/LoginBaby';
 import { Button } from '@/components/ui/Button';
@@ -15,24 +17,20 @@ import { StatusMessage } from '@/components/ui/StatusMessage';
 import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
 import { routeErrorText } from '@/lib/errorText';
+import { type NewPasswordValues, signupFormSchema } from '@/lib/passwordRules';
 import styles from './CredentialsForm.module.css';
-import { NewPasswordFields, newPasswordErrors, rememberCredentials } from './NewPasswordFields';
+import { adoptScreenValues, NewPasswordFields, rememberCredentials } from './NewPasswordFields';
+
+/** What the form holds. Login leaves the confirmation empty and checks nothing: the server answers. */
+type Credentials = NewPasswordValues & { email: string };
+
+const signupResolver = zodResolver(signupFormSchema);
 
 /** Where each mode sends the form and goes next; its words are in the Platform's dictionary (`auth`). */
 const MODES = {
   login: { endpoint: '/api/auth/login', next: '/dashboard', switchHref: '/signup' },
   signup: { endpoint: '/api/auth/signup', next: '/onboarding', switchHref: '/login' },
 } as const;
-
-/**
- * What the fields hold, read from the form itself. Some password managers
- * fill a field without the input event React listens to, so the state can
- * lag behind what the Owner sees; a submit trusts what is on screen.
- */
-function fieldValues(form: HTMLFormElement) {
-  const value = (name: string) => (form.elements.namedItem(name) as HTMLInputElement | null)?.value ?? '';
-  return { email: value('email'), password: value('password'), confirm: value('confirm-password') };
-}
 
 /**
  * Where the end of the typed email sits across the field, from -1 at its
@@ -58,67 +56,40 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
   const lang = useLang();
   const t = platformCopy[lang].auth;
   const copy = t[mode];
-  const [email, setEmail] = useState('');
   const [baby, setBaby] = useState<LoginBabyState>('sleeping');
   const [look, setLook] = useState(-1);
   const watchEmail = (input: HTMLInputElement) => {
     setBaby('watching');
     setLook(textEnd(input));
   };
-  const [password, setPassword] = useState('');
-  const [confirm, setConfirm] = useState('');
-  const [tried, setTried] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const form = useForm<Credentials>({
+    defaultValues: { email: '', password: '', 'confirm-password': '' },
+    resolver: mode === 'signup' ? signupResolver : undefined,
+  });
+  const { register, handleSubmit, setError, formState } = form;
   // router.push returns before the next page arrives; its transition stays pending until then.
   const [navigating, startNavigation] = useTransition();
-  const busy = loading || navigating;
-  const passwordRef = useRef<HTMLInputElement>(null);
-  const confirmRef = useRef<HTMLInputElement>(null);
+  const busy = formState.isSubmitting || navigating;
 
-  /** On signup, whether the new password can be sent; otherwise it moves focus to what stops it. */
-  function newPasswordReady(newPassword: string, newConfirm: string): boolean {
-    setTried(true);
-    const errors = newPasswordErrors(newPassword, newConfirm, t);
-    if (errors.password) {
-      passwordRef.current?.focus();
-    } else if (errors.confirm) {
-      confirmRef.current?.focus();
-    }
-    return !(errors.password || errors.confirm);
-  }
-
-  async function onSubmit(e: SubmitEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setError(null);
-    const values = fieldValues(e.currentTarget);
-    setEmail(values.email);
-    setPassword(values.password);
-    setConfirm(values.confirm);
-    if (mode === 'signup' && !newPasswordReady(values.password, values.confirm)) {
-      return;
-    }
-    setLoading(true);
+  async function send({ email, password }: Credentials) {
     try {
       const res = await fetch(route.endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: values.email, password: values.password }),
+        body: JSON.stringify({ email, password }),
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(routeErrorText(data.error, lang));
+        setError('root.server', { message: routeErrorText(data.error, lang) });
         return;
       }
-      await rememberCredentials(values.email, values.password);
+      await rememberCredentials(email, password);
       startNavigation(() => {
         router.push(route.next);
         router.refresh();
       });
     } catch {
-      setError(errorsCopy[lang].generic);
-    } finally {
-      setLoading(false);
+      setError('root.server', { message: errorsCopy[lang].generic });
     }
   }
 
@@ -130,53 +101,44 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
         </div>
       ) : null}
       <Card title={copy.title} description={copy.description} headingLevel={1}>
-        <form onSubmit={onSubmit}>
-          <Stack gap={5}>
-            <Field label={t.email} required>
-              <Input
-                name="email"
-                type="email"
-                autoComplete="username"
-                value={email}
-                onChange={(e) => {
-                  setEmail(e.target.value);
-                  if (mode === 'login') {
-                    watchEmail(e.target);
-                  }
-                }}
-                onFocus={mode === 'login' ? (e) => watchEmail(e.target) : undefined}
-                onBlur={mode === 'login' ? () => setBaby('awake') : undefined}
-              />
-            </Field>
-            {mode === 'signup' ? (
-              <NewPasswordFields
-                password={password}
-                onPassword={setPassword}
-                confirm={confirm}
-                onConfirm={setConfirm}
-                tried={tried}
-                passwordRef={passwordRef}
-                confirmRef={confirmRef}
-              />
-            ) : (
-              <Field label={t.password} required>
+        <FormProvider {...form}>
+          <form
+            onSubmit={(e) => {
+              adoptScreenValues(e.currentTarget, form);
+              void handleSubmit(send)(e);
+            }}
+          >
+            <Stack gap={5}>
+              <Field label={t.email} required>
                 <Input
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  onFocus={() => setBaby('covering')}
-                  onBlur={() => setBaby('awake')}
+                  type="email"
+                  autoComplete="username"
+                  onFocus={mode === 'login' ? (e) => watchEmail(e.target) : undefined}
+                  {...register(
+                    'email',
+                    mode === 'login' ? { onChange: (e) => watchEmail(e.target), onBlur: () => setBaby('awake') } : {}
+                  )}
                 />
               </Field>
-            )}
-            <StatusMessage tone="danger">{error}</StatusMessage>
-            <Button variant="primary" type="submit" fullWidth loading={busy}>
-              {busy ? copy.submitting : copy.submit}
-            </Button>
-          </Stack>
-        </form>
+              {mode === 'signup' ? (
+                <NewPasswordFields />
+              ) : (
+                <Field label={t.password} required>
+                  <Input
+                    type="password"
+                    autoComplete="current-password"
+                    onFocus={() => setBaby('covering')}
+                    {...register('password', { onBlur: () => setBaby('awake') })}
+                  />
+                </Field>
+              )}
+              <StatusMessage tone="danger">{formState.errors.root?.server?.message}</StatusMessage>
+              <Button variant="primary" type="submit" fullWidth loading={busy}>
+                {busy ? copy.submitting : copy.submit}
+              </Button>
+            </Stack>
+          </form>
+        </FormProvider>
         <p className={styles.switch}>
           {copy.switchPrompt} <Link href={route.switchHref}>{copy.switchLink}</Link>
         </p>
