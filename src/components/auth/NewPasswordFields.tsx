@@ -1,12 +1,22 @@
 'use client';
 
-import { type RefObject, useId } from 'react';
+import { useId } from 'react';
+import {
+  type FieldValues,
+  type Path,
+  type UseFormReturn,
+  useFormContext,
+  useFormState,
+  useWatch,
+} from 'react-hook-form';
 import { useLang } from '@/components/LangProvider';
 import { Checklist } from '@/components/ui/Checklist';
 import { Field } from '@/components/ui/Field';
 import { Input } from '@/components/ui/Input';
 import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
 import {
+  type NewPasswordProblem,
+  type NewPasswordValues,
   PASSWORD_MIN_LENGTH,
   PASSWORD_RULES,
   PASSWORD_RULES_ATTRIBUTE,
@@ -44,82 +54,85 @@ export async function rememberCredentials(email: string, password: string) {
   }
 }
 
-/** What stops a new password from being sent, once the Owner has tried to send it. */
-export function newPasswordErrors(password: string, confirm: string, t: AuthCopy) {
-  const unmet = unmetPasswordRules(password);
-  let confirmError: string | undefined;
-  if (confirm !== password) {
-    confirmError = confirm ? t.passwordsDiffer : t.typeAgain;
+/**
+ * Copies what the form's fields show into `form` before a submit. Some
+ * password managers fill a field without the input event the form listens
+ * to, so its values can lag behind what the Owner sees; a submit trusts what
+ * is on screen.
+ */
+export function adoptScreenValues<T extends FieldValues>(
+  element: HTMLFormElement,
+  { getValues, setValue }: Pick<UseFormReturn<T>, 'getValues' | 'setValue'>
+) {
+  for (const name of Object.keys(getValues()) as Path<T>[]) {
+    const field = element.elements.namedItem(name);
+    if (field instanceof HTMLInputElement && field.value !== getValues(name)) {
+      setValue(name, field.value as Parameters<typeof setValue>[1]);
+    }
   }
-  return {
-    password: unmet.length > 0 ? t.rulesNotMet(unmet.map((rule) => ruleLabel(rule.id, t)).join(', ')) : undefined,
-    confirm: confirmError,
-  };
 }
 
 /**
  * The new password, its rules ticking off as the Owner types, and its
- * confirmation. Both fields are marked `new-password`, which is how password
- * managers tell a signup form and fill both with the password they suggest;
- * `passwordrules` tells them what that password must contain.
+ * confirmation, as fields of the form around them (a `FormProvider` whose
+ * values include `NewPasswordValues`, checked by one of the schemas in
+ * `passwordRules.ts`). Both fields are marked `new-password`, which is how
+ * password managers tell a signup form and fill both with the password they
+ * suggest; `passwordrules` tells them what that password must contain.
+ *
+ * Nothing turns red before the first submit. After it each field is checked
+ * again as it changes, and on blur, which is when the form learns of a value
+ * a password manager filled silently.
  */
 export function NewPasswordFields({
   label,
-  password,
-  onPassword,
-  confirm,
-  onConfirm,
-  tried,
-  passwordRef,
-  confirmRef,
 }: {
   /** The new password's label, `Password` unless given. */
   label?: string;
-  password: string;
-  onPassword: (value: string) => void;
-  confirm: string;
-  onConfirm: (value: string) => void;
-  tried: boolean;
-  passwordRef: RefObject<HTMLInputElement | null>;
-  confirmRef: RefObject<HTMLInputElement | null>;
 }) {
   const t = platformCopy[useLang()].auth;
   const rulesId = useId();
-  const errors = tried ? newPasswordErrors(password, confirm, t) : { password: undefined, confirm: undefined };
+  const { register, control, trigger } = useFormContext<NewPasswordValues>();
+  const { errors, isSubmitted } = useFormState({ control });
+  const password = useWatch({ control, name: 'password' });
+  const recheck = () => {
+    if (isSubmitted) {
+      void trigger(['password', 'confirm-password']);
+    }
+  };
+  const unmet = unmetPasswordRules(password).map((rule) => ruleLabel(rule.id, t));
+  const confirmProblem = errors['confirm-password']?.message as Exclude<NewPasswordProblem, 'rulesNotMet'> | undefined;
   // Spread, since React's input props do not know `passwordrules`; React passes it to the DOM as it is.
   const passwordRules = { passwordrules: PASSWORD_RULES_ATTRIBUTE };
   return (
     <>
       <div className={styles.newPassword}>
-        <Field label={label ?? t.password} error={errors.password} errorForScreenReaders required>
+        <Field
+          label={label ?? t.password}
+          error={errors.password && unmet.length > 0 ? t.rulesNotMet(unmet.join(', ')) : undefined}
+          errorForScreenReaders
+          required
+        >
           <Input
-            ref={passwordRef}
-            name="password"
             type="password"
             autoComplete="new-password"
             {...passwordRules}
             aria-describedby={rulesId}
-            value={password}
-            onChange={(e) => onPassword(e.target.value)}
-            onBlur={(e) => onPassword(e.target.value)}
+            {...register('password', { deps: ['confirm-password'], onBlur: recheck })}
           />
         </Field>
         <Checklist
           id={rulesId}
           items={PASSWORD_RULES.map((rule) => ({ id: rule.id, label: ruleLabel(rule.id, t), met: rule.met(password) }))}
-          flagUnmet={tried}
+          flagUnmet={isSubmitted}
         />
       </div>
-      <Field label={t.confirmPassword} error={errors.confirm}>
+      <Field label={t.confirmPassword} error={confirmProblem ? t[confirmProblem] : undefined}>
         <Input
-          ref={confirmRef}
-          name="confirm-password"
           type="password"
           autoComplete="new-password"
           {...passwordRules}
-          value={confirm}
-          onChange={(e) => onConfirm(e.target.value)}
-          onBlur={(e) => onConfirm(e.target.value)}
+          {...register('confirm-password', { onBlur: recheck })}
         />
       </Field>
     </>

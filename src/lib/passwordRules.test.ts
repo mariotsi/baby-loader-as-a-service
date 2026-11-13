@@ -1,5 +1,11 @@
 import { expect, test } from 'vitest';
-import { newPasswordProblem, PASSWORD_RULES_ATTRIBUTE, unmetPasswordRules } from './passwordRules.ts';
+import {
+  newPasswordFormSchema,
+  newPasswordProblem,
+  PASSWORD_RULES_ATTRIBUTE,
+  signupFormSchema,
+  unmetPasswordRules,
+} from './passwordRules.ts';
 
 const ids = (password: string) => unmetPasswordRules(password).map((rule) => rule.id);
 
@@ -41,4 +47,31 @@ test('the passwordrules attribute needs a symbol other than a space, and allows 
   expect(PASSWORD_RULES_ATTRIBUTE).toBe(
     'minlength: 10; maxlength: 128; required: lower; required: upper; required: digit; required: [-~!@#$%^&*_+=`|(){}[:;"\'<>,.?]]; allowed: lower, upper, digit, special;'
   );
+});
+
+/** What a form shows for a password and its confirmation: each field in error, with the problem's code. */
+function problems(password: string, confirm: string) {
+  const result = newPasswordFormSchema.safeParse({ password, 'confirm-password': confirm });
+  return result.success ? [] : result.error.issues.map((issue) => [issue.path.join('.'), issue.message]);
+}
+
+test('a form takes a new password that meets every rule and is typed twice the same', () => {
+  expect(problems('Abcdefgh1!', 'Abcdefgh1!')).toStrictEqual([]);
+});
+
+test('a form reports a weak password and its confirmation in one pass', () => {
+  expect(problems('abc', 'abd')).toStrictEqual([
+    ['password', 'rulesNotMet'],
+    ['confirm-password', 'passwordsDiffer'],
+  ]);
+});
+
+test('an empty confirmation asks to type the password again', () => {
+  expect(problems('Abcdefgh1!', '')).toStrictEqual([['confirm-password', 'typeAgain']]);
+});
+
+test('signup checks the password the same way and leaves the email to the server', () => {
+  const result = signupFormSchema.safeParse({ email: 'not an email', password: 'Abcdefgh1!', 'confirm-password': '' });
+  expect(result.success).toBe(false);
+  expect(result.error?.issues.map((issue) => issue.message)).toStrictEqual(['typeAgain']);
 });

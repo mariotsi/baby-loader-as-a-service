@@ -4,6 +4,7 @@
  * never does: a password that was valid when it was set stays valid.
  */
 
+import * as z from 'zod/mini';
 import type { RouteError } from './routeError.ts';
 
 export type PasswordRuleId = 'length' | 'lower' | 'upper' | 'digit' | 'symbol';
@@ -48,3 +49,36 @@ export function newPasswordProblem(password: string): RouteError | null {
   }
   return unmetPasswordRules(password).length > 0 ? { code: 'passwordRules' } : null;
 }
+
+/**
+ * Why a form refuses a new password or its confirmation. Each is the message
+ * of the issue the schemas below report, and a key of the Platform's
+ * dictionary (`auth`), where the form finds its words.
+ */
+export type NewPasswordProblem = 'rulesNotMet' | 'passwordsDiffer' | 'typeAgain';
+
+/** A new password and its confirmation as a form holds them, under the names of their fields. */
+export interface NewPasswordValues {
+  password: string;
+  'confirm-password': string;
+}
+
+const newPasswordFields = { password: z.string(), 'confirm-password': z.string() };
+
+/** The password meets every rule, and the confirmation repeats it. */
+const newPasswordCheck = z.superRefine<NewPasswordValues>((values, ctx) => {
+  const report = (path: keyof NewPasswordValues, message: NewPasswordProblem) =>
+    ctx.addIssue({ code: 'custom', path: [path], message });
+  if (unmetPasswordRules(values.password).length > 0) {
+    report('password', 'rulesNotMet');
+  }
+  if (values['confirm-password'] !== values.password) {
+    report('confirm-password', values['confirm-password'] ? 'passwordsDiffer' : 'typeAgain');
+  }
+});
+
+/** What the change-password form checks before it sends. */
+export const newPasswordFormSchema = z.object(newPasswordFields).check(newPasswordCheck);
+
+/** What the signup form checks before it sends. The email is the server's to judge. */
+export const signupFormSchema = z.object({ email: z.string(), ...newPasswordFields }).check(newPasswordCheck);

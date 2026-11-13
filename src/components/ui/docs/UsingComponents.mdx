@@ -83,6 +83,9 @@ import { Meta } from '@storybook/addon-docs/blocks';
   again on every edit, and the error goes away as soon as its rule is met, without another submit. An error only the
   server can find, like a Slug already taken, stays until the next submit.
 - **Move focus to the first field in error** after a failed submit, so the keyboard and screen readers land on it.
+- **Build the form on React Hook Form**, with its rules in a Zod schema: `useForm` gives the two behaviours above by
+  default. The components here know nothing of it, so the form wires them: `register` for an `Input`, `Controller`
+  for a picker. See `docs/adr/0012-forms-on-react-hook-form.md`.
 - **Say an error once.** When something else on screen already shows the problem, like the rules a `Checklist` flags,
   give the Field's error to screen readers only with `errorForScreenReaders`.
 - **Put the form's outcome in a `StatusMessage`** next to its submit button. Keep the `StatusMessage` mounted and change
