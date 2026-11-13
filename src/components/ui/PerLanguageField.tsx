@@ -24,10 +24,14 @@ interface PerLanguageFieldProps {
   labelHidden?: boolean;
   /** The Languages to ask for: one control each, in the Platform's order. */
   languages: readonly Lang[];
-  /** The text in each Language. A Language missing here starts empty. */
-  value: Partial<Record<Lang, string>>;
+  /**
+   * The text in each Language. A Language missing here starts empty. Leave
+   * `value` and `onChange` out when each control holds its own text, as one
+   * a form registers does: `children` then draws it from the Language alone.
+   */
+  value?: Partial<Record<Lang, string>>;
   /** Called with the Language whose text changed, and its new text. */
-  onChange: (lang: Lang, text: string) => void;
+  onChange?: (lang: Lang, text: string) => void;
   /** What is wrong in each Language. Each one marks its control invalid. */
   errors?: Partial<Record<Lang, ReactNode>>;
   hint?: ReactNode;
@@ -52,7 +56,7 @@ export function PerLanguageField({
   label,
   labelHidden = false,
   languages,
-  value,
+  value = {},
   onChange,
   errors = {},
   hint,
@@ -64,7 +68,7 @@ export function PerLanguageField({
   const ordered = inPlatformOrder(languages);
 
   function control(lang: Lang) {
-    return children({ lang, value: value[lang] ?? '', onChange: (text) => onChange(lang, text) });
+    return children({ lang, value: value[lang] ?? '', onChange: (text) => onChange?.(lang, text) });
   }
 
   if (ordered.length === 1) {

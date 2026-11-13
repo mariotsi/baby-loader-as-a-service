@@ -1,8 +1,10 @@
 'use client';
 
+import { toNestErrors } from '@hookform/resolvers';
 import { parseISO } from 'date-fns';
 import { useRouter } from 'next/navigation';
-import { type Ref, type SubmitEvent, useEffect, useRef, useState } from 'react';
+import { type Ref, useEffect, useRef, useState } from 'react';
+import { Controller, FormProvider, type Resolver, useForm, useFormContext, useWatch } from 'react-hook-form';
 import { EditorPreview } from '@/components/dashboard/EditorPreview';
 import { PrivacySwitches } from '@/components/dashboard/PrivacySwitches';
 import { SiteIconField } from '@/components/dashboard/SiteIconField';
@@ -42,7 +44,8 @@ const DRAFT_KEY = 'new-site-draft';
 type Draft = SiteDraft & { slug: string };
 
 /** The fields of The basics that show an error, by name. */
-type BasicsErrors = Partial<Record<'slug' | 'dueDate', string>>;
+const BASICS = ['slug', 'dueDate'] as const;
+type BasicsErrors = Partial<Record<(typeof BASICS)[number], string>>;
 
 /** The draft this tab saved, if it still has the shape this page writes; one from an older Platform starts over. */
 function readDraft(): Draft | null {
@@ -104,6 +107,20 @@ function dueDateError(draft: Draft, error: SiteSettingsError | undefined, lang: 
   return error ? inlineErrorText(error, draft.languages, lang) : undefined;
 }
 
+/**
+ * The form's rules: The basics, whichever step is showing, since every later
+ * step only picks among valid options. Each error is worded for under its
+ * field, in the language the form passes as its context.
+ */
+const basicsResolver: Resolver<Draft, { lang: Lang }> = (values, context, options) => {
+  const found = Object.entries(basicsErrors(values, context?.lang ?? 'en')).filter(([, message]) => message);
+  if (found.length === 0) {
+    return { values, errors: {} };
+  }
+  const errors = Object.fromEntries(found.map(([name, message]) => [name, { type: 'basics', message }]));
+  return { values: {}, errors: toNestErrors(errors, options) };
+};
+
 async function slugIsFree(slug: string): Promise<boolean> {
   const res = await fetch(`/api/slug-available?slug=${encodeURIComponent(slug)}`).catch(() => null);
   // The check only saves a trip back: if it fails, creating the Site still answers.
@@ -129,17 +146,16 @@ export function SiteCreator({
   const lang = useLang();
   const { onboarding: t, settings: settingsCopy } = platformCopy[lang];
   const [step, setStep] = useState(0);
-  const [draft, setDraft] = useState<Draft>(() => ({
-    ...newSiteDraft(lang, Intl.DateTimeFormat().resolvedOptions().timeZone),
-    slug: '',
-  }));
-  const [fieldErrors, setFieldErrors] = useState<BasicsErrors>({});
-  /** Counts refused steps, so each one moves the focus to the first field in error. */
-  const [refused, setRefused] = useState(0);
-  const [message, setMessage] = useState<string | null>(null);
-  const [busy, setBusy] = useState(false);
+  const form = useForm<Draft, { lang: Lang }>({
+    defaultValues: { ...newSiteDraft(lang, Intl.DateTimeFormat().resolvedOptions().timeZone), slug: '' },
+    resolver: basicsResolver,
+    context: { lang },
+  });
+  const { register, control, handleSubmit, setValue, setError, setFocus, getFieldState, clearErrors, reset } = form;
+  const { isSubmitting, errors } = form.formState;
+  // Every value has a default, so what the form holds is always a whole draft.
+  const draft = useWatch({ control }) as Draft;
   const preview = usePhonePreview();
-  const formRef = useRef<HTMLFormElement>(null);
   const headingRef = useRef<HTMLHeadingElement>(null);
   const shownStep = useRef(0);
   /** Set once the saved draft is back, so the empty form never overwrites it. */
@@ -153,7 +169,7 @@ export function SiteCreator({
   useEffect(() => {
     const saved = readDraft();
     if (saved) {
-      setDraft(saved);
+      reset(saved);
       setStep(stepInUrl());
     } else if (location.search) {
       history.replaceState(null, '', location.pathname);
@@ -162,7 +178,7 @@ export function SiteCreator({
     const followHistory = () => setStep(stepInUrl());
     window.addEventListener('popstate', followHistory);
     return () => window.removeEventListener('popstate', followHistory);
-  }, []);
+  }, [reset]);
 
   useEffect(() => {
     if (restored) {
@@ -170,84 +186,70 @@ export function SiteCreator({
     }
   }, [draft, restored]);
 
+  // A new step starts at its heading; The basics, when a field there is in error, start at that field.
   useEffect(() => {
     if (step !== shownStep.current) {
       shownStep.current = step;
-      headingRef.current?.focus();
+      const inError = step === 0 ? BASICS.find((name) => getFieldState(name).error) : undefined;
+      if (inError) {
+        setFocus(inError);
+      } else {
+        headingRef.current?.focus();
+      }
     }
-  }, [step]);
-
-  useEffect(() => {
-    if (refused > 0) {
-      formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-    }
-  }, [refused]);
-
-  function update(patch: Partial<Draft>) {
-    setDraft({ ...draft, ...patch });
-  }
+  }, [step, getFieldState, setFocus]);
 
   function goTo(next: number) {
-    setMessage(null);
+    clearErrors('root');
     setStep(next);
     history.pushState(null, '', next === 0 ? location.pathname : `?step=${next + 1}`);
   }
 
-  function refuse(errors: BasicsErrors) {
-    setFieldErrors(errors);
-    setRefused((count) => count + 1);
-  }
-
   async function leaveBasics() {
-    const errors = basicsErrors(draft, lang);
-    if (Object.values(errors).some(Boolean)) {
-      refuse(errors);
-      return;
-    }
-    setBusy(true);
-    const free = await slugIsFree(trimmedSlug);
-    setBusy(false);
-    if (free) {
-      setFieldErrors({});
+    if (await slugIsFree(trimmedSlug)) {
       goTo(1);
     } else {
-      refuse({ slug: takenText(lang) });
+      setError('slug', { type: 'slugTaken', message: takenText(lang) }, { shouldFocus: true });
     }
   }
 
   async function create() {
-    setBusy(true);
-    setMessage(null);
     const res = await fetch('/api/sites', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ slug: draft.slug, settings }),
     }).catch(() => null);
     const data = await res?.json().catch(() => null);
-    setBusy(false);
     if (res?.ok) {
       writeDraft(null);
       saveWelcome(data.site.slug);
       router.push(`/dashboard/${data.site.slug}`);
       return;
     }
-    const errors: SiteSettingsError[] = data?.errors ?? [];
-    if (errors.some((error) => error.path === 'slug')) {
+    const refused: SiteSettingsError[] = data?.errors ?? [];
+    if (refused.some((error) => error.path === 'slug')) {
       goTo(0);
-      refuse({ slug: responseErrorText(data, lang) });
+      setError('slug', { type: 'refused', message: responseErrorText(data, lang) });
     } else {
-      setMessage(res ? responseErrorText(data, lang) : errorsCopy[lang].generic);
+      setError('root.server', { message: res ? responseErrorText(data, lang) : errorsCopy[lang].generic });
     }
   }
 
-  function onSubmit(e: SubmitEvent<HTMLFormElement>) {
-    e.preventDefault();
+  /** What the forward button does once The basics pass their rules. */
+  function forward() {
     if (step === 0) {
-      void leaveBasics();
-    } else if (step < LAST_STEP) {
-      goTo(step + 1);
-    } else {
-      void create();
+      return leaveBasics();
+    }
+    if (step < LAST_STEP) {
+      return goTo(step + 1);
+    }
+    return create();
+  }
+
+  /** A draft restored from an earlier day can fail the rules on a later step: The basics show why. */
+  function backToBasics() {
+    if (step > 0) {
+      goTo(0);
     }
   }
 
@@ -271,51 +273,58 @@ export function SiteCreator({
         >
           {t.stepOf(step + 1, LAST_STEP + 1)}
         </PhoneStrip>
-        <form ref={formRef} onSubmit={onSubmit} className={styles.form} inert={preview.open} noValidate>
+        <form
+          onSubmit={(e) => void handleSubmit(forward, backToBasics)(e)}
+          className={styles.form}
+          inert={preview.open}
+          noValidate
+        >
           <StepProgress label={t.stepsLabel} steps={stepNames} current={step} />
           {step === 0 ? (
-            <BasicsStep
-              draft={draft}
-              update={update}
-              errors={fieldErrors}
-              onErrors={setFieldErrors}
-              address={address}
-              headingRef={headingRef}
-            />
+            <FormProvider {...form}>
+              <BasicsStep address={address} headingRef={headingRef} />
+            </FormProvider>
           ) : null}
           {step === 1 ? (
             <Card title={t.makeItYours} description={t.makeItYoursDescription} headingRef={headingRef}>
-              <PalettePicker value={draft.palette} onChange={(palette) => update({ palette })} />
-              <FontPicker
-                value={draft.font}
-                onChange={(font) => update({ font })}
-                sample={draft.babyName.trim() || 'Aa'}
+              <Controller
+                control={control}
+                name="palette"
+                render={({ field }) => <PalettePicker value={field.value} onChange={field.onChange} />}
               />
-              <LanguagesPicker value={draft.languages} onChange={(languages) => update({ languages })} />
+              <Controller
+                control={control}
+                name="font"
+                render={({ field }) => (
+                  <FontPicker value={field.value} onChange={field.onChange} sample={draft.babyName.trim() || 'Aa'} />
+                )}
+              />
+              <Controller
+                control={control}
+                name="languages"
+                render={({ field }) => <LanguagesPicker value={field.value} onChange={field.onChange} />}
+              />
               <PerLanguageField
                 label={settingsCopy.pageName}
                 hint={settingsCopy.pageNameHint}
                 languages={draft.languages}
-                value={draft.pageName}
-                onChange={(language, text) => update({ pageName: { ...draft.pageName, [language]: text } })}
                 optional
               >
-                {({ lang: language, value, onChange }) => (
+                {({ lang: language }) => (
                   <Input
                     lang={language}
-                    value={value}
-                    onChange={(e) => onChange(e.target.value)}
                     placeholder={platformCopy[language].settings.pageNamePlaceholder}
                     maxLength={60}
                     autoComplete="off"
+                    {...register(`pageName.${language}`)}
                   />
                 )}
               </PerLanguageField>
               <SiteIconField
                 isEmoji={draft.iconIsEmoji}
-                onIsEmojiChange={(iconIsEmoji) => update({ iconIsEmoji })}
+                onIsEmojiChange={(iconIsEmoji) => setValue('iconIsEmoji', iconIsEmoji)}
                 emoji={draft.iconEmoji}
-                onEmojiChange={(iconEmoji) => update({ iconEmoji })}
+                onEmojiChange={(iconEmoji) => setValue('iconEmoji', iconEmoji)}
               />
             </Card>
           ) : null}
@@ -326,8 +335,8 @@ export function SiteCreator({
                 sex={draft.sex}
                 showName={draft.showName}
                 showSex={draft.showSex}
-                onShowName={(showName) => update({ showName })}
-                onShowSex={(showSex) => update({ showSex })}
+                onShowName={(showName) => setValue('showName', showName)}
+                onShowSex={(showSex) => setValue('showSex', showSex)}
               />
             </Card>
           ) : null}
@@ -342,12 +351,12 @@ export function SiteCreator({
                 variant="primary"
                 type="submit"
                 icon={step === LAST_STEP ? 'plus' : undefined}
-                loading={busy}
+                loading={isSubmitting}
               >
-                {submitLabel(step, busy, t)}
+                {submitLabel(step, isSubmitting, t)}
               </Button>
             </div>
-            <StatusMessage tone="danger">{message}</StatusMessage>
+            <StatusMessage tone="danger">{errors.root?.server?.message}</StatusMessage>
           </div>
         </form>
         <EditorPreview
@@ -363,18 +372,20 @@ export function SiteCreator({
 }
 
 interface BasicsStepProps {
-  draft: Draft;
-  update: (patch: Partial<Draft>) => void;
-  errors: BasicsErrors;
-  onErrors: (errors: BasicsErrors) => void;
   address: string;
   headingRef: Ref<HTMLHeadingElement>;
 }
 
-/** The Site address, the baby's name, the Sex and the Due date. An error clears as its field changes. */
-function BasicsStep({ draft, update, errors, onErrors, address, headingRef }: BasicsStepProps) {
+/**
+ * The Site address, the baby's name, the Sex and the Due date, as fields of
+ * the form around them. The Address says at once when it cannot be one; the
+ * form's other errors show after the first try to go on.
+ */
+function BasicsStep({ address, headingRef }: BasicsStepProps) {
   const { onboarding: t, settings } = platformCopy[useLang()];
-  const slugProblemText = slugError(draft.slug.trim(), t) ?? errors.slug;
+  const { register, control, setValue, formState } = useFormContext<Draft>();
+  const slug = useWatch({ control, name: 'slug' });
+  const slugProblemText = slugError(slug.trim(), t) ?? formState.errors.slug?.message;
   return (
     <Card title={t.basics} description={t.basicsDescription} headingRef={headingRef}>
       <Field
@@ -385,36 +396,25 @@ function BasicsStep({ draft, update, errors, onErrors, address, headingRef }: Ba
         required
       >
         <Input
-          value={draft.slug}
-          onChange={(e) => {
-            update({ slug: e.target.value.toLowerCase() });
-            onErrors({ ...errors, slug: undefined });
-          }}
           placeholder="emma"
           autoComplete="off"
           autoCapitalize="none"
           spellCheck={false}
+          {...register('slug', { onChange: (e) => setValue('slug', e.target.value.toLowerCase()) })}
         />
       </Field>
       <Field label={t.babyName} hint={settings.nameHint} optional>
-        <Input value={draft.babyName} onChange={(e) => update({ babyName: e.target.value })} autoComplete="off" />
+        <Input autoComplete="off" {...register('babyName')} />
       </Field>
       <Field label={settings.sex}>
-        <Select value={draft.sex} onChange={(e) => update({ sex: e.target.value as Draft['sex'] })}>
+        <Select {...register('sex')}>
           <option value="unknown">{settings.sexUnknown}</option>
           <option value="female">{settings.sexFemale}</option>
           <option value="male">{settings.sexMale}</option>
         </Select>
       </Field>
-      <Field label={t.dueDate} hint={t.dueDateHint} error={errors.dueDate} required>
-        <Input
-          type="date"
-          value={draft.dueDate}
-          onChange={(e) => {
-            update({ dueDate: e.target.value });
-            onErrors({ ...errors, dueDate: undefined });
-          }}
-        />
+      <Field label={t.dueDate} hint={t.dueDateHint} error={formState.errors.dueDate?.message} required>
+        <Input type="date" {...register('dueDate')} />
       </Field>
     </Card>
   );

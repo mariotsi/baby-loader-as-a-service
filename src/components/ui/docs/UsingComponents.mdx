@@ -61,7 +61,8 @@ import { Meta } from '@storybook/addon-docs/blocks';
   give the label to screen readers only with `labelHidden`.
 - **A text in every Language of a Site**, like a Milestone's label or the Birth message, goes in a `PerLanguageField`:
   it takes the texts by Language, calls `onChange(lang, text)`, and lays out and labels one control per Language,
-  which its `children` draws.
+  which its `children` draws. In a form on React Hook Form leave `value` and `onChange` out and register each control
+  by its Language: `{({ lang }) => <Input lang={lang} {...register(`pageName.${lang}`)} />}`.
 
 ```tsx
 <PerLanguageField
