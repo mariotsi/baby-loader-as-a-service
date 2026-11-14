@@ -1,6 +1,7 @@
 'use client';
 
-import { type SubmitEvent, useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { get, type Resolver, type UseFormReturn, useForm, useWatch } from 'react-hook-form';
 import { useStore } from 'zustand';
 import { useLang } from '@/components/LangProvider';
 import { Button } from '@/components/ui/Button';
@@ -17,28 +18,34 @@ import { birthNotificationMessages } from '@/lib/birthAnnouncement';
 import type { MediaUrl } from '@/lib/birthMedia';
 import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
-import {
-  describeSiteSettingsErrors,
-  type ErrorForm,
-  type ErrorPlace,
-  errorPlace,
-  inlineErrorText,
-  routeErrorText,
-} from '@/lib/errorText';
+import { routeErrorText } from '@/lib/errorText';
 import { fallbackLang, type Lang } from '@/lib/i18n';
 import { notificationContent, notificationIcon } from '@/lib/notificationContent';
+import type { Site } from '@/lib/site';
 import { siteShortName } from '@/lib/siteAppIdentity';
-import type { BirthDraft } from '@/lib/siteDraft';
-import { birthPreview, birthProblems, birthToEdit, type SiteEditing, stillFailing } from '@/lib/siteEditing';
-import type { BirthDetails, SiteSettings, SiteSettingsError } from '@/lib/siteSettings';
+import type { BirthDraft, MediaDraft } from '@/lib/siteDraft';
+import {
+  birthPreview,
+  birthProblems,
+  birthToEdit,
+  type EditorValues,
+  holding,
+  type SiteEditing,
+} from '@/lib/siteEditing';
+import type { BirthDetails, SiteSettings } from '@/lib/siteSettings';
 import { BirthMediaEditor, useBirthMediaUrl } from './BirthMediaEditor';
 import { NotificationPreviews } from './NotificationPreviews';
 import { PublicPagePreview } from './PublicPagePreview';
 import styles from './SiteEditor.module.css';
+import { errorSummary, markErrors, settingsErrors, useFocusFirstError, useRecheckErrors } from './settingsForm';
 
 interface BirthDialogProps {
   /** The Site editing of the page around the dialog: the dialog saves the Birth through it. */
   editing: SiteEditing;
+  /** The form of the page around the dialog: the name, the Sex and the Birth video are its values, and show on it too. */
+  page: UseFormReturn<EditorValues>;
+  /** Called once the Birth is saved, with the Site as saved and the Birth video the save sent, before the dialog closes. */
+  onSaved: (written: Site, sentVideo: MediaDraft) => void;
   previewSlug?: string;
   /** The Site's Address, where the notification comes from. */
   address: string;
@@ -47,109 +54,140 @@ interface BirthDialogProps {
   onClose: () => void;
 }
 
+/** What the dialog's rules read beside its values. */
+interface BirthContext {
+  editing: SiteEditing;
+  page: Pick<UseFormReturn<EditorValues>, 'getValues'>;
+  /** Whether the dialog asks the name and the Sex too, and so shows their errors itself. */
+  asksIdentity: boolean;
+  lang: Lang;
+}
+
+/** The dialog's field that shows the error at each path of the Birth details. */
+const FIELDS: Record<string, string> = {
+  'birth.details.datetime': 'datetime',
+  'birth.details.weightGrams': 'weight',
+  'birth.details.lengthCm': 'lengthCm',
+};
+
+/** Sorts a Site settings error for the dialog: under its field, in words, or as one of the page behind it. */
+function birthErrors(found: Parameters<typeof settingsErrors>[0], { asksIdentity, page, lang }: BirthContext) {
+  return settingsErrors<BirthDraft>(found, {
+    form: { birthDialog: { asksIdentity } },
+    nameOf: (path) => FIELDS[path] ?? path.replace(/^birth\.details\./, ''),
+    languages: page.getValues('languages'),
+    lang,
+  });
+}
+
+/** The dialog's rules: everything that stops saving its Birth with what the page holds (`birthProblems`). */
+const birthResolver: Resolver<BirthDraft, BirthContext> = (values, context) => {
+  if (!context) {
+    return { values, errors: {} };
+  }
+  const held = holding(context.page.getValues(), context.editing.getState());
+  const found = birthProblems(held, values);
+  return found.length === 0 ? { values, errors: {} } : { values: {}, errors: birthErrors(found, context) };
+};
+
 /**
  * The Birth details on a page of their own: announcing the birth, or changing
- * what was announced. The Birth as typed is the dialog's own: nothing changes
- * until the Owner saves, and closing discards it. Saving saves the Birth with
- * the name, the Sex and the Birth video, which are the page's and show on it
- * too.
+ * what was announced. The Birth as typed is the dialog's own form (ADR-0012):
+ * nothing changes until the Owner saves, and closing discards it. Saving
+ * saves the Birth with the name, the Sex and the Birth video, which are the
+ * page's and show on it too.
  */
-export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl, onClose }: BirthDialogProps) {
-  const state = useStore(editing);
-  const { babyName, sex, languages } = state.draft;
-  const { slug, timezone } = state.stored;
-  const video = state.video;
+export function BirthDialog({
+  editing,
+  page,
+  onSaved,
+  previewSlug,
+  address,
+  bornPlaceholderUrl,
+  onClose,
+}: BirthDialogProps) {
+  const saved = useStore(editing);
+  // Every value of the page's form has a default, so what it holds is always whole.
+  const pageValues = useWatch({ control: page.control }) as EditorValues;
+  const { babyName, sex, languages, video } = pageValues;
+  const held = holding(pageValues, saved);
+  const { slug, timezone } = saved.stored;
   /** The Birth the dialog opened on: as saved, or with now as its date and time when announcing. */
-  const [initial] = useState(() => birthToEdit(state));
+  const [initial] = useState(() => birthToEdit(held));
   const pageLang = useLang();
   const t = platformCopy[pageLang].settings;
   const announcing = !initial.born;
   /** Asked once, when the dialog opens, so the fields stay while the Owner fills them in. */
   const [asksIdentity] = useState(announcing && (!babyName.trim() || sex === 'unknown'));
-  const revealed = announcing ? revealedText(t, { name: !state.draft.showName, sex: !state.draft.showSex }) : null;
-  const [draft, setDraft] = useState<BirthDraft>(() => ({ ...initial, born: true }));
-  const [saving, setSaving] = useState(false);
-  const [message, setMessage] = useState<string | null>(null);
-  const [stale, setStale] = useState(false);
-  const [failedPaths, setFailedPaths] = useState<string[]>([]);
-  const [failedSaves, setFailedSaves] = useState(0);
+  const revealed = announcing ? revealedText(t, { name: !pageValues.showName, sex: !pageValues.showSex }) : null;
+  const context: BirthContext = { editing, page, asksIdentity, lang: pageLang };
+  const form = useForm<BirthDraft, BirthContext>({
+    defaultValues: { ...initial, born: true },
+    resolver: birthResolver,
+    context,
+    reValidateMode: 'onSubmit',
+    shouldFocusError: false,
+  });
+  const { control, handleSubmit, setValue, setError } = form;
+  const { errors, isSubmitting: saving, submitCount } = form.formState;
+  const draft = useWatch({ control }) as BirthDraft;
   const [confirmingUndo, setConfirmingUndo] = useState(false);
   const [confirmingAnnounce, setConfirmingAnnounce] = useState(false);
   const contentRef = useRef<HTMLDivElement>(null);
   /** The previews keep the last Site settings that were whole while a field is half filled. */
   const lastSettings = useRef<SiteSettings | null>(null);
-  lastSettings.current = birthPreview(state, draft) ?? lastSettings.current;
+  lastSettings.current = birthPreview(held, draft) ?? lastSettings.current;
   const photoUrl = useBirthMediaUrl(draft.photo, previewSlug, 'photo');
   const videoUrl = useBirthMediaUrl(video, previewSlug, 'video');
 
-  useEffect(() => {
-    if (failedSaves > 0) {
-      contentRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-    }
-  }, [failedSaves]);
+  useRecheckErrors(form, pageValues);
+  useFocusFirstError(submitCount, contentRef);
 
-  const errors = stillFailing(birthProblems(state, draft), failedPaths);
-  /** Where this dialog shows an error: under its field, in words, or on the page behind it. */
-  const form: ErrorForm = { birthDialog: { asksIdentity } };
-
-  function inlineError(path: string): string | undefined {
-    const error = errors.find((e) => e.path === path);
-    return error ? inlineErrorText(error, languages, pageLang) : undefined;
+  function inlineError(name: string): string | undefined {
+    return (get(errors, name) as { message?: string } | undefined)?.message;
   }
 
   function update(patch: Partial<BirthDraft>) {
-    setDraft({ ...draft, ...patch });
+    for (const key of Object.keys(patch) as (keyof BirthDraft)[]) {
+      setValue(key, patch[key] as never);
+    }
   }
 
-  /** Marks what stops saving `birth`, and says whether anything does. */
-  function blocked(birth: BirthDraft): boolean {
-    const found = birthProblems(state, birth);
-    if (found.length > 0) {
-      setFailedPaths(found.map((error) => error.path));
-      setFailedSaves((count) => count + 1);
-      return true;
-    }
-    setFailedPaths([]);
-    return false;
+  function closeConfirmations() {
+    setConfirmingUndo(false);
+    setConfirmingAnnounce(false);
   }
 
-  async function save(birth: BirthDraft) {
-    setMessage(null);
-    if (blocked(birth)) {
-      return;
-    }
-    setSaving(true);
-    const outcome = await state.saveBirth(birth);
-    if (outcome.ok) {
+  async function send(birth: BirthDraft) {
+    const sent = page.getValues();
+    const answer = await editing.getState().saveBirth(sent, birth);
+    if (answer.ok) {
+      onSaved(answer.site, sent.video);
       onClose();
       return;
     }
-    setSaving(false);
-    setConfirmingUndo(false);
-    setConfirmingAnnounce(false);
-    setStale('refused' in outcome && outcome.stale);
-    if ('errors' in outcome) {
-      if (outcome.errors.length > 0) {
-        setFailedPaths(outcome.errors.map((error) => error.path));
-        setFailedSaves((count) => count + 1);
-      }
-      return;
+    closeConfirmations();
+    if ('errors' in answer) {
+      markErrors(form, birthErrors(answer.errors, context));
+    } else {
+      setError('root.server', { message: routeErrorText(answer.refused, pageLang) });
     }
-    setMessage(routeErrorText(outcome.refused, pageLang));
   }
 
+  /** Saves what the dialog holds, once it passes its rules; what stops it shows under the confirmation it closes. */
+  const saveChecked = handleSubmit(send, closeConfirmations);
   // Announcing sends the notification at once, so it asks first: a slip of the finger cannot announce.
-  function submit(e: SubmitEvent<HTMLFormElement>) {
-    e.preventDefault();
-    if (!announcing) {
-      void save(draft);
-    } else if (!blocked(draft)) {
-      setMessage(null);
-      setConfirmingAnnounce(true);
-    }
+  const submit = handleSubmit((birth) => (announcing ? setConfirmingAnnounce(true) : send(birth)));
+
+  /** Goes back to the Countdown: the Birth as held, not born. A refusal leaves the dialog on the Birth it held. */
+  async function undo() {
+    setValue('born', false);
+    await saveChecked();
+    setValue('born', true);
   }
 
-  const status = message || statusText(t, errors, form, pageLang);
+  const status = errors.root?.server?.message || statusText(t, errors, pageLang);
+  const { stale } = saved;
 
   return (
     <FullPageDialog
@@ -159,7 +197,7 @@ export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl,
       closeLabel={t.closeBirthDialog}
       busy={saving}
       onClose={onClose}
-      onSubmit={submit}
+      onSubmit={(e) => void submit(e)}
       width="wide"
       actions={
         <>
@@ -184,7 +222,7 @@ export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl,
               <Field label={t.name} error={inlineError('babyName')}>
                 <Input
                   value={babyName}
-                  onChange={(e) => state.change({ babyName: e.target.value })}
+                  onChange={(e) => page.setValue('babyName', e.target.value)}
                   autoComplete="off"
                 />
               </Field>
@@ -195,16 +233,12 @@ export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl,
                   { value: 'male', label: t.sexMale },
                 ]}
                 value={sex}
-                onChange={(picked) => state.change({ sex: picked })}
+                onChange={(picked) => page.setValue('sex', picked)}
               />
             </Card>
           ) : null}
           <Card title={t.birthDetailsCard} headingLevel={3}>
-            <Field
-              label={t.birthDatetime}
-              hint={t.birthDatetimeHint(timezone)}
-              error={inlineError('birth.details.datetime')}
-            >
+            <Field label={t.birthDatetime} hint={t.birthDatetimeHint(timezone)} error={inlineError('datetime')}>
               <Input
                 type="datetime-local"
                 value={draft.datetime}
@@ -212,7 +246,7 @@ export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl,
               />
             </Field>
             <div className={styles.pair}>
-              <Field label={t.weight} optional error={inlineError('birth.details.weightGrams')}>
+              <Field label={t.weight} optional error={inlineError('weight')}>
                 <Input
                   type="number"
                   inputMode="numeric"
@@ -220,7 +254,7 @@ export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl,
                   onChange={(e) => update({ weight: e.target.value })}
                 />
               </Field>
-              <Field label={t.length} optional error={inlineError('birth.details.lengthCm')}>
+              <Field label={t.length} optional error={inlineError('lengthCm')}>
                 <Input
                   type="number"
                   inputMode="decimal"
@@ -234,7 +268,7 @@ export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl,
               languages={languages}
               value={draft.message}
               onChange={(lang, text) => update({ message: { ...draft.message, [lang]: text } })}
-              errors={Object.fromEntries(languages.map((lang) => [lang, inlineError(`birth.details.message.${lang}`)]))}
+              errors={Object.fromEntries(languages.map((lang) => [lang, inlineError(`message.${lang}`)]))}
               optional
             >
               {({ lang, value, onChange }) => (
@@ -254,7 +288,7 @@ export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl,
             headingLevel={3}
             previewSlug={previewSlug}
             video={video}
-            onVideo={state.pickVideo}
+            onVideo={(picked) => page.setValue('video', picked)}
           />
           {announcing ? null : (
             <div>
@@ -284,7 +318,7 @@ export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl,
         confirmLabel={t.announceBirth}
         dismissLabel={t.keepEditing}
         busy={saving}
-        onConfirm={() => void save(draft)}
+        onConfirm={() => void saveChecked()}
         onClose={() => setConfirmingAnnounce(false)}
       />
       <ConfirmDialog
@@ -294,7 +328,7 @@ export function BirthDialog({ editing, previewSlug, address, bornPlaceholderUrl,
         confirmLabel={t.unannounce}
         dismissLabel={t.keepBirthDetails}
         busy={saving}
-        onConfirm={() => void save({ ...draft, born: false })}
+        onConfirm={() => void undo()}
         onClose={() => setConfirmingUndo(false)}
       />
     </FullPageDialog>
@@ -371,20 +405,13 @@ function submitLabel(t: (typeof platformCopy)[Lang]['settings'], announcing: boo
 }
 
 /** The dialog's errors in words: its own that no field shows, those elsewhere on the page, and a pointer to the marked fields. */
-function statusText(
-  t: (typeof platformCopy)[Lang]['settings'],
-  errors: SiteSettingsError[],
-  form: ErrorForm,
-  lang: Lang
-): string | null {
-  const at = (place: ErrorPlace) => errors.filter((error) => errorPlace(error.path, form) === place);
-  const birthErrors = at('status');
-  const elsewhere = at('elsewhere');
+function statusText(t: (typeof platformCopy)[Lang]['settings'], errors: object, lang: Lang): string | null {
+  const { marked, status, elsewhere } = errorSummary(errors);
   return (
     [
-      birthErrors.length > 0 ? describeSiteSettingsErrors(birthErrors, lang) : null,
-      elsewhere.length > 0 ? `${t.fixElsewhere} ${describeSiteSettingsErrors(elsewhere, lang)}` : null,
-      at('field').length > 0 ? errorsCopy[lang].checkMarkedFields : null,
+      ...status,
+      elsewhere.length > 0 ? `${t.fixElsewhere} ${elsewhere.join(' ')}` : null,
+      marked ? errorsCopy[lang].checkMarkedFields : null,
     ]
       .filter(Boolean)
       .join(' ') || null

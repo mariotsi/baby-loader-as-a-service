@@ -1,11 +1,12 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { expect, fn, userEvent, waitFor, within } from 'storybook/test';
 import { LangProvider } from '@/components/LangProvider';
 import { siteIdSchema, userIdSchema } from '@/db/ids';
 import { slugSchema } from '@/lib/address';
 import type { Site } from '@/lib/site';
-import { createSiteEditing } from '@/lib/siteEditing';
+import { createSiteEditing, type EditorValues, editorValuesOf } from '@/lib/siteEditing';
 import { memorySiteEditingPort } from '@/lib/siteEditingPort';
 import {
   type CalendarDay,
@@ -68,7 +69,7 @@ interface ExampleProps {
   onSetBirth: () => void;
 }
 
-/** The Birth dialog on a Site editing that saves in memory. */
+/** The Birth dialog on a Site editing that saves in memory, over a page's form that holds the Site as saved. */
 function Example({ site, changedElsewhere = false, onSetBirth }: ExampleProps) {
   const [editing] = useState(() => {
     const port = memorySiteEditingPort(site);
@@ -83,9 +84,12 @@ function Example({ site, changedElsewhere = false, onSetBirth }: ExampleProps) {
       },
     });
   });
+  const page = useForm<EditorValues>({ defaultValues: editorValuesOf(site) });
   return (
     <BirthDialog
       editing={editing}
+      page={page}
+      onSaved={() => {}}
       address="https://emma.loading.baby"
       bornPlaceholderUrl={bornPlaceholderUrl('development')}
       onClose={() => {}}
