@@ -3,7 +3,7 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { siteIdSchema, userIdSchema } from '@/db/ids';
 import { slugSchema } from '@/lib/address';
 import type { Site } from '@/lib/site';
-import type { SiteEditing } from '@/lib/siteEditing';
+import { type EditorValues, editorValuesOf, type SiteEditing } from '@/lib/siteEditing';
 import { memorySiteEditingPort } from '@/lib/siteEditingPort';
 import { defaultSiteSettings } from '@/lib/siteSettings';
 import { useSiteEditing } from './useSiteEditing';
@@ -26,10 +26,10 @@ const emma: Site = {
   babyName: 'Emma',
 };
 
-/** Saves, and lets React render what the save changed. */
-function saved(editing: SiteEditing): Promise<void> {
+/** Saves Emma's Site with `patch` typed over it, and lets React render what the save changed. */
+function saved(editing: SiteEditing, patch: Partial<EditorValues> = {}): Promise<void> {
   return act(async () => {
-    await editing.getState().save();
+    await editing.getState().save({ ...editorValuesOf(emma), ...patch });
   });
 }
 
@@ -37,23 +37,20 @@ test('an editor keeps one Site editing for as long as it is mounted, whatever Si
   const port = memorySiteEditingPort(emma);
   const { result, rerender } = renderHook(({ site }) => useSiteEditing(site, port), { initialProps: { site: emma } });
   const editing = result.current;
-  act(() => editing.getState().change({ babyName: 'Sofia' }));
   rerender({ site: { ...emma, babyName: 'Anna' } });
   expect(result.current).toBe(editing);
-  expect(result.current.getState().draft.babyName).toBe('Sofia');
+  expect(result.current.getState().stored.babyName).toBe('Emma');
   expect(refresh).not.toHaveBeenCalled();
 });
 
 test('each save that goes through refreshes the route once; one that does not leaves it', async () => {
   const port = memorySiteEditingPort(emma);
   const { result } = renderHook(() => useSiteEditing(emma, port));
-  act(() => result.current.getState().change({ babyName: 'Sofia' }));
-  await saved(result.current);
+  await saved(result.current, { babyName: 'Sofia' });
   expect(port.site().babyName).toBe('Sofia');
   expect(refresh).toHaveBeenCalledTimes(1);
   port.changeElsewhere();
-  act(() => result.current.getState().change({ babyName: 'Emma' }));
-  await saved(result.current);
+  await saved(result.current, { babyName: 'Emma' });
   expect(result.current.getState().stale).toBe(true);
   expect(refresh).toHaveBeenCalledTimes(1);
 });

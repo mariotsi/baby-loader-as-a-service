@@ -2,16 +2,22 @@ import { expect, test } from 'vitest';
 import { siteIdSchema, userIdSchema } from '../db/ids.ts';
 import { slugSchema } from './address.ts';
 import type { Site } from './site.ts';
+import type { BirthDraft } from './siteDraft.ts';
 import {
+  afterBirthSave,
+  afterSave,
   birthMilestoneDay,
   birthPreview,
   birthProblems,
   birthToEdit,
   bornAt,
   createSiteEditing,
+  type EditorValues,
+  editorValuesOf,
+  holding,
   isDirty,
-  liveErrors,
-  stillFailing,
+  previewOf,
+  problemsOf,
 } from './siteEditing.ts';
 import { memorySiteEditingPort } from './siteEditingPort.ts';
 import {
@@ -76,193 +82,227 @@ const born: Site = {
 const mp4 = (name = 'hello.mp4') => new File(['x'], name, { type: 'video/mp4', lastModified: 1 });
 const jpeg = () => new File(['x'], 'emma.jpg', { type: 'image/jpeg', lastModified: 1 });
 
+/**
+ * A Site open as the editor opens it: the store, and what the editor's form
+ * holds beside it, moved on each save the way the form moves it.
+ */
 function open(site: Site = waiting, options: Parameters<typeof memorySiteEditingPort>[1] = {}) {
   const port = memorySiteEditingPort(site, { now, ...options });
-  const editing = createSiteEditing(site, port, now);
-  return { port, editing, state: () => editing.getState() };
+  const editing = createSiteEditing(site, port);
+  const store = () => editing.getState();
+  let values = editorValuesOf(site);
+  let saved = values;
+  const held = () => holding(values, store());
+  return {
+    port,
+    store,
+    held,
+    values: () => values,
+    dirty: () => isDirty(held(), holding(saved, store())),
+    change(patch: Partial<EditorValues>) {
+      values = { ...values, ...patch };
+    },
+    /** Saves the Site settings, unless something stops the save. */
+    async save() {
+      const sent = values;
+      const found = problemsOf(held(), NOW);
+      if (found.length > 0) {
+        return { ok: false as const, errors: found };
+      }
+      const answer = await store().save(sent);
+      if (answer.ok) {
+        const next = afterSave(sent, values, answer.site);
+        saved = next.saved;
+        values = { ...values, video: next.video };
+      }
+      return answer;
+    },
+    /** Saves `next` as the Birth, from the dialog. */
+    async saveBirth(next: BirthDraft) {
+      const sentVideo = values.video;
+      const answer = await store().saveBirth(values, next);
+      if (answer.ok) {
+        const moved = afterBirthSave(saved, values, sentVideo, answer.site);
+        saved = moved.saved;
+        values = { ...values, milestones: moved.milestones, video: moved.video };
+      }
+      return answer;
+    },
+  };
 }
 
 /** The Birth as the dialog would hold it to announce Emma's birth. */
-function announcement(state: ReturnType<ReturnType<typeof open>['state']>) {
-  return { ...birthToEdit(state, NOW), born: true, datetime: '2026-10-26T08:30', weight: '3400' };
+function announcement(page: ReturnType<typeof open>): BirthDraft {
+  return { ...birthToEdit(page.held(), NOW), born: true, datetime: '2026-10-26T08:30', weight: '3400' };
 }
 
 test('a Site opens with nothing unsaved, and a change that would save something else is unsaved', () => {
-  const { state } = open();
-  expect(isDirty(state())).toBe(false);
-  state().change({ babyName: 'Sofia' });
-  expect(isDirty(state())).toBe(true);
-  state().change({ babyName: 'Emma' });
-  expect(isDirty(state())).toBe(false);
+  const page = open();
+  expect(page.dirty()).toBe(false);
+  page.change({ babyName: 'Sofia' });
+  expect(page.dirty()).toBe(true);
+  page.change({ babyName: 'Emma' });
+  expect(page.dirty()).toBe(false);
 });
 
 test('what a save would not send is not unsaved; a Place typed and a video picked are', () => {
-  const { state } = open();
-  state().change({ pageName: { en: '  ' } });
-  state().change({ iconEmoji: '🐣' });
-  expect(isDirty(state())).toBe(false);
-  state().change({ milestones: state().draft.milestones.map((m) => ({ ...m, placeText: 'Via' })) });
-  expect(isDirty(state())).toBe(true);
+  const page = open();
+  page.change({ pageName: { en: '  ' } });
+  page.change({ iconEmoji: '🐣' });
+  expect(page.dirty()).toBe(false);
+  page.change({ milestones: page.values().milestones.map((m) => ({ ...m, placeText: 'Via' })) });
+  expect(page.dirty()).toBe(true);
   const other = open();
-  other.state().pickVideo(mp4());
-  expect(isDirty(other.state())).toBe(true);
+  other.change({ video: mp4() });
+  expect(other.dirty()).toBe(true);
 });
 
 test('a save sends every Site setting but the Birth, and leaves nothing unsaved', async () => {
-  const { port, state } = open();
-  state().change({ babyName: 'Sofia', palette: 'sage' });
-  expect(await state().save()).toStrictEqual({ ok: true });
-  expect(port.calls).toStrictEqual(['saveSettings']);
-  expect(port.site().babyName).toBe('Sofia');
-  expect(state().stored.updatedAt).toBe(port.site().updatedAt);
-  expect(state().lastSave).toStrictEqual({ saved: true, notification: null });
-  expect([isDirty(state()), state().saving, state().stale]).toStrictEqual([false, false, false]);
+  const page = open();
+  page.change({ babyName: 'Sofia', palette: 'sage' });
+  expect((await page.save()).ok).toBe(true);
+  expect(page.port.calls).toStrictEqual(['saveSettings']);
+  expect(page.port.site().babyName).toBe('Sofia');
+  expect(page.store().stored.updatedAt).toBe(page.port.site().updatedAt);
+  expect(page.store().lastSave).toStrictEqual({ saved: true, notification: null });
+  expect([page.dirty(), page.store().stale]).toStrictEqual([false, false]);
   // The next save sends the `updatedAt` this one answered, so it is not stale.
-  state().change({ babyName: 'Emma' });
-  expect(await state().save()).toStrictEqual({ ok: true });
-  expect(port.site().babyName).toBe('Emma');
+  page.change({ babyName: 'Emma' });
+  expect((await page.save()).ok).toBe(true);
+  expect(page.port.site().babyName).toBe('Emma');
 });
 
-test('what stops a save is marked and nothing is sent; only the marked fields are checked while they are fixed', async () => {
-  const { port, state } = open();
-  state().change({ dueDate: 'soon' });
-  const outcome = await state().save();
-  expect(outcome.ok).toBe(false);
-  expect(port.calls).toStrictEqual([]);
-  expect(state().failedPaths).toStrictEqual(['dueDate']);
-  expect(state().failedSaves).toBe(1);
-  expect(liveErrors(state(), NOW).map((e) => e.path)).toStrictEqual(['dueDate']);
-  // A Place typed and never picked is wrong too, but it did not fail the last save: it stays unmarked.
-  state().change({ milestones: state().draft.milestones.map((m) => ({ ...m, placeText: 'Via Ro' })) });
-  expect(liveErrors(state(), NOW).map((e) => e.path)).toStrictEqual(['dueDate']);
-  state().change({ dueDate: '2026-11-02' });
-  expect(liveErrors(state(), NOW)).toStrictEqual([]);
-  // The next save finds the Place and marks it.
-  await state().save();
-  expect(state().failedPaths).toStrictEqual(['milestones.0.place']);
-  expect(state().failedSaves).toBe(2);
-});
-
-test('the errors a form still shows are those on a field that failed its last save', () => {
-  const found = [
-    { path: settingsPath('dueDate'), code: 'invalidType' as const },
-    { path: settingsPath('babyName'), code: 'required' as const },
-  ];
-  expect(stillFailing(found, [])).toStrictEqual([]);
-  expect(stillFailing(found, ['babyName', 'timezone'])).toStrictEqual([found[1]]);
+test('what stops a save is every Site settings rule, then a Place typed and never picked', () => {
+  const page = open();
+  expect(problemsOf(page.held(), NOW)).toStrictEqual([]);
+  page.change({ dueDate: 'soon', milestones: page.values().milestones.map((m) => ({ ...m, placeText: 'Via Ro' })) });
+  expect(problemsOf(page.held(), NOW).map((e) => e.path)).toStrictEqual(['dueDate', 'milestones.0.place']);
 });
 
 test('what the Owner types while a save is on its way stays unsaved', async () => {
-  const { port, state } = open();
-  state().change({ babyName: 'Sofia' });
-  const release = port.holdNext();
-  const saving = state().save();
-  expect(state().saving).toBe(true);
-  state().change({ palette: 'sage' });
+  const page = open();
+  page.change({ babyName: 'Sofia' });
+  const release = page.port.holdNext();
+  const saving = page.save();
+  page.change({ palette: 'sage' });
   release();
-  expect(await saving).toStrictEqual({ ok: true });
-  expect(port.site().babyName).toBe('Sofia');
-  expect(port.site().theme.palette).not.toBe('sage');
-  expect(state().draft.palette).toBe('sage');
-  expect(isDirty(state())).toBe(true);
-  await state().save();
-  expect(port.site().theme.palette).toBe('sage');
-  expect(isDirty(state())).toBe(false);
+  expect((await saving).ok).toBe(true);
+  expect(page.port.site().babyName).toBe('Sofia');
+  expect(page.port.site().theme.palette).not.toBe('sage');
+  expect(page.values().palette).toBe('sage');
+  expect(page.dirty()).toBe(true);
+  await page.save();
+  expect(page.port.site().theme.palette).toBe('sage');
+  expect(page.dirty()).toBe(false);
 });
 
 test('a picked Birth video is uploaded, then saved', async () => {
-  const { port, state } = open();
-  state().pickVideo(mp4());
-  expect(await state().save()).toStrictEqual({ ok: true });
-  expect(port.calls).toStrictEqual(['upload', 'saveSettings']);
-  expect(port.site().birthVideo?.name).toBe('hello.mp4');
-  expect(state().video).toStrictEqual(port.site().birthVideo);
-  expect(isDirty(state())).toBe(false);
+  const page = open();
+  page.change({ video: mp4() });
+  expect((await page.save()).ok).toBe(true);
+  expect(page.port.calls).toStrictEqual(['upload', 'saveSettings']);
+  expect(page.port.site().birthVideo?.name).toBe('hello.mp4');
+  expect(page.values().video).toStrictEqual(page.port.site().birthVideo);
+  expect(page.dirty()).toBe(false);
+});
+
+test('a Birth video picked while a save is on its way is still to save', async () => {
+  const page = open();
+  page.change({ video: mp4() });
+  const release = page.port.holdNext();
+  const saving = page.save();
+  const later = mp4('later.mp4');
+  page.change({ video: later });
+  release();
+  await saving;
+  expect(page.port.site().birthVideo?.name).toBe('hello.mp4');
+  expect(page.values().video).toBe(later);
+  expect(page.dirty()).toBe(true);
 });
 
 test('a failed upload stops the save and is reported as the route worded it', async () => {
-  const { port, state } = open();
-  state().pickVideo(mp4());
-  port.refuseNext({ ok: false, refused: { code: 'mediaTooLarge' }, stale: false });
-  const outcome = await state().save();
+  const page = open();
+  page.change({ video: mp4() });
+  page.port.refuseNext({ ok: false, refused: { code: 'mediaTooLarge' }, stale: false });
+  const outcome = await page.save();
   expect(outcome).toStrictEqual({ ok: false, refused: { code: 'mediaTooLarge' }, stale: false });
-  expect(port.calls).toStrictEqual(['upload']);
-  expect(state().lastSave).toStrictEqual({ saved: false, refused: { code: 'mediaTooLarge' } });
-  expect([isDirty(state()), state().saving, state().stale]).toStrictEqual([true, false, false]);
+  expect(page.port.calls).toStrictEqual(['upload']);
+  expect(page.store().lastSave).toStrictEqual({ saved: false, refused: { code: 'mediaTooLarge' } });
+  expect([page.dirty(), page.store().stale]).toStrictEqual([true, false]);
 });
 
 test('a save from a tab that missed a change elsewhere is stale, and keeps what it holds', async () => {
-  const { port, state } = open();
-  state().change({ babyName: 'Sofia' });
-  port.changeElsewhere();
-  const outcome = await state().save();
+  const page = open();
+  page.change({ babyName: 'Sofia' });
+  page.port.changeElsewhere();
+  const outcome = await page.save();
   expect(outcome).toStrictEqual({ ok: false, refused: { code: 'staleSite' }, stale: true });
-  expect(state().stale).toBe(true);
-  expect(state().lastSave).toStrictEqual({ saved: false, refused: { code: 'staleSite' } });
-  expect(port.site().babyName).toBe('Emma');
-  expect(isDirty(state())).toBe(true);
+  expect(page.store().stale).toBe(true);
+  expect(page.store().lastSave).toStrictEqual({ saved: false, refused: { code: 'staleSite' } });
+  expect(page.port.site().babyName).toBe('Emma');
+  expect(page.dirty()).toBe(true);
 });
 
-test('Site settings errors the server finds mark their fields and report nothing in words', async () => {
-  const { port, state } = open();
-  state().change({ babyName: 'Sofia' });
-  port.refuseNext({ ok: false, errors: [{ path: settingsPath('timezone'), code: 'invalidOption' }] });
-  expect((await state().save()).ok).toBe(false);
-  expect(state().failedPaths).toStrictEqual(['timezone']);
-  expect(state().lastSave).toBe(null);
+test('Site settings errors the server finds come back for the form to mark, and report nothing in words', async () => {
+  const page = open();
+  page.change({ babyName: 'Sofia' });
+  const errors = [{ path: settingsPath('timezone'), code: 'invalidOption' as const }];
+  page.port.refuseNext({ ok: false, errors });
+  expect(await page.save()).toStrictEqual({ ok: false, errors });
+  expect(page.store().lastSave).toBe(null);
 });
 
 test('announcing the birth saves it with the name and the Sex as typed, and leaves the page’s other changes unsaved', async () => {
-  const { port, state } = open(waiting, { notification: { sent: 3, removed: 0, total: 4 } });
-  state().change({ babyName: 'Sofia', palette: 'sage' });
-  expect(await state().saveBirth(announcement(state()))).toStrictEqual({ ok: true });
-  expect(port.calls).toStrictEqual(['setBirth']);
-  expect(port.site().babyName).toBe('Sofia');
-  expect(port.site().birth.details?.datetime).toBe('2026-10-26T07:30:00.000Z');
-  expect(port.site().theme.palette).not.toBe('sage');
-  expect(state().lastSave).toStrictEqual({ saved: true, notification: { sent: 3, removed: 0, total: 4 } });
-  expect(state().birth.born).toBe(true);
-  expect(bornAt(state())).toBe('2026-10-26T07:30:00.000Z');
+  const page = open(waiting, { notification: { sent: 3, removed: 0, total: 4 } });
+  page.change({ babyName: 'Sofia', palette: 'sage' });
+  expect((await page.saveBirth(announcement(page))).ok).toBe(true);
+  expect(page.port.calls).toStrictEqual(['setBirth']);
+  expect(page.port.site().babyName).toBe('Sofia');
+  expect(page.port.site().birth.details?.datetime).toBe('2026-10-26T07:30:00.000Z');
+  expect(page.port.site().theme.palette).not.toBe('sage');
+  expect(page.store().lastSave).toStrictEqual({ saved: true, notification: { sent: 3, removed: 0, total: 4 } });
+  expect(page.store().birth.born).toBe(true);
+  expect(bornAt(page.held())).toBe('2026-10-26T07:30:00.000Z');
   // The Birth milestone the server added is on the page, and is not an unsaved change.
-  expect(state().draft.milestones.map((m) => [m.kind, m.date])).toStrictEqual([
+  expect(page.values().milestones.map((m) => [m.kind, m.date])).toStrictEqual([
     [undefined, '2026-08-01'],
     ['birth', '2026-10-26'],
   ]);
-  expect(isDirty(state())).toBe(true);
-  state().change({ palette: waiting.theme.palette });
-  expect(isDirty(state())).toBe(false);
+  expect(page.dirty()).toBe(true);
+  page.change({ palette: waiting.theme.palette });
+  expect(page.dirty()).toBe(false);
 });
 
 test('the Birth’s time is read in the saved Timezone, whatever Timezone the page holds unsaved', async () => {
-  const { port, state } = open();
-  state().change({ timezone: 'Pacific/Auckland' });
-  await state().saveBirth(announcement(state()));
-  expect(port.site().birth.details?.datetime).toBe('2026-10-26T07:30:00.000Z');
+  const page = open();
+  page.change({ timezone: 'Pacific/Auckland' });
+  await page.saveBirth(announcement(page));
+  expect(page.port.site().birth.details?.datetime).toBe('2026-10-26T07:30:00.000Z');
   // The Birth milestone's day is told in the Timezone as typed: 08:30 in Rome is the evening in Auckland.
-  expect(birthMilestoneDay(state())).toBe('2026-10-26');
-  state().change({ timezone: 'America/Los_Angeles' });
-  expect(birthMilestoneDay(state())).toBe('2026-10-26');
-  expect(birthMilestoneDay(open().state())).toBe(null);
+  expect(birthMilestoneDay(page.held())).toBe('2026-10-26');
+  page.change({ timezone: 'America/Los_Angeles' });
+  expect(birthMilestoneDay(page.held())).toBe('2026-10-26');
+  expect(birthMilestoneDay(open().held())).toBe(null);
 });
 
 test('a Birth milestone the Owner removed and has not saved stays removed when the Birth is saved', async () => {
-  const { port, state } = open(born);
-  state().change({ milestones: state().draft.milestones.filter((m) => m.kind !== 'birth') });
-  expect(await state().saveBirth({ ...state().birth, weight: '3500' })).toStrictEqual({ ok: true });
-  expect(port.site().birth.details?.weightGrams).toBe(3500);
-  expect(state().draft.milestones.map((m) => m.kind)).toStrictEqual([undefined]);
-  expect(isDirty(state())).toBe(true);
+  const page = open(born);
+  page.change({ milestones: page.values().milestones.filter((m) => m.kind !== 'birth') });
+  expect((await page.saveBirth({ ...page.store().birth, weight: '3500' })).ok).toBe(true);
+  expect(page.port.site().birth.details?.weightGrams).toBe(3500);
+  expect(page.values().milestones.map((m) => m.kind)).toStrictEqual([undefined]);
+  expect(page.dirty()).toBe(true);
 });
 
 test('the Birth milestone follows the saved day and keeps the label the Owner has not saved', async () => {
-  const { state } = open(born);
-  state().change({
-    milestones: state().draft.milestones.map((m) => (m.kind === 'birth' ? { ...m, label: { en: 'Hello Emma' } } : m)),
+  const page = open(born);
+  page.change({
+    milestones: page.values().milestones.map((m) => (m.kind === 'birth' ? { ...m, label: { en: 'Hello Emma' } } : m)),
   });
-  await state().saveBirth({ ...state().birth, datetime: '2026-10-24T08:30' });
-  const milestone = state().draft.milestones.find((m) => m.kind === 'birth');
+  await page.saveBirth({ ...page.store().birth, datetime: '2026-10-24T08:30' });
+  const milestone = page.values().milestones.find((m) => m.kind === 'birth');
   expect([milestone?.date, milestone?.label]).toStrictEqual(['2026-10-24', { en: 'Hello Emma' }]);
-  expect(isDirty(state())).toBe(true);
+  expect(page.dirty()).toBe(true);
 });
 
 test('going back to the Countdown clears the Birth and its milestone, and keeps the Birth video', async () => {
@@ -270,96 +310,86 @@ test('going back to the Countdown clears the Birth and its milestone, and keeps 
     key: `customer-data/${born.ownerId}/${born.id}/9c4a5f6e-7d81-4293-b4a5-b6c7d8e9f0a1`,
     url: 'https://media.example/v',
   };
-  const { port, state } = open({ ...born, birthVideo: video as Site['birthVideo'] });
-  expect(await state().saveBirth({ ...state().birth, born: false })).toStrictEqual({ ok: true });
-  expect(port.calls).toStrictEqual(['clearBirth']);
-  expect(state().birth.born).toBe(false);
-  expect(bornAt(state())).toBe(null);
-  expect(state().draft.milestones.map((m) => m.kind)).toStrictEqual([undefined]);
-  expect(state().video).toStrictEqual(video);
-  expect(state().lastSave).toStrictEqual({ saved: true, notification: null });
-  expect(isDirty(state())).toBe(false);
+  const page = open({ ...born, birthVideo: video as Site['birthVideo'] });
+  expect((await page.saveBirth({ ...page.store().birth, born: false })).ok).toBe(true);
+  expect(page.port.calls).toStrictEqual(['clearBirth']);
+  expect(page.store().birth.born).toBe(false);
+  expect(bornAt(page.held())).toBe(null);
+  expect(page.values().milestones.map((m) => m.kind)).toStrictEqual([undefined]);
+  expect(page.values().video).toStrictEqual(video);
+  expect(page.store().lastSave).toStrictEqual({ saved: true, notification: null });
+  expect(page.dirty()).toBe(false);
 });
 
 test('a Birth save uploads the photo, then the video, then sets the Birth', async () => {
-  const { port, state } = open();
-  state().pickVideo(mp4());
-  await state().saveBirth({ ...announcement(state()), photo: jpeg() });
-  expect(port.calls).toStrictEqual(['upload', 'upload', 'setBirth']);
-  expect(port.site().birth.details?.photo?.name).toBe('emma.jpg');
-  expect(port.site().birthVideo?.name).toBe('hello.mp4');
-  expect(state().birth.photo).toStrictEqual(port.site().birth.details?.photo);
-  expect(isDirty(state())).toBe(false);
+  const page = open();
+  page.change({ video: mp4() });
+  await page.saveBirth({ ...announcement(page), photo: jpeg() });
+  expect(page.port.calls).toStrictEqual(['upload', 'upload', 'setBirth']);
+  expect(page.port.site().birth.details?.photo?.name).toBe('emma.jpg');
+  expect(page.port.site().birthVideo?.name).toBe('hello.mp4');
+  expect(page.store().birth.photo).toStrictEqual(page.port.site().birth.details?.photo);
+  expect(page.dirty()).toBe(false);
 });
 
 test('a Birth save that fails answers its dialog, and the page reports nothing of its own', async () => {
-  const { port, state } = open();
-  port.changeElsewhere();
-  const outcome = await state().saveBirth(announcement(state()));
+  const page = open();
+  page.port.changeElsewhere();
+  const outcome = await page.saveBirth(announcement(page));
   expect(outcome).toStrictEqual({ ok: false, refused: { code: 'staleSite' }, stale: true });
-  expect(state().lastSave).toBe(null);
-  expect([state().stale, state().saving, state().birth.born]).toStrictEqual([true, false, false]);
-});
-
-test('a Birth save clears the marks of the page’s last failed save', async () => {
-  const { state } = open();
-  state().change({ dueDate: 'soon' });
-  await state().save();
-  expect(state().failedPaths).toStrictEqual(['dueDate']);
-  await state().saveBirth(announcement(state()));
-  expect(state().failedPaths).toStrictEqual([]);
+  expect(page.store().lastSave).toBe(null);
+  expect([page.store().stale, page.store().birth.born]).toStrictEqual([true, false]);
 });
 
 test('the Birth dialog is told what stops its Birth, and what its previews draw', () => {
-  const { state } = open();
-  const birth = announcement(state());
-  expect(birthProblems(state(), birth, NOW)).toStrictEqual([]);
-  expect(birthPreview(state(), birth, NOW)?.birth.born).toBe(true);
-  expect(birthProblems(state(), { ...birth, datetime: '' }, NOW).map((e) => e.path)).toStrictEqual([
+  const page = open();
+  const birth = announcement(page);
+  expect(birthProblems(page.held(), birth, NOW)).toStrictEqual([]);
+  expect(birthPreview(page.held(), birth, NOW)?.birth.born).toBe(true);
+  expect(birthProblems(page.held(), { ...birth, datetime: '' }, NOW).map((e) => e.path)).toStrictEqual([
     'birth.details.datetime',
   ]);
-  expect(birthPreview(state(), { ...birth, datetime: '' }, NOW)).toBe(null);
+  expect(birthPreview(page.held(), { ...birth, datetime: '' }, NOW)).toBe(null);
   // Announcing asks for the name: its absence stops the save, and the previews still draw.
-  state().change({ babyName: '' });
-  expect(birthProblems(state(), birth, NOW).map((e) => e.path)).toStrictEqual(['babyName']);
-  expect(birthPreview(state(), birth, NOW)?.babyName).toBe('');
+  page.change({ babyName: '' });
+  expect(birthProblems(page.held(), birth, NOW).map((e) => e.path)).toStrictEqual(['babyName']);
+  expect(birthPreview(page.held(), birth, NOW)?.babyName).toBe('');
   // The page's other unsaved changes are not the dialog's to save or to check.
-  state().change({ babyName: 'Emma', dueDate: 'soon' });
-  expect(birthProblems(state(), birth, NOW)).toStrictEqual([]);
+  page.change({ babyName: 'Emma', dueDate: 'soon' });
+  expect(birthProblems(page.held(), birth, NOW)).toStrictEqual([]);
 });
 
 test('announcing starts from now on the wall clock in the saved Timezone; a saved Birth opens as saved', () => {
-  expect(birthToEdit(open().state(), NOW).datetime).toBe('2026-10-27T01:00');
-  const saved = open(born).state();
+  expect(birthToEdit(open().held(), NOW).datetime).toBe('2026-10-27T01:00');
+  const saved = open(born).held();
   expect(birthToEdit(saved, NOW)).toBe(saved.birth);
   expect(saved.birth.datetime).toBe('2026-10-26T08:30');
 });
 
 test('previews keep the last valid settings while a field is half filled', () => {
-  const { state } = open();
-  state().change({ babyName: 'Sofia' });
-  expect(state().preview.babyName).toBe('Sofia');
-  state().change({ babyName: 'Sofia Maria', dueDate: '2026-11-0' });
-  expect(state().preview.babyName).toBe('Sofia');
-  state().change({ dueDate: '2026-11-03' });
-  expect([state().preview.babyName, state().preview.dueDate]).toStrictEqual(['Sofia Maria', '2026-11-03']);
+  const page = open();
+  page.change({ babyName: 'Sofia' });
+  const whole = previewOf(page.held(), waiting, NOW);
+  expect(whole.babyName).toBe('Sofia');
+  page.change({ babyName: 'Sofia Maria', dueDate: '2026-11-0' });
+  expect(previewOf(page.held(), whole, NOW)).toBe(whole);
+  page.change({ dueDate: '2026-11-03' });
+  const next = previewOf(page.held(), whole, NOW);
+  expect([next.babyName, next.dueDate]).toStrictEqual(['Sofia Maria', '2026-11-03']);
 });
 
 test('a Born Site opens with its Birth on the wall clock in its Timezone, and a Birth save sends the fields as typed', async () => {
-  const { port, state } = open(born);
-  expect(isDirty(state())).toBe(false);
-  expect([state().birth.datetime, state().birth.weight, state().birth.lengthCm]).toStrictEqual([
-    '2026-10-26T08:30',
-    '3400',
-    '50',
-  ]);
-  await state().saveBirth({ ...state().birth, weight: '', message: { en: 'Hi', it: ' ' } });
-  expect(port.site().birth.details).toStrictEqual({
+  const page = open(born);
+  expect(page.dirty()).toBe(false);
+  const { birth } = page.store();
+  expect([birth.datetime, birth.weight, birth.lengthCm]).toStrictEqual(['2026-10-26T08:30', '3400', '50']);
+  await page.saveBirth({ ...birth, weight: '', message: { en: 'Hi', it: ' ' } });
+  expect(page.port.site().birth.details).toStrictEqual({
     datetime: '2026-10-26T07:30:00.000Z',
     weightGrams: null,
     lengthCm: 50,
     message: { en: 'Hi' },
     photo: null,
   });
-  expect(isDirty(state())).toBe(false);
+  expect(page.dirty()).toBe(false);
 });

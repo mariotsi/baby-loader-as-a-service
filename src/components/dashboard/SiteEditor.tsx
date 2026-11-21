@@ -1,7 +1,8 @@
 'use client';
 
 import { parseISO } from 'date-fns';
-import { type Ref, type SubmitEvent, useEffect, useId, useRef, useState } from 'react';
+import { type Ref, useEffect, useId, useRef, useState } from 'react';
+import { get, type Resolver, useForm, useWatch } from 'react-hook-form';
 import { useStore } from 'zustand';
 import { useLang } from '@/components/LangProvider';
 import { Button } from '@/components/ui/Button';
@@ -22,18 +23,25 @@ import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import type { MediaUrl } from '@/lib/birthMedia';
 import { errorsCopy } from '@/lib/copy/errors';
 import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
-import { describeSiteSettingsErrors, errorPlace, inlineErrorText, routeErrorText } from '@/lib/errorText';
+import { routeErrorText } from '@/lib/errorText';
 import type { Lang } from '@/lib/i18n';
 import { takeWelcome } from '@/lib/newSiteWelcome';
-import type { SiteDTO } from '@/lib/site';
-import type { BirthDraft, MilestoneDraft, SiteDraft } from '@/lib/siteDraft';
-import { birthMilestoneDay, bornAt, isDirty, liveErrors } from '@/lib/siteEditing';
+import type { Site, SiteDTO } from '@/lib/site';
+import type { BirthDraft, MediaDraft, MilestoneDraft, SiteDraft } from '@/lib/siteDraft';
 import {
-  DEFAULT_MILESTONE_EMOJI,
-  type SiteSettings,
-  type SiteSettingsError,
-  type SiteSettingsInput,
-} from '@/lib/siteSettings';
+  afterBirthSave,
+  afterSave,
+  birthMilestoneDay,
+  bornAt,
+  type EditorValues,
+  editorValuesOf,
+  holding,
+  isDirty,
+  previewOf,
+  problemsOf,
+  type SiteEditing,
+} from '@/lib/siteEditing';
+import { DEFAULT_MILESTONE_EMOJI, type SiteSettings, type SiteSettingsInput } from '@/lib/siteSettings';
 import { BirthDialog } from './BirthDialog';
 import { BirthMediaEditor, birthVideoTitle } from './BirthMediaEditor';
 import { EditorPreview } from './EditorPreview';
@@ -42,12 +50,40 @@ import { PrivacySwitches } from './PrivacySwitches';
 import styles from './SiteEditor.module.css';
 import { SiteIconField } from './SiteIconField';
 import { SitePreviews } from './SitePreviews';
+import { errorSummary, markErrors, settingsErrors, useFocusFirstError, useRecheckErrors } from './settingsForm';
 import { useLeaveGuard } from './useLeaveGuard';
 import { usePhonePreview } from './usePhonePreview';
 import { useSiteEditing } from './useSiteEditing';
 import { useStuck } from './useStuck';
 
+/** What the form's rules read beside its values: the Site as last saved, and the page's language for the words. */
+interface EditorContext {
+  editing: SiteEditing;
+  lang: Lang;
+}
+
+/** Sorts a Site settings error for the editor: under its field, which has the error's own path as its name, or in words. */
+function editorErrors(found: Parameters<typeof settingsErrors>[0], languages: readonly Lang[], lang: Lang) {
+  return settingsErrors<EditorValues>(found, { form: 'editor', nameOf: (path) => path, languages, lang });
+}
+
+/** The form's rules: everything that stops a save of the Site settings (`problemsOf`). */
+const editorResolver: Resolver<EditorValues, EditorContext> = (values, context) => {
+  if (!context) {
+    return { values, errors: {} };
+  }
+  const found = problemsOf(holding(values, context.editing.getState()));
+  return found.length === 0
+    ? { values, errors: {} }
+    : { values: {}, errors: editorErrors(found, values.languages, context.lang) };
+};
+
 /**
+ * A Site's settings as one form on React Hook Form (ADR-0012), which holds
+ * the Site draft as its values and the draft as last saved as its default
+ * values. The page is rendered on the server with the Site in it, so every
+ * control is drawn from the form's values and writes with `setValue`.
+ *
  * `timeZones` comes from the server, so the list the page renders matches the
  * one it hydrates. `address` is the Site's, which only the server knows.
  */
@@ -68,9 +104,21 @@ export function SiteEditor({
   const pageLang = useLang();
   const { settings: t } = platformCopy[pageLang];
   const editing = useSiteEditing(site);
-  const state = useStore(editing);
-  const { draft, video, birth, saving, stale, lastSave, failedSaves } = state;
-  const update = state.change;
+  const saved = useStore(editing);
+  const { birth, stale, lastSave } = saved;
+  const form = useForm<EditorValues, EditorContext>({
+    defaultValues: editorValuesOf(site),
+    resolver: editorResolver,
+    context: { editing, lang: pageLang },
+    reValidateMode: 'onSubmit',
+    shouldFocusError: false,
+  });
+  const { control, handleSubmit, getValues, setValue, reset } = form;
+  const { errors, isSubmitting, submitCount, defaultValues } = form.formState;
+  // Every value has a default, so what the form holds is always a whole draft.
+  const values = useWatch({ control }) as EditorValues;
+  const { video, ...draft } = values;
+  const held = holding(values, saved);
   const [birthDialogOpen, setBirthDialogOpen] = useState(false);
   const birthButton = useRef<HTMLButtonElement>(null);
   const returnFocus = useRef(false);
@@ -79,6 +127,9 @@ export function SiteEditor({
   const { marker, stuck } = useStuck();
   /** Whether the Owner just created this Site. */
   const [welcome, setWelcome] = useState(false);
+  /** The previews keep the last Site settings that were whole while a field is half filled. */
+  const lastPreview = useRef<SiteSettings>(site);
+  lastPreview.current = previewOf(held, lastPreview.current);
   const sectionIds = {
     baby: useId(),
     video: useId(),
@@ -92,31 +143,45 @@ export function SiteEditor({
     setWelcome(takeWelcome(site.slug));
   }, [site.slug]);
 
-  // Each failed save moves the focus to the first field in error.
-  useEffect(() => {
-    if (failedSaves > 0) {
-      formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
-    }
-  }, [failedSaves]);
+  useRecheckErrors(form);
+  useFocusFirstError(submitCount, formRef);
 
-  const dirty = isDirty(state);
+  const dirty = isDirty(held, holding(defaultValues as EditorValues, saved));
   // A stale page can't save what it holds, and Reload says so: guarding it would ask again before reloading.
   const leaving = useLeaveGuard(dirty && !stale);
-  const errors = liveErrors(state);
   const notification = lastSave?.saved ? lastSave.notification : null;
 
+  function update(patch: Partial<EditorValues>) {
+    for (const key of Object.keys(patch) as (keyof EditorValues)[]) {
+      setValue(key, patch[key] as never);
+    }
+  }
+
   function inlineError(path: string): string | undefined {
-    const error = errors.find((e) => e.path === path);
-    return error ? inlineErrorText(error, draft.languages, pageLang) : undefined;
+    return (get(errors, path) as { message?: string } | undefined)?.message;
   }
 
   function errorsPerLanguage(path: string): Partial<Record<Lang, string>> {
     return Object.fromEntries(draft.languages.map((lang) => [lang, inlineError(`${path}.${lang}`)]));
   }
 
-  function save(e: SubmitEvent<HTMLFormElement>) {
-    e.preventDefault();
-    void state.save();
+  /** Saves what the form holds, once it passes its rules. What the Owner types while the save is on its way stays unsaved. */
+  const save = handleSubmit(async (sent) => {
+    const answer = await editing.getState().save(sent);
+    if (answer.ok) {
+      const next = afterSave(sent, getValues(), answer.site);
+      reset(next.saved, { keepValues: true });
+      setValue('video', next.video);
+    } else if ('errors' in answer) {
+      markErrors(form, editorErrors(answer.errors, sent.languages, pageLang));
+    }
+  });
+
+  /** Moves what the form holds once the Birth dialog saved the Birth: the page's other changes stay unsaved. */
+  function birthSaved(written: Site, sentVideo: MediaDraft) {
+    const next = afterBirthSave(form.formState.defaultValues as EditorValues, getValues(), sentVideo, written);
+    reset(next.saved, { keepValues: true });
+    update({ milestones: next.milestones, video: next.video });
   }
 
   /** Why the last save failed, when the fields cannot show it, or that the birth was saved and its notification was not sent. */
@@ -168,7 +233,7 @@ export function SiteEditor({
               { id: sectionIds.who, label: t.whoSeesWhat },
             ]}
           />
-          <form ref={formRef} onSubmit={save} className={styles.form} noValidate>
+          <form ref={formRef} onSubmit={(e) => void save(e)} className={styles.form} noValidate>
             <div id={sectionIds.baby} className={styles.section}>
               <Card title={t.babyDetails} description={t.babyDetailsDescription}>
                 <Field label={t.name} {...nameNote(birth, t)}>
@@ -190,9 +255,9 @@ export function SiteEditor({
                 </Field>
                 <BirthStatus
                   birth={birth}
-                  at={bornAt(state)}
+                  at={bornAt(held)}
                   sex={draft.sex}
-                  timezone={state.stored.timezone}
+                  timezone={saved.stored.timezone}
                   buttonRef={birthButton}
                   onOpen={() => setBirthDialogOpen(true)}
                 />
@@ -246,19 +311,24 @@ export function SiteEditor({
                 onIsEmojiChange={(iconIsEmoji) => update({ iconIsEmoji })}
                 emoji={draft.iconEmoji}
                 onEmojiChange={(iconEmoji) => update({ iconEmoji })}
-                preview={state.preview}
+                preview={lastPreview.current}
                 address={address}
               />
             </div>
 
             <div id={sectionIds.video} className={styles.section}>
-              <BirthMediaEditor previewSlug={mediaPreviewSlug} only="video" video={video} onVideo={state.pickVideo} />
+              <BirthMediaEditor
+                previewSlug={mediaPreviewSlug}
+                only="video"
+                video={video}
+                onVideo={(picked) => update({ video: picked })}
+              />
             </div>
 
             <div id={sectionIds.milestones} className={styles.section}>
               <MilestonesCard
                 milestones={draft.milestones}
-                birthDate={birthMilestoneDay(state)}
+                birthDate={birthMilestoneDay(held)}
                 onChangeBirthDay={() => setBirthDialogOpen(true)}
                 onChange={(milestones) => update({ milestones })}
                 languages={draft.languages}
@@ -282,7 +352,7 @@ export function SiteEditor({
             </div>
 
             <SaveBar
-              saving={saving}
+              saving={isSubmitting}
               dirty={dirty}
               saved={lastSave?.saved === true && notification === null}
               announced={
@@ -299,7 +369,7 @@ export function SiteEditor({
           </form>
         </div>
         <EditorPreview
-          settings={state.preview}
+          settings={lastPreview.current}
           slug={site.slug}
           photo={birth.photo}
           video={video}
@@ -321,6 +391,8 @@ export function SiteEditor({
       {birthDialogOpen ? (
         <BirthDialog
           editing={editing}
+          page={form}
+          onSaved={birthSaved}
           previewSlug={mediaPreviewSlug}
           address={address}
           bornPlaceholderUrl={bornPlaceholderUrl}
@@ -575,11 +647,7 @@ function MilestonesCard({
 }
 
 /** The status message for the errors still showing: a pointer to the fields marked, then every other error in words. */
-function problemsText(errors: SiteSettingsError[], lang: Lang): string | null {
-  const elsewhere = errors.filter((error) => errorPlace(error.path, 'editor') === 'status');
-  const parts = [
-    errors.length > elsewhere.length ? errorsCopy[lang].checkMarkedFields : null,
-    elsewhere.length > 0 ? describeSiteSettingsErrors(elsewhere, lang) : null,
-  ];
-  return parts.filter(Boolean).join(' ') || null;
+function problemsText(errors: object, lang: Lang): string | null {
+  const { marked, status } = errorSummary(errors);
+  return [marked ? errorsCopy[lang].checkMarkedFields : null, ...status].filter(Boolean).join(' ') || null;
 }

@@ -30,13 +30,21 @@ import {
 
 /**
  * Site editing (see GLOSSARY.md): a Site draft open in the editor together
- * with the Site as last saved. It holds what the Owner typed and what the
- * server last answered, says what is unsaved and what stops a save, runs the
- * two saves (the Site settings, and the Birth from its dialog) and moves what
- * it holds when the server answers. Free of React and of the browser's
- * `fetch`: it reaches the server through a SiteEditingPort, so every save
- * sequence runs in the `unit` tests. One store per open editor.
+ * with the Site as last saved. The editor's form holds the draft, as its
+ * values, and the draft as last saved, as its default values (ADR-0012). This
+ * module holds the rest: a store with the Site as the server last answered
+ * it, which runs the two saves (the Site settings, and the Birth from its
+ * dialog), and the rules both forms ask it about: what is unsaved, what stops
+ * a save, and what a form holds once a save went through. Free of React and
+ * of the browser's `fetch`: it reaches the server through a SiteEditingPort,
+ * so every save sequence runs in the `unit` tests. One store per open editor.
  */
+
+/** What the editor's form holds: the Site draft, and the Birth video beside it. */
+export type EditorValues = SiteDraft & {
+  /** The Birth video: the file saved, a file picked and not yet uploaded, or none. */
+  video: MediaDraft;
+};
 
 /** A save the server took: the Site as saved, and how the Birth notification went if the save announced the birth. */
 export type Written = { ok: true; site: Site; notification: DeliveryResult | 'failed' | null };
@@ -48,9 +56,6 @@ export type Written = { ok: true; site: Site; notification: DeliveryResult | 'fa
  * another tab since this one read it.
  */
 export type SaveFailure = { ok: false; errors: SiteSettingsError[] } | { ok: false; refused: unknown; stale: boolean };
-
-/** How a save went. */
-export type SaveOutcome = { ok: true } | SaveFailure;
 
 /** How the last save went, until the next one starts. Site settings errors show as marks on the fields, not here. */
 export type SaveReport =
@@ -82,63 +87,51 @@ export interface SiteEditingPort {
 }
 
 export interface SiteEditingState {
-  /** Every field on the page but the Birth and the Birth video, as typed. */
-  draft: SiteDraft;
-  /** The Birth video: the file saved, a file picked and not yet uploaded, or none. */
-  video: MediaDraft;
   /** The Site as last saved: where a Birth save starts from, and the `updatedAt` every save sends back. */
   stored: Site;
   /** The Birth as last saved: only a Birth save changes it. */
   birth: BirthDraft;
-  /** The page as last saved: the unsaved changes are where the draft differs from it. */
-  baseline: { draft: SiteDraft; birth: DraftBirth };
-  /** The Site settings previews draw: as they stand, or as they last stood valid while a field is half filled. */
-  preview: SiteSettings;
-  saving: boolean;
   /** Whether the last save found the Site changed in another tab, which only a reload brings here. */
   stale: boolean;
   lastSave: SaveReport | null;
-  /** The fields in error at the last failed save, checked again on every edit until they pass. */
-  failedPaths: string[];
-  /** Counts failed saves, so each one can move the focus to the first field in error. */
-  failedSaves: number;
 
-  change(patch: Partial<SiteDraft>): void;
-  pickVideo(video: MediaDraft): void;
   /**
-   * Saves every Site setting but the Birth, uploading a picked Birth video
-   * first. What stops the save is marked and nothing is sent. What the Owner
-   * types while the save is on its way stays unsaved.
+   * Saves every Site setting in `sent` but the Birth, uploading a picked
+   * Birth video first. The form checks `sent` before it calls (`problemsOf`)
+   * and moves what it holds on the answer (`afterSave`).
    */
-  save(): Promise<SaveOutcome>;
+  save(sent: EditorValues): Promise<Written | SaveFailure>;
   /**
-   * Saves `next` as the Birth, with the name, the Sex and the Birth video, or
-   * goes back to the Countdown when `next` is not born. The page's other
-   * changes stay as they are, still unsaved.
+   * Saves `next` as the Birth, with the name, the Sex and the Birth video the
+   * page holds, or goes back to the Countdown when `next` is not born. The
+   * page's other changes are not sent. A failure is the dialog's to show: the
+   * page reports nothing of its own.
    */
-  saveBirth(next: BirthDraft): Promise<SaveOutcome>;
+  saveBirth(page: Pick<EditorValues, 'babyName' | 'sex' | 'video'>, next: BirthDraft): Promise<Written | SaveFailure>;
 }
 
 export type SiteEditing = StoreApi<SiteEditingState>;
 
-type Held = Pick<SiteEditingState, 'draft' | 'video' | 'stored' | 'birth'>;
+/** A draft with the Site it is a draft of: what the rules here are asked about. */
+export interface Held {
+  draft: SiteDraft;
+  video: MediaDraft;
+  stored: Site;
+  birth: BirthDraft;
+}
 
-export function createSiteEditing(site: Site, port: SiteEditingPort, now: () => Date = () => new Date()): SiteEditing {
+/** What a form holds, beside the Site as `saved`. */
+export function holding({ video, ...draft }: EditorValues, saved: Pick<SiteEditingState, 'stored' | 'birth'>): Held {
+  return { draft, video, stored: saved.stored, birth: saved.birth };
+}
+
+/** A saved Site as the editor's form starts. */
+export function editorValuesOf(site: Site): EditorValues {
+  return { ...draftOfSite(site), video: site.birthVideo };
+}
+
+export function createSiteEditing(site: Site, port: SiteEditingPort): SiteEditing {
   return createStore<SiteEditingState>()((set, get) => {
-    /** Sets what is held and redraws the preview from it. */
-    function hold(patch: Partial<SiteEditingState>) {
-      set((state) => ({
-        ...patch,
-        preview: lastValidSettings(settingsOf({ ...state, ...patch }), state.preview, now()),
-      }));
-    }
-
-    function fail(errors: SiteSettingsError[]) {
-      if (errors.length > 0) {
-        set((state) => ({ failedPaths: errors.map((error) => error.path), failedSaves: state.failedSaves + 1 }));
-      }
-    }
-
     /** A media field as a save sends it: a picked file is uploaded first, and a failed upload stops the save. */
     async function uploaded(
       media: MediaDraft
@@ -150,84 +143,47 @@ export function createSiteEditing(site: Site, port: SiteEditingPort, now: () => 
       return answer.ok ? answer : { ...answer, stale: false };
     }
 
+    /** Runs a save, then holds the Site it wrote, or that the Site changed elsewhere. */
     async function during(run: () => Promise<Written | SaveFailure>): Promise<Written | SaveFailure> {
-      set({ saving: true, stale: false });
+      set({ lastSave: null, stale: false });
       const answer = await run();
-      set({ saving: false, stale: !answer.ok && 'refused' in answer && answer.stale });
+      if (answer.ok) {
+        set({
+          stored: answer.site,
+          birth: birthDraftOf(answer.site),
+          lastSave: { saved: true, notification: answer.notification },
+        });
+      } else {
+        set({ stale: 'refused' in answer && answer.stale });
+      }
       return answer;
     }
 
-    /** What a save that went through leaves saved, beside the draft: the Site, its Birth and its Birth video. */
-    function savedBeside(written: Site, sentVideo: MediaDraft) {
-      const birth = birthDraftOf(written);
-      return {
-        stored: written,
-        birth,
-        // A video picked while the save was on its way is still to save.
-        video: get().video === sentVideo ? written.birthVideo : get().video,
-        baselineBirth: { birth: birthSettings(birth, written.timezone), birthVideo: written.birthVideo },
-      };
-    }
-
-    const start: Held = { draft: draftOfSite(site), video: site.birthVideo, stored: site, birth: birthDraftOf(site) };
-
     return {
-      ...start,
-      baseline: { draft: start.draft, birth: draftBirth(start) },
-      preview: lastValidSettings(settingsOf(start), site, now()),
-      saving: false,
+      stored: site,
+      birth: birthDraftOf(site),
       stale: false,
       lastSave: null,
-      failedPaths: [],
-      failedSaves: 0,
 
-      change(patch) {
-        hold({ draft: { ...get().draft, ...patch } });
-      },
-
-      pickVideo(video) {
-        hold({ video });
-      },
-
-      async save() {
-        set({ lastSave: null });
-        const found = problemsOf(get(), now());
-        if (found.length > 0) {
-          fail(found);
-          return { ok: false, errors: found };
-        }
-        set({ failedPaths: [] });
-        const sent = get();
+      async save(sent) {
+        const held = holding(sent, get());
         const answer = await during(async () => {
-          const video = await uploaded(sent.video);
+          const video = await uploaded(held.video);
           if (!video.ok) {
             return video;
           }
-          const { birth: _, ...settings } = { ...settingsOf(sent), birthVideo: video.media };
-          return port.saveSettings({ updatedAt: sent.stored.updatedAt, settings });
+          const { birth: _, ...settings } = { ...settingsOf(held), birthVideo: video.media };
+          return port.saveSettings({ updatedAt: held.stored.updatedAt, settings });
         });
-        if (!answer.ok) {
-          if ('errors' in answer) {
-            fail(answer.errors);
-          } else {
-            set({ lastSave: { saved: false, refused: answer.refused } });
-          }
-          return answer;
+        if (!answer.ok && 'refused' in answer) {
+          set({ lastSave: { saved: false, refused: answer.refused } });
         }
-        const { baselineBirth, ...saved } = savedBeside(answer.site, sent.video);
-        hold({
-          ...saved,
-          baseline: { draft: sent.draft, birth: baselineBirth },
-          lastSave: { saved: true, notification: null },
-        });
-        return { ok: true };
+        return answer;
       },
 
-      async saveBirth(next) {
-        set({ lastSave: null });
-        const sent = get();
-        const { updatedAt, timezone } = sent.stored;
-        const answer = await during(async () => {
+      saveBirth(page, next) {
+        const { updatedAt, timezone } = get().stored;
+        return during(async () => {
           const birth = birthSettings(next, timezone);
           if (!birth.born) {
             return port.clearBirth({ updatedAt });
@@ -236,50 +192,70 @@ export function createSiteEditing(site: Site, port: SiteEditingPort, now: () => 
           if (!photo.ok) {
             return photo;
           }
-          const video = await uploaded(sent.video);
+          const video = await uploaded(page.video);
           if (!video.ok) {
             return video;
           }
           return port.setBirth({
             updatedAt,
-            babyName: sent.draft.babyName,
-            sex: sent.draft.sex,
+            babyName: page.babyName,
+            sex: page.sex,
             details: { ...birth.details, photo: photo.media },
             birthVideo: video.media,
           });
         });
-        if (!answer.ok) {
-          return answer;
-        }
-        const written = answer.site;
-        const { baselineBirth, ...saved } = savedBeside(written, sent.video);
-        const { draft, baseline } = get();
-        hold({
-          ...saved,
-          draft: {
-            ...draft,
-            milestones: withSavedBirthMilestone(
-              draft.milestones,
-              written.milestones,
-              hasBirthMilestone(baseline.draft.milestones)
-            ),
-          },
-          baseline: {
-            draft: {
-              ...baseline.draft,
-              babyName: written.babyName,
-              sex: written.sex,
-              milestones: withSavedBirthMilestone(baseline.draft.milestones, written.milestones, false),
-            },
-            birth: baselineBirth,
-          },
-          failedPaths: [],
-          lastSave: { saved: true, notification: answer.notification },
-        });
-        return { ok: true };
       },
     };
   });
+}
+
+/**
+ * What the editor's form holds once a save of `sent` wrote `written`: the
+ * draft as saved (its new default values), and the Birth video. What the
+ * Owner typed while the save was on its way is in `now` and stays unsaved,
+ * a video picked meanwhile included.
+ */
+export function afterSave(
+  sent: EditorValues,
+  now: EditorValues,
+  written: Site
+): { saved: EditorValues; video: MediaDraft } {
+  return {
+    saved: { ...sent, video: written.birthVideo },
+    video: sameMedia(now.video, sent.video) ? written.birthVideo : now.video,
+  };
+}
+
+/**
+ * What the editor's form holds once a Birth save wrote `written`. `saved` is
+ * the draft as saved before it: the name, the Sex, the Birth video and the
+ * Birth milestone are saved now, and the page's other changes are not. The
+ * form's Milestones follow the Birth milestone the server settled, with the
+ * label and the emoji the Owner has not saved; one the Owner removed and has
+ * not saved stays removed.
+ */
+export function afterBirthSave(
+  saved: EditorValues,
+  now: EditorValues,
+  sentVideo: MediaDraft,
+  written: Site
+): { saved: EditorValues; milestones: MilestoneDraft[]; video: MediaDraft } {
+  return {
+    saved: {
+      ...saved,
+      babyName: written.babyName,
+      sex: written.sex,
+      milestones: withSavedBirthMilestone(saved.milestones, written.milestones, false),
+      video: written.birthVideo,
+    },
+    milestones: withSavedBirthMilestone(now.milestones, written.milestones, hasBirthMilestone(saved.milestones)),
+    video: sameMedia(now.video, sentVideo) ? written.birthVideo : now.video,
+  };
+}
+
+/** Whether two media fields hold the same thing: the same picked file, or the same saved one. A form may hand a copy. */
+function sameMedia(a: MediaDraft, b: MediaDraft): boolean {
+  return a instanceof File || b instanceof File ? a === b : a?.key === b?.key;
 }
 
 /** The Birth and the Birth video beside the draft, with `b` as the Birth, its time read in the Site's saved Timezone. */
@@ -292,9 +268,14 @@ function settingsOf(held: Held): SiteSettingsInput {
   return settingsOfDraft(held.draft, draftBirth(held));
 }
 
-/** Whether the page holds anything a save would change. */
-export function isDirty(state: SiteEditingState): boolean {
-  return !sameDraft(state.draft, draftBirth(state), state.baseline.draft, state.baseline.birth);
+/** The Site settings `held` stands for when they pass every rule, else `previous`: what previews draw while a field is half filled. */
+export function previewOf(held: Held, previous: SiteSettings, now: Date = new Date()): SiteSettings {
+  return lastValidSettings(settingsOf(held), previous, now);
+}
+
+/** Whether `held` holds anything a save would change, given the draft as last `saved`. */
+export function isDirty(held: Held, saved: Held): boolean {
+  return !sameDraft(held.draft, draftBirth(held), saved.draft, draftBirth(saved));
 }
 
 /** Everything that stops a save: the Site settings rules, then Places typed and never picked. */
@@ -303,25 +284,12 @@ export function problemsOf(state: Held, now: Date = new Date()): SiteSettingsErr
 }
 
 /**
- * The errors a form still shows: those among `found` on a field that failed
- * the last save. Nothing new turns red while the Owner fixes them.
- */
-export function stillFailing(found: SiteSettingsError[], failedPaths: readonly string[]): SiteSettingsError[] {
-  return failedPaths.length > 0 ? found.filter((error) => failedPaths.includes(error.path)) : [];
-}
-
-/** The errors the page still shows after a failed save. */
-export function liveErrors(state: SiteEditingState, now: Date = new Date()): SiteSettingsError[] {
-  return stillFailing(problemsOf(state, now), state.failedPaths);
-}
-
-/**
  * The Site as saving `b` from the Birth dialog would leave it: as last saved,
  * with `b`, and the name, the Sex and the Birth video as the page holds them.
  * The time is read in the saved Timezone, which is what the Birth route reads
  * it in.
  */
-function afterBirthSave(state: Held, b: BirthDraft): SiteSettings {
+function siteWithBirth(state: Held, b: BirthDraft): SiteSettings {
   const saved = siteSettingsOf(state.stored);
   if (!b.born) {
     return withBirth(saved, null);
@@ -338,13 +306,13 @@ function afterBirthSave(state: Held, b: BirthDraft): SiteSettings {
 
 /** Everything that stops the Birth dialog saving `b`. */
 export function birthProblems(state: Held, b: BirthDraft, now: Date = new Date()): SiteSettingsError[] {
-  const checked = parseSiteSettings(afterBirthSave(state, b), now);
+  const checked = parseSiteSettings(siteWithBirth(state, b), now);
   return checked.ok ? [] : checked.errors;
 }
 
 /** The Site settings the Birth dialog's previews draw with `b`, name and Sex given or not, or null while a field is half filled. */
 export function birthPreview(state: Held, b: BirthDraft, now: Date = new Date()): SiteSettings | null {
-  return parseBirthPreview(afterBirthSave(state, b), now);
+  return parseBirthPreview(siteWithBirth(state, b), now);
 }
 
 /** The Birth the dialog opens on: as saved, or with the date and time filled in with now when announcing. */
