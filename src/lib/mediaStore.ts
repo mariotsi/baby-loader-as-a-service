@@ -1,3 +1,5 @@
+import ky, { isHTTPError } from 'ky';
+
 /**
  * Where media files live: the deployment's R2 bucket, reached through its
  * binding, or a map in memory for tests. Site media (siteMedia.ts) and the
@@ -161,14 +163,20 @@ function parseRange(header: string | null, size: number): { offset: number; leng
 /** Purges through Cloudflare's API, in the zone that serves the media domain. */
 export function cloudflareCachePurge({ zoneId, token }: { zoneId: string; token: string }): CachePurge {
   return async (url) => {
-    const response = await fetch(`https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`, {
-      method: 'POST',
-      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
-      body: JSON.stringify({ files: [url] }),
-    });
-    const result = (await response.json().catch(() => null)) as { success?: boolean } | null;
-    if (!response.ok || !result?.success) {
-      throw new Error(`The Cloudflare cache purge failed with status ${response.status}.`);
+    let result: { success?: boolean };
+    try {
+      result = await ky
+        .post(`https://api.cloudflare.com/client/v4/zones/${zoneId}/purge_cache`, {
+          headers: { authorization: `Bearer ${token}` },
+          json: { files: [url] },
+        })
+        .json();
+    } catch (error) {
+      const status = isHTTPError(error) ? ` with status ${error.response.status}` : '';
+      throw new Error(`The Cloudflare cache purge failed${status}.`, { cause: error });
+    }
+    if (!result.success) {
+      throw new Error('The Cloudflare cache purge answered without success.');
     }
   };
 }

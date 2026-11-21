@@ -37,13 +37,13 @@ beforeEach(() => {
   history.replaceState(null, '', '/onboarding');
   vi.stubGlobal(
     'fetch',
-    vi.fn((url: string, init?: RequestInit) => {
-      if (url.startsWith('/api/slug-available')) {
-        const slug = new URL(url, 'http://x').searchParams.get('slug') ?? '';
-        return Promise.resolve(Response.json({ available: !taken.includes(slug) }));
+    vi.fn(async (request: Request) => {
+      const url = new URL(request.url);
+      if (url.pathname === '/api/slug-available') {
+        return Response.json({ available: !taken.includes(url.searchParams.get('slug') ?? '') });
       }
-      created.push(JSON.parse(String(init?.body)));
-      return Promise.resolve(Response.json(answer.body, { status: answer.status }));
+      created.push(await request.json());
+      return Response.json(answer.body, { status: answer.status });
     })
   );
 });

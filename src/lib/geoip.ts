@@ -1,3 +1,5 @@
+import ky, { isHTTPError } from 'ky';
+
 export interface GeoLocation {
   city: string | null;
   region: string | null;
@@ -80,21 +82,14 @@ export async function lookupGeo(ip: string): Promise<GeoLocation | null> {
     return cached.value;
   }
 
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), LOOKUP_TIMEOUT_MS);
-
   try {
-    const res = await fetch(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, {
-      signal: controller.signal,
-      headers: { 'User-Agent': 'baby-loader-as-a-service (+push subscription geolocation)' },
-    });
-
-    if (!res.ok) {
-      cache.set(ip, { value: null, expires: Date.now() + CACHE_TTL_MS });
-      return null;
-    }
-
-    const data = await res.json();
+    const data = await ky
+      .get(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, {
+        timeout: LOOKUP_TIMEOUT_MS,
+        retry: 0,
+        headers: { 'User-Agent': 'baby-loader-as-a-service (+push subscription geolocation)' },
+      })
+      .json<Record<string, unknown>>();
     if (data?.error) {
       // e.g. rate limited or reserved IP range
       cache.set(ip, { value: null, expires: Date.now() + CACHE_TTL_MS });
@@ -128,9 +123,12 @@ export async function lookupGeo(ip: string): Promise<GeoLocation | null> {
     cache.set(ip, { value: geo, expires: Date.now() + CACHE_TTL_MS });
     return geo;
   } catch (err) {
+    if (isHTTPError(err)) {
+      // ipapi refused this IP: asking again before the cache expires would be refused too.
+      cache.set(ip, { value: null, expires: Date.now() + CACHE_TTL_MS });
+      return null;
+    }
     console.error('[geoip] lookup failed', err);
     return null;
-  } finally {
-    clearTimeout(timeout);
   }
 }

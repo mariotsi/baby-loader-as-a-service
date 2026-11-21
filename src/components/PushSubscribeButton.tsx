@@ -9,6 +9,7 @@ import { Icon, type IconName } from '@/components/ui/Icon';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { StatusPill } from '@/components/ui/StatusPill';
 import { type PublicPageCopy, publicPageCopy, type StepIcon, type StepText } from '@/lib/copy/publicPage';
+import { knownRouteErrorText } from '@/lib/errorText';
 import type { Lang } from '@/lib/i18n';
 import {
   homeScreenSteps,
@@ -19,6 +20,7 @@ import {
   supportNotice,
   supportOf,
 } from '@/lib/notificationSupport';
+import { platformApi, refusalOf } from '@/lib/platformApi';
 import type { PublicPageView } from '@/lib/publicPageView';
 import { decodeVapidKey } from '@/lib/vapid';
 import { Confetti, type ConfettiOrigin, confettiOrigin } from './Confetti';
@@ -170,12 +172,10 @@ async function detectStatus(device: SupportDevice, slug: string): Promise<Status
     if (!sub) {
       return 'unsubscribed';
     }
-    const query = new URLSearchParams({ slug, endpoint: sub.endpoint });
-    const response = await fetch(`/api/subscribe?${query}`, { cache: 'no-store' });
-    if (!response.ok) {
-      return 'unsubscribed';
-    }
-    return (await response.json()).subscribed ? 'subscribed' : 'unsubscribed';
+    const answer = await platformApi
+      .get('subscribe', { searchParams: { slug, endpoint: sub.endpoint }, cache: 'no-store' })
+      .json<{ subscribed: boolean }>();
+    return answer.subscribed ? 'subscribed' : 'unsubscribed';
   } catch {
     return 'unsubscribed';
   }
@@ -186,6 +186,8 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, push, pillSlot
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
+  /** What the route answered when it refused the last subscribe or unsubscribe, for its words. */
+  const [refusal, setRefusal] = useState<unknown>(null);
   const [device, setDevice] = useState<SupportDevice | null>(null);
   const [confettiShot, setConfettiShot] = useState<{ origin: ConfettiOrigin } | null>(null);
 
@@ -210,22 +212,19 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, push, pillSlot
   async function subscribe(origin: ConfettiOrigin) {
     setBusy(true);
     setFeedback(null);
+    setRefusal(null);
     try {
       const reg = await navigator.serviceWorker.register('/sw.js');
       const key = decodeVapidKey(vapidPublicKey);
       const sub = await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ slug, lang, subscription: sub.toJSON(), deviceHints: clientDeviceHints() }),
+      await platformApi.post('subscribe', {
+        json: { slug, lang, subscription: sub.toJSON(), deviceHints: clientDeviceHints() },
       });
-      if (!res.ok) {
-        throw new Error('server');
-      }
       setStatus('subscribed');
       setFeedback('subscribeOk');
       setConfettiShot({ origin });
-    } catch {
+    } catch (error) {
+      setRefusal(refusalOf(error));
       if (Notification.permission === 'denied') {
         setStatus('denied');
       } else {
@@ -240,23 +239,18 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, push, pillSlot
   async function unsubscribe() {
     setBusy(true);
     setFeedback(null);
+    setRefusal(null);
     try {
       const reg = await navigator.serviceWorker.getRegistration();
       const sub = await reg?.pushManager.getSubscription();
       if (sub) {
-        const response = await fetch('/api/subscribe', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug, endpoint: sub.endpoint }),
-        });
-        if (!response.ok) {
-          throw new Error('server');
-        }
+        await platformApi.delete('subscribe', { json: { slug, endpoint: sub.endpoint } });
       }
       setStatus('unsubscribed');
       setFeedback('unsubscribeOk');
       setConfirmOpen(false);
-    } catch {
+    } catch (error) {
+      setRefusal(refusalOf(error));
       setConfirmOpen(false);
       setFeedback('errorUnsubscribe');
     } finally {
@@ -273,6 +267,7 @@ export function PushSubscribeButton({ slug, lang, vapidPublicKey, push, pillSlot
         push={push}
         busy={busy}
         feedback={feedback}
+        refusal={refusal}
         confirmOpen={confirmOpen}
         pillSlot={pillSlot}
         subscribedContent={subscribedContent}
@@ -294,6 +289,7 @@ export function PushSubscribeView({
   push,
   busy = false,
   feedback = null,
+  refusal = null,
   confirmOpen = false,
   pillSlot,
   onSubscribe,
@@ -306,6 +302,8 @@ export function PushSubscribeView({
   push: PublicPageView['push'];
   busy?: boolean;
   feedback?: Feedback | null;
+  /** What the route answered when it refused, which words a failure when it names a known error. */
+  refusal?: unknown;
   confirmOpen?: boolean;
   /** Renders the pill there instead of in place; left out, it stays in place, as in stories. */
   pillSlot?: HTMLElement | null;
@@ -321,7 +319,10 @@ export function PushSubscribeView({
   }
 
   const success = feedback === 'subscribeOk' || feedback === 'unsubscribeOk' ? t[feedback] : null;
-  const failure = feedback === 'errorGeneric' || feedback === 'errorUnsubscribe' ? t[feedback] : null;
+  const failure =
+    feedback === 'errorGeneric' || feedback === 'errorUnsubscribe'
+      ? (knownRouteErrorText((refusal as { error?: unknown } | null)?.error, lang) ?? t[feedback])
+      : null;
   const pill = (
     <>
       {subscribedContent}

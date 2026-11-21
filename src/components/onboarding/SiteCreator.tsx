@@ -26,12 +26,12 @@ import { StepProgress } from '@/components/ui/StepProgress';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { type AddressConfig, siteAddress, slugProblem } from '@/lib/address';
 import type { MediaUrl } from '@/lib/birthMedia';
-import { errorsCopy } from '@/lib/copy/errors';
 import { type PlatformCopy, platformCopy } from '@/lib/copy/platform';
 import { uiCopy } from '@/lib/copy/ui';
 import { inlineErrorText, responseErrorText, settingOf } from '@/lib/errorText';
 import { type Lang, languageName } from '@/lib/i18n';
 import { saveWelcome } from '@/lib/newSiteWelcome';
+import { platformApi, refusalOf } from '@/lib/platformApi';
 import { lastValidSettings, newSiteDraft, readStoredDraft, type SiteDraft, settingsOfDraft } from '@/lib/siteDraft';
 import { defaultSiteSettings, parseNewSite, type SiteSettings, type SiteSettingsError } from '@/lib/siteSettings';
 import { getFont, getPalette } from '@/lib/theme';
@@ -122,9 +122,13 @@ const basicsResolver: Resolver<Draft, { lang: Lang }> = (values, context, option
 };
 
 async function slugIsFree(slug: string): Promise<boolean> {
-  const res = await fetch(`/api/slug-available?slug=${encodeURIComponent(slug)}`).catch(() => null);
-  // The check only saves a trip back: if it fails, creating the Site still answers.
-  return (await res?.json().catch(() => null))?.available ?? true;
+  try {
+    const answer = await platformApi.get('slug-available', { searchParams: { slug } }).json<{ available: boolean }>();
+    return answer.available;
+  } catch {
+    // The check only saves a trip back: if it fails, creating the Site still answers.
+    return true;
+  }
 }
 
 /**
@@ -214,25 +218,23 @@ export function SiteCreator({
   }
 
   async function create() {
-    const res = await fetch('/api/sites', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug: draft.slug, settings }),
-    }).catch(() => null);
-    const data = await res?.json().catch(() => null);
-    if (res?.ok) {
-      writeDraft(null);
-      saveWelcome(data.site.slug);
-      router.push(`/dashboard/${data.site.slug}`);
+    let created: { site: { slug: string } };
+    try {
+      created = await platformApi.post('sites', { json: { slug: draft.slug, settings } }).json();
+    } catch (error) {
+      const refusal = refusalOf(error);
+      const refused: SiteSettingsError[] = (refusal as { errors?: SiteSettingsError[] } | null)?.errors ?? [];
+      if (refused.some(({ path }) => path === 'slug')) {
+        goTo(0);
+        setError('slug', { type: 'refused', message: responseErrorText(refusal, lang) });
+      } else {
+        setError('root.server', { message: responseErrorText(refusal, lang) });
+      }
       return;
     }
-    const refused: SiteSettingsError[] = data?.errors ?? [];
-    if (refused.some((error) => error.path === 'slug')) {
-      goTo(0);
-      setError('slug', { type: 'refused', message: responseErrorText(data, lang) });
-    } else {
-      setError('root.server', { message: res ? responseErrorText(data, lang) : errorsCopy[lang].generic });
-    }
+    writeDraft(null);
+    saveWelcome(created.site.slug);
+    router.push(`/dashboard/${created.site.slug}`);
   }
 
   /** What the forward button does once The basics pass their rules. */

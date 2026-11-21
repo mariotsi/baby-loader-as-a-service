@@ -10,10 +10,10 @@ import { Card } from '@/components/ui/Card';
 import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
 import { StatusMessage } from '@/components/ui/StatusMessage';
-import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
-import { routeErrorText } from '@/lib/errorText';
+import { responseErrorText } from '@/lib/errorText';
 import { type NewPasswordValues, newPasswordFormSchema } from '@/lib/passwordRules';
+import { platformApi, refusalOf } from '@/lib/platformApi';
 import { adoptScreenValues, NewPasswordFields, rememberCredentials } from './NewPasswordFields';
 
 const resolver = zodResolver(newPasswordFormSchema);
@@ -35,23 +35,16 @@ export function ChangePasswordForm({ email, pending }: { email: string; pending:
 
   async function send({ password }: NewPasswordValues) {
     try {
-      const res = await fetch('/api/auth/password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ password }),
-      });
-      if (!res.ok) {
-        setError('root.server', { message: routeErrorText((await res.json()).error, lang) });
-        return;
-      }
-      await rememberCredentials(email, password);
-      startNavigation(() => {
-        router.push('/dashboard');
-        router.refresh();
-      });
-    } catch {
-      setError('root.server', { message: errorsCopy[lang].generic });
+      await platformApi.post('auth/password', { json: { password } });
+    } catch (error) {
+      setError('root.server', { message: responseErrorText(refusalOf(error), lang) });
+      return;
     }
+    await rememberCredentials(email, password);
+    startNavigation(() => {
+      router.push('/dashboard');
+      router.refresh();
+    });
   }
 
   return (

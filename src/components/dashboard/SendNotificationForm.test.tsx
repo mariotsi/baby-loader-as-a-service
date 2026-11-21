@@ -15,9 +15,9 @@ beforeEach(() => {
   answer = { status: 200, body: { sent: 12, total: 12 } };
   vi.stubGlobal(
     'fetch',
-    vi.fn((_url: string, init: RequestInit) => {
-      sent.push(JSON.parse(String(init.body)));
-      return Promise.resolve(Response.json(answer.body, { status: answer.status }));
+    vi.fn(async (request: Request) => {
+      sent.push(await request.json());
+      return Response.json(answer.body, { status: answer.status });
     })
   );
 });

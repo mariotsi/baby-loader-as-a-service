@@ -1,49 +1,59 @@
+import type { KyInstance } from 'ky';
 import { type BirthFields, withBirth } from './birthAnnouncement.ts';
 import type { DeliveryResult } from './notificationDelivery.ts';
+import { platformApi, refusalOf, refusedStatus } from './platformApi.ts';
 import type { Site } from './site.ts';
 import type { SaveFailure, SiteEditingPort, Written } from './siteEditing.ts';
-import { type BirthMedia, parseSiteSettings, siteSettingsOf } from './siteSettings.ts';
+import { type BirthMedia, parseSiteSettings, type SiteSettingsError, siteSettingsOf } from './siteSettings.ts';
 
 /**
- * The two adapters of Site editing's port: the Platform's routes over
- * `fetch`, which the editor runs on, and a Site held in memory, which tests
+ * The two adapters of Site editing's port: the Platform's routes through
+ * `platformApi`, which the editor runs on, and a Site held in memory, which tests
  * and stories run on.
  */
 
-/** The Site settings, Birth and media routes of the Site at `slug`. */
-export function fetchSiteEditingPort(slug: string): SiteEditingPort {
-  const site = `/api/sites/${slug}`;
+/** The Site settings, Birth and media routes of the Site at `slug`, through `api` (the Platform's routes unless a test passes its own). */
+export function fetchSiteEditingPort(slug: string, api: KyInstance = platformApi): SiteEditingPort {
+  const site = `sites/${slug}`;
 
   /** What a route answered: the saved Site, or why not. No answer, or one that is not JSON, is a refusal with no error. */
-  async function answered(request: Promise<Response>): Promise<Written | SaveFailure> {
-    const res = await request.catch(() => null);
-    const data = await res?.json().catch(() => null);
-    if (res?.ok && data?.site) {
-      return { ok: true, site: data.site, notification: data.notification ?? null };
+  async function answered(request: () => Promise<Partial<Written>>): Promise<Written | SaveFailure> {
+    try {
+      const { site: saved, notification } = await request();
+      if (saved) {
+        return { ok: true, site: saved, notification: notification ?? null };
+      }
+      return { ok: false, refused: undefined, stale: false };
+    } catch (error) {
+      const refusal = refusalOf(error) as { error?: unknown; errors?: SiteSettingsError[] } | null;
+      const status = refusedStatus(error);
+      if (status !== 409 && refusal?.errors) {
+        return { ok: false, errors: refusal.errors };
+      }
+      return { ok: false, refused: refusal?.error, stale: status === 409 };
     }
-    if (res?.status !== 409 && data?.errors) {
-      return { ok: false, errors: data.errors };
-    }
-    return { ok: false, refused: data?.error, stale: res?.status === 409 };
-  }
-
-  function json(method: string, body: unknown): RequestInit {
-    return { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) };
   }
 
   return {
-    saveSettings: (body) => answered(fetch(site, json('PUT', body))),
-    setBirth: (body) => answered(fetch(`${site}/birth`, json('PUT', body))),
-    clearBirth: (body) => answered(fetch(`${site}/birth`, json('DELETE', body))),
+    saveSettings: (json) => answered(() => api.put(site, { json }).json()),
+    setBirth: (json) => answered(() => api.put(`${site}/birth`, { json }).json()),
+    clearBirth: (json) => answered(() => api.delete(`${site}/birth`, { json }).json()),
     async upload(file) {
       const body = new FormData();
       body.set('file', file);
-      const res = await fetch(`${site}/media`, { method: 'POST', body }).catch(() => null);
-      const data = await res?.json().catch(() => null);
-      if (!res?.ok || !data?.media) {
-        return { ok: false, refused: data?.error };
+      try {
+        const { media } = await api.post(`${site}/media`, { body }).json<{ media?: BirthMedia }>();
+        if (!media) {
+          return { ok: false, refused: undefined };
+        }
+        // The browser knows the file's type; a type the route takes is one of BirthMedia's.
+        return {
+          ok: true,
+          media: { ...media, name: file.name, type: file.type as BirthMedia['type'], size: file.size },
+        };
+      } catch (error) {
+        return { ok: false, refused: (refusalOf(error) as { error?: unknown } | null)?.error };
       }
-      return { ok: true, media: { ...data.media, name: file.name, type: file.type, size: file.size } };
     },
   };
 }

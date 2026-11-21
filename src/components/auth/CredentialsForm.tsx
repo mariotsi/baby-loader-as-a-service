@@ -14,10 +14,10 @@ import { Input } from '@/components/ui/Input';
 import { PageShell } from '@/components/ui/PageShell';
 import { Stack } from '@/components/ui/Stack';
 import { StatusMessage } from '@/components/ui/StatusMessage';
-import { errorsCopy } from '@/lib/copy/errors';
 import { platformCopy } from '@/lib/copy/platform';
-import { routeErrorText } from '@/lib/errorText';
+import { responseErrorText } from '@/lib/errorText';
 import { type NewPasswordValues, signupFormSchema } from '@/lib/passwordRules';
+import { platformApi, refusalOf } from '@/lib/platformApi';
 import styles from './CredentialsForm.module.css';
 import { adoptScreenValues, NewPasswordFields, rememberCredentials } from './NewPasswordFields';
 
@@ -28,8 +28,8 @@ const signupResolver = zodResolver(signupFormSchema);
 
 /** Where each mode sends the form and goes next; its words are in the Platform's dictionary (`auth`). */
 const MODES = {
-  login: { endpoint: '/api/auth/login', next: '/dashboard', switchHref: '/signup' },
-  signup: { endpoint: '/api/auth/signup', next: '/onboarding', switchHref: '/login' },
+  login: { endpoint: 'auth/login', next: '/dashboard', switchHref: '/signup' },
+  signup: { endpoint: 'auth/signup', next: '/onboarding', switchHref: '/login' },
 } as const;
 
 /**
@@ -73,24 +73,16 @@ export function CredentialsForm({ mode }: { mode: keyof typeof MODES }) {
 
   async function send({ email, password }: Credentials) {
     try {
-      const res = await fetch(route.endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        setError('root.server', { message: routeErrorText(data.error, lang) });
-        return;
-      }
-      await rememberCredentials(email, password);
-      startNavigation(() => {
-        router.push(route.next);
-        router.refresh();
-      });
-    } catch {
-      setError('root.server', { message: errorsCopy[lang].generic });
+      await platformApi.post(route.endpoint, { json: { email, password } });
+    } catch (error) {
+      setError('root.server', { message: responseErrorText(refusalOf(error), lang) });
+      return;
     }
+    await rememberCredentials(email, password);
+    startNavigation(() => {
+      router.push(route.next);
+      router.refresh();
+    });
   }
 
   return (

@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { getCloudflareContext } from '@opennextjs/cloudflare';
+import ky from 'ky';
 import { ImageResponse } from 'next/og';
 import type { ReactNode } from 'react';
 import { ShareCard } from '@/components/ShareCard';
@@ -126,12 +127,12 @@ async function googleFont(face: Typeface, text: string, name: 'display' | 'body'
   }
   try {
     const query = `family=${family.replaceAll(' ', '+')}:wght@${face.weight}&text=${encodeURIComponent(text)}`;
-    const css = await (await fetch(`https://fonts.googleapis.com/css2?${query}`)).text();
+    const css = await ky.get(`https://fonts.googleapis.com/css2?${query}`).text();
     const url = /src: url\((.+?)\) format\('(?:opentype|truetype)'\)/.exec(css)?.[1];
     if (!url) {
       return null;
     }
-    const data = await (await fetch(url)).arrayBuffer();
+    const data = await ky.get(url).arrayBuffer();
     return { name, data, weight: face.weight as 400, style: 'normal' as const };
   } catch {
     return null;
