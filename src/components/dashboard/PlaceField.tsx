@@ -1,5 +1,6 @@
 'use client';
 
+import ky from 'ky';
 import { useEffect, useState } from 'react';
 import { useLang } from '@/components/LangProvider';
 import { Combobox } from '@/components/ui/Combobox';
@@ -37,12 +38,10 @@ function usePlaceSearch(query: string): Search {
     const controller = new AbortController();
     const timer = setTimeout(async () => {
       try {
-        const url = `${PHOTON_URL}?${new URLSearchParams({ q, limit: String(MAX_RESULTS) })}`;
-        const res = await fetch(url, { signal: controller.signal });
-        if (!res.ok) {
-          throw new Error(`Photon answered ${res.status}`);
-        }
-        const { features } = (await res.json()) as { features: PhotonFeature[] };
+        // No retry: the Owner's next keystroke searches again, and a retried search would only delay saying it failed.
+        const { features } = await ky
+          .get(PHOTON_URL, { searchParams: { q, limit: MAX_RESULTS }, signal: controller.signal, retry: 0 })
+          .json<{ features: PhotonFeature[] }>();
         setSearch({ state: 'done', places: distinct(features.map(placeFromPhoton)) });
       } catch (error) {
         if (!controller.signal.aborted) {

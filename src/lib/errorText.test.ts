@@ -3,6 +3,7 @@ import {
   describeSiteSettingsErrors,
   errorPlace,
   inlineErrorText,
+  knownRouteErrorText,
   responseErrorText,
   routeErrorText,
   settingOf,
@@ -22,6 +23,12 @@ test('anything that is not a known code reads as the generic error', () => {
   expect(routeErrorText('Not found.', 'it')).toBe('Qualcosa è andato storto.');
   expect(routeErrorText({ code: 'nope' }, 'en')).toBe('Something went wrong.');
   expect(routeErrorText({ code: 'toString' }, 'en')).toBe('Something went wrong.');
+});
+
+test('a form with words of its own reads only a known route error code', () => {
+  expect(knownRouteErrorText({ code: 'rateLimited' }, 'it')).toBe('Troppi tentativi, riprova tra un minuto.');
+  expect(knownRouteErrorText({ code: 'nope' }, 'en')).toBe(null);
+  expect(knownRouteErrorText(undefined, 'en')).toBe(null);
 });
 
 test('a response body reads as its Site settings errors, else its route error', () => {

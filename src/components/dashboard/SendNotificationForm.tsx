@@ -17,6 +17,7 @@ import { platformCopy } from '@/lib/copy/platform';
 import { responseErrorText } from '@/lib/errorText';
 import { type Lang, languageName } from '@/lib/i18n';
 import { type NotificationSite, notificationContent } from '@/lib/notificationContent';
+import { platformApi, refusalOf } from '@/lib/platformApi';
 import { messagesOf, type SendNotificationValues, sendNotificationFormSchema } from '@/lib/sendNotificationForm';
 import { siteShortName } from '@/lib/siteAppIdentity';
 import { NotificationPreviews } from './NotificationPreviews';
@@ -77,18 +78,16 @@ export function SendNotificationForm({
   const failure = formState.errors.root?.server?.message ?? (formState.errors.bodies ? t.checkMessages : null);
 
   async function send(values: SendNotificationValues) {
-    const res = await fetch('/api/send-notification', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ slug, messages: messagesOf(values, languages) }),
-    }).catch(() => null);
-    const data = await res?.json().catch(() => null);
-    setConfirming(false);
-    if (res?.ok) {
-      setSent({ text: t.sent(data.sent, data.total), everyone: data.sent === data.total });
+    try {
+      const { sent: reached, total } = await platformApi
+        .post('send-notification', { json: { slug, messages: messagesOf(values, languages) } })
+        .json<{ sent: number; total: number }>();
+      setSent({ text: t.sent(reached, total), everyone: reached === total });
       reset(emptyValues(languages));
-    } else {
-      setError('root.server', { message: responseErrorText(data, pageLang) });
+    } catch (error) {
+      setError('root.server', { message: responseErrorText(refusalOf(error), pageLang) });
+    } finally {
+      setConfirming(false);
     }
   }
 

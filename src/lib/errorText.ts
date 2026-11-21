@@ -10,13 +10,18 @@ import type { SiteSettingsError } from './siteSettings.ts';
 
 /** The words for a route's `error`, or the generic ones for anything that is not a known code. */
 export function routeErrorText(error: unknown, lang: Lang): string {
+  return knownRouteErrorText(error, lang) ?? errorsCopy[lang].generic;
+}
+
+/** The words for a route's `error`, or null when it is not a known code, for a form whose own words say it better. */
+export function knownRouteErrorText(error: unknown, lang: Lang): string | null {
   const t = errorsCopy[lang];
   const code = (error as RouteError | undefined)?.code;
   const text = typeof code === 'string' && Object.hasOwn(t.route, code) ? t.route[code] : undefined;
   if (typeof text === 'function') {
     return text((error as RouteError).params?.max ?? 0);
   }
-  return text ?? t.generic;
+  return text ?? null;
 }
 
 /** The words for a failed response's body: its Site settings errors, else its route error. */

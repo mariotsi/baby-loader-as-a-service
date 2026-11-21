@@ -108,6 +108,10 @@ export const Checking: Story = { args: { status: 'checking' } };
 export const Subscribing: Story = { args: { busy: true } };
 /** Shows a failed subscription with a retry action. */
 export const SubscriptionError: Story = { args: { feedback: 'errorGeneric' } };
+/** A subscription the route refused with a known error: its words replace the generic ones. */
+export const SubscriptionRateLimited: Story = {
+  args: { feedback: 'errorGeneric', refusal: { error: { code: 'rateLimited' } } },
+};
 /** Shows a failed deactivation while notifications remain active. */
 export const DeactivationError: Story = { args: { status: 'subscribed', feedback: 'errorUnsubscribe' } };
 /** Confirms deactivation and offers opting in again. */

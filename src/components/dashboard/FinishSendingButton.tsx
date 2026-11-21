@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/Button';
 import { StatusMessage } from '@/components/ui/StatusMessage';
 import { platformCopy } from '@/lib/copy/platform';
 import { responseErrorText } from '@/lib/errorText';
+import { platformApi, refusalOf } from '@/lib/platformApi';
 
 interface FinishSendingButtonProps {
   slug: string;
@@ -24,11 +25,11 @@ export function FinishSendingButton({ slug, notificationId }: FinishSendingButto
   async function finish() {
     setSending(true);
     setFailure(null);
-    const res = await fetch(`/api/sites/${slug}/notifications/${notificationId}`, { method: 'POST' }).catch(() => null);
-    if (res?.ok) {
+    try {
+      await platformApi.post(`sites/${slug}/notifications/${notificationId}`);
       router.refresh();
-    } else {
-      setFailure(responseErrorText(await res?.json().catch(() => null), pageLang));
+    } catch (error) {
+      setFailure(responseErrorText(refusalOf(error), pageLang));
     }
     setSending(false);
   }

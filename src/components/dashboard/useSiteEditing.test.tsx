@@ -57,8 +57,8 @@ test('each save that goes through refreshes the route once; one that does not le
 
 test('without a port of its own, the editor saves through the Site’s routes', async () => {
   const asked: string[] = [];
-  vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
-    asked.push(`${init?.method} ${url}`);
+  vi.stubGlobal('fetch', (request: Request) => {
+    asked.push(`${request.method} ${new URL(request.url).pathname}`);
     return Promise.resolve(Response.json({ site: { ...emma, updatedAt: '2026-10-02T00:00:00.000Z' } }));
   });
   const { result } = renderHook(() => useSiteEditing(emma));

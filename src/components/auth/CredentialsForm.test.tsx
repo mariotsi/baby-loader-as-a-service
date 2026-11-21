@@ -26,9 +26,9 @@ beforeEach(() => {
   push.mockClear();
   vi.stubGlobal(
     'fetch',
-    vi.fn((url: string, init: RequestInit) => {
-      sent.push([url, JSON.parse(String(init.body))]);
-      return Promise.resolve(Response.json(answer.body, { status: answer.status }));
+    vi.fn(async (request: Request) => {
+      sent.push([new URL(request.url).pathname, await request.json()]);
+      return Response.json(answer.body, { status: answer.status });
     })
   );
 });
@@ -113,7 +113,7 @@ test('login says so when no answer arrives', async () => {
   render(<CredentialsForm mode="login" />);
   type('Email', 'ada@example.com');
   type('Password', 'whatever');
-  vi.stubGlobal('fetch', () => Promise.reject(new Error('offline')));
+  vi.stubGlobal('fetch', () => Promise.reject(new TypeError('Failed to fetch')));
   submit('Log in');
   expect(await screen.findByText(/Something went wrong/)).toBeTruthy();
 });

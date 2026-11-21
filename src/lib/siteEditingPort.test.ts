@@ -1,25 +1,28 @@
 import { afterEach, expect, test, vi } from 'vitest';
+import { platformApi } from './platformApi.ts';
 import { fetchSiteEditingPort } from './siteEditingPort.ts';
 import { settingsPath } from './siteSettings.ts';
 
 afterEach(() => vi.unstubAllGlobals());
 
-/** Answers the next `fetch` with `answer`, and records what was asked. */
+/** Answers the next `fetch` with `answer`, and records what was asked, with the path under the Platform's origin. */
 function answering(answer: Response | Error) {
   const asked: { url: string; method?: string; body?: unknown }[] = [];
-  vi.stubGlobal('fetch', (url: string, init?: RequestInit) => {
+  vi.stubGlobal('fetch', async (request: Request) => {
+    const form = request.headers.get('content-type')?.startsWith('multipart/form-data');
     asked.push({
-      url,
-      method: init?.method,
-      body: typeof init?.body === 'string' ? JSON.parse(init.body) : init?.body,
+      url: new URL(request.url).pathname,
+      method: request.method,
+      body: form ? await request.formData() : JSON.parse(await request.text()),
     });
-    return answer instanceof Error ? Promise.reject(answer) : Promise.resolve(answer);
+    return answer instanceof Error ? Promise.reject(answer) : answer;
   });
   return asked;
 }
 
 const json = (body: unknown, status = 200) => Response.json(body, { status });
-const port = fetchSiteEditingPort('emma');
+// Node has no page to resolve `/api/…` against: the Platform's routes are reached at an origin of their own.
+const port = fetchSiteEditingPort('emma', platformApi.extend({ baseUrl: 'https://loading.baby' }));
 const settingsBody = { updatedAt: 'then', settings: {} } as Parameters<typeof port.saveSettings>[0];
 const mp4 = new File(['x'], 'hello.mp4', { type: 'video/mp4' });
 
