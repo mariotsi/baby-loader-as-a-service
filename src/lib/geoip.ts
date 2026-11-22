@@ -1,4 +1,5 @@
 import ky, { isHTTPError } from 'ky';
+import { outboundFailure } from './outboundFailure.ts';
 
 export interface GeoLocation {
   city: string | null;
@@ -92,6 +93,7 @@ export async function lookupGeo(ip: string): Promise<GeoLocation | null> {
       .json<Record<string, unknown>>();
     if (data?.error) {
       // e.g. rate limited or reserved IP range
+      console.error('[geoip] lookup failed: ipapi answered an error');
       cache.set(ip, { value: null, expires: Date.now() + CACHE_TTL_MS });
       return null;
     }
@@ -123,12 +125,11 @@ export async function lookupGeo(ip: string): Promise<GeoLocation | null> {
     cache.set(ip, { value: geo, expires: Date.now() + CACHE_TTL_MS });
     return geo;
   } catch (err) {
+    console.error(`[geoip] lookup failed: ${outboundFailure(err)}`);
     if (isHTTPError(err)) {
       // ipapi refused this IP: asking again before the cache expires would be refused too.
       cache.set(ip, { value: null, expires: Date.now() + CACHE_TTL_MS });
-      return null;
     }
-    console.error('[geoip] lookup failed', err);
     return null;
   }
 }

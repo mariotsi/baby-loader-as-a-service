@@ -6,6 +6,7 @@ import { ImageResponse } from 'next/og';
 import type { ReactNode } from 'react';
 import { ShareCard } from '@/components/ShareCard';
 import type { Lang } from './i18n.ts';
+import { outboundFailure } from './outboundFailure.ts';
 import { publicPageView } from './publicPageView.ts';
 import { SITE_ICON_VARIANTS, type SiteIconVariant } from './siteMeta.ts';
 import type { SiteSettings } from './siteSettings.ts';
@@ -117,8 +118,8 @@ export async function shareImage(settings: SiteSettings, address: string, lang: 
 /**
  * One face of a Font as a TrueType file, limited to the characters of `text`.
  * Google Fonts sends TrueType to a client that asks without a browser's user
- * agent. Null when it cannot be fetched: the image then falls back to the
- * typeface ImageResponse bundles.
+ * agent. Null when it cannot be fetched, which is logged: the image then
+ * falls back to the typeface ImageResponse bundles.
  */
 async function googleFont(face: Typeface, text: string, name: 'display' | 'body') {
   const family = /'([^']+)'/.exec(face.cssStack)?.[1];
@@ -130,11 +131,13 @@ async function googleFont(face: Typeface, text: string, name: 'display' | 'body'
     const css = await ky.get(`https://fonts.googleapis.com/css2?${query}`).text();
     const url = /src: url\((.+?)\) format\('(?:opentype|truetype)'\)/.exec(css)?.[1];
     if (!url) {
+      console.error(`[fonts] ${family} ${face.weight} failed: no TrueType file in the stylesheet`);
       return null;
     }
     const data = await ky.get(url).arrayBuffer();
     return { name, data, weight: face.weight as 400, style: 'normal' as const };
-  } catch {
+  } catch (error) {
+    console.error(`[fonts] ${family} ${face.weight} failed: ${outboundFailure(error)}`);
     return null;
   }
 }
