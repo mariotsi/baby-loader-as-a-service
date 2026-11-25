@@ -1,58 +1,49 @@
-import ky, { isHTTPError } from 'ky';
-import { outboundFailure } from './outboundFailure.ts';
+import * as z from 'zod/mini';
 
+/**
+ * Where a Subscription was made, as Cloudflare places the Visitor's IP:
+ * the `cf` properties of the request that subscribed. Cloudflare sets them on
+ * every request to the Worker, so the IP is never sent anywhere to be looked
+ * up. A field Cloudflare could not place is null.
+ */
 export interface GeoLocation {
   city: string | null;
   region: string | null;
   regionCode: string | null;
+  /** The country's English name, from its code. */
   country: string | null;
+  /** ISO 3166-1 alpha-2. */
   countryCode: string | null;
-  countryCodeIso3: string | null;
-  countryCapital: string | null;
-  countryTld: string | null;
   continentCode: string | null;
   inEu: boolean | null;
   postal: string | null;
   lat: number | null;
   lon: number | null;
+  /** IANA name. */
   timezone: string | null;
-  utcOffset: string | null;
-  callingCode: string | null;
-  currency: string | null;
-  currencyName: string | null;
-  languages: string | null;
+  /** The network's autonomous system, as `AS13335`. */
   asn: string | null;
+  /** The organization that runs that network. */
   org: string | null;
 }
 
-const CACHE_TTL_MS = 60 * 60 * 1000; // 1h — enough to dedupe re-subscribes on a warm instance
-const LOOKUP_TIMEOUT_MS = 3000;
+/** The `cf` properties read here. Cloudflare sends the coordinates as strings. */
+const cfSchema = z.looseObject({
+  city: z.optional(z.unknown()),
+  region: z.optional(z.unknown()),
+  regionCode: z.optional(z.unknown()),
+  country: z.optional(z.unknown()),
+  continent: z.optional(z.unknown()),
+  isEUCountry: z.optional(z.unknown()),
+  postalCode: z.optional(z.unknown()),
+  latitude: z.optional(z.unknown()),
+  longitude: z.optional(z.unknown()),
+  timezone: z.optional(z.unknown()),
+  asn: z.optional(z.unknown()),
+  asOrganization: z.optional(z.unknown()),
+});
 
-// Serverless instances are ephemeral, so this cache is best-effort, not a
-// correctness requirement.
-const cache = new Map<string, { value: GeoLocation | null; expires: number }>();
-
-function isPrivateOrInvalid(ip: string): boolean {
-  if (!ip || ip === 'unknown') {
-    return true;
-  }
-  if (ip === '::1' || ip === '127.0.0.1') {
-    return true;
-  }
-  if (/^10\./.test(ip)) {
-    return true;
-  }
-  if (/^192\.168\./.test(ip)) {
-    return true;
-  }
-  if (/^172\.(1[6-9]|2\d|3[01])\./.test(ip)) {
-    return true;
-  }
-  if (/^(fc|fd|fe80)/i.test(ip)) {
-    return true;
-  }
-  return false;
-}
+const countryNames = new Intl.DisplayNames(['en'], { type: 'region' });
 
 function str(value: unknown, max = 150): string | null {
   if (typeof value !== 'string' || !value) {
@@ -61,75 +52,44 @@ function str(value: unknown, max = 150): string | null {
   return value.length > max ? value.slice(0, max) : value;
 }
 
-function num(value: unknown): number | null {
-  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+/** A coordinate, sent as a string or a number, within `limit` degrees of zero. */
+function coordinate(value: unknown, limit: number): number | null {
+  const n = typeof value === 'string' && value.trim() ? Number(value) : value;
+  return typeof n === 'number' && Number.isFinite(n) && Math.abs(n) <= limit ? n : null;
 }
 
-function bool(value: unknown): boolean | null {
-  return typeof value === 'boolean' ? value : null;
+/** The English name of a two-letter country code; null for Cloudflare's codes that name no country, such as `T1` for Tor. */
+function countryName(code: string | null): string | null {
+  if (!code || !/^[A-Z]{2}$/.test(code)) {
+    return null;
+  }
+  const name = countryNames.of(code);
+  return name && name !== code ? name : null;
 }
 
-/**
- * Best-effort city/country lookup from the request IP. Never throws: a
- * network hiccup or rate limit should not prevent someone from subscribing.
- */
-export async function lookupGeo(ip: string): Promise<GeoLocation | null> {
-  if (isPrivateOrInvalid(ip)) {
+/** Where `cf` places the request, or null when there is no `cf` or it places nothing, as under `next dev`. */
+export function geoFromCf(cf: unknown): GeoLocation | null {
+  const parsed = cfSchema.safeParse(cf);
+  if (!parsed.success) {
     return null;
   }
-
-  const cached = cache.get(ip);
-  if (cached && cached.expires > Date.now()) {
-    return cached.value;
-  }
-
-  try {
-    const data = await ky
-      .get(`https://ipapi.co/${encodeURIComponent(ip)}/json/`, {
-        timeout: LOOKUP_TIMEOUT_MS,
-        retry: 0,
-        headers: { 'User-Agent': 'baby-loader-as-a-service (+push subscription geolocation)' },
-      })
-      .json<Record<string, unknown>>();
-    if (data?.error) {
-      // e.g. rate limited or reserved IP range
-      console.error('[geoip] lookup failed: ipapi answered an error');
-      cache.set(ip, { value: null, expires: Date.now() + CACHE_TTL_MS });
-      return null;
-    }
-
-    const geo: GeoLocation = {
-      city: str(data.city, 100),
-      region: str(data.region, 100),
-      regionCode: str(data.region_code, 10),
-      country: str(data.country_name, 100),
-      countryCode: str(data.country_code, 5),
-      countryCodeIso3: str(data.country_code_iso3, 5),
-      countryCapital: str(data.country_capital, 100),
-      countryTld: str(data.country_tld, 10),
-      continentCode: str(data.continent_code, 5),
-      inEu: bool(data.in_eu),
-      postal: str(data.postal, 20),
-      lat: num(data.latitude),
-      lon: num(data.longitude),
-      timezone: str(data.timezone, 60),
-      utcOffset: str(data.utc_offset, 10),
-      callingCode: str(data.country_calling_code, 10),
-      currency: str(data.currency, 10),
-      currencyName: str(data.currency_name, 50),
-      languages: str(data.languages, 100),
-      asn: str(data.asn, 20),
-      org: str(data.org, 150),
-    };
-
-    cache.set(ip, { value: geo, expires: Date.now() + CACHE_TTL_MS });
-    return geo;
-  } catch (err) {
-    console.error(`[geoip] lookup failed: ${outboundFailure(err)}`);
-    if (isHTTPError(err)) {
-      // ipapi refused this IP: asking again before the cache expires would be refused too.
-      cache.set(ip, { value: null, expires: Date.now() + CACHE_TTL_MS });
-    }
-    return null;
-  }
+  const p = parsed.data;
+  const countryCode = str(p.country, 2);
+  const geo: GeoLocation = {
+    city: str(p.city, 100),
+    region: str(p.region, 100),
+    regionCode: str(p.regionCode, 10),
+    country: countryName(countryCode),
+    countryCode,
+    continentCode: str(p.continent, 5),
+    // Cloudflare sets `isEUCountry` only for a country in the EU.
+    inEu: countryCode ? p.isEUCountry === '1' : null,
+    postal: str(p.postalCode, 20),
+    lat: coordinate(p.latitude, 90),
+    lon: coordinate(p.longitude, 180),
+    timezone: str(p.timezone, 60),
+    asn: typeof p.asn === 'number' && Number.isInteger(p.asn) ? `AS${p.asn}` : null,
+    org: str(p.asOrganization, 150),
+  };
+  return Object.values(geo).some((value) => value !== null) ? geo : null;
 }
