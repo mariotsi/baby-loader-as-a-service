@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from 'next/server';
 import { logActivity } from '@/lib/activityLog';
 import { clientIp } from '@/lib/auth';
 import { buildDeviceInfo } from '@/lib/deviceInfo';
-import { lookupGeo } from '@/lib/geoip';
+import { requestGeo } from '@/lib/geoipNext';
 import { isLang } from '@/lib/i18n';
 import { rateLimit } from '@/lib/rateLimit';
 import { routeError } from '@/lib/routeError';
@@ -36,9 +36,8 @@ export async function POST(req: NextRequest) {
     return routeError(404, { code: 'unknownSite' });
   }
 
-  const ip = clientIp(req);
   const deviceInfo = buildDeviceInfo(req.headers.get('user-agent'), body?.deviceHints);
-  const geo = await lookupGeo(ip);
+  const geo = await requestGeo();
   const lang = isLang(body?.lang) && site.languages.includes(body.lang) ? body.lang : null;
 
   await upsertSubscription({

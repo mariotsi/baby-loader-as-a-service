@@ -13,6 +13,6 @@ Two Workers keep production apart from unreviewed branch code: `loading-baby` se
 - D1 has no interactive transactions: writes that belong together go in one `db.batch()`.
 - Ids are random UUIDs (`crypto.randomUUID()`): they travel in session cookies (ADR-0003) and reach the browser, so one id says nothing about another.
 - Cloudflare's free Universal SSL covers `loading.baby` and one level of subdomains, so Sites at `<slug>.loading.baby` need nothing more; a two-level name such as `<slug>.staging.loading.baby` would need Advanced Certificate Manager, which is why staging has a domain of its own.
-- The rate limiter and the geoip cache stay in memory per isolate, which makes them best-effort across Cloudflare's many isolates.
+- The rate limiter stays in memory per isolate, which makes it best-effort across Cloudflare's many isolates.
 - One Cloudflare account holds production and non-production, and an API token can't be limited to some Workers or databases, so the token that deploys Previews could reach production's database. Push-triggered workflows run with it, so anyone with write access to the repository could misuse it. Production's database id lives only in a GitHub environment restricted to `main`; separate accounts would close the gap fully, at $5/month more.
 - The data layer depends on Cloudflare: leaving it means moving off D1, though the schema is plain SQLite.
