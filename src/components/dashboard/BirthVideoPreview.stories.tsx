@@ -1,6 +1,7 @@
 import type { Meta, StoryObj } from '@storybook/nextjs-vite';
 import { useState } from 'react';
 import { expect, userEvent, waitFor, within } from 'storybook/test';
+import { REVEAL_STALL_MS } from '@/components/BirthReveal';
 import { LangProvider } from '@/components/LangProvider';
 import { PublicPage } from '@/components/PublicPage';
 import { Button } from '@/components/ui/Button';
@@ -149,9 +150,11 @@ export const AudioAutoplayBlocked: Story = {
     }
     await expect(video).not.toHaveAttribute('controls');
     await expect(getComputedStyle(dialog).backgroundColor).toBe('rgb(0, 0, 0)');
-    const sound = await within(dialog).findByRole('button', { name: 'Turn on sound' });
+    // The button appears once Chromium has started the muted playback, which on a loaded machine takes well over
+    // the queries' one-second default; the reveal itself allows REVEAL_STALL_MS for it, and so does the story.
+    const sound = await within(dialog).findByRole('button', { name: 'Turn on sound' }, { timeout: REVEAL_STALL_MS });
     await waitFor(() => expect(video.muted).toBe(true));
-    await waitFor(() => expect(video.currentTime).toBeGreaterThan(0));
+    await waitFor(() => expect(video.currentTime).toBeGreaterThan(0), { timeout: REVEAL_STALL_MS });
     await userEvent.click(sound);
     await expect(video.muted).toBe(false);
     await expect(within(dialog).queryByRole('button', { name: 'Turn on sound' })).not.toBeInTheDocument();

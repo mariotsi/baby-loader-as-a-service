@@ -6,6 +6,9 @@ import type { MediaUrl } from '@/lib/birthMedia';
 import type { PublicPageCopy } from '@/lib/copy/publicPage';
 import styles from './BirthReveal.module.css';
 
+/** How long the reveal waits for its video to start or resume playing before it closes. */
+export const REVEAL_STALL_MS = 8000;
+
 /** The Birth video full screen, with sound where the browser allows it; it closes when the video ends or stalls. */
 export function BirthReveal({ url, t, onClose }: { url: MediaUrl; t: PublicPageCopy['reveal']; onClose: () => void }) {
   const dialog = useRef<HTMLDialogElement>(null);
@@ -18,7 +21,7 @@ export function BirthReveal({ url, t, onClose }: { url: MediaUrl; t: PublicPageC
   }
   function waitForPlayback() {
     clearStall();
-    stalled.current = setTimeout(onClose, 8000);
+    stalled.current = setTimeout(onClose, REVEAL_STALL_MS);
   }
 
   useEffect(() => {
@@ -28,7 +31,7 @@ export function BirthReveal({ url, t, onClose }: { url: MediaUrl; t: PublicPageC
     element?.showModal();
     const previous = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    stalled.current = setTimeout(onClose, 8000);
+    stalled.current = setTimeout(onClose, REVEAL_STALL_MS);
     if (player) {
       void playReveal(player)
         .then((muted) => {
