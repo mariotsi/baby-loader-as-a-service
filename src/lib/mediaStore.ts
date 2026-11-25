@@ -1,4 +1,5 @@
-import ky, { isHTTPError } from 'ky';
+import ky from 'ky';
+import { outboundFailure } from './outboundFailure.ts';
 
 /**
  * Where media files live: the deployment's R2 bucket, reached through its
@@ -172,8 +173,8 @@ export function cloudflareCachePurge({ zoneId, token }: { zoneId: string; token:
         })
         .json();
     } catch (error) {
-      const status = isHTTPError(error) ? ` with status ${error.response.status}` : '';
-      throw new Error(`The Cloudflare cache purge failed${status}.`, { cause: error });
+      // biome-ignore lint/style/useErrorCause: the error holds the request with the token, and callers log what this throws.
+      throw new Error(`The Cloudflare cache purge failed: ${outboundFailure(error)}.`);
     }
     if (!result.success) {
       throw new Error('The Cloudflare cache purge answered without success.');
